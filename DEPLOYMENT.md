@@ -32,8 +32,9 @@ Recommended Render service settings:
 
 - Service type: `Web Service`
 - Runtime: `Node`
-- Build command: `npm install && npm run build --workspace api`
-- Start command: `npm run start:prod --workspace api`
+- Root directory: `apps/api`
+- Build command: `npm install && npm run build`
+- Start command: `npm run start:prod`
 - Health check path: `/api/health`
 
 ### Render environment variables
