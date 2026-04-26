@@ -33,9 +33,11 @@ Recommended Render service settings:
 - Service type: `Web Service`
 - Runtime: `Node`
 - Root directory: `apps/api`
-- Build command: `npm install && npm run build`
-- Start command: `npm run start:prod`
+- Build command: `npm ci --workspaces=false && npm run build`
+- Start command: `node dist/main.js`
 - Health check path: `/api/health`
+
+`apps/api/.npmrc` is committed with `workspaces=false`, and the build command also passes `--workspaces=false`, so Render installs the API as a standalone project instead of inheriting the repo-root npm workspace during deploy.
 
 ### Render environment variables
 

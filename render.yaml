@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: churchflow-api
+    name: chuflow-api
     runtime: node
     rootDir: apps/api
-    buildCommand: npm install && npm run build
-    startCommand: npm run start:prod
+    buildCommand: npm ci --workspaces=false && npm run build
+    startCommand: node dist/main.js
     healthCheckPath: /api/health
     envVars:
       - key: PORT
