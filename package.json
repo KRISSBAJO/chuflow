@@ -1,0 +1,26 @@
+{
+  "name": "church-management-system",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "db:up": "docker compose -f docker-compose.mongo.yml up -d",
+    "db:down": "docker compose -f docker-compose.mongo.yml down",
+    "db:logs": "docker compose -f docker-compose.mongo.yml logs -f mongo",
+    "dev:web": "npm run dev --workspace web",
+    "dev:api": "npm run start:dev --workspace api",
+    "dev:windows": "cmd /c scripts\\dev-windows.cmd",
+    "repair:windows": "cmd /c scripts\\repair-windows.cmd",
+    "build:web": "npm run build --workspace web",
+    "build:api": "npm run build --workspace api",
+    "reseed:api": "npm run build --workspace api && npm run reseed --workspace api",
+    "lint:web": "npm run lint --workspace web",
+    "lint:api": "npm run lint --workspace api"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.5"
+  }
+}
