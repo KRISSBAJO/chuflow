@@ -5,10 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { filterNavByRole } from "@/lib/permissions";
-import type {
-  AlertsSummary,
-  SettingsOverview,
-} from "@/lib/types";
+import type { AlertsSummary, SettingsOverview } from "@/lib/types";
 import { LogoutButton } from "./logout-button";
 import { SessionGuard } from "./session-guard";
 import { SessionProvider, useSession } from "./session-context";
@@ -32,6 +29,10 @@ const links = [
   { href: "/settings", label: "Settings" },
 ];
 
+const DESKTOP_SIDEBAR_QUERY = "(min-width: 1280px)";
+const SIDEBAR_STORAGE_KEY = "chuflow.sidebar.open";
+const LEGACY_SIDEBAR_STORAGE_KEY = "churchflow.sidebar.open";
+
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
@@ -46,7 +47,11 @@ function ShellContent({ children }: { children: ReactNode }) {
   const { user } = useSession();
   const visibleLinks = filterNavByRole(links, user);
   const isCompact = user?.preferences?.interfaceDensity === "compact";
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopSidebarViewport, setIsDesktopSidebarViewport] =
+    useState(false);
+  const [hasLoadedSidebarPreference, setHasLoadedSidebarPreference] =
+    useState(false);
   const [branding, setBranding] = useState({
     organizationName: "ChuFlow",
     organizationTagline: "From Membership to Ministry",
@@ -64,17 +69,67 @@ function ShellContent({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const storedValue =
-      window.localStorage.getItem("chuflow.sidebar.open") ??
-      window.localStorage.getItem("churchflow.sidebar.open");
-    if (storedValue !== null) {
-      setIsSidebarOpen(storedValue === "true");
+    const desktopSidebar = window.matchMedia(DESKTOP_SIDEBAR_QUERY);
+
+    function getStoredSidebarValue() {
+      return (
+        window.localStorage.getItem(SIDEBAR_STORAGE_KEY) ??
+        window.localStorage.getItem(LEGACY_SIDEBAR_STORAGE_KEY)
+      );
     }
+
+    function syncSidebarForViewport(matchesDesktop: boolean) {
+      setIsDesktopSidebarViewport(matchesDesktop);
+      setIsSidebarOpen(
+        matchesDesktop && getStoredSidebarValue() !== "false",
+      );
+    }
+
+    syncSidebarForViewport(desktopSidebar.matches);
+    setHasLoadedSidebarPreference(true);
+
+    function handleDesktopSidebarChange(event: MediaQueryListEvent) {
+      syncSidebarForViewport(event.matches);
+    }
+
+    desktopSidebar.addEventListener("change", handleDesktopSidebarChange);
+
+    return () => {
+      desktopSidebar.removeEventListener("change", handleDesktopSidebarChange);
+    };
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("chuflow.sidebar.open", String(isSidebarOpen));
+    if (!hasLoadedSidebarPreference || !isDesktopSidebarViewport) {
+      return;
+    }
+
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isSidebarOpen));
+  }, [hasLoadedSidebarPreference, isDesktopSidebarViewport, isSidebarOpen]);
+
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsSidebarOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isSidebarOpen]);
+
+  useEffect(() => {
+    if (!window.matchMedia(DESKTOP_SIDEBAR_QUERY).matches) {
+      setIsSidebarOpen(false);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     let active = true;
@@ -164,6 +219,12 @@ function ShellContent({ children }: { children: ReactNode }) {
     router.push(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
   }
 
+  function closeSidebarOnNarrowViewport() {
+    if (!window.matchMedia(DESKTOP_SIDEBAR_QUERY).matches) {
+      setIsSidebarOpen(false);
+    }
+  }
+
   return (
     <SessionGuard>
       <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-white">
@@ -174,74 +235,88 @@ function ShellContent({ children }: { children: ReactNode }) {
               : "mx-auto grid min-h-screen max-w-[1520px] gap-6 p-4",
             isSidebarOpen
               ? isCompact
-                ? "lg:grid-cols-[260px_minmax(0,1fr)]"
-                : "lg:grid-cols-[280px_minmax(0,1fr)]"
-              : "lg:grid-cols-[minmax(0,1fr)]",
+                ? "xl:grid-cols-[260px_minmax(0,1fr)]"
+                : "xl:grid-cols-[280px_minmax(0,1fr)]"
+              : "xl:grid-cols-[minmax(0,1fr)]",
           ].join(" ")}
         >
           {/* Sidebar */}
           {isSidebarOpen ? (
-            <aside
-              className={`surface flex min-w-0 flex-col rounded-3xl border border-white/60 bg-white/95 shadow-xl backdrop-blur-xl ${
-                isCompact ? "p-5" : "p-6"
-              }`}
-            >
-            {/* Logo + Brand */}
-            <div className="mb-10 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-black text-xl font-bold text-white shadow-inner">
-                CF
-              </div>
-              <div>
-                <p className="text-xl font-semibold tracking-tight text-slate-900">
-                  {branding.organizationName}
-                </p>
-                <p className="text-xs text-slate-500">{branding.organizationTagline}</p>
-              </div>
-              </div>
+            <>
               <button
                 type="button"
+                aria-label="Close navigation menu"
                 onClick={() => setIsSidebarOpen(false)}
-                className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm xl:hidden"
+              />
+              <aside
+                id="app-sidebar"
+                className={`surface fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(22rem,calc(100vw-2rem))] min-w-0 flex-col overflow-y-auto rounded-r-3xl border border-white/60 bg-white/95 shadow-2xl backdrop-blur-xl xl:sticky xl:inset-auto xl:top-4 xl:z-auto xl:h-[calc(100vh-2rem)] xl:w-auto xl:rounded-3xl xl:shadow-xl ${
+                  isCompact ? "p-5" : "p-6"
+                }`}
               >
-                Hide
-              </button>
-            </div>
-
-            {/* Tagline */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-semibold leading-tight tracking-tighter text-slate-900">
-                From membership<br />to ministry.
-              </h1>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 space-y-1">
-              {visibleLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`group flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-slate-900 text-white shadow-lg shadow-slate-950/10"
-                        : "text-slate-600 hover:bg-orange-100 hover:text-orange-800 active:scale-[0.985]"
-                    }`}
+                {/* Logo + Brand */}
+                <div className="mb-10 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-black text-xl font-bold text-white shadow-inner">
+                      CF
+                    </div>
+                    <div>
+                      <p className="text-xl font-semibold tracking-tight text-slate-900">
+                        {branding.organizationName}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {branding.organizationTagline}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                   >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
+                    Hide
+                  </button>
+                </div>
 
-            {/* Footer note (optional) */}
-            <div className="mt-auto pt-8 text-center">
-              <p className="text-[10px] uppercase tracking-[0.5px] text-slate-400">
-                Built for impact
-              </p>
-            </div>
-            </aside>
+                {/* Tagline */}
+                <div className="mb-8">
+                  <h1 className="text-3xl font-semibold leading-tight tracking-tighter text-slate-900">
+                    From membership
+                    <br />
+                    to ministry.
+                  </h1>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 space-y-1">
+                  {visibleLinks.map((link) => {
+                    const isActive = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={closeSidebarOnNarrowViewport}
+                        className={`group flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-medium transition-all duration-200 ${
+                          isActive
+                            ? "bg-slate-900 text-white shadow-lg shadow-slate-950/10"
+                            : "text-slate-600 hover:bg-orange-100 hover:text-orange-800 active:scale-[0.985]"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                {/* Footer note (optional) */}
+                <div className="mt-auto pt-8 text-center">
+                  <p className="text-[10px] uppercase tracking-[0.5px] text-slate-400">
+                    Built for impact
+                  </p>
+                </div>
+              </aside>
+            </>
           ) : null}
 
           {/* Main Content Area */}
@@ -252,6 +327,8 @@ function ShellContent({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen((current) => !current)}
+                  aria-controls="app-sidebar"
+                  aria-expanded={isSidebarOpen}
                   className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   {isSidebarOpen ? "Collapse menu" : "Open menu"}
