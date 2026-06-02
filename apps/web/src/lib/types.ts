@@ -611,8 +611,11 @@ export type IntakeTemplate = {
   name: string;
   slug: string;
   branchId?: string;
+  oversightRegion?: string;
+  district?: string;
   baseTemplateId?: string;
   isBranchOverride?: boolean;
+  isDistrictOverride?: boolean;
   isActive: boolean;
   isSeeded?: boolean;
   badge?: string;
@@ -686,6 +689,87 @@ export type AttendanceSubmissionListResponse = {
     approved: number;
     rejected: number;
   };
+};
+
+export type WeeklyReportItem = {
+  _id: string;
+  status: string;
+  templateName: string;
+  branch: {
+    _id: string;
+    name: string;
+    oversightRegion: string;
+    district: string;
+    city?: string;
+    state?: string;
+  };
+  reportWeek?: string;
+  currentAttendance: number;
+  previousAttendance: number;
+  growth: number;
+  growthPercent: number;
+  averageLastYear: number;
+  averageLastPeriod: number;
+  firstTimersCount: number;
+  newConvertsCount: number;
+  believersFoundationClassCount: number;
+  holySpiritBaptismCount: number;
+  waterBaptismCount: number;
+  covenantHourOfPrayerAttendance: number;
+  winnersSatelliteFellowshipAverage: number;
+  cellCount: number;
+  newCellCount: number;
+  wofbiAttendance: number;
+  remarks?: string;
+  createdAt?: string;
+  approvedAt?: string;
+};
+
+export type WeeklyReportGroupTotal = {
+  key: string;
+  label: string;
+  oversightRegion?: string;
+  district?: string;
+  reports: number;
+  currentAttendance: number;
+  previousAttendance: number;
+  growth: number;
+  growthPercent: number;
+  firstTimersCount: number;
+  newConvertsCount: number;
+  cellCount: number;
+  newCellCount: number;
+};
+
+export type WeeklyReportListResponse = {
+  filters: {
+    dateFrom: string;
+    dateTo: string;
+    branchId?: string;
+    oversightRegion?: string;
+    district?: string;
+    status?: string;
+  };
+  scope: {
+    branchCount: number;
+    branches: Array<BranchSummary & { hasReport?: boolean }>;
+  };
+  items: WeeklyReportItem[];
+  totals: WeeklyReportGroupTotal & {
+    pending: number;
+    approved: number;
+    rejected: number;
+    averageGrowthPercent: number;
+    believersFoundationClassCount: number;
+    holySpiritBaptismCount: number;
+    waterBaptismCount: number;
+    covenantHourOfPrayerAttendance: number;
+    winnersSatelliteFellowshipAverage: number;
+    wofbiAttendance: number;
+  };
+  branchTotals: WeeklyReportGroupTotal[];
+  districtTotals: WeeklyReportGroupTotal[];
+  trends: WeeklyReportGroupTotal[];
 };
 
 export type PublicConnectOption = IntakeTemplate & {

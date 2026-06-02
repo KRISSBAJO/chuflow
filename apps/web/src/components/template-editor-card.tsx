@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
-import { isBranchScopedRole } from "@/lib/permissions";
+import { isBranchScopedRole, isDistrictRole, isNationalRole } from "@/lib/permissions";
 import { TemplateQrCard } from "./template-qr-card";
 import type { BranchSummary, IntakeTemplate, IntakeTemplateField } from "@/lib/types";
 
@@ -91,8 +91,11 @@ function toEditableTemplate(template: IntakeTemplate): IntakeTemplate {
     name: template.name,
     slug: template.slug,
     branchId: template.branchId,
+    oversightRegion: template.oversightRegion,
+    district: template.district,
     baseTemplateId: template.baseTemplateId,
     isBranchOverride: template.isBranchOverride,
+    isDistrictOverride: template.isDistrictOverride,
     isActive: template.isActive,
     isSeeded: template.isSeeded,
     badge: template.badge || "",
@@ -145,12 +148,16 @@ export function TemplateEditorCard({
   branches,
   currentUserRole,
   defaultBranchId,
+  defaultOversightRegion,
+  defaultDistrict,
   readonly = false,
 }: {
   template?: IntakeTemplate;
   branches: BranchSummary[];
   currentUserRole: string;
   defaultBranchId?: string;
+  defaultOversightRegion?: string;
+  defaultDistrict?: string;
   readonly?: boolean;
 }) {
   const router = useRouter();
@@ -159,11 +166,18 @@ export function TemplateEditorCard({
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [overrideLoading, setOverrideLoading] = useState(false);
+  const [districtOverrideLoading, setDistrictOverrideLoading] = useState(false);
   const branchLabel = branches.find((branch) => branch._id === draft.branchId)?.name;
-  const isGlobalBaseTemplate = !!template?._id && !template.branchId && !template.isBranchOverride;
+  const isDistrictVersion = !!template?._id && !!template.district && !!template.oversightRegion;
+  const isGlobalBaseTemplate = !!template?._id && !template.branchId && !template.isBranchOverride && !isDistrictVersion;
   const isBranchVersion = !!template?._id && (!!template.branchId || !!template.isBranchOverride);
   const canCreateBranchVersion =
     isGlobalBaseTemplate && isBranchScopedRole(currentUserRole) && !!defaultBranchId;
+  const canCreateDistrictVersion =
+    isGlobalBaseTemplate &&
+    (isDistrictRole(currentUserRole) || isNationalRole(currentUserRole) || currentUserRole === "super_admin") &&
+    !!defaultOversightRegion &&
+    !!defaultDistrict;
 
   function updateDraft<K extends keyof IntakeTemplate>(key: K, value: IntakeTemplate[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -240,6 +254,8 @@ export function TemplateEditorCard({
         logoPath: draft.logoPath?.trim() || undefined,
         branchId:
           !isBranchScopedRole(currentUserRole) ? draft.branchId || undefined : defaultBranchId || undefined,
+        oversightRegion: draft.oversightRegion || undefined,
+        district: draft.district || undefined,
         theme: sanitizeTheme(draft.theme),
         fields: draft.fields.map(sanitizeField),
       };
@@ -311,6 +327,46 @@ export function TemplateEditorCard({
     }
   }
 
+  async function handleCreateDistrictVersion() {
+    if (!template?._id || !defaultOversightRegion || !defaultDistrict) {
+      return;
+    }
+
+    setDistrictOverrideLoading(true);
+    setStatus(null);
+
+    try {
+      const response = await fetch(`${API_URL}/intake-templates/${template._id}/district-override`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          oversightRegion: defaultOversightRegion,
+          district: defaultDistrict,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Unable to create district version");
+      }
+
+      const message = "District version created.";
+      setStatus(message);
+      toast.success(message);
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create district version";
+      setStatus(message);
+      toast.error("District version unavailable", {
+        description: message,
+      });
+    } finally {
+      setDistrictOverrideLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {template?.shareUrl && !(isGlobalBaseTemplate && canCreateBranchVersion) ? (
@@ -321,14 +377,27 @@ export function TemplateEditorCard({
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                {isGlobalBaseTemplate ? "Global base template" : isBranchVersion ? "Branch version" : "Template"}
+                {isGlobalBaseTemplate
+                  ? "Global base template"
+                  : isDistrictVersion
+                    ? "District version"
+                    : isBranchVersion
+                      ? "Branch version"
+                      : "Template"}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {isGlobalBaseTemplate
                   ? "This shared template stays centrally managed."
+                  : isDistrictVersion
+                    ? `This version applies to ${template?.district || "the selected district"}.`
                   : `This version only applies to ${branchLabel || "the selected branch"}.`}
               </p>
             </div>
+            {isDistrictVersion && template?.district ? (
+              <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                {template.district}
+              </span>
+            ) : null}
             {isBranchVersion && branchLabel ? (
               <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
                 {branchLabel}
@@ -345,6 +414,19 @@ export function TemplateEditorCard({
                 className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
               >
                 {overrideLoading ? "Creating..." : "Create branch version"}
+              </button>
+            </div>
+          ) : null}
+          {canCreateDistrictVersion ? (
+            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
+              <p>Adopt this template for {defaultDistrict} so every branch in the district uses the district version.</p>
+              <button
+                type="button"
+                onClick={handleCreateDistrictVersion}
+                disabled={districtOverrideLoading}
+                className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                {districtOverrideLoading ? "Creating..." : "Create district version"}
               </button>
             </div>
           ) : null}

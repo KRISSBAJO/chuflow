@@ -20,6 +20,7 @@ const links = [
   { href: "/members", label: "Members" },
   { href: "/service-units", label: "Service Units" },
   { href: "/attendance", label: "Attendance" },
+  { href: "/weekly-reports", label: "Weekly Reports" },
   { href: "/finance", label: "Finance" },
   { href: "/branches", label: "Branches" },
   { href: "/structure", label: "Structure" },

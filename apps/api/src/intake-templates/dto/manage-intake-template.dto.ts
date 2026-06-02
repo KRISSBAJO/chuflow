@@ -92,6 +92,16 @@ export class CreateIntakeTemplateDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsString()
+  oversightRegion?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 
@@ -164,4 +174,16 @@ export class CreateBranchOverrideDto {
   @IsOptional()
   @IsMongoId()
   branchId?: string;
+}
+
+export class CreateDistrictOverrideDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  oversightRegion?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  district?: string;
 }

@@ -7,21 +7,26 @@ export function TemplateManagementList({
   branches,
   currentUserRole,
   defaultBranchId,
+  defaultOversightRegion,
+  defaultDistrict,
 }: {
   templates: IntakeTemplate[];
   branches: BranchSummary[];
   currentUserRole: string;
   defaultBranchId?: string;
+  defaultOversightRegion?: string;
+  defaultDistrict?: string;
 }) {
   const branchNameById = new Map(branches.map((branch) => [branch._id, branch.name]));
 
   return (
     <div className="space-y-3">
       {templates.map((template) => {
-        const isGlobalBase = !template.branchId && !template.isBranchOverride;
+        const isDistrictVersion = !!template.district && !!template.oversightRegion;
+        const isGlobalBase = !template.branchId && !template.isBranchOverride && !isDistrictVersion;
         const isReadOnly = currentUserRole !== "super_admin" && isGlobalBase;
         const branchLabel = template.branchId ? branchNameById.get(template.branchId) : undefined;
-        const scopeLabel = isGlobalBase ? "global base" : "branch version";
+        const scopeLabel = isGlobalBase ? "global base" : isDistrictVersion ? "district version" : "branch version";
 
         return (
           <details key={template._id} className="rounded-[22px] border border-slate-200 bg-white">
@@ -31,6 +36,7 @@ export function TemplateManagementList({
                   <p className="text-sm font-semibold text-slate-900">
                     {template.name}
                     {!isGlobalBase && branchLabel ? ` · ${branchLabel}` : ""}
+                    {isDistrictVersion ? ` · ${template.district}` : ""}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {template.kind} · /intake/{template.slug}
@@ -43,6 +49,11 @@ export function TemplateManagementList({
                   {!isGlobalBase && branchLabel ? (
                     <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">
                       {branchLabel}
+                    </span>
+                  ) : null}
+                  {isDistrictVersion ? (
+                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-700">
+                      {template.district}
                     </span>
                   ) : null}
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
@@ -69,6 +80,8 @@ export function TemplateManagementList({
                 branches={branches}
                 currentUserRole={currentUserRole}
                 defaultBranchId={defaultBranchId}
+                defaultOversightRegion={defaultOversightRegion}
+                defaultDistrict={defaultDistrict}
                 readonly={isReadOnly}
               />
             </div>

@@ -51,6 +51,8 @@ export default async function TemplatesPage() {
               branches={branches}
               currentUserRole={user.role}
               defaultBranchId={user.branchId}
+              defaultOversightRegion={user.oversightRegion}
+              defaultDistrict={user.district}
             />
           </div>
         </section>
@@ -68,6 +70,8 @@ export default async function TemplatesPage() {
               branches={branches}
               currentUserRole={user.role}
               defaultBranchId={user.branchId}
+              defaultOversightRegion={user.oversightRegion}
+              defaultDistrict={user.district}
             />
           </section>
         </section>

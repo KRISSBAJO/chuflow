@@ -35,11 +35,20 @@ export class IntakeTemplate {
   @Prop({ type: Types.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
+  @Prop()
+  oversightRegion?: string;
+
+  @Prop()
+  district?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'IntakeTemplate' })
   baseTemplateId?: Types.ObjectId;
 
   @Prop({ default: false })
   isBranchOverride!: boolean;
+
+  @Prop({ default: false })
+  isDistrictOverride!: boolean;
 
   @Prop({ default: false })
   isActive!: boolean;

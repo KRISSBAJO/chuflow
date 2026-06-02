@@ -4,6 +4,11 @@ import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import {
+  isDistrictRole,
+  isGlobalRole,
+  isNationalRole,
+} from '../common/constants/roles.constants';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import { AttendanceService } from '../attendance/attendance.service';
 import { GuestsService } from '../guests/guests.service';
@@ -12,6 +17,7 @@ import { ServiceTypesService } from '../service-types/service-types.service';
 import { ServiceUnitsService } from '../service-units/service-units.service';
 import {
   CreateBranchOverrideDto,
+  CreateDistrictOverrideDto,
   CreateIntakeTemplateDto,
   UpdateIntakeTemplateDto,
 } from './dto/manage-intake-template.dto';
@@ -55,11 +61,14 @@ export class IntakeTemplatesService implements OnModuleInit {
               $set: {
                 ...(shouldRefreshSeedContent ? template : {}),
                 isBranchOverride: false,
+                isDistrictOverride: false,
                 isSeeded: true,
                 isActive: exists.isActive,
               },
               $unset: {
                 branchId: 1,
+                oversightRegion: 1,
+                district: 1,
                 baseTemplateId: 1,
               },
             },
@@ -74,6 +83,7 @@ export class IntakeTemplatesService implements OnModuleInit {
         branchId: undefined,
         baseTemplateId: undefined,
         isBranchOverride: false,
+        isDistrictOverride: false,
         isSeeded: true,
       });
     }
@@ -108,7 +118,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       }
 
       await this.templateModel.updateOne({ _id: fallbackTemplate._id }, { isActive: true });
-      await this.activateTemplate(String(fallbackTemplate._id), kind, undefined);
+      await this.activateTemplate(String(fallbackTemplate._id), kind);
     }
 
     await this.submissionModel.updateMany(
@@ -150,6 +160,30 @@ export class IntakeTemplatesService implements OnModuleInit {
     return currentUser.role === 'super_admin';
   }
 
+  private canEditDistrictTemplate(
+    currentUser: AuthUser,
+    oversightRegion?: string,
+    district?: string,
+  ) {
+    if (isGlobalRole(currentUser.role)) {
+      return true;
+    }
+
+    if (!oversightRegion || !district) {
+      return false;
+    }
+
+    if (isNationalRole(currentUser.role)) {
+      return currentUser.oversightRegion === oversightRegion;
+    }
+
+    if (isDistrictRole(currentUser.role)) {
+      return currentUser.oversightRegion === oversightRegion && currentUser.district === district;
+    }
+
+    return false;
+  }
+
   private async ensureUniqueSlug(slug: string, currentId?: string) {
     const existing = await this.templateModel.findOne({ slug }).lean();
 
@@ -158,12 +192,25 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
   }
 
-  private async activateTemplate(templateId: string, kind: string, branchId?: string) {
+  private async activateTemplate(
+    templateId: string,
+    kind: string,
+    scope?: { branchId?: string; oversightRegion?: string; district?: string },
+  ) {
+    const branchId = this.toString(scope?.branchId);
+    const district = this.toString(scope?.district);
+    const oversightRegion = this.toString(scope?.oversightRegion);
+    const scopeQuery = branchId
+      ? { branchId }
+      : district && oversightRegion
+        ? { branchId: { $exists: false }, oversightRegion, district }
+        : { branchId: { $exists: false }, district: { $exists: false }, oversightRegion: { $exists: false } };
+
     await this.templateModel.updateMany(
       {
         kind,
         _id: { $ne: templateId },
-        ...(branchId ? { branchId } : { branchId: { $exists: false } }),
+        ...scopeQuery,
       },
       { isActive: false },
     );
@@ -277,6 +324,14 @@ export class IntakeTemplatesService implements OnModuleInit {
       ...template,
       _id: String(template._id ?? ''),
       branchId: template.branchId ? String(template.branchId) : undefined,
+      oversightRegion:
+        'oversightRegion' in template && template.oversightRegion
+          ? String(template.oversightRegion)
+          : undefined,
+      district:
+        'district' in template && template.district
+          ? String(template.district)
+          : undefined,
       baseTemplateId:
         'baseTemplateId' in template && template.baseTemplateId
           ? String(template.baseTemplateId)
@@ -297,6 +352,23 @@ export class IntakeTemplatesService implements OnModuleInit {
     let counter = 2;
 
     // Keep branch override slugs unique without forcing manual slug edits.
+    while (true) {
+      const existing = await this.templateModel.findOne({ slug: nextSlug }).lean();
+
+      if (!existing || String(existing._id) === currentId) {
+        return nextSlug;
+      }
+
+      nextSlug = `${baseValue}-${counter}`;
+      counter += 1;
+    }
+  }
+
+  private async buildDistrictOverrideSlug(baseSlug: string, oversightRegion: string, district: string, currentId?: string) {
+    const baseValue = this.slugify(`${baseSlug}-${oversightRegion}-${district}`);
+    let nextSlug = baseValue;
+    let counter = 2;
+
     while (true) {
       const existing = await this.templateModel.findOne({ slug: nextSlug }).lean();
 
@@ -364,9 +436,33 @@ export class IntakeTemplatesService implements OnModuleInit {
 
   async findAll(currentUser: AuthUser, webUrl?: string) {
     const branchFilter = await this.accessScopeService.buildBranchFilter(currentUser);
+    const districtTemplateFilter =
+      isGlobalRole(currentUser.role)
+        ? {}
+        : currentUser.oversightRegion && currentUser.district
+          ? {
+              $or: [
+                { district: { $exists: false }, oversightRegion: { $exists: false } },
+                { oversightRegion: currentUser.oversightRegion, district: currentUser.district },
+              ],
+            }
+          : currentUser.oversightRegion
+            ? {
+                $or: [
+                  { district: { $exists: false }, oversightRegion: { $exists: false } },
+                  { oversightRegion: currentUser.oversightRegion },
+                ],
+              }
+            : { district: { $exists: false }, oversightRegion: { $exists: false } };
     const query = Object.keys(branchFilter).length
       ? {
-          $or: [branchFilter, { branchId: { $exists: false } }],
+          $or: [
+            branchFilter,
+            {
+              branchId: { $exists: false },
+              ...districtTemplateFilter,
+            },
+          ],
         }
       : {};
 
@@ -390,6 +486,10 @@ export class IntakeTemplatesService implements OnModuleInit {
         currentUser,
         String(template.branchId),
       );
+    } else if (template.district || template.oversightRegion) {
+      if (!this.canEditDistrictTemplate(currentUser, template.oversightRegion, template.district)) {
+        throw new ForbiddenException('You cannot access templates outside your district scope');
+      }
     } else if (!this.canEditGlobalTemplates(currentUser)) {
       // Non-site users can view global templates but not edit them.
     }
@@ -414,12 +514,17 @@ export class IntakeTemplatesService implements OnModuleInit {
       branchId,
       baseTemplateId: undefined,
       isBranchOverride: false,
+      isDistrictOverride: !!dto.oversightRegion && !!dto.district && !branchId,
       isActive: dto.isActive ?? false,
       isSeeded: false,
     });
 
     if (template.isActive) {
-      await this.activateTemplate(template.id, template.kind, branchId);
+      await this.activateTemplate(template.id, template.kind, {
+        branchId,
+        oversightRegion: dto.oversightRegion,
+        district: dto.district,
+      });
     }
 
     return this.findOne(template.id, currentUser, webUrl);
@@ -437,6 +542,10 @@ export class IntakeTemplatesService implements OnModuleInit {
         currentUser,
         String(existing.branchId),
       );
+    } else if (existing.district || existing.oversightRegion) {
+      if (!this.canEditDistrictTemplate(currentUser, existing.oversightRegion, existing.district)) {
+        throw new ForbiddenException('You cannot edit templates outside your district scope');
+      }
     } else if (!this.canEditGlobalTemplates(currentUser)) {
       throw new ForbiddenException('Only the site admin can edit global base templates');
     }
@@ -457,7 +566,11 @@ export class IntakeTemplatesService implements OnModuleInit {
     });
 
     if (dto.isActive) {
-      await this.activateTemplate(id, dto.kind ?? existing.kind, branchId);
+      await this.activateTemplate(id, dto.kind ?? existing.kind, {
+        branchId,
+        oversightRegion: dto.oversightRegion ?? existing.oversightRegion,
+        district: dto.district ?? existing.district,
+      });
     }
 
     return this.findOne(id, currentUser, webUrl);
@@ -528,7 +641,88 @@ export class IntakeTemplatesService implements OnModuleInit {
     });
 
     if (overrideTemplate.isActive) {
-      await this.activateTemplate(overrideTemplate.id, overrideTemplate.kind, branchId);
+      await this.activateTemplate(overrideTemplate.id, overrideTemplate.kind, { branchId });
+    }
+
+    return this.findOne(overrideTemplate.id, currentUser, webUrl);
+  }
+
+  async createDistrictOverride(
+    templateId: string,
+    dto: CreateDistrictOverrideDto,
+    currentUser: AuthUser,
+    webUrl?: string,
+  ) {
+    const sourceTemplate = await this.templateModel.findById(templateId).lean();
+
+    if (!sourceTemplate) {
+      throw new NotFoundException('Template not found');
+    }
+
+    if (sourceTemplate.branchId) {
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        String(sourceTemplate.branchId),
+      );
+    }
+
+    const rootTemplate = await this.findRootTemplate(sourceTemplate);
+    const oversightRegion = dto.oversightRegion?.trim() || currentUser.oversightRegion;
+    const district = dto.district?.trim() || currentUser.district;
+
+    if (!oversightRegion || !district) {
+      throw new BadRequestException('An oversight region and district are required to create a district template');
+    }
+
+    if (!this.canEditDistrictTemplate(currentUser, oversightRegion, district)) {
+      throw new ForbiddenException('You cannot create templates outside your district scope');
+    }
+
+    const existingOverride = await this.templateModel
+      .findOne({
+        baseTemplateId: rootTemplate._id,
+        branchId: { $exists: false },
+        oversightRegion,
+        district,
+      })
+      .lean();
+
+    if (existingOverride?._id) {
+      return this.findOne(String(existingOverride._id), currentUser, webUrl);
+    }
+
+    const slug = await this.buildDistrictOverrideSlug(rootTemplate.slug, oversightRegion, district);
+    const overrideTemplate = await this.templateModel.create({
+      kind: rootTemplate.kind,
+      name: rootTemplate.name,
+      slug,
+      branchId: undefined,
+      oversightRegion,
+      district,
+      baseTemplateId: rootTemplate._id,
+      isBranchOverride: false,
+      isDistrictOverride: true,
+      isActive: rootTemplate.isActive,
+      isSeeded: false,
+      badge: rootTemplate.badge,
+      title: rootTemplate.title,
+      subtitle: rootTemplate.subtitle,
+      introTitle: rootTemplate.introTitle,
+      introBody: rootTemplate.introBody,
+      closingText: rootTemplate.closingText,
+      submitLabel: rootTemplate.submitLabel,
+      successTitle: rootTemplate.successTitle,
+      successMessage: rootTemplate.successMessage,
+      logoPath: rootTemplate.logoPath,
+      theme: rootTemplate.theme,
+      fields: rootTemplate.fields,
+    });
+
+    if (overrideTemplate.isActive) {
+      await this.activateTemplate(overrideTemplate.id, overrideTemplate.kind, {
+        oversightRegion,
+        district,
+      });
     }
 
     return this.findOne(overrideTemplate.id, currentUser, webUrl);
@@ -619,6 +813,27 @@ export class IntakeTemplatesService implements OnModuleInit {
 
       if (branchOverride) {
         template = branchOverride;
+      } else {
+        const branch = await this.branchModel
+          .findById(requestedBranch)
+          .select('oversightRegion district')
+          .lean();
+
+        if (branch?.oversightRegion && branch.district) {
+          const districtOverride = await this.templateModel
+            .findOne({
+              baseTemplateId: template._id,
+              branchId: { $exists: false },
+              oversightRegion: branch.oversightRegion,
+              district: branch.district,
+              isActive: true,
+            })
+            .lean();
+
+          if (districtOverride) {
+            template = districtOverride;
+          }
+        }
       }
     }
 
@@ -1317,6 +1532,371 @@ export class IntakeTemplatesService implements OnModuleInit {
         rejected: items.filter((item) => item.status === 'rejected').length,
       },
     };
+  }
+
+  private normalizeDateBoundary(value: string | undefined, fallback: Date, endOfDay = false) {
+    const parsed = value ? new Date(value) : fallback;
+
+    if (Number.isNaN(parsed.getTime())) {
+      return fallback;
+    }
+
+    parsed.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+    return parsed;
+  }
+
+  private numberValue(value: unknown) {
+    return this.toNumber(value) ?? 0;
+  }
+
+  private buildCsvValue(value: unknown) {
+    const text = value === undefined || value === null ? '' : String(value);
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  private async resolveWeeklyReportBranches(
+    currentUser: AuthUser,
+    filters: {
+      branchId?: string;
+      oversightRegion?: string;
+      district?: string;
+    },
+  ) {
+    const baseQuery = await this.accessScopeService.getBranchDocumentQuery(currentUser);
+    const query: Record<string, unknown> = { ...baseQuery };
+
+    if (filters.branchId) {
+      await this.accessScopeService.ensureBranchAccess(currentUser, filters.branchId);
+      query._id = new Types.ObjectId(filters.branchId);
+    } else {
+      if (filters.oversightRegion) {
+        query.oversightRegion = filters.oversightRegion;
+      }
+
+      if (filters.district) {
+        query.district = filters.district;
+      }
+    }
+
+    return this.branchModel
+      .find(query)
+      .select('name oversightRegion district city state status')
+      .sort({ oversightRegion: 1, district: 1, name: 1 })
+      .lean();
+  }
+
+  private weeklyItemFromSubmission(submission: Record<string, unknown>) {
+    const branch =
+      typeof submission.branchId === 'object' && submission.branchId !== null
+        ? (submission.branchId as {
+            _id?: unknown;
+            name?: string;
+            oversightRegion?: string;
+            district?: string;
+            city?: string;
+            state?: string;
+          })
+        : {};
+    const answers =
+      typeof submission.answers === 'object' && submission.answers !== null
+        ? (submission.answers as Record<string, unknown>)
+        : {};
+
+    return {
+      _id: String(submission._id),
+      status: this.getAttendanceSubmissionStatus(submission as unknown as IntakeSubmission),
+      templateName: String(submission.templateName ?? ''),
+      branch: {
+        _id: String(branch._id ?? ''),
+        name: branch.name || 'Unassigned',
+        oversightRegion: branch.oversightRegion || '',
+        district: branch.district || '',
+        city: branch.city,
+        state: branch.state,
+      },
+      reportWeek: submission.serviceDate ? new Date(String(submission.serviceDate)).toISOString() : undefined,
+      currentAttendance: this.numberValue(submission.currentAttendance),
+      previousAttendance: this.numberValue(submission.previousAttendance),
+      growth: this.numberValue(submission.growth),
+      growthPercent: this.numberValue(submission.growthPercent),
+      averageLastYear: this.numberValue(submission.averageLastYear),
+      averageLastPeriod: this.numberValue(submission.averageLastPeriod),
+      firstTimersCount: this.numberValue(submission.firstTimersCount),
+      newConvertsCount: this.numberValue(submission.newConvertsCount),
+      believersFoundationClassCount: this.numberValue(submission.believersFoundationClassCount),
+      holySpiritBaptismCount: this.numberValue(submission.holySpiritBaptismCount),
+      waterBaptismCount: this.numberValue(submission.waterBaptismCount),
+      covenantHourOfPrayerAttendance: this.numberValue(submission.covenantHourOfPrayerAttendance),
+      winnersSatelliteFellowshipAverage: this.numberValue(submission.winnersSatelliteFellowshipAverage),
+      cellCount: this.numberValue(submission.cellCount),
+      newCellCount: this.numberValue(submission.newCellCount),
+      wofbiAttendance: this.numberValue(submission.wofbiAttendance),
+      remarks: typeof submission.remarks === 'string' ? submission.remarks : String(answers.remarks ?? ''),
+      createdAt: submission.createdAt ? new Date(String(submission.createdAt)).toISOString() : undefined,
+      approvedAt: submission.approvedAt ? new Date(String(submission.approvedAt)).toISOString() : undefined,
+    };
+  }
+
+  async listWeeklyReports(
+    currentUser: AuthUser,
+    filters: {
+      branchId?: string;
+      oversightRegion?: string;
+      district?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {},
+  ) {
+    this.ensureAttendanceSubmissionViewRole(currentUser);
+
+    const defaultStart = new Date();
+    defaultStart.setDate(defaultStart.getDate() - 83);
+    const defaultEnd = new Date();
+    const startDate = this.normalizeDateBoundary(filters.dateFrom, defaultStart);
+    const endDate = this.normalizeDateBoundary(filters.dateTo, defaultEnd, true);
+    const branches = await this.resolveWeeklyReportBranches(currentUser, filters);
+    const branchIds = branches.map((branch) => new Types.ObjectId(String(branch._id)));
+
+    if (branchIds.length === 0) {
+      return {
+        filters: {
+          dateFrom: startDate.toISOString(),
+          dateTo: endDate.toISOString(),
+        },
+        items: [],
+        totals: {},
+        branchTotals: [],
+        districtTotals: [],
+        trends: [],
+      };
+    }
+
+    const query: Record<string, unknown> = {
+      templateKind: 'weekly_report',
+      branchId: { $in: branchIds },
+      serviceDate: { $gte: startDate, $lte: endDate },
+      ...(filters.status ? { status: filters.status } : {}),
+    };
+
+    const submissions = await this.submissionModel
+      .find(query)
+      .populate('branchId', 'name oversightRegion district city state')
+      .sort({ serviceDate: -1, createdAt: -1 })
+      .lean();
+    const items = submissions.map((submission) => this.weeklyItemFromSubmission(submission));
+
+    const emptyTotals = {
+      reports: 0,
+      currentAttendance: 0,
+      previousAttendance: 0,
+      growth: 0,
+      averageGrowthPercent: 0,
+      firstTimersCount: 0,
+      newConvertsCount: 0,
+      believersFoundationClassCount: 0,
+      holySpiritBaptismCount: 0,
+      waterBaptismCount: 0,
+      covenantHourOfPrayerAttendance: 0,
+      winnersSatelliteFellowshipAverage: 0,
+      cellCount: 0,
+      newCellCount: 0,
+      wofbiAttendance: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+    };
+    const totals = items.reduce(
+      (acc, item) => {
+        acc.reports += 1;
+        acc.currentAttendance += item.currentAttendance;
+        acc.previousAttendance += item.previousAttendance;
+        acc.growth += item.growth;
+        acc.firstTimersCount += item.firstTimersCount;
+        acc.newConvertsCount += item.newConvertsCount;
+        acc.believersFoundationClassCount += item.believersFoundationClassCount;
+        acc.holySpiritBaptismCount += item.holySpiritBaptismCount;
+        acc.waterBaptismCount += item.waterBaptismCount;
+        acc.covenantHourOfPrayerAttendance += item.covenantHourOfPrayerAttendance;
+        acc.winnersSatelliteFellowshipAverage += item.winnersSatelliteFellowshipAverage;
+        acc.cellCount += item.cellCount;
+        acc.newCellCount += item.newCellCount;
+        acc.wofbiAttendance += item.wofbiAttendance;
+        if (item.status === 'approved') acc.approved += 1;
+        else if (item.status === 'rejected') acc.rejected += 1;
+        else acc.pending += 1;
+        return acc;
+      },
+      { ...emptyTotals },
+    );
+    totals.averageGrowthPercent =
+      totals.previousAttendance > 0 ? Number(((totals.growth / totals.previousAttendance) * 100).toFixed(2)) : 0;
+
+    const summarizeGroup = (groupItems: typeof items, key: string, label: string, extra: Record<string, unknown> = {}) => {
+      const groupTotals = groupItems.reduce(
+        (acc, item) => {
+          acc.reports += 1;
+          acc.currentAttendance += item.currentAttendance;
+          acc.previousAttendance += item.previousAttendance;
+          acc.growth += item.growth;
+          acc.firstTimersCount += item.firstTimersCount;
+          acc.newConvertsCount += item.newConvertsCount;
+          acc.cellCount += item.cellCount;
+          acc.newCellCount += item.newCellCount;
+          return acc;
+        },
+        {
+          key,
+          label,
+          reports: 0,
+          currentAttendance: 0,
+          previousAttendance: 0,
+          growth: 0,
+          growthPercent: 0,
+          firstTimersCount: 0,
+          newConvertsCount: 0,
+          cellCount: 0,
+          newCellCount: 0,
+          ...extra,
+        },
+      );
+      groupTotals.growthPercent =
+        groupTotals.previousAttendance > 0
+          ? Number(((groupTotals.growth / groupTotals.previousAttendance) * 100).toFixed(2))
+          : 0;
+      return groupTotals;
+    };
+
+    const branchTotals = branches.map((branch) => {
+      const branchId = String(branch._id);
+      return summarizeGroup(
+        items.filter((item) => item.branch._id === branchId),
+        branchId,
+        branch.name,
+        {
+          oversightRegion: branch.oversightRegion,
+          district: branch.district,
+        },
+      );
+    });
+    const districtKeys = Array.from(
+      new Set(branches.map((branch) => `${branch.oversightRegion}::${branch.district}`)),
+    );
+    const districtTotals = districtKeys.map((key) => {
+      const [oversightRegion, district] = key.split('::');
+      return summarizeGroup(
+        items.filter((item) => item.branch.oversightRegion === oversightRegion && item.branch.district === district),
+        key,
+        district,
+        { oversightRegion, district },
+      );
+    });
+    const trendKeys = Array.from(
+      new Set(
+        items
+          .map((item) => item.reportWeek?.slice(0, 10))
+          .filter((value): value is string => !!value),
+      ),
+    ).sort();
+    const trends = trendKeys.map((date) =>
+      summarizeGroup(
+        items.filter((item) => item.reportWeek?.slice(0, 10) === date),
+        date,
+        date,
+      ),
+    );
+
+    return {
+      filters: {
+        dateFrom: startDate.toISOString(),
+        dateTo: endDate.toISOString(),
+        branchId: filters.branchId,
+        oversightRegion: filters.oversightRegion,
+        district: filters.district,
+        status: filters.status,
+      },
+      scope: {
+        branchCount: branches.length,
+        branches: branches.map((branch) => ({
+          _id: String(branch._id),
+          name: branch.name,
+          oversightRegion: branch.oversightRegion,
+          district: branch.district,
+          city: branch.city,
+          state: branch.state,
+          hasReport: items.some((item) => item.branch._id === String(branch._id)),
+        })),
+      },
+      items,
+      totals,
+      branchTotals,
+      districtTotals,
+      trends,
+    };
+  }
+
+  async exportWeeklyReportsCsv(
+    currentUser: AuthUser,
+    filters: {
+      branchId?: string;
+      oversightRegion?: string;
+      district?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {},
+  ) {
+    const report = await this.listWeeklyReports(currentUser, filters);
+    const headers = [
+      'Week',
+      'National Area',
+      'District',
+      'Branch',
+      'Status',
+      'Current Attendance',
+      'Previous Attendance',
+      'Growth',
+      'Growth %',
+      'Avg Last Year',
+      'Avg Recent',
+      'FT',
+      'NC',
+      'BFC',
+      'HGB',
+      'WB',
+      'CHOP',
+      'WSF Avg',
+      '# Cells',
+      '# New Cells',
+      'WOFBI',
+      'Remarks',
+    ];
+    const rows = report.items.map((item: ReturnType<typeof this.weeklyItemFromSubmission>) => [
+      item.reportWeek ? item.reportWeek.slice(0, 10) : '',
+      item.branch.oversightRegion,
+      item.branch.district,
+      item.branch.name,
+      item.status,
+      item.currentAttendance,
+      item.previousAttendance,
+      item.growth,
+      item.growthPercent,
+      item.averageLastYear,
+      item.averageLastPeriod,
+      item.firstTimersCount,
+      item.newConvertsCount,
+      item.believersFoundationClassCount,
+      item.holySpiritBaptismCount,
+      item.waterBaptismCount,
+      item.covenantHourOfPrayerAttendance,
+      item.winnersSatelliteFellowshipAverage,
+      item.cellCount,
+      item.newCellCount,
+      item.wofbiAttendance,
+      item.remarks,
+    ]);
+
+    return [headers, ...rows].map((row) => row.map((value) => this.buildCsvValue(value)).join(',')).join('\n');
   }
 
   async approveAttendanceSubmission(id: string, currentUser: AuthUser) {

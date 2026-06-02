@@ -57,6 +57,12 @@ export function BranchDetailPanel({
       template.kind === "weekly_report" &&
       template.isActive &&
       template.branchId === branch._id,
+  ) || templates.find(
+    (template) =>
+      template.kind === "weekly_report" &&
+      template.isActive &&
+      template.oversightRegion === branch.oversightRegion &&
+      template.district === branch.district,
   ) || templates.find((template) => template.kind === "weekly_report" && template.isActive);
   const weeklyReportShareUrl = weeklyReportTemplate
     ? `${weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`}${

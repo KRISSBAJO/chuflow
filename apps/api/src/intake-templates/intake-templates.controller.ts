@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -8,6 +9,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
   CreateBranchOverrideDto,
+  CreateDistrictOverrideDto,
   CreateIntakeTemplateDto,
   UpdateIntakeTemplateDto,
 } from './dto/manage-intake-template.dto';
@@ -60,6 +62,68 @@ export class IntakeTemplatesController {
     @Body() dto: CreateBranchOverrideDto,
   ) {
     return this.intakeTemplatesService.createBranchOverride(id, dto, user, this.getWebUrl());
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Post(':id/district-override')
+  createDistrictOverride(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CreateDistrictOverrideDto,
+  ) {
+    return this.intakeTemplatesService.createDistrictOverride(id, dto, user, this.getWebUrl());
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Get('weekly-reports')
+  listWeeklyReports(
+    @CurrentUser() user: AuthUser,
+    @Query('branchId') branchId?: string,
+    @Query('oversightRegion') oversightRegion?: string,
+    @Query('district') district?: string,
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.intakeTemplatesService.listWeeklyReports(user, {
+      branchId,
+      oversightRegion,
+      district,
+      status,
+      dateFrom,
+      dateTo,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Get('weekly-reports/export.csv')
+  async exportWeeklyReportsCsv(
+    @CurrentUser() user: AuthUser,
+    @Res() response: Response,
+    @Query('branchId') branchId?: string,
+    @Query('oversightRegion') oversightRegion?: string,
+    @Query('district') district?: string,
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    const csv = await this.intakeTemplatesService.exportWeeklyReportsCsv(user, {
+      branchId,
+      oversightRegion,
+      district,
+      status,
+      dateFrom,
+      dateTo,
+    });
+    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    response.setHeader('Content-Disposition', 'attachment; filename="weekly-spiritual-indices.csv"');
+    response.send(csv);
   }
 
   @ApiBearerAuth()

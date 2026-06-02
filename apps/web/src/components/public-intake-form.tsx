@@ -170,6 +170,33 @@ function formatAnswerForReview(
   return text || "Not provided";
 }
 
+function getWeeklyGrowthPreview(answers: Record<string, IntakeAnswerValue>) {
+  const currentValue = getStringValue(answers.currentAttendance).trim();
+  const previousValue = getStringValue(answers.previousAttendance).trim();
+
+  if (!currentValue || !previousValue) {
+    return null;
+  }
+
+  const currentAttendance = Number(currentValue);
+  const previousAttendance = Number(previousValue);
+
+  if (Number.isNaN(currentAttendance) || Number.isNaN(previousAttendance)) {
+    return null;
+  }
+
+  const growth = currentAttendance - previousAttendance;
+  const growthPercent =
+    previousAttendance > 0 ? Number(((growth / previousAttendance) * 100).toFixed(2)) : 0;
+
+  return {
+    currentAttendance,
+    previousAttendance,
+    growth,
+    growthPercent,
+  };
+}
+
 function collectAnswersFromForm(
   form: HTMLFormElement,
   fields: IntakeTemplate["fields"],
@@ -389,6 +416,8 @@ export function PublicIntakeForm({
   const darkColor = template.theme?.darkColor || "#111827";
   const softColor = template.theme?.softColor || "#fff7ed";
   const submissionBranchId = template.branchId || branchId;
+  const weeklyGrowthPreview =
+    template.kind === "weekly_report" ? getWeeklyGrowthPreview(answers) : null;
 
   function updateAnswer(key: string, value: IntakeAnswerValue) {
     setAnswers((current) => ({
@@ -802,6 +831,24 @@ export function PublicIntakeForm({
                     ))}
                 </div>
               )}
+
+              {weeklyGrowthPreview ? (
+                <div className="mt-5 grid gap-3 rounded-[22px] border border-slate-200 bg-slate-50 p-4 sm:grid-cols-4">
+                  {[
+                    ["Current", weeklyGrowthPreview.currentAttendance],
+                    ["Previous", weeklyGrowthPreview.previousAttendance],
+                    ["Growth", weeklyGrowthPreview.growth],
+                    ["Growth %", `${weeklyGrowthPreview.growthPercent > 0 ? "+" : ""}${weeklyGrowthPreview.growthPercent}%`],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-[18px] bg-white px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        {label}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-slate-950">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               {stepError ? <p className="mt-4 text-sm text-rose-600">{stepError}</p> : null}
               {status ? <p className="mt-4 text-sm text-rose-600">{status}</p> : null}
