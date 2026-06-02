@@ -17,6 +17,13 @@ import type {
   OversightRegionOption,
 } from "@/lib/types";
 
+function withBranchQuery(url: string, branchId: string) {
+  const parsed = new URL(url, "https://www.chuflow.com");
+  parsed.searchParams.set("branchId", branchId);
+
+  return url.startsWith("http") ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
+}
+
 export function BranchDetailPanel({
   branch,
   currentUserRole,
@@ -48,9 +55,7 @@ export function BranchDetailPanel({
       template.branchId === branch._id,
   ) || templates.find((template) => template.kind === "attendance" && template.isActive);
   const attendanceShareUrl = attendanceTemplate
-    ? `${attendanceTemplate.shareUrl || `/intake/${attendanceTemplate.slug}`}${
-        (attendanceTemplate.shareUrl || attendanceTemplate.slug).includes("?") ? "&" : "?"
-      }branchId=${encodeURIComponent(branch._id)}`
+    ? withBranchQuery(attendanceTemplate.shareUrl || `/intake/${attendanceTemplate.slug}`, branch._id)
     : null;
   const weeklyReportTemplate = templates.find(
     (template) =>
@@ -65,9 +70,7 @@ export function BranchDetailPanel({
       template.district === branch.district,
   ) || templates.find((template) => template.kind === "weekly_report" && template.isActive);
   const weeklyReportShareUrl = weeklyReportTemplate
-    ? `${weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`}${
-        (weeklyReportTemplate.shareUrl || weeklyReportTemplate.slug).includes("?") ? "&" : "?"
-      }branchId=${encodeURIComponent(branch._id)}`
+    ? withBranchQuery(weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`, branch._id)
     : null;
 
   const availableDistricts = useMemo(() => {

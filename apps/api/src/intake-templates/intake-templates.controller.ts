@@ -147,6 +147,18 @@ export class IntakeTemplatesController {
   }
 
   @Public()
+  @Get('public/branch-options')
+  listPublicBranchOptions(
+    @Query('oversightRegion') oversightRegion?: string,
+    @Query('district') district?: string,
+  ) {
+    return this.intakeTemplatesService.listPublicBranchOptions({
+      oversightRegion,
+      district,
+    });
+  }
+
+  @Public()
   @Get('public/:slug')
   getPublicTemplate(@Param('slug') slug: string, @Query('branchId') branchId?: string) {
     return this.intakeTemplatesService.getPublicTemplateBySlug(

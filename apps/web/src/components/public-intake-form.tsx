@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
-import type { IntakeTemplate } from "@/lib/types";
+import type { IntakeTemplate, PublicBranchOption } from "@/lib/types";
 
 type IntakeAnswerValue = string | string[];
 type IntakeStep = {
@@ -396,9 +396,15 @@ function buildTemplateSteps(template: IntakeTemplate): IntakeStep[] {
 export function PublicIntakeForm({
   template,
   branchId,
+  branchOptions = [],
+  defaultOversightRegion,
+  defaultDistrict,
 }: {
   template: IntakeTemplate;
   branchId?: string;
+  branchOptions?: PublicBranchOption[];
+  defaultOversightRegion?: string;
+  defaultDistrict?: string;
 }) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [answers, setAnswers] = useState<Record<string, IntakeAnswerValue>>(() =>
@@ -409,15 +415,33 @@ export function PublicIntakeForm({
   const [stepError, setStepError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ title: string; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedOversightRegion, setSelectedOversightRegion] = useState(defaultOversightRegion || "");
+  const [selectedDistrict, setSelectedDistrict] = useState(defaultDistrict || "");
+  const [selectedBranchId, setSelectedBranchId] = useState(branchId || template.branchId || "");
 
   const steps = buildTemplateSteps(template);
   const currentStep = steps[stepIndex];
   const accentColor = template.theme?.accentColor || "#dc2626";
   const darkColor = template.theme?.darkColor || "#111827";
   const softColor = template.theme?.softColor || "#fff7ed";
-  const submissionBranchId = template.branchId || branchId;
+  const submissionBranchId = template.branchId || branchId || selectedBranchId;
   const weeklyGrowthPreview =
     template.kind === "weekly_report" ? getWeeklyGrowthPreview(answers) : null;
+  const needsBranchSelection = template.kind === "weekly_report" && !template.branchId && !branchId;
+  const oversightRegions = Array.from(new Set(branchOptions.map((branch) => branch.oversightRegion).filter(Boolean))).sort();
+  const districtOptions = Array.from(
+    new Set(
+      branchOptions
+        .filter((branch) => !selectedOversightRegion || branch.oversightRegion === selectedOversightRegion)
+        .map((branch) => branch.district)
+        .filter(Boolean),
+    ),
+  ).sort();
+  const visibleBranchOptions = branchOptions.filter(
+    (branch) =>
+      (!selectedOversightRegion || branch.oversightRegion === selectedOversightRegion) &&
+      (!selectedDistrict || branch.district === selectedDistrict),
+  );
 
   function updateAnswer(key: string, value: IntakeAnswerValue) {
     setAnswers((current) => ({
@@ -517,6 +541,10 @@ export function PublicIntakeForm({
     const loadingToast = toast.loading("Submitting your intake form...");
 
     try {
+      if (needsBranchSelection && !submissionBranchId) {
+        throw new Error("Please choose the branch this weekly report belongs to.");
+      }
+
       const submissionQuery = submissionBranchId
         ? `?branchId=${encodeURIComponent(submissionBranchId)}`
         : "";
@@ -676,6 +704,77 @@ export function PublicIntakeForm({
                   );
                 })}
               </div>
+
+              {needsBranchSelection ? (
+                <div className="mb-6 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-950">Report scope</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Choose the district and branch this weekly report belongs to before submitting.
+                  </p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <label className="space-y-2">
+                      <span className="text-sm font-semibold text-slate-900">National area</span>
+                      <select
+                        value={selectedOversightRegion}
+                        onChange={(event) => {
+                          setSelectedOversightRegion(event.target.value);
+                          setSelectedDistrict("");
+                          setSelectedBranchId("");
+                        }}
+                        disabled={!!defaultOversightRegion}
+                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                      >
+                        <option value="">Select area</option>
+                        {oversightRegions.map((area) => (
+                          <option key={area} value={area}>
+                            {area}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-sm font-semibold text-slate-900">District</span>
+                      <select
+                        value={selectedDistrict}
+                        onChange={(event) => {
+                          setSelectedDistrict(event.target.value);
+                          setSelectedBranchId("");
+                        }}
+                        disabled={!!defaultDistrict}
+                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                      >
+                        <option value="">Select district</option>
+                        {districtOptions.map((district) => (
+                          <option key={district} value={district}>
+                            {district}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-sm font-semibold text-slate-900">Branch</span>
+                      <select
+                        value={selectedBranchId}
+                        onChange={(event) => setSelectedBranchId(event.target.value)}
+                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+                      >
+                        <option value="">Select branch</option>
+                        {visibleBranchOptions.map((branch) => (
+                          <option key={branch._id} value={branch._id}>
+                            {branch.name}
+                            {branch.city || branch.state ? ` · ${[branch.city, branch.state].filter(Boolean).join(", ")}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {branchOptions.length === 0 ? (
+                    <p className="mt-3 text-xs text-rose-600">
+                      No active branches are available for this report link.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="mb-5">
                 <p className="text-lg font-semibold text-slate-950">{currentStep.title}</p>

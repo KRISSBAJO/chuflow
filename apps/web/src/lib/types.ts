@@ -776,6 +776,15 @@ export type PublicConnectOption = IntakeTemplate & {
   branch?: BranchSummary;
 };
 
+export type PublicBranchOption = {
+  _id: string;
+  name: string;
+  oversightRegion: string;
+  district: string;
+  city?: string;
+  state?: string;
+};
+
 export type GuestDuplicateGroup = {
   key: string;
   type: string;

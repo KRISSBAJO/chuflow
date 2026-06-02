@@ -216,9 +216,30 @@ export class IntakeTemplatesService implements OnModuleInit {
     );
   }
 
-  private buildShareUrl(slug: string, webUrl?: string) {
+  private buildShareUrl(
+    slug: string,
+    webUrl?: string,
+    scope?: { branchId?: unknown; oversightRegion?: unknown; district?: unknown },
+  ) {
     const baseUrl = (webUrl || 'http://localhost:3001').replace(/\/$/, '');
-    return `${baseUrl}/intake/${slug}`;
+    const url = new URL(`${baseUrl}/intake/${slug}`);
+    const branchId = this.toString(scope?.branchId);
+    const oversightRegion = this.toString(scope?.oversightRegion);
+    const district = this.toString(scope?.district);
+
+    if (branchId) {
+      url.searchParams.set('branchId', branchId);
+    } else {
+      if (oversightRegion) {
+        url.searchParams.set('oversightRegion', oversightRegion);
+      }
+
+      if (district) {
+        url.searchParams.set('district', district);
+      }
+    }
+
+    return url.toString();
   }
 
   private async applyPublicBranchContext<
@@ -336,7 +357,12 @@ export class IntakeTemplatesService implements OnModuleInit {
         'baseTemplateId' in template && template.baseTemplateId
           ? String(template.baseTemplateId)
           : undefined,
-      shareUrl: this.buildShareUrl(template.slug, webUrl),
+      shareUrl: this.buildShareUrl(template.slug, webUrl, {
+        branchId: template.branchId,
+        oversightRegion:
+          'oversightRegion' in template ? template.oversightRegion : undefined,
+        district: 'district' in template ? template.district : undefined,
+      }),
     };
   }
 
@@ -791,6 +817,33 @@ export class IntakeTemplatesService implements OnModuleInit {
           : undefined,
       } as Record<string, unknown>;
     });
+  }
+
+  async listPublicBranchOptions(filters: { oversightRegion?: string; district?: string } = {}) {
+    const query: Record<string, unknown> = { status: 'active' };
+
+    if (filters.oversightRegion?.trim()) {
+      query.oversightRegion = filters.oversightRegion.trim();
+    }
+
+    if (filters.district?.trim()) {
+      query.district = filters.district.trim();
+    }
+
+    const branches = await this.branchModel
+      .find(query)
+      .select('name oversightRegion district city state')
+      .sort({ oversightRegion: 1, district: 1, name: 1 })
+      .lean();
+
+    return branches.map((branch) => ({
+      _id: String(branch._id),
+      name: branch.name,
+      oversightRegion: branch.oversightRegion,
+      district: branch.district,
+      city: branch.city,
+      state: branch.state,
+    }));
   }
 
   async getPublicTemplateBySlug(slug: string, webUrl?: string, requestedBranchId?: string) {
