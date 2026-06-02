@@ -20,6 +20,7 @@ export function FollowUpCreateForm({
   assignmentHint,
   guestSelectionDisabled = false,
   guestSelectionHint,
+  successRedirectHref,
 }: {
   guests: GuestListItem[];
   users: UserSummary[];
@@ -29,6 +30,7 @@ export function FollowUpCreateForm({
   assignmentHint?: string;
   guestSelectionDisabled?: boolean;
   guestSelectionHint?: string;
+  successRedirectHref?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -71,7 +73,11 @@ export function FollowUpCreateForm({
             ? "The care task was assigned and moved into the workflow."
             : "The care task was created in the New column.",
       });
-      router.refresh();
+      if (successRedirectHref) {
+        router.push(successRedirectHref);
+      } else {
+        router.refresh();
+      }
     } catch (error) {
       toast.error("Follow-up not saved", {
         description:
