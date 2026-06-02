@@ -17,7 +17,6 @@ import type {
   BranchOverview,
   BranchSummary,
   DistrictOption,
-  IntakeTemplate,
   OversightRegionOption,
 } from "@/lib/types";
 
@@ -35,7 +34,7 @@ export default async function BranchesPage() {
     branchScopedCreateRoles.includes(role),
   );
 
-  const [branches, oversightRegions, districts, templates] = await Promise.all([
+  const [branches, oversightRegions, districts] = await Promise.all([
     serverGet<BranchOverview[]>("/branches/overview").catch(async () => {
       const fallbackBranches = await serverGet<BranchSummary[]>("/branches").catch(() => []);
       return fallbackBranches.map((branch) => ({
@@ -60,7 +59,6 @@ export default async function BranchesPage() {
     }),
     serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
     serverGet<DistrictOption[]>("/districts").catch(() => []),
-    serverGet<IntakeTemplate[]>("/intake-templates").catch(() => []),
   ]);
   const defaultStaffBranchId = isBranchScopedRole(user.role) ? branches[0]?._id : undefined;
   const totalBranches = branches.length;
@@ -115,12 +113,6 @@ export default async function BranchesPage() {
           <div className="mt-4">
             <BranchManagementList
               branches={branches}
-              currentUserRole={user.role}
-              defaultOversightRegion={user.oversightRegion}
-              defaultDistrict={user.district}
-              oversightRegions={oversightRegions}
-              districts={districts}
-              templates={templates}
             />
           </div>
         </section>
