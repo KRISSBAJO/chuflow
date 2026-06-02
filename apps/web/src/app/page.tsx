@@ -15,6 +15,66 @@ type PublicSettings = {
   publicConnectEnabled?: boolean;
 };
 
+type HomeAction = {
+  href: string;
+  label: string;
+  kind: "primary" | "secondary";
+};
+
+const FEATURES = [
+  {
+    title: "Guest capture",
+    description:
+      "Register first-time visitors from a desk, QR code, or public intake route and keep every next step visible.",
+  },
+  {
+    title: "Care workflow",
+    description:
+      "Assign follow-up, track care status, and keep pastoral teams aligned around people who need attention.",
+  },
+  {
+    title: "Member records",
+    description:
+      "Maintain clean member profiles, branch assignments, service units, and history without scattered spreadsheets.",
+  },
+  {
+    title: "Attendance",
+    description:
+      "Record service movement by branch, service type, adults, children, first timers, and new converts.",
+  },
+  {
+    title: "Finance",
+    description:
+      "Manage offerings, expenses, ledgers, account routing, locks, and audit-friendly finance approvals.",
+  },
+  {
+    title: "Multi-branch oversight",
+    description:
+      "Give national, district, branch, and ministry workers the right view with role-scoped access.",
+  },
+];
+
+const WORKFLOW = [
+  "Capture the person or service activity",
+  "Route the record to the right team",
+  "Track approvals, care, attendance, and reports",
+];
+
+const LEVELS = [
+  { name: "National", description: "Network-wide reporting and governance" },
+  { name: "District", description: "Regional coordination and branch health" },
+  { name: "Branch", description: "Daily ministry operations and teams" },
+];
+
+const FOOTER_LINKS = [
+  { label: "Sign in", href: "/login" },
+  { label: "Request workspace", href: "/request-workspace" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Guests", href: "/guests" },
+  { label: "Members", href: "/members" },
+  { label: "Attendance", href: "/attendance" },
+];
+
 async function getPublicSettings(): Promise<PublicSettings> {
   try {
     return await publicServerGet<PublicSettings>("/settings/public");
@@ -54,16 +114,15 @@ function getLoggedInDescription(user: SessionUser) {
   return `${formatRoleLabel(user.role)} access is active. Continue where your team left off.`;
 }
 
-function getHomeActions(user: SessionUser | null) {
+function getHomeActions(user: SessionUser | null): HomeAction[] {
   if (!user) {
     return [
-      { href: "/login", label: "Sign in to workspace", kind: "primary" as const },
-      { href: "/request-workspace", label: "Request a workspace", kind: "secondary" as const },
+      { href: "/login", label: "Sign in", kind: "primary" },
+      { href: "/request-workspace", label: "Request workspace", kind: "secondary" },
     ];
   }
 
-  const actions: { href: string; label: string; kind: "primary" | "secondary" }[] = [];
-
+  const actions: HomeAction[] = [];
   const preferredPrimary =
     user.role === "follow_up"
       ? { href: "/follow-up", label: "Open care workflow" }
@@ -75,17 +134,15 @@ function getHomeActions(user: SessionUser | null) {
     actions.push({ ...preferredPrimary, kind: "primary" });
   }
 
-  const secondaryCandidates = [
+  for (const candidate of [
     { href: "/approvals", label: "Approvals" },
     { href: "/guests", label: "Guests" },
     { href: "/members", label: "Members" },
     { href: "/attendance", label: "Attendance" },
     { href: "/finance", label: "Finance" },
-  ];
-
-  for (const candidate of secondaryCandidates) {
+  ]) {
     if (!canAccessRoute(user.role, candidate.href)) continue;
-    if (actions.some((a) => a.href === candidate.href)) continue;
+    if (actions.some((action) => action.href === candidate.href)) continue;
     actions.push({ ...candidate, kind: "secondary" });
     if (actions.length >= 5) break;
   }
@@ -93,673 +150,393 @@ function getHomeActions(user: SessionUser | null) {
   return actions;
 }
 
-const FEATURES = [
-  {
-    title: "Guest Registry",
-    description: "Capture every first-time visitor with assisted desk forms or QR self-registration. Assign immediate follow-up with full record clarity.",
-    icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z",
-  },
-  {
-    title: "Member Records",
-    description: "A complete membership registry with profile management, status tracking, and service unit assignment across all branches.",
-    icon: "M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z",
-  },
-  {
-    title: "Follow-Up Workflow",
-    description: "Assign pastoral care tasks, track follow-up stages, and ensure every visitor and member receives timely and intentional attention.",
-    icon: "M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z",
-  },
-  {
-    title: "Attendance Tracking",
-    description: "Record service attendance across branches and service types. Monitor trends and identify engagement patterns over time.",
-    icon: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5",
-  },
-  {
-    title: "Finance Oversight",
-    description: "Log tithes, offerings, and expenses with full audit trails. Generate reports and maintain financial transparency across your network.",
-    icon: "M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z",
-  },
-  {
-    title: "Multi-Branch Structure",
-    description: "Manage national, district, and branch hierarchies from one oversight panel. Role-scoped access and live alerts at every level.",
-    icon: "M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21",
-  },
-];
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 12h14" />
+    </svg>
+  );
+}
 
-const HIERARCHY = [
-  { level: "Level 1", name: "National", color: "bg-orange-500", dot: "bg-orange-400", ring: "ring-orange-500/20" },
-  { level: "Level 2", name: "District", color: "bg-cyan-500", dot: "bg-cyan-400", ring: "ring-cyan-500/20" },
-  { level: "Level 3", name: "Branch", color: "bg-emerald-500", dot: "bg-emerald-400", ring: "ring-emerald-500/20" },
-];
-
-const PEOPLE_NODES = [
-  { label: "Members", dot: "bg-amber-400" },
-  { label: "Guests", dot: "bg-rose-400" },
-  { label: "Follow-up", dot: "bg-indigo-400" },
-];
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="h-4 w-4">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
 
 function NavLogo({ dark = false }: { dark?: boolean }) {
   return (
-    <Link href="/" className="group flex items-center gap-3">
-      <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] shadow-[0_2px_8px_rgba(15,23,42,0.18)] ring-1 ${dark ? "bg-white/10 ring-white/15" : "bg-slate-950 ring-black/10"}`}>
+    <Link href="/" className="flex min-w-0 items-center gap-3">
+      <span className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ${dark ? "bg-white ring-white/20" : "bg-slate-950 ring-slate-950/10"}`}>
         <Image
           src="/Churchflow.png"
           alt="ChuFlow"
-          width={26}
-          height={26}
-          className="h-6 w-6 object-contain brightness-0 invert"
+          width={44}
+          height={44}
+          className="h-full w-full object-cover"
         />
-        <div className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-white" />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <span className={`heading text-[17px] font-semibold leading-none tracking-[-0.02em] ${dark ? "text-white" : "text-slate-950"}`}>
+        <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-white" />
+      </span>
+      <span className="min-w-0">
+        <span className={`heading block truncate text-xl font-semibold leading-none ${dark ? "text-white" : "text-slate-950"}`}>
           Chu<span className="text-amber-500">Flow</span>
         </span>
-        <span className={`text-[10px] font-medium leading-none tracking-[0.04em] ${dark ? "text-slate-500" : "text-slate-400"}`}>
+        <span className={`mt-1 block truncate text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
           From Membership to Ministry
         </span>
-      </div>
+      </span>
     </Link>
   );
 }
 
-export default async function HomePage() {
-  const [, user] = await Promise.all([
-    getPublicSettings(),
-    getOptionalSessionUser(),
-  ]);
+function ActionLink({ action }: { action: HomeAction }) {
+  const isPrimary = action.kind === "primary";
+  return (
+    <Link
+      href={action.href}
+      className={[
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition sm:px-5",
+        isPrimary
+          ? "bg-slate-950 text-white hover:bg-slate-800"
+          : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50",
+      ].join(" ")}
+    >
+      <span className="truncate">{action.label}</span>
+      {isPrimary ? <ArrowIcon /> : null}
+    </Link>
+  );
+}
 
-  const actions = getHomeActions(user);
+function SectionHeader({
+  label,
+  title,
+  description,
+}: {
+  label: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl text-center">
+      <p className="mb-3 text-xs font-bold uppercase text-teal-700">{label}</p>
+      <h2 className="heading text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
-  // ── Logged-in workspace portal ───────────────────────────────────────────
-  if (user) {
-    const headline = getLoggedInHeadline(user);
-    const description = getLoggedInDescription(user);
-    const scopeLabel = getUserScopeLabel(user);
+function LoggedInHome({ user, actions }: { user: SessionUser; actions: HomeAction[] }) {
+  const scopeLabel = getUserScopeLabel(user);
 
-    return (
-      <div className="min-h-screen bg-[#f8f7f4]">
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.06),0_4px_20px_rgba(15,23,42,0.04)]">
-          <div className="h-[2px] bg-gradient-to-r from-amber-300 via-amber-500 to-orange-400" />
-          <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6 lg:px-10">
-            <NavLogo />
-            <Link
-              href={actions[0]?.href || "/dashboard"}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.15)] hover:to-orange-500 transition-all"
-            >
-              Open workspace
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </Link>
-          </div>
-        </header>
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-950">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <NavLogo />
+          {actions[0] ? <ActionLink action={actions[0]} /> : null}
+        </div>
+      </header>
 
-        <main className="mx-auto max-w-4xl px-6 py-16 lg:px-10 lg:py-20">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-amber-600">
-            Welcome back
-          </p>
-          <h1 className="heading mb-3 text-4xl font-semibold tracking-tight text-slate-950 lg:text-5xl">
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8 lg:py-20">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
+          <p className="mb-3 text-xs font-bold uppercase text-teal-700">Welcome back</p>
+          <h1 className="heading text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl">
             {user.firstName}
           </h1>
-          <p className="mb-10 max-w-xl text-lg leading-8 text-slate-500">{description}</p>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+            {getLoggedInDescription(user)}
+          </p>
 
-          <div className="mb-8 grid gap-3 sm:grid-cols-3">
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
               { label: "Role", value: formatRoleLabel(user.role) },
               { label: "Scope", value: scopeLabel || "Assigned workspace" },
               { label: "Account", value: user.email },
             ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
-              >
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                  {item.label}
-                </p>
-                <p className="mt-1.5 truncate text-sm font-medium text-slate-800">{item.value}</p>
+              <div key={item.label} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase text-slate-500">{item.label}</p>
+                <p className="mt-2 break-words text-sm font-semibold text-slate-900">{item.value}</p>
               </div>
             ))}
           </div>
 
-          {actions[0] && (
-            <Link
-              href={actions[0].href}
-              className="mb-8 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              {actions[0].label}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </Link>
-          )}
+          <div className="mt-8 flex flex-wrap gap-3">
+            {actions.map((action) => (
+              <ActionLink key={action.href} action={action} />
+            ))}
+          </div>
+        </section>
 
-          {actions.length > 1 && (
-            <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Quick links
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {actions.slice(1).map((action) => (
-                  <Link
-                    key={action.href}
-                    href={action.href}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-                  >
-                    {action.label}
-                  </Link>
-                ))}
+        <aside className="rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+          <p className="text-xs font-bold uppercase text-teal-300">Workspace status</p>
+          <h2 className="heading mt-3 text-2xl font-semibold leading-tight">
+            {getLoggedInHeadline(user)}
+          </h2>
+          <div className="mt-6 space-y-3">
+            {WORKFLOW.map((item) => (
+              <div key={item} className="flex gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                <span className="mt-0.5 text-teal-300">
+                  <CheckIcon />
+                </span>
+                <p className="text-sm leading-6 text-slate-200">{item}</p>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
+}
 
-          <p className="mt-12 text-sm text-slate-400">
-            {headline}
-          </p>
-        </main>
-      </div>
-    );
+export default async function HomePage() {
+  const [settings, user] = await Promise.all([
+    getPublicSettings(),
+    getOptionalSessionUser(),
+  ]);
+  const actions = getHomeActions(user);
+
+  if (user) {
+    return <LoggedInHome user={user} actions={actions} />;
   }
 
-  // ── Marketing landing page (logged out) ──────────────────────────────────
   return (
     <div className="min-h-screen bg-white text-slate-950">
-
-      {/* ── Nav ── */}
-      <header className="sticky top-0 z-50 bg-white/96 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.06),0_4px_24px_rgba(15,23,42,0.04)]">
-        <div className="h-[2px] bg-gradient-to-r from-amber-300 via-amber-500 to-orange-400" />
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6 lg:px-10">
+      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <NavLogo />
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-950"
-            >
+          <nav className="hidden items-center gap-7 lg:flex">
+            <a href="#platform" className="text-sm font-semibold text-slate-600 hover:text-slate-950">
+              Platform
+            </a>
+            <a href="#structure" className="text-sm font-semibold text-slate-600 hover:text-slate-950">
+              Structure
+            </a>
+            <a href="#access" className="text-sm font-semibold text-slate-600 hover:text-slate-950">
+              Access
+            </a>
+          </nav>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href="/login" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 sm:inline-flex">
               Sign in
             </Link>
-            <Link
-              href="/request-workspace"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all hover:from-amber-400 hover:to-orange-500"
-            >
-              Get workspace
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+            <Link href="/request-workspace" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">
+              <span className="sm:hidden">Request</span>
+              <span className="hidden sm:inline">Request workspace</span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_60%_-10%,rgba(251,191,36,0.10),transparent)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.025)_1px,transparent_1px)] bg-[size:32px_32px]" />
+      <main>
+        <section className="relative isolate overflow-hidden bg-[#fbf8f1] text-slate-950">
+          <Image
+            src="/Churchflow.png"
+            alt="ChuFlow flame brand artwork"
+            fill
+            priority
+            sizes="100vw"
+            className="absolute inset-0 -z-30 h-full w-full object-cover object-center opacity-[0.18]"
+          />
+          <Image
+            src="/Feat_1.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="absolute inset-y-0 right-0 -z-20 hidden h-full w-full object-cover object-[78%_center] opacity-35 lg:block"
+          />
+          <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#fbf8f1_0%,rgba(251,248,241,0.96)_44%,rgba(251,248,241,0.78)_68%,rgba(251,248,241,0.48)_100%)]" />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-white to-transparent" />
 
-        <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 lg:px-10 lg:pb-28 lg:pt-24">
-          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-
-            {/* Left: copy */}
-            <div className="max-w-xl">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                <span className="text-xs font-semibold text-amber-700">
-                  Ministry Operations Platform
-                </span>
-              </div>
-
-              <h1 className="heading mb-6 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] text-slate-950 lg:text-[4.25rem]">
-                From<br />
-                Membership<br />
-                <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                  to Ministry.
-                </span>
-              </h1>
-
-              <p className="mb-8 text-lg leading-8 text-slate-500">
-                The all-in-one operating system for multi-level church organizations. Manage guests, members, attendance, and follow-up from one coordinated workspace.
+          <div className="mx-auto flex min-h-[clamp(600px,calc(100svh-5rem),760px)] max-w-7xl items-center px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8">
+            <div className="max-w-3xl">
+              <p className="mb-5 w-fit rounded-full border border-amber-300 bg-white/85 px-4 py-2 text-xs font-bold uppercase text-amber-700 shadow-sm">
+                Church operations, organized
               </p>
-
-              <div className="flex flex-wrap gap-3">
+              <h1 className="heading text-6xl font-semibold leading-none text-slate-950 sm:text-7xl lg:text-8xl">
+                Chu<span className="text-amber-500">Flow</span>
+              </h1>
+              <p className="mt-5 max-w-2xl text-3xl font-semibold leading-tight text-slate-900 sm:text-5xl">
+                From membership to ministry.
+              </p>
+              <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                A focused workspace for guests, members, follow-up, attendance, finance, and multi-branch oversight.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                 >
-                  Sign in to workspace
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                  </svg>
+                  Sign in
+                  <ArrowIcon />
                 </Link>
                 <Link
                   href="/request-workspace"
-                  className="inline-flex items-center rounded-2xl border border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-300 bg-white/90 px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-amber-50"
                 >
                   Request workspace
                 </Link>
               </div>
-
-              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2">
+              <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
                 {[
-                  "Guest capture & follow-up",
-                  "Multi-branch oversight",
-                  "Role-scoped access",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm text-slate-500">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-4 w-4 shrink-0 text-amber-500">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    {item}
+                  ["Guest care", "Capture and assign follow-up"],
+                  ["Branch oversight", "See every level clearly"],
+                  ["Live reporting", "Track movement as it happens"],
+                ].map(([title, body]) => (
+                  <div key={title} className="rounded-xl border border-white/80 bg-white/75 p-4 shadow-sm backdrop-blur">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                      <span className="text-amber-500">
+                        <CheckIcon />
+                      </span>
+                      {title}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-slate-600">{body}</p>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Right: UI mockup */}
-            <div className="relative">
-              <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-amber-100/60 via-orange-50/40 to-slate-100/80" />
-              <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_25px_60px_rgba(15,23,42,0.12)]">
-                {/* Browser chrome */}
-                <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
-                  <div className="flex gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-red-300" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-yellow-300" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-green-300" />
-                  </div>
-                  <div className="mx-3 flex-1 rounded-md border border-slate-200 bg-white px-3 py-1 text-center text-[10px] text-slate-400">
-                    app.chuflow.com/dashboard
-                  </div>
-                </div>
-                {/* App shell */}
-                <div className="flex h-[380px]">
-                  {/* Sidebar */}
-                  <div className="w-40 shrink-0 border-r border-slate-100 bg-white p-3">
-                    <div className="mb-4 flex items-center gap-2 px-2 py-1">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-950">
-                        <span className="text-[9px] font-bold text-white">CF</span>
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-950">ChuFlow</span>
-                    </div>
-                    {[
-                      { label: "Dashboard", active: true },
-                      { label: "Guests", active: false },
-                      { label: "Members", active: false },
-                      { label: "Follow-Up", active: false },
-                      { label: "Attendance", active: false },
-                      { label: "Finance", active: false },
-                      { label: "Branches", active: false },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className={`mb-0.5 rounded-lg px-3 py-2 text-[10px] font-medium ${
-                          item.active ? "bg-slate-950 text-white" : "text-slate-400"
-                        }`}
-                      >
-                        {item.label}
-                      </div>
-                    ))}
-                  </div>
-                  {/* Main */}
-                  <div className="flex-1 overflow-hidden bg-[#f8f7f4] p-4">
-                    <p className="mb-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-amber-600">
-                      Sunday Operations
-                    </p>
-                    <p className="mb-4 text-sm font-bold text-slate-950">Welcome back</p>
-
-                    <div className="mb-3 grid grid-cols-3 gap-2">
-                      {[
-                        { v: "1,205", l: "Members", c: "text-slate-950" },
-                        { v: "342", l: "Guests today", c: "text-rose-600" },
-                        { v: "48", l: "Follow-ups", c: "text-indigo-600" },
-                      ].map((s) => (
-                        <div key={s.l} className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
-                          <p className={`text-sm font-bold ${s.c}`}>{s.v}</p>
-                          <p className="text-[9px] text-slate-400">{s.l}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                      <p className="mb-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                        Live Alerts
-                      </p>
-                      <div className="space-y-1.5">
-                        {[
-                          { dot: "bg-amber-400", text: "2 branch leadership gaps" },
-                          { dot: "bg-rose-400", text: "3 follow-ups unassigned" },
-                          { dot: "bg-emerald-400", text: "Attendance recorded — 89%" },
-                        ].map((a) => (
-                          <div key={a.text} className="flex items-center gap-2">
-                            <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${a.dot}`} />
-                            <p className="text-[10px] text-slate-600">{a.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                      <p className="mb-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                        Latest Guests
-                      </p>
-                      {[
-                        { name: "Sarah M.", branch: "Main Branch", status: "New" },
-                        { name: "James K.", branch: "East Branch", status: "Follow-up" },
-                      ].map((g) => (
-                        <div key={g.name} className="flex items-center justify-between py-1">
-                          <div>
-                            <p className="text-[10px] font-semibold text-slate-700">{g.name}</p>
-                            <p className="text-[9px] text-slate-400">{g.branch}</p>
-                          </div>
-                          <span className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ${
-                            g.status === "New" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                          }`}>
-                            {g.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Feature strip ── */}
-      <section className="border-y border-slate-100 bg-slate-50/80">
-        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+        <section id="platform" className="border-b border-slate-200 bg-slate-50">
+          <div className="mx-auto grid max-w-7xl gap-3 px-4 py-6 sm:grid-cols-3 sm:px-6 lg:px-8">
             {[
-              { label: "Guest Capture", sub: "First-visit tracking" },
-              { label: "Member Registry", sub: "Full profile management" },
-              { label: "Follow-Up", sub: "Pastoral care workflow" },
-              { label: "Attendance", sub: "Service-day records" },
-              { label: "Finance", sub: "Giving & expense logs" },
-              { label: "Multi-Branch", sub: "Hierarchical oversight" },
-            ].map((f) => (
-              <div key={f.label} className="flex flex-col items-center gap-1.5 text-center">
-                <div className="h-0.5 w-8 rounded-full bg-amber-400" />
-                <p className="text-sm font-semibold text-slate-950">{f.label}</p>
-                <p className="text-xs text-slate-400">{f.sub}</p>
+              { value: "6", label: "Core operating areas" },
+              { value: "4", label: "Role-scoped leadership levels" },
+              { value: "1", label: "Shared ministry workspace" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-3xl font-semibold text-slate-950">{item.value}</p>
+                <p className="mt-1 text-sm text-slate-600">{item.label}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Feature cards ── */}
-      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
-        <div className="mb-14 max-w-2xl">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-amber-600">
-            Capabilities
-          </p>
-          <h2 className="heading text-4xl font-semibold tracking-tight text-slate-950 lg:text-5xl">
-            Everything a growing church needs to operate well.
-          </h2>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="group rounded-2xl border border-slate-100 bg-slate-50 p-6 transition-all duration-200 hover:border-amber-200 hover:bg-amber-50/50 hover:shadow-sm"
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-100 group-hover:ring-amber-200">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  className="h-5 w-5 text-slate-600 group-hover:text-amber-600"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d={feature.icon} />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-base font-semibold text-slate-950">{feature.title}</h3>
-              <p className="text-sm leading-6 text-slate-500">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Structure section ── */}
-      <section className="bg-slate-950 text-white">
-        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
-          <div className="grid items-center gap-16 lg:grid-cols-2">
-
-            {/* Left: copy */}
-            <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-amber-400">
-                Built for hierarchy
-              </p>
-              <h2 className="heading mb-5 text-4xl font-semibold tracking-tight lg:text-5xl">
-                Designed for churches with structure.
-              </h2>
-              <p className="mb-8 text-lg leading-8 text-slate-400">
-                Whether you oversee a single branch or a national network, ChuFlow gives every level the right view — with role-scoped access, live alerts, and coordinated workflows from top to bottom.
-              </p>
-              <div className="space-y-3.5">
-                {[
-                  "National oversight with full network visibility",
-                  "District coordination across assigned branches",
-                  "Branch-level operations with team controls",
-                  "Role-based access for pastors, staff, and ushers",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 ring-1 ring-amber-500/30">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        className="h-3 w-3 text-amber-400"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-slate-300">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: hierarchy visual */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="w-full max-w-xs">
-                {HIERARCHY.map((tier, i) => (
-                  <div key={tier.name}>
-                    <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-sm">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-4 ${tier.ring} bg-white/10`}>
-                        <div className={`h-4 w-4 rounded-full ${tier.dot}`} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                          {tier.level}
-                        </p>
-                        <p className="text-sm font-semibold text-white">{tier.name}</p>
-                      </div>
-                    </div>
-                    {i < HIERARCHY.length - 1 && (
-                      <div className="mx-auto my-2 h-6 w-px bg-slate-700" />
-                    )}
-                  </div>
-                ))}
-
-                <div className="mx-auto my-2 h-6 w-px bg-slate-700" />
-
-                <div className="flex justify-center gap-2">
-                  {PEOPLE_NODES.map((node) => (
-                    <div
-                      key={node.label}
-                      className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"
-                    >
-                      <div className={`h-2 w-2 rounded-full ${node.dot}`} />
-                      <p className="text-xs font-medium text-slate-300">{node.label}</p>
-                    </div>
-                  ))}
+        <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <SectionHeader
+            label="Capabilities"
+            title="A cleaner way to run church operations."
+            description="Each workflow is built around daily ministry work: capture the record, route it clearly, and keep leaders informed."
+          />
+          <div className="mx-auto mt-10 grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((feature, index) => (
+              <article key={feature.title} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white">
+                  {index + 1}
                 </div>
+                <h3 className="text-lg font-semibold text-slate-950">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{feature.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="structure" className="bg-slate-950 px-4 py-16 text-white sm:px-6 sm:py-20 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase text-teal-300">Built for structure</p>
+              <h2 className="heading text-3xl font-semibold leading-tight sm:text-4xl">
+                Clear visibility for every level of the church.
+              </h2>
+              <p className="mt-5 text-base leading-7 text-slate-300">
+                Leadership teams can work at national, district, or branch level without exposing more than each role needs.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              {LEVELS.map((level) => (
+                <div key={level.name} className="rounded-lg border border-white/10 bg-white/5 p-5">
+                  <p className="text-xs font-bold uppercase text-teal-300">Level</p>
+                  <h3 className="mt-3 text-xl font-semibold text-white">{level.name}</h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-300">{level.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2 lg:items-center">
+            <div className="relative min-h-[320px] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 sm:min-h-[440px]">
+              <Image
+                src="/Churchflow.png"
+                alt="ChuFlow visual identity"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase text-teal-700">Operating rhythm</p>
+              <h2 className="heading text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
+                Keep people, services, money, and decisions moving.
+              </h2>
+              <div className="mt-8 space-y-4">
+                {WORKFLOW.map((item) => (
+                  <div key={item} className="flex gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                    <span className="mt-1 text-teal-700">
+                      <CheckIcon />
+                    </span>
+                    <p className="text-sm leading-6 text-slate-700">{item}</p>
+                  </div>
+                ))}
               </div>
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── CTA ── */}
-      <section className="bg-amber-50">
-        <div className="mx-auto max-w-3xl px-6 py-20 text-center lg:px-10 lg:py-28">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-amber-600">
-            Get started
-          </p>
-          <h2 className="heading mb-5 text-4xl font-semibold tracking-tight text-slate-950 lg:text-5xl">
-            Ready to bring your church operations online?
-          </h2>
-          <p className="mb-8 text-lg leading-8 text-slate-500">
-            Your workspace is one request away. Get your team set up and start coordinating ministry work from day one.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/request-workspace"
-              className="rounded-2xl bg-slate-950 px-7 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
-            >
-              Request a workspace
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-2xl border border-slate-200 bg-white px-7 py-3.5 text-sm font-semibold text-slate-700 hover:bg-white/80"
-            >
-              Sign in to existing workspace
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="bg-[#0c0d10] text-white">
-
-        {/* Top CTA strip */}
-        <div className="border-b border-white/[0.07]">
-          <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-12 sm:flex-row sm:items-center lg:px-10">
-            <div>
-              <p className="mb-1.5 text-xl font-semibold tracking-tight text-white">
-                Ready to streamline your church operations?
-              </p>
-              <p className="text-sm leading-6 text-slate-400">
-                Get your team set up and start coordinating ministry work from day one.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <Link
-                href="/request-workspace"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-all hover:to-orange-500"
-              >
+        <section id="access" className="bg-teal-50 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="mb-3 text-xs font-bold uppercase text-teal-800">Get started</p>
+            <h2 className="heading text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
+              {settings.organizationTagline || "Bring your ministry operations online."}
+            </h2>
+            <p className="mt-5 text-base leading-7 text-slate-700">
+              Request a workspace for your church team, or sign in if your account is already active.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link href="/request-workspace" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
                 Request workspace
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
               </Link>
-              <Link
-                href="/login"
-                className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:border-white/20 hover:text-white"
-              >
+              <Link href="/login" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-teal-700/20 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">
                 Sign in
               </Link>
             </div>
           </div>
-        </div>
+        </section>
+      </main>
 
-        {/* Main columns */}
-        <div className="mx-auto max-w-7xl px-6 py-14 lg:px-10">
-          <div className="grid gap-10 sm:grid-cols-[2fr_1fr_1fr]">
-
-            {/* Brand */}
-            <div>
-              <div className="mb-5">
-                <NavLogo dark />
-              </div>
-              <p className="mb-6 max-w-xs text-sm leading-7 text-slate-400">
-                The complete ministry operations platform for national, district, and branch-level church organizations.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {["Guests", "Members", "Follow-Up", "Finance", "Attendance"].map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1 text-xs text-slate-500"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Platform */}
-            <div>
-              <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-                Platform
-              </p>
-              <ul className="space-y-3.5">
-                {[
-                  { label: "Guest Registry", href: "/guests" },
-                  { label: "Members", href: "/members" },
-                  { label: "Follow-Up", href: "/follow-up" },
-                  { label: "Attendance", href: "/attendance" },
-                  { label: "Finance", href: "/finance" },
-                  { label: "Branches", href: "/branches" },
-                ].map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-slate-400 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Access */}
-            <div>
-              <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-                Workspace Access
-              </p>
-              <ul className="space-y-3.5">
-                {[
-                  { label: "Sign in", href: "/login" },
-                  { label: "Request a workspace", href: "/request-workspace" },
-                  { label: "Dashboard", href: "/dashboard" },
-                  { label: "Approvals", href: "/approvals" },
-                ].map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-slate-400 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-white/[0.05] px-6 py-5 lg:px-10">
-          <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <p className="text-xs text-slate-600">
-              © {new Date().getFullYear()} ChuFlow. All rights reserved.
+      <footer className="bg-slate-950 text-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:px-8">
+          <div>
+            <NavLogo dark />
+            <p className="mt-5 max-w-md text-sm leading-7 text-slate-400">
+              ChuFlow is the ministry operations platform for guest care, member records, attendance, finance, and multi-branch oversight.
             </p>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-              <p className="text-xs text-slate-600">From Membership to Ministry</p>
-            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {FOOTER_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className="text-sm text-slate-400 hover:text-white">
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
-
+        <div className="border-t border-white/10 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {new Date().getFullYear()} ChuFlow. All rights reserved.</p>
+            <p>From Membership to Ministry</p>
+          </div>
+        </div>
       </footer>
-
     </div>
   );
 }
