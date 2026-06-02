@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
-import { PageHeader } from "@/components/page-header";
+import { GuestPageHeader } from "@/components/guest-page-header";
 import { GuestDuplicatePanel } from "@/components/guest-duplicate-panel";
 import { GuestCreateModalButton } from "@/components/guest-create-modal-button";
 import { TemplateQrCard } from "@/components/template-qr-card";
@@ -94,20 +94,11 @@ export default async function GuestsPage({
 
   return (
     <Shell>
-      <PageHeader
-        eyebrow="Guests"
-        title="Guest registry and first-touch coordination"
-        description="Every connect card, usher-assisted registration, and QR form submission should land here with immediate next action clarity."
-        action={
-          <GuestCreateModalButton
-            branches={branches}
-            users={users}
-            serviceTypes={serviceTypes}
-            defaultBranchId={selectedBranchId || user.branchId}
-            label="New guest"
-            className="rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white"
-          />
-        }
+      <GuestPageHeader
+        branches={branches}
+        users={users}
+        serviceTypes={serviceTypes}
+        defaultBranchId={selectedBranchId || user.branchId}
       />
       <section className="grid gap-3 md:grid-cols-3">
         <MetricCard label="Registered today" value={String(guestList.summary.todayCount)} delta="Fresh guest records created today" tone="warm" />
