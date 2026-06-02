@@ -8,7 +8,13 @@ import { PageHeader } from "@/components/page-header";
 import { requireServerRole } from "@/lib/auth";
 import { canConvertGuests } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
-import type { CommunicationItem, FollowUpItem, GuestListItem, UserSummary, VisitItem } from "@/lib/types";
+import type {
+  CommunicationItem,
+  FollowUpListResponse,
+  GuestListItem,
+  UserSummary,
+  VisitItem,
+} from "@/lib/types";
 
 export default async function GuestDetailPage({
   params,
@@ -18,7 +24,7 @@ export default async function GuestDetailPage({
   const user = await requireServerRole("/guests");
   const { id } = await params;
 
-  const [guest, followUps, visits, communications, users] = await Promise.all([
+  const [guest, followUpList, visits, communications, users] = await Promise.all([
     serverGet<GuestListItem & {
       address?: string;
       city?: string;
@@ -30,15 +36,23 @@ export default async function GuestDetailPage({
       createdAt?: string;
       convertedToMember?: boolean;
     }>(`/guests/${id}`),
-    serverGet<FollowUpItem[]>(`/follow-ups?guestId=${id}`),
+    serverGet<FollowUpListResponse>(`/follow-ups?guestId=${id}`),
     serverGet<VisitItem[]>(`/visits?guestId=${id}`),
     serverGet<CommunicationItem[]>(`/communications?guestId=${id}`).catch(() => []),
     serverGet<UserSummary[]>("/users").catch(() => []),
   ]);
 
+  const followUps = followUpList.items;
+  const guestBranch = guest.branchId as unknown;
   const branchId =
-    guest.branchId && typeof guest.branchId === "object" && "_id" in guest.branchId
-      ? guest.branchId._id
+    typeof guestBranch === "string"
+      ? guestBranch
+      : guestBranch && typeof guestBranch === "object" && "_id" in guestBranch
+        ? String((guestBranch as { _id?: string })._id ?? "")
+        : undefined;
+  const branchName =
+    guestBranch && typeof guestBranch === "object" && "name" in guestBranch
+      ? (guestBranch as { name?: string }).name
       : undefined;
 
   const latestFollowUp = followUps[0];
@@ -92,7 +106,7 @@ export default async function GuestDetailPage({
               {[
                 ["Phone", guest.phone],
                 ["Email", guest.email || "Not provided"],
-                ["Branch", guest.branchId?.name || "Unassigned"],
+                ["Branch", branchName || "Unassigned"],
                 ["Visit status", guest.visitStatus.replace("_", " ")],
                 ["Invited by", guest.invitedBy || "Not recorded"],
                 ["How they heard", guest.heardAboutChurch || "Not recorded"],
