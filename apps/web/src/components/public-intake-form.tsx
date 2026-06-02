@@ -347,6 +347,7 @@ export function PublicIntakeForm({
   const accentColor = template.theme?.accentColor || "#dc2626";
   const darkColor = template.theme?.darkColor || "#111827";
   const softColor = template.theme?.softColor || "#fff7ed";
+  const submissionBranchId = template.branchId || branchId;
 
   function updateAnswer(key: string, value: IntakeAnswerValue) {
     setAnswers((current) => ({
@@ -446,8 +447,8 @@ export function PublicIntakeForm({
     const loadingToast = toast.loading("Submitting your intake form...");
 
     try {
-      const submissionQuery = branchId
-        ? `?branchId=${encodeURIComponent(branchId)}`
+      const submissionQuery = submissionBranchId
+        ? `?branchId=${encodeURIComponent(submissionBranchId)}`
         : "";
       const response = await fetch(
         `${API_URL}/intake-templates/public/${template.slug}/submit${submissionQuery}`,

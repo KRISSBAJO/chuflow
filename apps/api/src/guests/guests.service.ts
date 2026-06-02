@@ -202,8 +202,21 @@ export class GuestsService {
         {
           $lookup: {
             from: 'branches',
-            localField: 'branchId',
-            foreignField: '_id',
+            let: { branchRef: '$branchId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ['$_id', '$$branchRef'] },
+                      { $eq: [{ $toString: '$_id' }, { $toString: '$$branchRef' }] },
+                      { $eq: ['$name', '$$branchRef'] },
+                    ],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
             as: 'branch',
           },
         },
