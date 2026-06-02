@@ -85,8 +85,10 @@ function ShellContent({ children }: { children: ReactNode }) {
       );
     }
 
-    syncSidebarForViewport(desktopSidebar.matches);
-    setHasLoadedSidebarPreference(true);
+    queueMicrotask(() => {
+      syncSidebarForViewport(desktopSidebar.matches);
+      setHasLoadedSidebarPreference(true);
+    });
 
     function handleDesktopSidebarChange(event: MediaQueryListEvent) {
       syncSidebarForViewport(event.matches);
@@ -127,7 +129,7 @@ function ShellContent({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!window.matchMedia(DESKTOP_SIDEBAR_QUERY).matches) {
-      setIsSidebarOpen(false);
+      queueMicrotask(() => setIsSidebarOpen(false));
     }
   }, [pathname]);
 
@@ -227,7 +229,7 @@ function ShellContent({ children }: { children: ReactNode }) {
 
   return (
     <SessionGuard>
-      <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+      <div className="min-h-screen overflow-x-hidden bg-[#f4f6f8]">
         <div
           className={[
             isCompact
@@ -251,14 +253,14 @@ function ShellContent({ children }: { children: ReactNode }) {
               />
               <aside
                 id="app-sidebar"
-                className={`surface fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(22rem,calc(100vw-2rem))] min-w-0 flex-col overflow-y-auto rounded-r-3xl border border-white/60 bg-white/95 shadow-2xl backdrop-blur-xl xl:sticky xl:inset-auto xl:top-4 xl:z-auto xl:h-[calc(100vh-2rem)] xl:w-auto xl:rounded-3xl xl:shadow-xl ${
+                className={`surface fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(22rem,calc(100vw-2rem))] min-w-0 flex-col overflow-y-auto rounded-r-2xl border border-slate-200 bg-white shadow-2xl xl:sticky xl:inset-auto xl:top-4 xl:z-auto xl:h-[calc(100vh-2rem)] xl:w-auto xl:rounded-2xl xl:shadow-sm ${
                   isCompact ? "p-5" : "p-6"
                 }`}
               >
                 {/* Logo + Brand */}
                 <div className="mb-10 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-black text-xl font-bold text-white shadow-inner">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-950 text-xl font-bold text-white shadow-inner">
                       CF
                     </div>
                     <div>
@@ -273,7 +275,7 @@ function ShellContent({ children }: { children: ReactNode }) {
                   <button
                     type="button"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                   >
                     Hide
                   </button>
@@ -297,10 +299,10 @@ function ShellContent({ children }: { children: ReactNode }) {
                         key={link.href}
                         href={link.href}
                         onClick={closeSidebarOnNarrowViewport}
-                        className={`group flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-medium transition-all duration-200 ${
+                        className={`group flex items-center gap-3 rounded-lg px-5 py-3.5 text-sm font-medium transition-all duration-200 ${
                           isActive
-                            ? "bg-slate-900 text-white shadow-lg shadow-slate-950/10"
-                            : "text-slate-600 hover:bg-orange-100 hover:text-orange-800 active:scale-[0.985]"
+                            ? "bg-slate-950 text-white shadow-sm"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 active:scale-[0.985]"
                         }`}
                       >
                         {link.label}
@@ -322,19 +324,19 @@ function ShellContent({ children }: { children: ReactNode }) {
           {/* Main Content Area */}
           <main className={`min-w-0 flex flex-col ${isCompact ? "gap-4" : "gap-6"}`}>
             {/* Top Bar */}
-            <div className={`surface flex min-w-0 flex-col gap-4 rounded-3xl border border-white/60 bg-white/90 shadow backdrop-blur-xl lg:flex-row lg:items-center lg:justify-between ${isCompact ? "p-5" : "p-6"}`}>
+            <div className={`surface flex min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white lg:flex-row lg:items-center lg:justify-between ${isCompact ? "p-5" : "p-6"}`}>
               <div className="flex min-w-0 items-start gap-3">
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen((current) => !current)}
                   aria-controls="app-sidebar"
                   aria-expanded={isSidebarOpen}
-                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   {isSidebarOpen ? "Collapse menu" : "Open menu"}
                 </button>
                 <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
+                <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
                   SUNDAY OPERATIONS
                 </p>
                 <p className="mt-1 text-xl font-semibold text-slate-900">
@@ -346,7 +348,7 @@ function ShellContent({ children }: { children: ReactNode }) {
               <div className="flex min-w-0 flex-wrap items-center gap-3">
                 <form
                   onSubmit={handleSearchSubmit}
-                  className="flex min-w-[250px] flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm lg:max-w-sm"
+                  className="flex min-w-[250px] flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:max-w-sm"
                 >
                   <input
                     value={searchQuery}
@@ -356,7 +358,7 @@ function ShellContent({ children }: { children: ReactNode }) {
                   />
                   <button
                     type="submit"
-                    className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white"
+                    className="rounded-md bg-slate-950 px-3 py-2 text-xs font-semibold text-white"
                   >
                     Search
                   </button>
@@ -364,18 +366,18 @@ function ShellContent({ children }: { children: ReactNode }) {
 
                 {/* Quick Stats */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 px-5 py-2.5 text-sm font-semibold text-orange-800 shadow-sm">
+                  <div className="rounded-lg border border-teal-200 bg-teal-50 px-5 py-2.5 text-sm font-semibold text-teal-800">
                     {headerStats.firstTimers} first-timers
                   </div>
-                  <div className="rounded-2xl bg-gradient-to-br from-sky-100 to-cyan-100 px-5 py-2.5 text-sm font-semibold text-sky-800 shadow-sm">
+                  <div className="rounded-lg border border-sky-200 bg-sky-50 px-5 py-2.5 text-sm font-semibold text-sky-800">
                     {headerStats.pendingFollowUp} follow-up pending
                   </div>
-                  <div className="rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 px-5 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-800">
                     {headerStats.pendingApprovals} approvals
                   </div>
                   <Link
                     href="/approvals"
-                    className="rounded-2xl bg-gradient-to-br from-rose-100 to-orange-100 px-5 py-2.5 text-sm font-semibold text-rose-800 shadow-sm"
+                    className="rounded-lg border border-rose-200 bg-rose-50 px-5 py-2.5 text-sm font-semibold text-rose-800"
                   >
                     {headerStats.activeAlerts} live alerts
                   </Link>
@@ -398,12 +400,12 @@ function ShellContent({ children }: { children: ReactNode }) {
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`rounded-2xl px-4 py-2 text-xs font-semibold shadow-sm transition hover:opacity-90 ${
+                    className={`rounded-lg border px-4 py-2 text-xs font-semibold transition hover:opacity-90 ${
                       item.tone === "critical"
-                        ? "bg-rose-100 text-rose-800"
+                        ? "border-rose-200 bg-rose-50 text-rose-800"
                         : item.tone === "warm"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-sky-100 text-sky-800"
+                          ? "border-amber-200 bg-amber-50 text-amber-800"
+                          : "border-sky-200 bg-sky-50 text-sky-800"
                     }`}
                   >
                     {item.count} {item.label.toLowerCase()}
@@ -417,7 +419,7 @@ function ShellContent({ children }: { children: ReactNode }) {
             ) : null}
 
             {/* Page Content */}
-            <div className="min-w-0 flex-1 overflow-x-hidden rounded-3xl bg-white/80 p-1 shadow-sm backdrop-blur">
+            <div className="min-w-0 flex-1 overflow-x-hidden rounded-2xl bg-transparent p-0">
               {children}
             </div>
           </main>

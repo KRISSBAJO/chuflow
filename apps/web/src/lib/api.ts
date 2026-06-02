@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.chuflow.com/api";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

@@ -119,7 +119,7 @@ export default async function ReportsPage({
               Apply
             </button>
             <a
-              href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/reports/export.csv?${query.toString()}`}
+              href={`${process.env.NEXT_PUBLIC_API_URL ?? "https://api.chuflow.com/api"}/reports/export.csv?${query.toString()}`}
               className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
             >
               Export CSV

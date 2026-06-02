@@ -123,9 +123,9 @@ function WatchlistCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-white/60 bg-white/90 p-7 shadow-sm backdrop-blur-xl">
-      <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">{eyebrow}</p>
-      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{title}</h2>
+    <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">{eyebrow}</p>
+      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{title}</h2>
       <div className="mt-6">{children || <p className="text-sm text-slate-500">{emptyLabel}</p>}</div>
     </section>
   );
@@ -144,7 +144,7 @@ function BranchAlertList({
 }) {
   if (!items.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
         {emptyLabel}
       </div>
     );
@@ -153,7 +153,7 @@ function BranchAlertList({
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item._id} className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div key={item._id} className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-semibold text-slate-900">{item.name}</p>
@@ -161,7 +161,7 @@ function BranchAlertList({
                 {item.district} · {item.oversightRegion}
               </p>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
+            <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
               {metricLabel(item)}
             </span>
           </div>
@@ -171,7 +171,7 @@ function BranchAlertList({
             </p>
             <Link
               href={buildDashboardHref({ days, branchId: item._id })}
-              className="font-semibold text-slate-900 underline underline-offset-4"
+              className="font-semibold text-teal-700 underline underline-offset-4 transition hover:text-teal-900"
             >
               Open branch
             </Link>
@@ -193,7 +193,7 @@ function GrowthList({
 }) {
   if (!items.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
         {emptyLabel}
       </div>
     );
@@ -202,7 +202,7 @@ function GrowthList({
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item._id} className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div key={item._id} className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-semibold text-slate-900">{item.name}</p>
@@ -210,25 +210,25 @@ function GrowthList({
                 {item.district} · {item.oversightRegion}
               </p>
             </div>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
+            <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
               Score {item.growthScore}
             </span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">
-            <span className="rounded-full bg-orange-50 px-3 py-2 text-orange-700">
+            <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
               {item.guestsCaptured} guests
             </span>
-            <span className="rounded-full bg-cyan-50 px-3 py-2 text-cyan-700">
+            <span className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sky-700">
               {item.membersAdded} members
             </span>
-            <span className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">
+            <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
               {item.newConverts} converts
             </span>
           </div>
           <div className="mt-4 text-right">
             <Link
               href={buildDashboardHref({ days, branchId: item._id })}
-              className="text-sm font-semibold text-slate-900 underline underline-offset-4"
+              className="text-sm font-semibold text-teal-700 underline underline-offset-4 transition hover:text-teal-900"
             >
               Open branch
             </Link>
@@ -285,8 +285,6 @@ export default async function DashboardPage({
     serverGet<DistrictOption[]>("/districts").catch(() => []),
   ]);
 
-  const activeOversightRegion = dashboard.scope.oversightRegion;
-  const activeDistrict = dashboard.scope.district;
   const canChooseRegion = isGlobalRole(user.role);
   const canChooseDistrict = isGlobalRole(user.role) || isNationalRole(user.role);
   const canChooseBranch = canFilterAcrossBranches(user.role);
@@ -329,18 +327,18 @@ export default async function DashboardPage({
             {isGlobalRole(user.role) ? (
               <Link
                 href={buildDashboardHref({ days })}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 All network
               </Link>
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
                 {dashboard.scope.label}
               </div>
             )}
             <Link
               href="/reports"
-              className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="rounded-lg bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Open detailed reports
             </Link>
@@ -423,17 +421,17 @@ export default async function DashboardPage({
 
       {dashboard.operational ? (
         <section className="grid gap-6 xl:grid-cols-2">
-          <section className="rounded-3xl border border-white/60 bg-white/90 p-7 shadow-sm backdrop-blur-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
+          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
               Guest activity
             </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
               Recent guest capture
             </h2>
             <div className="mt-6 space-y-3">
               {dashboard.operational.recentGuests.length ? (
                 dashboard.operational.recentGuests.map((guest) => (
-                  <div key={guest._id} className="rounded-2xl border border-slate-100 bg-white p-4">
+                  <div key={guest._id} className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">
@@ -448,27 +446,27 @@ export default async function DashboardPage({
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                   No recent guest activity in this scope yet.
                 </div>
               )}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/60 bg-white/90 p-7 shadow-sm backdrop-blur-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
+          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
               Follow-up pipeline
             </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
               Live care workflow counts
             </h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {dashboard.operational.followUpPipeline.map((item) => (
-                <div key={item.status} className="rounded-2xl border border-slate-100 bg-white p-5">
+                <div key={item.status} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                     {formatStatusLabel(item.status)}
                   </p>
-                  <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
+                  <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">
                     {formatCount(item.total)}
                   </p>
                 </div>
@@ -476,17 +474,17 @@ export default async function DashboardPage({
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/60 bg-white/90 p-7 shadow-sm backdrop-blur-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
+          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
               Attendance mix
             </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
               Service movement in the current range
             </h2>
             <div className="mt-6 space-y-3">
               {dashboard.operational.attendanceMix.length ? (
                 dashboard.operational.attendanceMix.map((service) => (
-                  <div key={service._id} className="rounded-2xl border border-slate-100 bg-white p-4">
+                  <div key={service._id} className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">
@@ -501,34 +499,34 @@ export default async function DashboardPage({
                       </span>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-orange-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-orange-700">
+                      <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-amber-700">
                         {formatCount(service.firstTimers)} first timers
                       </span>
-                      <span className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-emerald-700">
+                      <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-emerald-700">
                         {formatCount(service.newConverts)} converts
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                   No attendance movement has been recorded in this scope yet.
                 </div>
               )}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/60 bg-white/90 p-7 shadow-sm backdrop-blur-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
+          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
               Newest members
             </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
               Recent member growth
             </h2>
             <div className="mt-6 space-y-3">
               {dashboard.operational.newestMembers.length ? (
                 dashboard.operational.newestMembers.map((member) => (
-                  <div key={member._id} className="rounded-2xl border border-slate-100 bg-white p-4">
+                  <div key={member._id} className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">
@@ -543,7 +541,7 @@ export default async function DashboardPage({
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                   No new members have been added in this scope yet.
                 </div>
               )}
@@ -551,11 +549,11 @@ export default async function DashboardPage({
           </section>
         </section>
       ) : (
-        <section className="rounded-3xl border border-white/60 bg-white/90 p-8 shadow-sm backdrop-blur-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
+        <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
             Operational detail
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
             Drill into a district or branch for live activity
           </h2>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">

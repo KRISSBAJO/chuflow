@@ -95,17 +95,17 @@ export function DashboardScopeFilterBar({
   };
 
   return (
-    <section className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow-sm backdrop-blur-xl">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
+          <span className="rounded-lg bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
             Scope filters
           </span>
           <span className="text-sm text-slate-500">
             Move from network view into a national area, district, or branch.
           </span>
           {isPending ? (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">
+            <span className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">
               Updating
             </span>
           ) : null}
@@ -130,7 +130,7 @@ export function DashboardScopeFilterBar({
                   branchId: "",
                 });
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-50 disabled:text-slate-500"
             >
               <option value="">All national areas</option>
               {oversightRegions.map((region) => (
@@ -157,7 +157,7 @@ export function DashboardScopeFilterBar({
                   branchId: "",
                 });
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-50 disabled:text-slate-500"
             >
               <option value="">All districts</option>
               {filteredDistricts.map((item) => (
@@ -180,7 +180,7 @@ export function DashboardScopeFilterBar({
                 setSelectedBranchId(nextBranchId);
                 pushFilters({ branchId: nextBranchId });
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-50 disabled:text-slate-500"
             >
               <option value="">All branches</option>
               {filteredBranches.map((item) => (
@@ -203,7 +203,7 @@ export function DashboardScopeFilterBar({
                 setSelectedDays(nextDays);
                 pushFilters({ days: nextDays });
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-50 disabled:text-slate-500"
             >
               {[7, 14, 30, 60, 90].map((value) => (
                 <option key={value} value={value}>

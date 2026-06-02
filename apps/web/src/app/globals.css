@@ -3,24 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #f7f3ea;
-  --foreground: #1e293b;
-  --card: #fffdf8;
-  --accent: #9a3412;
-  --accent-soft: #fed7aa;
-  --accent-cool: #0f766e;
+  --background: #f4f6f8;
+  --foreground: #172033;
+  --card: #ffffff;
+  --accent: #0f766e;
+  --accent-soft: #ccfbf1;
+  --accent-cool: #1d4ed8;
   --muted: #64748b;
-  --border: rgba(148, 163, 184, 0.25);
+  --border: rgba(15, 23, 42, 0.1);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body), sans-serif;
-  background-image:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.11), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(14, 116, 144, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(255,255,255,0.65), rgba(247,243,234,1));
+  background-image: linear-gradient(180deg, #f8fafc 0%, #f4f6f8 42%, #eef2f6 100%);
 }
 
 a {
@@ -31,8 +28,7 @@ a {
 .surface {
   background: var(--card);
   border: 1px solid var(--border);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 }
 
 .eyebrow {

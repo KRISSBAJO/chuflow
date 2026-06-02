@@ -23,7 +23,7 @@ const AUTH_COOKIE_NAME = "cms_access_token";
 
 class ApiUnavailableError extends Error {
   constructor() {
-    super("Backend API is not reachable");
+    super("ChuFlow API is temporarily unavailable");
     this.name = "ApiUnavailableError";
   }
 }

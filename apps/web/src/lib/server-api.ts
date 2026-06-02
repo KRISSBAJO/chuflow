@@ -25,7 +25,7 @@ export async function serverGet<T>(path: string): Promise<T> {
       cache: "no-store",
     });
   } catch {
-    throw new Error("Backend API is not reachable. Start `npm run dev:api` and refresh.");
+    throw new Error("ChuFlow API is temporarily unavailable. Please try again shortly.");
   }
 
   if (!response.ok) {
@@ -43,7 +43,7 @@ export async function publicServerGet<T>(path: string): Promise<T> {
       cache: "no-store",
     });
   } catch {
-    throw new Error("Backend API is not reachable. Start `npm run dev:api` and refresh.");
+    throw new Error("ChuFlow API is temporarily unavailable. Please try again shortly.");
   }
 
   if (!response.ok) {
