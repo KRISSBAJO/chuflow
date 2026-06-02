@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { CommunicationPanel } from "@/components/communication-panel";
 import { ConvertGuestButton } from "@/components/convert-guest-button";
 import { GuestFollowUpManager } from "@/components/guest-follow-up-manager";
@@ -15,6 +16,42 @@ import type {
   UserSummary,
   VisitItem,
 } from "@/lib/types";
+
+function formatDateTime(value?: string) {
+  if (!value) {
+    return "No timestamp";
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function formatValue(value?: string) {
+  return value?.replace(/_/g, " ") || "Not recorded";
+}
+
+function WorkSection({
+  title,
+  count,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  count?: number;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="rounded-[24px] border border-slate-200 bg-white shadow-sm" open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
+        <span className="font-semibold text-slate-950">{title}</span>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+          {typeof count === "number" ? count : "Open"}
+        </span>
+      </summary>
+      <div className="border-t border-slate-200 bg-slate-50/60 p-4">{children}</div>
+    </details>
+  );
+}
 
 export default async function GuestDetailPage({
   params,
@@ -90,114 +127,143 @@ export default async function GuestDetailPage({
     })),
   ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
 
+  const facts = [
+    ["Phone", guest.phone],
+    ["Email", guest.email || "Not provided"],
+    ["Branch", branchName || "Unassigned"],
+    ["Visit status", formatValue(guest.visitStatus)],
+    ["Invited by", guest.invitedBy || "Not recorded"],
+    ["Heard through", guest.heardAboutChurch || "Not recorded"],
+    ["Address", [guest.address, guest.city, guest.state].filter(Boolean).join(", ") || "Not recorded"],
+  ];
+
   return (
     <Shell>
       <PageHeader
         eyebrow="Guest Detail"
         title={`${guest.firstName} ${guest.lastName}`}
-        description="This detail view is now the working source of truth for one guest: registration, follow-up, return visits, communication history, and conversion."
+        description="A focused guest record for profile details, care work, return visits, communication history, and conversion."
       />
-      <section className="grid gap-6 2xl:grid-cols-[0.72fr_1.28fr]">
-        <div className="space-y-6">
-          <section className="surface rounded-[32px] p-8">
-            <p className="text-sm uppercase tracking-[0.16em] text-slate-500">Guest ID</p>
-            <p className="mt-3 text-2xl font-bold text-slate-950">{id}</p>
-            <div className="mt-6 space-y-4">
-              {[
-                ["Phone", guest.phone],
-                ["Email", guest.email || "Not provided"],
-                ["Branch", branchName || "Unassigned"],
-                ["Visit status", guest.visitStatus.replace("_", " ")],
-                ["Invited by", guest.invitedBy || "Not recorded"],
-                ["How they heard", guest.heardAboutChurch || "Not recorded"],
-                ["Address", [guest.address, guest.city, guest.state].filter(Boolean).join(", ") || "Not recorded"],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-white px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
-                  <p className="mt-2 font-medium text-slate-700">{value}</p>
-                </div>
-              ))}
-            </div>
-          </section>
 
-          <section className="surface rounded-[32px] p-8">
-            <p className="eyebrow">Journey Snapshot</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Visits</p>
-                <p className="mt-2 text-3xl font-bold text-slate-950">{visits.length}</p>
-              </div>
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Follow-up</p>
-                <p className="mt-2 text-3xl font-bold text-slate-950">{followUps.length}</p>
-              </div>
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Messages</p>
-                <p className="mt-2 text-3xl font-bold text-slate-950">{communications.length}</p>
-              </div>
+      <section className="rounded-[24px] border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="border-b border-slate-200 p-5 lg:border-b-0 lg:border-r">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
+                {formatValue(guest.visitStatus)}
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {branchName || "Unassigned branch"}
+              </span>
+            </div>
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <tbody className="divide-y divide-slate-100">
+                  {facts.map(([label, value]) => (
+                    <tr key={label}>
+                      <th className="w-36 py-3 pr-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        {label}
+                      </th>
+                      <td className="py-3 font-medium text-slate-700">{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             {guest.prayerRequest ? (
-              <div className="mt-5 rounded-[24px] bg-orange-50 px-5 py-4 text-sm text-orange-950">
+              <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm text-orange-950">
                 <p className="font-semibold">Prayer request</p>
                 <p className="mt-2">{guest.prayerRequest}</p>
               </div>
             ) : null}
-          </section>
-
-          {!guest.convertedToMember && canConvertGuests(user.role) ? (
-            <ConvertGuestButton guestId={id} />
-          ) : null}
-
-          <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />
-        </div>
-
-        <div className="space-y-6">
-          {canManageFollowUp ? (
-            <GuestFollowUpManager guestId={id} followUps={followUps} users={users} />
-          ) : null}
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <GuestReturnVisitForm guestId={id} branchId={branchId} followUpId={latestFollowUp?._id} />
-            {canCommunicate ? (
-              <CommunicationPanel
-                recipientType="guest"
-                recipientId={id}
-                recipient={guest.email || guest.phone}
-                communications={communications}
-                title="Send and review outreach history"
-              />
-            ) : null}
           </div>
 
-          <section className="surface rounded-[32px] p-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-slate-950">Timeline</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {timeline.length} events
-              </span>
-            </div>
-            <div className="mt-6 space-y-4">
-              {timeline.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                  <div className="flex items-center justify-between gap-3">
-                    <p>{item.text}</p>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      {item.type}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-400">
-                    {item.when ? new Date(item.when).toLocaleString() : "No timestamp"}
-                  </p>
+          <div className="p-5">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                ["Visits", visits.length],
+                ["Follow-up", followUps.length],
+                ["Messages", communications.length],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl bg-slate-50 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-950">{value}</p>
                 </div>
               ))}
-              {timeline.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-                  No activity has been recorded for this guest yet.
-                </div>
-              ) : null}
             </div>
-          </section>
+            <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Guest ID</p>
+              <p className="mt-1 break-all text-sm font-medium text-slate-700">{id}</p>
+            </div>
+            {!guest.convertedToMember && canConvertGuests(user.role) ? (
+              <div className="mt-4">
+                <ConvertGuestButton guestId={id} />
+              </div>
+            ) : null}
+          </div>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        {canManageFollowUp ? (
+          <WorkSection title="Care and follow-up" count={followUps.length} defaultOpen>
+            <GuestFollowUpManager guestId={id} followUps={followUps} users={users} />
+          </WorkSection>
+        ) : null}
+
+        <WorkSection title="Profile fields">
+          <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />
+        </WorkSection>
+
+        <WorkSection title="Return visit">
+          <GuestReturnVisitForm guestId={id} branchId={branchId} followUpId={latestFollowUp?._id} />
+        </WorkSection>
+
+        {canCommunicate ? (
+          <WorkSection title="Communications" count={communications.length}>
+            <CommunicationPanel
+              recipientType="guest"
+              recipientId={id}
+              recipient={guest.email || guest.phone}
+              communications={communications}
+              title="Send and review outreach history"
+            />
+          </WorkSection>
+        ) : null}
+
+        <WorkSection title="Timeline" count={timeline.length}>
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">When</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {timeline.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-3 text-slate-600">{formatDateTime(item.when)}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                        {item.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{item.text}</td>
+                  </tr>
+                ))}
+                {timeline.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">
+                      No activity has been recorded for this guest yet.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </WorkSection>
       </section>
     </Shell>
   );
