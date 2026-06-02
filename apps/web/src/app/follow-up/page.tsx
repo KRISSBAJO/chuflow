@@ -112,15 +112,20 @@ export default async function FollowUpPage({
 
   if (effectiveBranchId) {
     followUpQuery.set("branchId", effectiveBranchId);
-    guestQuery.set("branchId", effectiveBranchId);
   }
 
-  const userBranchScopeForCreate =
-    effectiveBranchId || (!canChooseBranch ? user.branchId : undefined);
+  const createBranchScopeId =
+    effectiveBranchId ||
+    (!canChooseBranch ? user.branchId : undefined) ||
+    (filteredBranches.length === 1 ? filteredBranches[0]._id : undefined);
+
+  if (createBranchScopeId) {
+    guestQuery.set("branchId", createBranchScopeId);
+  }
 
   const [followUpList, guestOptions, users] = await Promise.all([
     serverGet<FollowUpListResponse>(`/follow-ups?${followUpQuery.toString()}`),
-    userBranchScopeForCreate
+    createBranchScopeId
       ? serverGet<GuestListResponse>(`/guests?${guestQuery.toString()}`).catch(() => ({
           items: [],
           pagination: { page: 1, pageSize: 100, total: 0, totalPages: 1 },
@@ -131,8 +136,8 @@ export default async function FollowUpPage({
           pagination: { page: 1, pageSize: 100, total: 0, totalPages: 1 },
           summary: { todayCount: 0, completionRate: 0, assignedFollowUpCount: 0 },
         }),
-    userBranchScopeForCreate
-      ? serverGet<UserSummary[]>(`/users?branchId=${encodeURIComponent(userBranchScopeForCreate)}`).catch(
+    createBranchScopeId
+      ? serverGet<UserSummary[]>(`/users?branchId=${encodeURIComponent(createBranchScopeId)}`).catch(
           () => [],
         )
       : Promise.resolve([]),
@@ -148,7 +153,7 @@ export default async function FollowUpPage({
           ? `${requestedOversightRegion} national queue`
           : "All visible branches"
       : "Current branch";
-  const assignmentDisabled = canChooseBranch && !effectiveBranchId;
+  const assignmentDisabled = canChooseBranch && !createBranchScopeId;
   const assignmentHint = assignmentDisabled
     ? "Choose a branch above before creating or assigning a care task so the guest and worker lists stay local to that branch."
     : "Assigning a care worker automatically moves this record from New to Assigned.";

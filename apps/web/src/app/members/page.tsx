@@ -76,7 +76,7 @@ export default async function MembersPage() {
           <div className="border-b border-slate-200 px-6 py-5">
             <h2 className="text-xl font-semibold text-slate-950">Member roster</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Direct CRUD via <code>/api/members</code> and conversion via <code>/api/members/convert/:guestId</code>
+              View, promote, and update member records from the current branch scope.
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -89,31 +89,44 @@ export default async function MembersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {members.map((member) => (
-                  <tr key={member._id} className="border-t border-slate-100">
-                    <td className="px-6 py-4 font-semibold text-slate-900">
-                      <Link href={`/members/${member._id}`} className="hover:text-orange-700">
-                        {[formatMemberTitle(member.title), member.firstName, member.lastName]
-                          .filter(Boolean)
-                          .join(" ")}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {formatMembershipStatus(member.membershipStatus)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {formatYesNoStatus(member.holySpiritBaptismStatus)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {formatYesNoStatus(member.believerFoundationClassStatus)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {member.serviceUnitId?.name || member.serviceUnitInterest || "Not set"}
+                {members.length > 0 ? (
+                  members.map((member) => (
+                    <tr key={member._id} className="border-t border-slate-100">
+                      <td className="px-6 py-4 font-semibold text-slate-900">
+                        <Link href={`/members/${member._id}`} className="hover:text-orange-700">
+                          {[formatMemberTitle(member.title), member.firstName, member.lastName]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {formatMembershipStatus(member.membershipStatus)}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {formatYesNoStatus(member.holySpiritBaptismStatus)}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {formatYesNoStatus(member.believerFoundationClassStatus)}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {member.serviceUnitId?.name || member.serviceUnitInterest || "Not set"}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="border-t border-slate-100">
+                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">
+                      No members are available in the current branch scope yet.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
+          </div>
+          <div className="border-t border-slate-200 px-6 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Showing {members.length} member{members.length === 1 ? "" : "s"}
+            </p>
           </div>
         </div>
         <div className="space-y-6">

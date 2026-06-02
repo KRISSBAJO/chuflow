@@ -147,12 +147,8 @@ export class GuestsService {
     const documentQuery: Record<string, unknown> = {
       ...(await this.accessScopeService.buildBranchFilter(currentUser, branchId)),
     };
-    const branchObjectIdFilter = await this.accessScopeService.buildBranchObjectIdFilter(
-      currentUser,
-      branchId,
-    );
     const aggregateQuery: Record<string, unknown> = {
-      ...branchObjectIdFilter,
+      ...documentQuery,
     };
 
     if (searchConditions) {
@@ -180,7 +176,7 @@ export class GuestsService {
     const skip = (safePage - 1) * safeLimit;
 
     const branchLookupMatch = (
-      branchObjectIdFilter as { branchId?: Types.ObjectId | { $in: Types.ObjectId[] } }
+      documentQuery as { branchId?: Types.ObjectId | string | { $in: Array<Types.ObjectId | string> } }
     ).branchId;
     const guestLookupMatches: Record<string, unknown>[] = [];
 

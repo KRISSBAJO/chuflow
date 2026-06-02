@@ -19,6 +19,14 @@ function normalize(value?: string) {
   return value?.trim().toLowerCase() || "";
 }
 
+function text(value?: string | null, fallback = "") {
+  return value?.trim() || fallback;
+}
+
+function list<T>(value?: T[] | null): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function matchesPerson(user: UserSummary, search: string) {
   if (!search) {
     return false;
@@ -49,15 +57,15 @@ function matchesBranch(branch: BranchOverview, search: string) {
     branch.serviceTimes,
   ];
 
-  if (branchFields.some((value) => value.toLowerCase().includes(search))) {
+  if (branchFields.some((value) => normalize(value).includes(search))) {
     return true;
   }
 
   return [
-    ...branch.admins,
-    ...branch.residentPastors,
-    ...branch.followUpTeam,
-    ...branch.ushers,
+    ...list(branch.admins),
+    ...list(branch.residentPastors),
+    ...list(branch.followUpTeam),
+    ...list(branch.ushers),
   ].some((user) => matchesPerson(user, search));
 }
 
@@ -68,32 +76,34 @@ function filterStructure(
   searchText?: string,
 ): OrgStructureSummary {
   const search = normalize(searchText);
+  const overallHeads = list(structure.overallHeads);
+  const sourceRegions = list(structure.oversightRegions);
   const filteredOverallHeads = search
-    ? structure.overallHeads.filter((user) => matchesPerson(user, search))
-    : structure.overallHeads;
+    ? overallHeads.filter((user) => matchesPerson(user, search))
+    : overallHeads;
 
-  const oversightRegions = structure.oversightRegions
+  const oversightRegions = sourceRegions
     .filter((region) => !selectedRegion || region.name === selectedRegion)
     .map((region) => {
       const regionMatches =
         !search ||
-        region.name.toLowerCase().includes(search) ||
-        matchesAnyPerson(region.nationalAdmins, search) ||
-        matchesAnyPerson(region.nationalPastors, search);
+        normalize(region.name).includes(search) ||
+        matchesAnyPerson(list(region.nationalAdmins), search) ||
+        matchesAnyPerson(list(region.nationalPastors), search);
 
-      const districts = region.districts
+      const districts = list(region.districts)
         .filter((district) => !selectedDistrict || district.name === selectedDistrict)
         .map((district) => {
           const districtMatches =
             regionMatches ||
             !search ||
-            district.name.toLowerCase().includes(search) ||
-            matchesAnyPerson(district.districtAdmins, search) ||
-            matchesAnyPerson(district.districtPastors, search);
+            normalize(district.name).includes(search) ||
+            matchesAnyPerson(list(district.districtAdmins), search) ||
+            matchesAnyPerson(list(district.districtPastors), search);
 
           const branches = districtMatches
-            ? district.branches
-            : district.branches.filter((branch) => matchesBranch(branch, search));
+            ? list(district.branches)
+            : list(district.branches).filter((branch) => matchesBranch(branch, search));
 
           return {
             ...district,
@@ -157,7 +167,7 @@ function filterStructure(
       ),
       nationalLeaderCount: oversightRegions.reduce(
         (total, region) =>
-          total + region.nationalAdmins.length + region.nationalPastors.length,
+          total + list(region.nationalAdmins).length + list(region.nationalPastors).length,
         0,
       ),
       districtLeaderCount: oversightRegions.reduce(
@@ -166,8 +176,8 @@ function filterStructure(
           region.districts.reduce(
             (districtTotal, district) =>
               districtTotal +
-              district.districtAdmins.length +
-              district.districtPastors.length,
+              list(district.districtAdmins).length +
+              list(district.districtPastors).length,
             0,
           ),
         0,
@@ -175,15 +185,15 @@ function filterStructure(
       branchLeaderCount: visibleBranches.reduce(
         (total, branch) =>
           total +
-          branch.admins.length +
-          branch.residentPastors.length,
+          list(branch.admins).length +
+          list(branch.residentPastors).length,
         0,
       ),
       supportStaffCount: visibleBranches.reduce(
         (total, branch) =>
           total +
-          branch.followUpTeam.length +
-          branch.ushers.length,
+          list(branch.followUpTeam).length +
+          list(branch.ushers).length,
         0,
       ),
     },
@@ -197,18 +207,20 @@ function TeamPills({
   users: UserSummary[];
   emptyLabel: string;
 }) {
-  if (users.length === 0) {
+  const visibleUsers = list(users);
+
+  if (visibleUsers.length === 0) {
     return <p className="text-sm text-slate-500">{emptyLabel}</p>;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      {users.map((user) => (
+      {visibleUsers.map((user) => (
         <span
           key={user._id}
           className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
         >
-          {user.firstName} {user.lastName}
+          {text(user.firstName, "Unknown")} {text(user.lastName, "User")}
         </span>
       ))}
     </div>
@@ -221,21 +233,21 @@ function BranchCard({ branch }: { branch: BranchOverview }) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-lg font-semibold text-slate-950">{branch.name}</h4>
+            <h4 className="text-lg font-semibold text-slate-950">{text(branch.name, "Unnamed branch")}</h4>
             <span
               className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                branch.status === "active"
+                text(branch.status, "active") === "active"
                   ? "bg-emerald-50 text-emerald-700"
                   : "bg-slate-100 text-slate-600"
               }`}
             >
-              {branch.status}
+              {text(branch.status, "active")}
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {branch.city}, {branch.state} · {branch.serviceTimes}
+            {text(branch.city, "City not set")}, {text(branch.state, "State not set")} · {text(branch.serviceTimes, "Service times not set")}
           </p>
-          <p className="mt-1 text-sm text-slate-500">{branch.contactInfo}</p>
+          <p className="mt-1 text-sm text-slate-500">{text(branch.contactInfo, "Contact information not set")}</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="rounded-full bg-orange-50 px-3 py-1.5 font-semibold text-orange-700">
@@ -256,7 +268,7 @@ function BranchCard({ branch }: { branch: BranchOverview }) {
             Branch Admins
           </p>
           <div className="mt-3">
-            <TeamPills users={branch.admins} emptyLabel="No branch admin assigned yet." />
+            <TeamPills users={list(branch.admins)} emptyLabel="No branch admin assigned yet." />
           </div>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
@@ -264,7 +276,7 @@ function BranchCard({ branch }: { branch: BranchOverview }) {
             Resident Pastors
           </p>
           <div className="mt-3">
-            <TeamPills users={branch.residentPastors} emptyLabel="No resident pastor assigned yet." />
+            <TeamPills users={list(branch.residentPastors)} emptyLabel="No resident pastor assigned yet." />
           </div>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
@@ -272,7 +284,7 @@ function BranchCard({ branch }: { branch: BranchOverview }) {
             Follow-Up Team
           </p>
           <div className="mt-3">
-            <TeamPills users={branch.followUpTeam} emptyLabel="No follow-up team assigned." />
+            <TeamPills users={list(branch.followUpTeam)} emptyLabel="No follow-up team assigned." />
           </div>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
@@ -280,7 +292,7 @@ function BranchCard({ branch }: { branch: BranchOverview }) {
             Ushers
           </p>
           <div className="mt-3">
-            <TeamPills users={branch.ushers} emptyLabel="No usher team assigned." />
+            <TeamPills users={list(branch.ushers)} emptyLabel="No usher team assigned." />
           </div>
         </div>
       </div>
@@ -315,10 +327,11 @@ function RegionSection({
   districtIdByKey: Map<string, string>;
 }) {
   const regionId = regionIdByName.get(region.name);
+  const districts = list(region.districts);
 
   return (
     <details
-      open={region.districts.length <= 2 || !!selectedDistrict}
+      open={districts.length <= 2 || !!selectedDistrict}
       className="rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-sm"
     >
       <summary className="cursor-pointer list-none">
@@ -327,7 +340,7 @@ function RegionSection({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-600">
               Oversight Region
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{region.name}</h2>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{text(region.name, "Unnamed region")}</h2>
             <p className="mt-2 text-sm text-slate-500">
               {region.branchCount} branches · {region.districtCount} districts ·{" "}
               {region.guestCount} guests · {region.memberCount} members
@@ -349,7 +362,7 @@ function RegionSection({
                 National Admins
               </p>
               <div className="mt-3">
-                <TeamPills users={region.nationalAdmins} emptyLabel="No national admin assigned." />
+                <TeamPills users={list(region.nationalAdmins)} emptyLabel="No national admin assigned." />
               </div>
             </div>
             <div className="rounded-2xl bg-cyan-50 p-4">
@@ -357,7 +370,7 @@ function RegionSection({
                 National Pastors
               </p>
               <div className="mt-3">
-                <TeamPills users={region.nationalPastors} emptyLabel="No national pastor assigned." />
+                <TeamPills users={list(region.nationalPastors)} emptyLabel="No national pastor assigned." />
               </div>
             </div>
           </div>
@@ -365,13 +378,14 @@ function RegionSection({
       </summary>
 
       <div className="mt-6 space-y-4">
-        {region.districts.map((district) => {
+        {districts.map((district) => {
           const districtId = districtIdByKey.get(`${region.name}::${district.name}`);
+          const branches = list(district.branches);
 
           return (
             <details
               key={`${region.name}-${district.name}`}
-              open={district.branches.length <= 2 || district.name === selectedDistrict}
+              open={branches.length <= 2 || district.name === selectedDistrict}
               className="rounded-[24px] border border-slate-200 bg-slate-50 p-5"
             >
               <summary className="cursor-pointer list-none">
@@ -380,7 +394,7 @@ function RegionSection({
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                       District
                     </p>
-                    <h3 className="mt-2 text-xl font-semibold text-slate-950">{district.name}</h3>
+                    <h3 className="mt-2 text-xl font-semibold text-slate-950">{text(district.name, "Unnamed district")}</h3>
                     <p className="mt-2 text-sm text-slate-500">
                       {district.branchCount} branches · {district.guestCount} guests ·{" "}
                       {district.memberCount} members
@@ -402,7 +416,7 @@ function RegionSection({
                         District Admins
                       </p>
                       <div className="mt-3">
-                        <TeamPills users={district.districtAdmins} emptyLabel="No district admin assigned." />
+                        <TeamPills users={list(district.districtAdmins)} emptyLabel="No district admin assigned." />
                       </div>
                     </div>
                     <div className="rounded-2xl bg-white p-4">
@@ -410,7 +424,7 @@ function RegionSection({
                         District Pastors
                       </p>
                       <div className="mt-3">
-                        <TeamPills users={district.districtPastors} emptyLabel="No district pastor assigned." />
+                        <TeamPills users={list(district.districtPastors)} emptyLabel="No district pastor assigned." />
                       </div>
                     </div>
                   </div>
@@ -418,7 +432,7 @@ function RegionSection({
               </summary>
 
               <div className="mt-5 grid gap-4">
-                {district.branches.map((branch) => (
+                {branches.map((branch) => (
                   <BranchCard key={branch._id} branch={branch} />
                 ))}
               </div>

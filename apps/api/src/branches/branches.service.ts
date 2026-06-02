@@ -113,10 +113,10 @@ type BranchCounts = {
 
 type LeanUserShape = {
   _id: unknown;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string;
   oversightRegion?: string;
   district?: string;
   branchId?: unknown;
@@ -189,17 +189,21 @@ export class BranchesService {
 
     return {
       _id: String(user._id),
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      oversightRegion: user.oversightRegion,
-      district: user.district,
+      firstName: this.normalizeText(user.firstName, 'Unknown'),
+      lastName: this.normalizeText(user.lastName, 'User'),
+      email: this.normalizeText(user.email),
+      role: this.normalizeText(user.role, 'user'),
+      oversightRegion: this.normalizeText(user.oversightRegion),
+      district: this.normalizeText(user.district),
       branchId: normalizedBranchId,
       isActive: user.isActive,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
     };
+  }
+
+  private normalizeText(value: unknown, fallback = '') {
+    return typeof value === 'string' && value.trim() ? value.trim() : fallback;
   }
 
   private normalizeBranchRef(branchRef: unknown): string | undefined {
@@ -272,15 +276,7 @@ export class BranchesService {
   }
 
   private async getBranchCounts(branchIds: unknown[]): Promise<BranchCounts> {
-    const branchRefs = branchIds.flatMap((branchId) => {
-      const normalized = this.normalizeBranchRef(branchId);
-
-      if (!normalized) {
-        return [];
-      }
-
-      return normalized;
-    });
+    const branchRefs = this.buildBranchReferenceValues(branchIds);
 
     const [guestCounts, memberCounts] = await Promise.all([
       this.guestModel.aggregate([
@@ -318,8 +314,11 @@ export class BranchesService {
     const branchUsers = users.filter(
       (user) => this.normalizeBranchRef(user.branchId) === branchKey,
     );
-    const oversightRegion = branch.oversightRegion || 'Unassigned National Area';
-    const district = branch.district || 'Unassigned District';
+    const oversightRegion = this.normalizeText(
+      branch.oversightRegion,
+      'Unassigned National Area',
+    );
+    const district = this.normalizeText(branch.district, 'Unassigned District');
     const admins = branchUsers.filter((user) => user.role === 'branch_admin').map((user) => this.toTeamSummary(user));
     const residentPastors = branchUsers
       .filter((user) => user.role === 'resident_pastor')
@@ -336,16 +335,16 @@ export class BranchesService {
 
     return {
       _id: branchKey,
-      name: branch.name,
+      name: this.normalizeText(branch.name, 'Unnamed branch'),
       oversightRegion,
       district,
-      address: branch.address,
-      city: branch.city,
-      state: branch.state,
-      country: branch.country,
-      contactInfo: branch.contactInfo,
-      serviceTimes: branch.serviceTimes,
-      status: branch.status,
+      address: this.normalizeText(branch.address),
+      city: this.normalizeText(branch.city),
+      state: this.normalizeText(branch.state),
+      country: this.normalizeText(branch.country),
+      contactInfo: this.normalizeText(branch.contactInfo),
+      serviceTimes: this.normalizeText(branch.serviceTimes),
+      status: this.normalizeText(branch.status, 'active'),
       metrics: {
         guestCount: counts.guestCountMap.get(branchKey) ?? 0,
         memberCount: counts.memberCountMap.get(branchKey) ?? 0,
@@ -562,16 +561,16 @@ export class BranchesService {
           0,
         ),
         nationalLeaderCount: typedUsers.filter((user) =>
-          ['national_admin', 'national_pastor'].includes(user.role),
+          ['national_admin', 'national_pastor'].includes(this.normalizeText(user.role)),
         ).length,
         districtLeaderCount: typedUsers.filter((user) =>
-          ['district_admin', 'district_pastor'].includes(user.role),
+          ['district_admin', 'district_pastor'].includes(this.normalizeText(user.role)),
         ).length,
         branchLeaderCount: typedUsers.filter((user) =>
-          ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(user.role),
+          ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(this.normalizeText(user.role)),
         ).length,
         supportStaffCount: typedUsers.filter((user) =>
-          ['follow_up', 'usher'].includes(user.role),
+          ['follow_up', 'usher'].includes(this.normalizeText(user.role)),
         ).length,
       },
       overallHeads,
