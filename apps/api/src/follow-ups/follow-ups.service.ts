@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -61,6 +61,26 @@ export class FollowUpsService {
     }
 
     return { $and: clauses };
+  }
+
+  private buildReferenceValues(values: unknown[]) {
+    const refs = new Map<string, string | Types.ObjectId>();
+
+    for (const value of values) {
+      const ref = this.extractBranchId(value);
+
+      if (!ref) {
+        continue;
+      }
+
+      refs.set(`string:${ref}`, ref);
+
+      if (Types.ObjectId.isValid(ref)) {
+        refs.set(`object:${ref}`, new Types.ObjectId(ref));
+      }
+    }
+
+    return Array.from(refs.values());
   }
 
   private async getScopedGuest(guestId: string, currentUser: AuthUser) {
@@ -137,7 +157,9 @@ export class FollowUpsService {
 
     const followUp = await this.followUpModel.create({
       ...dto,
+      guestId: new Types.ObjectId(dto.guestId),
       assignedTo,
+      ...(assignedTo ? { assignedTo: new Types.ObjectId(assignedTo) } : {}),
       status: this.normalizeStatus(dto.status, assignedTo),
       nextActionDate: dto.nextActionDate ? new Date(dto.nextActionDate) : undefined,
     });
@@ -183,17 +205,17 @@ export class FollowUpsService {
     );
 
     if (currentUser.role === 'follow_up') {
-      baseClauses.push({ assignedTo: currentUser.sub });
+      baseClauses.push({ assignedTo: { $in: this.buildReferenceValues([currentUser.sub]) } });
     } else if (filters.assignedTo) {
-      baseClauses.push({ assignedTo: filters.assignedTo });
+      baseClauses.push({ assignedTo: { $in: this.buildReferenceValues([filters.assignedTo]) } });
     }
 
     if (filters.guestId) {
       await this.getScopedGuest(filters.guestId, currentUser);
-      baseClauses.push({ guestId: filters.guestId });
+      baseClauses.push({ guestId: { $in: this.buildReferenceValues([filters.guestId]) } });
     } else {
       const scopedGuestIds = await this.guestModel.find(guestScopeQuery).distinct('_id');
-      baseClauses.push({ guestId: { $in: scopedGuestIds } });
+      baseClauses.push({ guestId: { $in: this.buildReferenceValues(scopedGuestIds) } });
     }
 
     if (searchConditions) {
@@ -207,7 +229,7 @@ export class FollowUpsService {
       baseClauses.push({
         $or: [
           { note: { $regex: this.normalizeSearch(filters.search), $options: 'i' } },
-          { guestId: { $in: matchingGuestIds } },
+          { guestId: { $in: this.buildReferenceValues(matchingGuestIds) } },
         ],
       });
     }
