@@ -111,27 +111,27 @@ function getDashboardDescription(scope: DashboardOverview["scope"]) {
   return `Operational focus for ${scope.label}, built around guest movement, follow-up pressure, and attendance flow.`;
 }
 
-function WatchlistCard({
+function DashboardTableSection({
   eyebrow,
   title,
-  emptyLabel,
   children,
 }: {
   eyebrow: string;
   title: string;
-  emptyLabel: string;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-5 py-4">
       <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">{eyebrow}</p>
-      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{title}</h2>
-      <div className="mt-6">{children || <p className="text-sm text-slate-500">{emptyLabel}</p>}</div>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">{title}</h2>
+      </div>
+      {children}
     </section>
   );
 }
 
-function BranchAlertList({
+function BranchAlertTable({
   items,
   days,
   emptyLabel,
@@ -144,45 +144,57 @@ function BranchAlertList({
 }) {
   if (!items.length) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+      <div className="m-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {items.map((item) => (
-        <div key={item._id} className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-slate-900">{item.name}</p>
-              <p className="mt-1 text-sm text-slate-500">
-                {item.district} · {item.oversightRegion}
-              </p>
-            </div>
-            <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-              {metricLabel(item)}
-            </span>
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-            <p className="text-slate-500">
-              {item.city && item.state ? `${item.city}, ${item.state}` : "Branch in active scope"}
-            </p>
-            <Link
-              href={buildDashboardHref({ days, branchId: item._id })}
-              className="font-semibold text-teal-700 underline underline-offset-4 transition hover:text-teal-900"
-            >
-              Open branch
-            </Link>
-          </div>
-        </div>
-      ))}
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <tr>
+            <th className="px-5 py-3">Branch</th>
+            <th className="px-5 py-3">District</th>
+            <th className="px-5 py-3">Location</th>
+            <th className="px-5 py-3">Signal</th>
+            <th className="px-5 py-3 text-right">Open</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {items.map((item) => (
+            <tr key={item._id}>
+              <td className="px-5 py-3 font-semibold text-slate-950">{item.name}</td>
+              <td className="px-5 py-3 text-slate-600">
+                {item.district}
+                <span className="block text-xs text-slate-400">{item.oversightRegion}</span>
+              </td>
+              <td className="px-5 py-3 text-slate-600">
+                {item.city && item.state ? `${item.city}, ${item.state}` : "In scope"}
+              </td>
+              <td className="px-5 py-3">
+                <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {metricLabel(item)}
+                </span>
+              </td>
+              <td className="px-5 py-3 text-right">
+                <Link
+                  href={buildDashboardHref({ days, branchId: item._id })}
+                  className="font-semibold text-teal-700 underline underline-offset-4 transition hover:text-teal-900"
+                >
+                  Dashboard
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function GrowthList({
+function GrowthTable({
   items,
   days,
   emptyLabel,
@@ -193,48 +205,183 @@ function GrowthList({
 }) {
   if (!items.length) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+      <div className="m-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {items.map((item) => (
-        <div key={item._id} className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-slate-900">{item.name}</p>
-              <p className="mt-1 text-sm text-slate-500">
-                {item.district} · {item.oversightRegion}
-              </p>
-            </div>
-            <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
-              Score {item.growthScore}
-            </span>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">
-            <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
-              {item.guestsCaptured} guests
-            </span>
-            <span className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sky-700">
-              {item.membersAdded} members
-            </span>
-            <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
-              {item.newConverts} converts
-            </span>
-          </div>
-          <div className="mt-4 text-right">
-            <Link
-              href={buildDashboardHref({ days, branchId: item._id })}
-              className="text-sm font-semibold text-teal-700 underline underline-offset-4 transition hover:text-teal-900"
-            >
-              Open branch
-            </Link>
-          </div>
-        </div>
-      ))}
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <tr>
+            <th className="px-5 py-3">Branch</th>
+            <th className="px-5 py-3">Guests</th>
+            <th className="px-5 py-3">Members</th>
+            <th className="px-5 py-3">Converts</th>
+            <th className="px-5 py-3">Score</th>
+            <th className="px-5 py-3 text-right">Open</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {items.map((item) => (
+            <tr key={item._id}>
+              <td className="px-5 py-3 font-semibold text-slate-950">
+                {item.name}
+                <span className="block text-xs font-normal text-slate-400">
+                  {item.district} · {item.oversightRegion}
+                </span>
+              </td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.guestsCaptured)}</td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.membersAdded)}</td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.newConverts)}</td>
+              <td className="px-5 py-3">
+                <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  {formatCount(item.growthScore)}
+                </span>
+              </td>
+              <td className="px-5 py-3 text-right">
+                <Link
+                  href={buildDashboardHref({ days, branchId: item._id })}
+                  className="font-semibold text-teal-700 underline underline-offset-4 transition hover:text-teal-900"
+                >
+                  Dashboard
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PersonTable({
+  items,
+  emptyLabel,
+}: {
+  items: NonNullable<DashboardOverview["operational"]>["recentGuests"];
+  emptyLabel: string;
+}) {
+  if (!items.length) {
+    return (
+      <div className="m-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+        {emptyLabel}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <tr>
+            <th className="px-5 py-3">Name</th>
+            <th className="px-5 py-3">Branch</th>
+            <th className="px-5 py-3">Status</th>
+            <th className="px-5 py-3">Date</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {items.map((item) => (
+            <tr key={item._id}>
+              <td className="px-5 py-3 font-semibold text-slate-950">
+                {item.firstName} {item.lastName}
+              </td>
+              <td className="px-5 py-3 text-slate-600">{item.branchId?.name ?? "Branch"}</td>
+              <td className="px-5 py-3 text-slate-600">{formatStatusLabel(item.visitStatus)}</td>
+              <td className="px-5 py-3 text-slate-600">{formatDate(item.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function MemberTable({
+  items,
+  emptyLabel,
+}: {
+  items: NonNullable<DashboardOverview["operational"]>["newestMembers"];
+  emptyLabel: string;
+}) {
+  if (!items.length) {
+    return (
+      <div className="m-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+        {emptyLabel}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <tr>
+            <th className="px-5 py-3">Name</th>
+            <th className="px-5 py-3">Branch</th>
+            <th className="px-5 py-3">Status</th>
+            <th className="px-5 py-3">Date</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {items.map((item) => (
+            <tr key={item._id}>
+              <td className="px-5 py-3 font-semibold text-slate-950">
+                {[item.title, item.firstName, item.lastName].filter(Boolean).join(" ")}
+              </td>
+              <td className="px-5 py-3 text-slate-600">{item.branchId?.name ?? "Branch"}</td>
+              <td className="px-5 py-3 text-slate-600">{formatStatusLabel(item.membershipStatus)}</td>
+              <td className="px-5 py-3 text-slate-600">{formatDate(item.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AttendanceMixTable({
+  items,
+}: {
+  items: NonNullable<DashboardOverview["operational"]>["attendanceMix"];
+}) {
+  if (!items.length) {
+    return (
+      <div className="m-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+        No attendance movement has been recorded in this scope yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <tr>
+            <th className="px-5 py-3">Service</th>
+            <th className="px-5 py-3">Total</th>
+            <th className="px-5 py-3">First timers</th>
+            <th className="px-5 py-3">Converts</th>
+            <th className="px-5 py-3">Submissions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {items.map((item) => (
+            <tr key={item._id}>
+              <td className="px-5 py-3 font-semibold text-slate-950">
+                {item._id.replace(/_/g, " ")}
+              </td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.totalPeople)}</td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.firstTimers)}</td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.newConverts)}</td>
+              <td className="px-5 py-3 text-slate-700">{formatCount(item.summarySubmissions)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -367,91 +514,62 @@ export default async function DashboardPage({
 
       {dashboard.scope.kind !== "branch" ? (
         <section className="grid gap-6 xl:grid-cols-2">
-          <WatchlistCard
+          <DashboardTableSection
             eyebrow="Reporting watchlist"
             title="Branches with no recent attendance submission"
-            emptyLabel="Every branch in this scope has submitted a recent attendance summary."
           >
-            <BranchAlertList
+            <BranchAlertTable
               items={dashboard.executive.branchesWithoutRecentAttendance}
               days={dashboard.scope.days}
               emptyLabel="Every branch in this scope has submitted a recent attendance summary."
               metricLabel={(item) => formatDate(item.lastSubmittedAt)}
             />
-          </WatchlistCard>
+          </DashboardTableSection>
 
-          <WatchlistCard
+          <DashboardTableSection
             eyebrow="Follow-up pressure"
             title="Branches carrying the highest backlog"
-            emptyLabel="No follow-up backlog is building up in the selected scope."
           >
-            <BranchAlertList
+            <BranchAlertTable
               items={dashboard.executive.highFollowUpBacklog}
               days={dashboard.scope.days}
               emptyLabel="No follow-up backlog is building up in the selected scope."
               metricLabel={(item) => `${formatCount(item.pendingFollowUp ?? 0)} pending`}
             />
-          </WatchlistCard>
+          </DashboardTableSection>
 
-          <WatchlistCard
+          <DashboardTableSection
             eyebrow="Growth leaders"
             title="Top growth branches in the current range"
-            emptyLabel="No growth activity has been recorded in the current range yet."
           >
-            <GrowthList
+            <GrowthTable
               items={dashboard.executive.topGrowthBranches}
               days={dashboard.scope.days}
               emptyLabel="No growth activity has been recorded in the current range yet."
             />
-          </WatchlistCard>
+          </DashboardTableSection>
 
-          <WatchlistCard
+          <DashboardTableSection
             eyebrow="Coverage risk"
             title="Lowest growth branches in the current range"
-            emptyLabel="No branches in this scope are showing low activity yet."
           >
-            <GrowthList
+            <GrowthTable
               items={dashboard.executive.bottomGrowthBranches}
               days={dashboard.scope.days}
               emptyLabel="No branches in this scope are showing low activity yet."
             />
-          </WatchlistCard>
+          </DashboardTableSection>
         </section>
       ) : null}
 
       {dashboard.operational ? (
         <section className="grid gap-6 xl:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
-              Guest activity
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-              Recent guest capture
-            </h2>
-            <div className="mt-6 space-y-3">
-              {dashboard.operational.recentGuests.length ? (
-                dashboard.operational.recentGuests.map((guest) => (
-                  <div key={guest._id} className="rounded-xl border border-slate-200 bg-white p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {guest.firstName} {guest.lastName}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {guest.branchId?.name ?? "Branch"} · {formatStatusLabel(guest.visitStatus)}
-                        </p>
-                      </div>
-                      <span className="text-sm text-slate-500">{formatDate(guest.createdAt)}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                  No recent guest activity in this scope yet.
-                </div>
-              )}
-            </div>
-          </section>
+          <DashboardTableSection eyebrow="Guest activity" title="Recent guest capture">
+            <PersonTable
+              items={dashboard.operational.recentGuests}
+              emptyLabel="No recent guest activity in this scope yet."
+            />
+          </DashboardTableSection>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
@@ -474,79 +592,16 @@ export default async function DashboardPage({
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
-              Attendance mix
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-              Service movement in the current range
-            </h2>
-            <div className="mt-6 space-y-3">
-              {dashboard.operational.attendanceMix.length ? (
-                dashboard.operational.attendanceMix.map((service) => (
-                  <div key={service._id} className="rounded-xl border border-slate-200 bg-white p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {service._id.replace(/_/g, " ")}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {formatCount(service.summarySubmissions)} summary submissions
-                        </p>
-                      </div>
-                      <span className="text-2xl font-semibold text-slate-900">
-                        {formatCount(service.totalPeople)}
-                      </span>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-amber-700">
-                        {formatCount(service.firstTimers)} first timers
-                      </span>
-                      <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-emerald-700">
-                        {formatCount(service.newConverts)} converts
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                  No attendance movement has been recorded in this scope yet.
-                </div>
-              )}
-            </div>
-          </section>
+          <DashboardTableSection eyebrow="Attendance mix" title="Service movement in the current range">
+            <AttendanceMixTable items={dashboard.operational.attendanceMix} />
+          </DashboardTableSection>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.125em] text-teal-700">
-              Newest members
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-              Recent member growth
-            </h2>
-            <div className="mt-6 space-y-3">
-              {dashboard.operational.newestMembers.length ? (
-                dashboard.operational.newestMembers.map((member) => (
-                  <div key={member._id} className="rounded-xl border border-slate-200 bg-white p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {[member.title, member.firstName, member.lastName].filter(Boolean).join(" ")}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {member.branchId?.name ?? "Branch"} · {formatStatusLabel(member.membershipStatus)}
-                        </p>
-                      </div>
-                      <span className="text-sm text-slate-500">{formatDate(member.createdAt)}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                  No new members have been added in this scope yet.
-                </div>
-              )}
-            </div>
-          </section>
+          <DashboardTableSection eyebrow="Newest members" title="Recent member growth">
+            <MemberTable
+              items={dashboard.operational.newestMembers}
+              emptyLabel="No new members have been added in this scope yet."
+            />
+          </DashboardTableSection>
         </section>
       ) : (
         <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
