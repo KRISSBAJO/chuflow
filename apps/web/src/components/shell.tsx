@@ -322,37 +322,29 @@ function ShellContent({ children }: { children: ReactNode }) {
           ) : null}
 
           {/* Main Content Area */}
-          <main className={`min-w-0 flex flex-col ${isCompact ? "gap-4" : "gap-6"}`}>
+          <main className={`min-w-0 flex flex-col ${isCompact ? "gap-3" : "gap-4"}`}>
             {/* Top Bar */}
-            <div className={`surface flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 bg-white lg:flex-row lg:items-center lg:justify-between ${isCompact ? "p-3" : "p-4"}`}>
-              <div className="flex min-w-0 items-center gap-3">
+            <div className={`surface flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white ${isCompact ? "p-2.5" : "p-3"}`}>
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen((current) => !current)}
                   aria-controls="app-sidebar"
                   aria-expanded={isSidebarOpen}
                   title={isSidebarOpen ? "Collapse menu" : "Open menu"}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
                 >
                   <span className="sr-only">{isSidebarOpen ? "Collapse menu" : "Open menu"}</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d={isSidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 7h16M4 12h16M4 17h16"} />
                   </svg>
                 </button>
-                <div className="hidden min-w-0 border-l border-slate-200 pl-3 sm:block">
-                  <p className="truncate text-sm font-semibold text-slate-950">
-                    {branding.organizationName}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">
-                    Operations workspace
-                  </p>
-                </div>
               </div>
 
-              <div className="grid min-w-0 flex-1 gap-3 lg:grid-cols-[minmax(240px,420px)_minmax(0,1fr)_auto] lg:items-center">
+              <div className="grid min-w-0 flex-1 gap-2 xl:grid-cols-[minmax(260px,420px)_minmax(0,1fr)_auto] xl:items-center">
                 <form
                   onSubmit={handleSearchSubmit}
-                  className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm transition focus-within:border-teal-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-teal-100"
+                  className="flex h-10 min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 shadow-sm transition focus-within:border-teal-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-teal-100"
                 >
                   <input
                     value={searchQuery}
@@ -362,41 +354,41 @@ function ShellContent({ children }: { children: ReactNode }) {
                   />
                   <button
                     type="submit"
-                    className="rounded-md bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                    className="rounded-md bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
                   >
                     Search
                   </button>
                 </form>
 
                 {/* Quick Stats */}
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <div className="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5 xl:flex-nowrap">
+                  <div className="whitespace-nowrap rounded-md border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-xs font-semibold text-teal-800">
                     {headerStats.firstTimers} first-timers
                   </div>
-                  <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
+                  <div className="whitespace-nowrap rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-800">
                     {headerStats.pendingFollowUp} follow-up pending
                   </div>
-                  <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                  <div className="whitespace-nowrap rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
                     {headerStats.pendingApprovals} approvals
                   </div>
                   <Link
                     href="/approvals"
-                    className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800"
+                    className="whitespace-nowrap rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-800"
                   >
                     {headerStats.activeAlerts} live alerts
                   </Link>
                 </div>
 
                 {/* User Section */}
-                <div className="flex min-w-0 items-center gap-2 lg:border-l lg:border-slate-200 lg:pl-3">
-                  <SessionUserBadge />
+                <div className="flex min-w-0 items-center gap-2 xl:border-l xl:border-slate-200 xl:pl-3">
+                  <SessionUserBadge compact />
                   <LogoutButton compact />
                 </div>
               </div>
             </div>
 
             {alertItems.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+              <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
                 <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                   Live alerts
                 </span>
@@ -404,7 +396,7 @@ function ShellContent({ children }: { children: ReactNode }) {
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`rounded-lg border px-4 py-2 text-xs font-semibold transition hover:opacity-90 ${
+                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition hover:opacity-90 ${
                       item.tone === "critical"
                         ? "border-rose-200 bg-rose-50 text-rose-800"
                         : item.tone === "warm"

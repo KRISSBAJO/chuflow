@@ -26,7 +26,7 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
       disabled={loading}
       className={
         compact
-          ? "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+          ? "rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
           : "rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
       }
     >

@@ -3,7 +3,7 @@
 import { formatRoleLabel, getUserScopeLabel } from "@/lib/permissions";
 import { useSession } from "./session-context";
 
-export function SessionUserBadge() {
+export function SessionUserBadge({ compact = false }: { compact?: boolean }) {
   const { user, expired, ready } = useSession();
 
   if (expired) {
@@ -24,6 +24,24 @@ export function SessionUserBadge() {
 
   const initials = `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
   const scopeLabel = getUserScopeLabel(user);
+
+  if (compact) {
+    return (
+      <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-950 text-xs font-bold text-white">
+          {initials}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold leading-4 text-slate-900">
+            {user.firstName} {user.lastName}
+          </p>
+          <p className="truncate text-[10px] uppercase leading-4 text-slate-400">
+            {formatRoleLabel(user.role)}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
