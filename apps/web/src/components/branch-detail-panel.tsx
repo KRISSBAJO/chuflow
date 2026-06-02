@@ -52,6 +52,17 @@ export function BranchDetailPanel({
         (attendanceTemplate.shareUrl || attendanceTemplate.slug).includes("?") ? "&" : "?"
       }branchId=${encodeURIComponent(branch._id)}`
     : null;
+  const weeklyReportTemplate = templates.find(
+    (template) =>
+      template.kind === "weekly_report" &&
+      template.isActive &&
+      template.branchId === branch._id,
+  ) || templates.find((template) => template.kind === "weekly_report" && template.isActive);
+  const weeklyReportShareUrl = weeklyReportTemplate
+    ? `${weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`}${
+        (weeklyReportTemplate.shareUrl || weeklyReportTemplate.slug).includes("?") ? "&" : "?"
+      }branchId=${encodeURIComponent(branch._id)}`
+    : null;
 
   const availableDistricts = useMemo(() => {
     if (isDistrictRole(currentUserRole) && defaultDistrict) {
@@ -164,6 +175,13 @@ export function BranchDetailPanel({
             title="Attendance entry link"
             url={attendanceShareUrl}
             description="Share this with branch staff or service leads for attendance submission."
+          />
+        ) : null}
+        {weeklyReportShareUrl ? (
+          <ShareLinkCard
+            title="Weekly report link"
+            url={weeklyReportShareUrl}
+            description="Send this branch-scoped spiritual indices report to branch leaders for weekly district reporting."
           />
         ) : null}
       </div>

@@ -8,6 +8,7 @@ const TemplateFieldSchema = raw({
   label: { type: String, required: true },
   type: { type: String, required: true },
   required: { type: Boolean, default: false },
+  defaultValue: { type: String },
   placeholder: { type: String },
   helpText: { type: String },
   width: { type: String, default: 'half' },
@@ -22,7 +23,7 @@ const TemplateThemeSchema = raw({
 
 @Schema({ timestamps: true })
 export class IntakeTemplate {
-  @Prop({ required: true, enum: ['guest', 'member', 'attendance'] })
+  @Prop({ required: true, enum: ['guest', 'member', 'attendance', 'weekly_report'] })
   kind!: string;
 
   @Prop({ required: true })
@@ -89,6 +90,7 @@ export class IntakeTemplate {
     label: string;
     type: string;
     required?: boolean;
+    defaultValue?: string;
     placeholder?: string;
     helpText?: string;
     width?: string;

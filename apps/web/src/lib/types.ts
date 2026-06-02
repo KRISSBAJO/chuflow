@@ -598,6 +598,7 @@ export type IntakeTemplateField = {
   label: string;
   type: string;
   required?: boolean;
+  defaultValue?: string;
   placeholder?: string;
   helpText?: string;
   width?: string;
@@ -606,7 +607,7 @@ export type IntakeTemplateField = {
 
 export type IntakeTemplate = {
   _id: string;
-  kind: "guest" | "member" | "attendance";
+  kind: "guest" | "member" | "attendance" | "weekly_report";
   name: string;
   slug: string;
   branchId?: string;
@@ -654,6 +655,21 @@ export type AttendanceSubmissionItem = {
   firstTimersCount?: number;
   newConvertsCount?: number;
   holySpiritBaptismCount?: number;
+  currentAttendance?: number;
+  previousAttendance?: number;
+  growth?: number;
+  growthPercent?: number;
+  averageLastYear?: number;
+  averageLastPeriod?: number;
+  believersFoundationClassCount?: number;
+  waterBaptismCount?: number;
+  covenantHourOfPrayerAttendance?: number;
+  winnersSatelliteFellowshipAverage?: number;
+  cellCount?: number;
+  newCellCount?: number;
+  wofbiAttendance?: number;
+  remarks?: string;
+  answers?: Record<string, unknown>;
   attendanceId?: string;
   duplicateSummaryCount: number;
   approvedAt?: string;

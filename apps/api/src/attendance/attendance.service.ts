@@ -242,6 +242,66 @@ export class AttendanceService {
     }
   }
 
+  private attendanceSummaryTotal(record: Partial<Attendance>) {
+    const adultsAndChildren = (record.adultsCount ?? 0) + (record.childrenCount ?? 0);
+
+    if (adultsAndChildren > 0) {
+      return adultsAndChildren;
+    }
+
+    return (record.menCount ?? 0) + (record.womenCount ?? 0) + (record.childrenCount ?? 0);
+  }
+
+  async branchSummaryDefaults(branchId: string) {
+    const summaries = await this.attendanceModel
+      .find({
+        branchId,
+        entryMode: 'summary',
+      })
+      .sort({ serviceDate: -1 })
+      .limit(12)
+      .lean();
+
+    const totals = summaries
+      .map((summary) => this.attendanceSummaryTotal(summary))
+      .filter((total) => total > 0);
+    const recentTotals = totals.slice(0, 4);
+    const averageLastPeriod =
+      recentTotals.length > 0
+        ? Math.round(recentTotals.reduce((sum, total) => sum + total, 0) / recentTotals.length)
+        : undefined;
+    const lastYearDate = new Date();
+    lastYearDate.setFullYear(lastYearDate.getFullYear() - 1);
+    const lastYearWindowStart = new Date(lastYearDate);
+    lastYearWindowStart.setDate(lastYearWindowStart.getDate() - 45);
+    const lastYearWindowEnd = new Date(lastYearDate);
+    lastYearWindowEnd.setDate(lastYearWindowEnd.getDate() + 45);
+
+    const lastYearSummaries = await this.attendanceModel
+      .find({
+        branchId,
+        entryMode: 'summary',
+        serviceDate: {
+          $gte: lastYearWindowStart,
+          $lte: lastYearWindowEnd,
+        },
+      })
+      .lean();
+    const lastYearTotals = lastYearSummaries
+      .map((summary) => this.attendanceSummaryTotal(summary))
+      .filter((total) => total > 0);
+    const averageLastYear =
+      lastYearTotals.length > 0
+        ? Math.round(lastYearTotals.reduce((sum, total) => sum + total, 0) / lastYearTotals.length)
+        : undefined;
+
+    return {
+      previousAttendance: totals[0],
+      averageLastPeriod,
+      averageLastYear,
+    };
+  }
+
   async create(dto: CreateAttendanceDto, currentUser?: AuthUser) {
     const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
     const entryMode = dto.entryMode ?? 'individual';

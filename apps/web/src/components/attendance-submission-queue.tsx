@@ -28,6 +28,10 @@ function getStatusTone(status: string) {
   }
 }
 
+function formatKind(kind: string) {
+  return kind === "weekly_report" ? "Weekly report" : "Attendance";
+}
+
 async function mutateSubmission(id: string, action: "approve" | "reject") {
   const response = await fetch(
     `${API_URL}/intake-templates/attendance-submissions/${id}/${action}`,
@@ -40,7 +44,7 @@ async function mutateSubmission(id: string, action: "approve" | "reject") {
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || `Unable to ${action} attendance submission`);
+    throw new Error(result.message || `Unable to ${action} submission`);
   }
 
   return result;
@@ -64,8 +68,8 @@ export function AttendanceSubmissionQueue({
       await mutateSubmission(id, action);
       toast.success(
         action === "approve"
-          ? "Attendance summary approved"
-          : "Attendance summary rejected",
+          ? "Submission approved"
+          : "Submission rejected",
       );
       startTransition(() => {
         router.refresh();
@@ -91,6 +95,7 @@ export function AttendanceSubmissionQueue({
         items.map((item) => {
           const totalPeople =
             (item.adultsCount ?? 0) + (item.childrenCount ?? 0);
+          const isWeeklyReport = item.templateKind === "weekly_report";
 
           return (
             <article
@@ -110,6 +115,9 @@ export function AttendanceSubmissionQueue({
                     >
                       {formatStatus(item.status)}
                     </span>
+                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-700">
+                      {formatKind(item.templateKind)}
+                    </span>
                     {item.branchId?.name ? (
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
                         {item.branchId.name}
@@ -123,9 +131,15 @@ export function AttendanceSubmissionQueue({
                         ? new Date(item.serviceDate).toLocaleString()
                         : "No date"}
                     </span>
-                    <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
-                      {totalPeople} total people
-                    </span>
+                    {isWeeklyReport ? (
+                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
+                        {item.currentAttendance ?? 0} current attendance
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
+                        {totalPeople} total people
+                      </span>
+                    )}
                     <span className="rounded-full bg-orange-50 px-2.5 py-1 text-orange-700">
                       {item.firstTimersCount ?? 0} first timers
                     </span>
@@ -141,14 +155,23 @@ export function AttendanceSubmissionQueue({
                   </div>
 
                   <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-                    {[
-                      ["Men", item.menCount ?? 0],
-                      ["Women", item.womenCount ?? 0],
-                      ["Children", item.childrenCount ?? 0],
-                      ["Adults", item.adultsCount ?? 0],
-                      ["First timers", item.firstTimersCount ?? 0],
-                      ["Holy Spirit", item.holySpiritBaptismCount ?? 0],
-                    ].map(([label, value]) => (
+                    {(isWeeklyReport
+                      ? [
+                          ["Previous", item.previousAttendance ?? 0],
+                          ["Growth", item.growth ?? 0],
+                          ["Growth %", item.growthPercent !== undefined ? `${item.growthPercent}%` : "0%"],
+                          ["BFC", item.believersFoundationClassCount ?? 0],
+                          ["Cells", item.cellCount ?? 0],
+                          ["WOFBI", item.wofbiAttendance ?? 0],
+                        ]
+                      : [
+                          ["Men", item.menCount ?? 0],
+                          ["Women", item.womenCount ?? 0],
+                          ["Children", item.childrenCount ?? 0],
+                          ["Adults", item.adultsCount ?? 0],
+                          ["First timers", item.firstTimersCount ?? 0],
+                          ["Holy Spirit", item.holySpiritBaptismCount ?? 0],
+                        ]).map(([label, value]) => (
                       <div
                         key={label}
                         className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600"
@@ -160,6 +183,11 @@ export function AttendanceSubmissionQueue({
                       </div>
                     ))}
                   </div>
+                  {isWeeklyReport && item.remarks ? (
+                    <p className="max-w-3xl rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                      {item.remarks}
+                    </p>
+                  ) : null}
                 </div>
 
                 {canApprove ? (

@@ -42,7 +42,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       if (exists) {
         if (exists.isSeeded) {
           const shouldRefreshSeedContent =
-            ['member-growth-record', 'service-attendance-summary'].includes(template.slug) ||
+            ['member-growth-record', 'service-attendance-summary', 'weekly-spiritual-indices'].includes(template.slug) ||
             (
               template.slug === 'winners-first-timer' &&
               !exists.fields?.some((field) => field.key === 'firstName') &&
@@ -82,6 +82,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       guest: 'winners-first-timer',
       member: 'member-growth-record',
       attendance: 'service-attendance-summary',
+      weekly_report: 'weekly-spiritual-indices',
     } as const;
 
     for (const kind of Object.keys(fallbackSlugsByKind) as Array<keyof typeof fallbackSlugsByKind>) {
@@ -124,6 +125,14 @@ export class IntakeTemplatesService implements OnModuleInit {
         templateKind: 'attendance',
         status: { $exists: false },
         attendanceId: { $exists: false },
+      },
+      { status: 'pending' },
+    );
+
+    await this.submissionModel.updateMany(
+      {
+        templateKind: 'weekly_report',
+        status: { $exists: false },
       },
       { status: 'pending' },
     );
@@ -195,7 +204,10 @@ export class IntakeTemplatesService implements OnModuleInit {
   >(template: T): Promise<T> {
     const branchId = this.toString(template.branchId);
 
-    if (!branchId || (template.kind !== 'member' && template.kind !== 'attendance')) {
+    if (
+      !branchId ||
+      (template.kind !== 'member' && template.kind !== 'attendance' && template.kind !== 'weekly_report')
+    ) {
       return template;
     }
 
@@ -207,6 +219,14 @@ export class IntakeTemplatesService implements OnModuleInit {
       template.kind === 'attendance'
         ? await this.serviceTypesService.findNamesByBranch(branchId)
         : [];
+    const weeklyReportDefaults: {
+      previousAttendance?: number;
+      averageLastPeriod?: number;
+      averageLastYear?: number;
+    } =
+      template.kind === 'weekly_report'
+        ? await this.attendanceService.branchSummaryDefaults(branchId)
+        : {};
 
     return {
       ...template,
@@ -228,6 +248,21 @@ export class IntakeTemplatesService implements OnModuleInit {
                 helpText:
                   field.helpText ||
                   'Choose the service type configured for this branch.',
+              }
+          : field.key === 'previousAttendance' && weeklyReportDefaults.previousAttendance !== undefined
+            ? {
+                ...field,
+                defaultValue: String(weeklyReportDefaults.previousAttendance),
+              }
+          : field.key === 'averageLastPeriod' && weeklyReportDefaults.averageLastPeriod !== undefined
+            ? {
+                ...field,
+                defaultValue: String(weeklyReportDefaults.averageLastPeriod),
+              }
+          : field.key === 'averageLastYear' && weeklyReportDefaults.averageLastYear !== undefined
+            ? {
+                ...field,
+                defaultValue: String(weeklyReportDefaults.averageLastYear),
               }
           : field,
       ),
@@ -963,6 +998,65 @@ export class IntakeTemplatesService implements OnModuleInit {
     };
   }
 
+  private buildWeeklyReportSubmissionSnapshot(
+    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    answers: Record<string, unknown>,
+    branchId: string,
+  ) {
+    const currentAttendance = this.getAnswerNumber(template, answers, ['currentAttendance'], ['current', 'attendance']);
+    const previousAttendance = this.getAnswerNumber(template, answers, ['previousAttendance'], ['previous', 'attendance']);
+    const growth =
+      currentAttendance !== undefined && previousAttendance !== undefined
+        ? currentAttendance - previousAttendance
+        : undefined;
+    const growthPercent =
+      growth !== undefined && previousAttendance !== undefined && previousAttendance > 0
+        ? Number(((growth / previousAttendance) * 100).toFixed(2))
+        : undefined;
+
+    return {
+      branchId,
+      serviceDate: new Date(
+        this.getAnswerString(template, answers, ['reportWeek', 'weekEnding'], ['report', 'week']) ??
+          new Date().toISOString(),
+      ),
+      serviceType: 'weekly_spiritual_indices',
+      serviceName: 'Weekly spiritual indices',
+      currentAttendance,
+      previousAttendance,
+      growth,
+      growthPercent,
+      averageLastYear: this.getAnswerNumber(template, answers, ['averageLastYear'], ['avg', 'last', 'year']),
+      averageLastPeriod: this.getAnswerNumber(template, answers, ['averageLastPeriod'], ['avg', 'recent']),
+      firstTimersCount: this.getAnswerNumber(template, answers, ['firstTimersCount'], ['first', 'timer']),
+      newConvertsCount: this.getAnswerNumber(template, answers, ['newConvertsCount'], ['new', 'convert']),
+      believersFoundationClassCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['believersFoundationClassCount'],
+        ['believers', 'foundation'],
+      ),
+      holySpiritBaptismCount: this.getAnswerNumber(template, answers, ['holySpiritBaptismCount'], ['holy', 'ghost']),
+      waterBaptismCount: this.getAnswerNumber(template, answers, ['waterBaptismCount'], ['water', 'baptism']),
+      covenantHourOfPrayerAttendance: this.getAnswerNumber(
+        template,
+        answers,
+        ['covenantHourOfPrayerAttendance'],
+        ['covenant', 'hour'],
+      ),
+      winnersSatelliteFellowshipAverage: this.getAnswerNumber(
+        template,
+        answers,
+        ['winnersSatelliteFellowshipAverage'],
+        ['satellite', 'fellowship'],
+      ),
+      cellCount: this.getAnswerNumber(template, answers, ['cellCount'], ['cells']),
+      newCellCount: this.getAnswerNumber(template, answers, ['newCellCount'], ['new', 'cells']),
+      wofbiAttendance: this.getAnswerNumber(template, answers, ['wofbiAttendance'], ['wofbi']),
+      remarks: this.getAnswerString(template, answers, ['remarks'], ['remarks']),
+    };
+  }
+
   private getAttendanceSubmissionStatus(
     submission: IntakeSubmission & {
       status?: string;
@@ -1033,6 +1127,24 @@ export class IntakeTemplatesService implements OnModuleInit {
       firstTimersCount: this.toNumber(submission.firstTimersCount),
       newConvertsCount: this.toNumber(submission.newConvertsCount),
       holySpiritBaptismCount: this.toNumber(submission.holySpiritBaptismCount),
+      currentAttendance: this.toNumber(submission.currentAttendance),
+      previousAttendance: this.toNumber(submission.previousAttendance),
+      growth: this.toNumber(submission.growth),
+      growthPercent: this.toNumber(submission.growthPercent),
+      averageLastYear: this.toNumber(submission.averageLastYear),
+      averageLastPeriod: this.toNumber(submission.averageLastPeriod),
+      believersFoundationClassCount: this.toNumber(submission.believersFoundationClassCount),
+      waterBaptismCount: this.toNumber(submission.waterBaptismCount),
+      covenantHourOfPrayerAttendance: this.toNumber(submission.covenantHourOfPrayerAttendance),
+      winnersSatelliteFellowshipAverage: this.toNumber(submission.winnersSatelliteFellowshipAverage),
+      cellCount: this.toNumber(submission.cellCount),
+      newCellCount: this.toNumber(submission.newCellCount),
+      wofbiAttendance: this.toNumber(submission.wofbiAttendance),
+      remarks: typeof submission.remarks === 'string' ? submission.remarks : undefined,
+      answers:
+        typeof submission.answers === 'object' && submission.answers !== null
+          ? submission.answers
+          : {},
       attendanceId: submission.attendanceId ? String(submission.attendanceId) : undefined,
       duplicateSummaryCount,
       approvedAt: submission.approvedAt ? new Date(String(submission.approvedAt)) : undefined,
@@ -1119,6 +1231,14 @@ export class IntakeTemplatesService implements OnModuleInit {
       return { memberId: member._id };
     }
 
+    if (template.kind === 'weekly_report') {
+      if (!branchId) {
+        throw new BadRequestException('Weekly report template must be linked to a branch');
+      }
+
+      return this.buildWeeklyReportSubmissionSnapshot(template, answers, branchId);
+    }
+
     if (!branchId) {
       throw new BadRequestException('Attendance template must be linked to a branch');
     }
@@ -1141,7 +1261,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     );
     const normalizedStatus = this.toString(filters.status);
     const query: Record<string, unknown> = {
-      templateKind: 'attendance',
+      templateKind: { $in: ['attendance', 'weekly_report'] },
       ...branchFilter,
       ...(normalizedStatus ? { status: normalizedStatus } : {}),
     };
@@ -1156,7 +1276,12 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     const duplicateSummaryCounts = await Promise.all(
       submissions.map(async (submission) => {
-        if (!submission.branchId || !submission.serviceDate || !submission.serviceType) {
+        if (
+          submission.templateKind !== 'attendance' ||
+          !submission.branchId ||
+          !submission.serviceDate ||
+          !submission.serviceType
+        ) {
           return 0;
         }
 
@@ -1199,14 +1324,14 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     const submission = await this.submissionModel.findById(id).lean();
 
-    if (!submission || submission.templateKind !== 'attendance') {
+    if (!submission || !['attendance', 'weekly_report'].includes(submission.templateKind)) {
       throw new NotFoundException('Attendance submission not found');
     }
 
     const status = this.getAttendanceSubmissionStatus(submission);
 
-    if (status === 'approved' && submission.attendanceId) {
-      throw new BadRequestException('This attendance submission has already been approved');
+    if (status === 'approved' && (submission.attendanceId || submission.templateKind === 'weekly_report')) {
+      throw new BadRequestException('This submission has already been approved');
     }
 
     if (status === 'rejected') {
@@ -1216,7 +1341,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     const branchId = this.toString(submission.branchId);
 
     if (!branchId) {
-      throw new BadRequestException('Attendance submission is missing a branch');
+      throw new BadRequestException('Submission is missing a branch');
     }
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
@@ -1227,16 +1352,21 @@ export class IntakeTemplatesService implements OnModuleInit {
       throw new NotFoundException('Template not found');
     }
 
-    const attendancePayload = this.buildAttendanceCreatePayload(
-      template as IntakeTemplate & { _id?: unknown; branchId?: unknown },
-      submission.answers,
-      branchId,
-    );
-    const attendance = await this.attendanceService.create(attendancePayload, currentUser);
+    const attendance =
+      submission.templateKind === 'attendance'
+        ? await this.attendanceService.create(
+            this.buildAttendanceCreatePayload(
+              template as IntakeTemplate & { _id?: unknown; branchId?: unknown },
+              submission.answers,
+              branchId,
+            ),
+            currentUser,
+          )
+        : undefined;
 
     await this.submissionModel.findByIdAndUpdate(id, {
       status: 'approved',
-      attendanceId: attendance._id,
+      attendanceId: attendance?._id,
       approvedAt: new Date(),
       approvedBy: new Types.ObjectId(currentUser.sub),
       rejectedAt: undefined,
@@ -1247,11 +1377,13 @@ export class IntakeTemplatesService implements OnModuleInit {
       entityType: 'attendance_submission',
       entityId: id,
       action: 'approved',
-      summary: `Attendance submission approved for ${submission.serviceType || submission.templateName}`,
+      summary: `${submission.templateKind === 'weekly_report' ? 'Weekly report' : 'Attendance submission'} approved for ${
+        submission.serviceType || submission.templateName
+      }`,
       actor: currentUser,
       branchId,
       metadata: {
-        attendanceId: String(attendance._id),
+        attendanceId: attendance ? String(attendance._id) : undefined,
         serviceDate: submission.serviceDate,
         serviceType: submission.serviceType,
       },
@@ -1276,7 +1408,7 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     const submission = await this.submissionModel.findById(id).lean();
 
-    if (!submission || submission.templateKind !== 'attendance') {
+    if (!submission || !['attendance', 'weekly_report'].includes(submission.templateKind)) {
       throw new NotFoundException('Attendance submission not found');
     }
 
@@ -1383,17 +1515,21 @@ export class IntakeTemplatesService implements OnModuleInit {
       templateKind: template.kind,
       branchId: template.branchId,
       answers,
-      status: template.kind === 'attendance' ? 'pending' : 'completed',
+      status: ['attendance', 'weekly_report'].includes(template.kind) ? 'pending' : 'completed',
       ...domainRecord,
     });
 
     const successTitle =
       template.kind === 'attendance'
         ? 'Attendance summary received'
+        : template.kind === 'weekly_report'
+          ? 'Weekly report received'
         : template.successTitle;
     const successMessage =
       template.kind === 'attendance'
         ? 'This service attendance summary has been submitted and is awaiting branch approval.'
+        : template.kind === 'weekly_report'
+          ? 'This weekly spiritual indices report has been submitted and is awaiting district review.'
         : template.successMessage;
 
     return {

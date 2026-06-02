@@ -39,6 +39,17 @@ function starterFields(kind: IntakeTemplate["kind"]): IntakeTemplateField[] {
     ];
   }
 
+  if (kind === "weekly_report") {
+    return [
+      { key: "reportWeek", label: "Report week ending", type: "date", required: true, width: "half" },
+      { key: "currentAttendance", label: "Current attendance", type: "number", required: true, width: "half" },
+      { key: "previousAttendance", label: "Previous attendance", type: "number", required: false, width: "half" },
+      { key: "firstTimersCount", label: "FT - First timers", type: "number", required: false, width: "half" },
+      { key: "newConvertsCount", label: "NC - New converts", type: "number", required: false, width: "half" },
+      { key: "remarks", label: "Remarks", type: "textarea", required: false, width: "full" },
+    ];
+  }
+
   return [
     { key: "serviceDate", label: "Day of service", type: "date", required: true, width: "half" },
     { key: "serviceType", label: "Service type", type: "select", required: true, width: "half", options: ["Sunday service", "Midweek service"] },
@@ -54,6 +65,7 @@ function sanitizeField(field: IntakeTemplateField): IntakeTemplateField {
     label: field.label.trim() || "Untitled field",
     type: field.type,
     required: !!field.required,
+    defaultValue: field.defaultValue?.trim() || undefined,
     placeholder: field.placeholder?.trim() || undefined,
     helpText: field.helpText?.trim() || undefined,
     width: field.width === "full" ? "full" : "half",
@@ -363,6 +375,7 @@ export function TemplateEditorCard({
             <option value="guest">First timer</option>
             <option value="member">Member</option>
             <option value="attendance">Attendance summary</option>
+            <option value="weekly_report">Weekly report</option>
           </select>
           {!isBranchScopedRole(currentUserRole) ? (
             <select
@@ -549,6 +562,13 @@ export function TemplateEditorCard({
                   onChange={(event) => updateField(index, { placeholder: event.target.value })}
                   disabled={readonly}
                   placeholder="Placeholder"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
+                />
+                <input
+                  value={field.defaultValue || ""}
+                  onChange={(event) => updateField(index, { defaultValue: event.target.value })}
+                  disabled={readonly}
+                  placeholder="Default value"
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
                 />
                 <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">

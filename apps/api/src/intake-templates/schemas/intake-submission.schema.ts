@@ -32,6 +32,69 @@ export class IntakeSubmission {
   @Prop()
   serviceName?: string;
 
+  @Prop()
+  menCount?: number;
+
+  @Prop()
+  womenCount?: number;
+
+  @Prop()
+  childrenCount?: number;
+
+  @Prop()
+  adultsCount?: number;
+
+  @Prop()
+  currentAttendance?: number;
+
+  @Prop()
+  previousAttendance?: number;
+
+  @Prop()
+  growth?: number;
+
+  @Prop()
+  growthPercent?: number;
+
+  @Prop()
+  averageLastYear?: number;
+
+  @Prop()
+  averageLastPeriod?: number;
+
+  @Prop()
+  firstTimersCount?: number;
+
+  @Prop()
+  newConvertsCount?: number;
+
+  @Prop()
+  believersFoundationClassCount?: number;
+
+  @Prop()
+  holySpiritBaptismCount?: number;
+
+  @Prop()
+  waterBaptismCount?: number;
+
+  @Prop()
+  covenantHourOfPrayerAttendance?: number;
+
+  @Prop()
+  winnersSatelliteFellowshipAverage?: number;
+
+  @Prop()
+  cellCount?: number;
+
+  @Prop()
+  newCellCount?: number;
+
+  @Prop()
+  wofbiAttendance?: number;
+
+  @Prop()
+  remarks?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Guest' })
   guestId?: Types.ObjectId;
 

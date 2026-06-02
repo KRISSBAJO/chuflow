@@ -31,6 +31,11 @@ class IntakeTemplateFieldDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  defaultValue?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   placeholder?: string;
 
   @ApiProperty({ required: false })
@@ -68,8 +73,8 @@ class IntakeTemplateThemeDto {
 }
 
 export class CreateIntakeTemplateDto {
-  @ApiProperty({ enum: ['guest', 'member', 'attendance'] })
-  @IsIn(['guest', 'member', 'attendance'])
+  @ApiProperty({ enum: ['guest', 'member', 'attendance', 'weekly_report'] })
+  @IsIn(['guest', 'member', 'attendance', 'weekly_report'])
   kind!: string;
 
   @ApiProperty()

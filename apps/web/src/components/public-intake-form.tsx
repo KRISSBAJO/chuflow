@@ -43,7 +43,7 @@ function createInitialAnswers(fields: IntakeTemplate["fields"]) {
   const initialAnswers: Record<string, IntakeAnswerValue> = {};
 
   for (const field of fields) {
-    initialAnswers[field.key] = field.type === "checkbox" ? [] : "";
+    initialAnswers[field.key] = field.type === "checkbox" ? [] : field.defaultValue || "";
   }
 
   return initialAnswers;
@@ -254,6 +254,47 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
         key: "service",
         title: "Service & Baptism",
         description: "Capture service-unit placement and baptism milestones.",
+        matches: () => true,
+      },
+    ];
+  }
+
+  if (kind === "weekly_report") {
+    return [
+      {
+        key: "week",
+        title: "Report week",
+        description: "Confirm the branch reporting week and attendance movement.",
+        matches: (value: string) =>
+          matchesAny(value, [
+            "reportweek",
+            "currentattendance",
+            "previousattendance",
+            "growth",
+            "averagelastyear",
+            "averagelastperiod",
+          ]),
+      },
+      {
+        key: "spiritual",
+        title: "Spiritual indices",
+        description: "Enter first timers, new converts, foundation class, baptism, CHOP, and WSF figures.",
+        matches: (value: string) =>
+          matchesAny(value, [
+            "firsttimers",
+            "newconverts",
+            "believersfoundation",
+            "holyghost",
+            "holyspirit",
+            "waterbaptism",
+            "covenanthour",
+            "satellitefellowship",
+          ]),
+      },
+      {
+        key: "cells",
+        title: "Cells & remarks",
+        description: "Capture cell growth, WOFBI, and any branch remarks for district review.",
         matches: () => true,
       },
     ];

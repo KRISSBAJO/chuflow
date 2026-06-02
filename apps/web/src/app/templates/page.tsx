@@ -19,19 +19,20 @@ export default async function TemplatesPage() {
   const guestTemplates = templates.filter((template) => template.kind === "guest").length;
   const memberTemplates = templates.filter((template) => template.kind === "member").length;
   const attendanceTemplates = templates.filter((template) => template.kind === "attendance").length;
+  const weeklyReportTemplates = templates.filter((template) => template.kind === "weekly_report").length;
 
   return (
     <Shell>
       <PageHeader
         eyebrow="Templates"
         title="Dynamic intake templates and public share links"
-        description="Manage branded first timer, member, and attendance templates with editable wording, field structure, active public links, and scannable QR access."
+        description="Manage branded first timer, member, attendance, and weekly report templates with editable wording, field structure, active public links, and scannable QR access."
       />
       <section className="grid gap-3 md:grid-cols-4">
         <MetricCard label="Templates" value={String(templates.length)} delta="Total template definitions" tone="cool" />
         <MetricCard label="Active public links" value={String(activeTemplates)} delta="Currently live templates" tone="warm" />
         <MetricCard label="Guest / member" value={`${guestTemplates}/${memberTemplates}`} delta="First-timer and member forms" tone="cool" />
-        <MetricCard label="Attendance" value={String(attendanceTemplates)} delta="Service summary forms" tone="warm" />
+        <MetricCard label="Reports" value={`${attendanceTemplates}/${weeklyReportTemplates}`} delta="Attendance and weekly indices" tone="warm" />
       </section>
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="surface rounded-[24px] p-5">
