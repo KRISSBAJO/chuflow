@@ -8,10 +8,34 @@ import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type {
   BranchOverview,
+  BranchSummary,
   DistrictOption,
   IntakeTemplate,
   OversightRegionOption,
 } from "@/lib/types";
+
+function buildBranchOverview(branch: BranchSummary, overview?: BranchOverview): BranchOverview {
+  return {
+    ...branch,
+    ...overview,
+    metrics: {
+      guestCount: overview?.metrics?.guestCount ?? 0,
+      memberCount: overview?.metrics?.memberCount ?? 0,
+      teamCount: overview?.metrics?.teamCount ?? 0,
+      activeUserCount: overview?.metrics?.activeUserCount ?? 0,
+      branchAdminCount: overview?.metrics?.branchAdminCount ?? 0,
+      residentPastorCount: overview?.metrics?.residentPastorCount ?? 0,
+      associatePastorCount: overview?.metrics?.associatePastorCount ?? 0,
+      followUpCount: overview?.metrics?.followUpCount ?? 0,
+      usherCount: overview?.metrics?.usherCount ?? 0,
+    },
+    admins: overview?.admins ?? [],
+    residentPastors: overview?.residentPastors ?? [],
+    associatePastors: overview?.associatePastors ?? [],
+    followUpTeam: overview?.followUpTeam ?? [],
+    ushers: overview?.ushers ?? [],
+  };
+}
 
 export default async function BranchDetailPage({
   params,
@@ -21,18 +45,22 @@ export default async function BranchDetailPage({
   const user = await requireServerRole("/branches");
   const { id } = await params;
 
-  const [branches, oversightRegions, districts, templates] = await Promise.all([
-    serverGet<BranchOverview[]>("/branches/overview"),
+  const [branchRecord, branches, oversightRegions, districts, templates] = await Promise.all([
+    serverGet<BranchSummary>(`/branches/${id}`).catch(() => null),
+    serverGet<BranchOverview[]>("/branches/overview").catch(() => []),
     serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
     serverGet<DistrictOption[]>("/districts").catch(() => []),
     serverGet<IntakeTemplate[]>("/intake-templates").catch(() => []),
   ]);
 
-  const branch = branches.find((item) => item._id === id);
-
-  if (!branch) {
+  if (!branchRecord) {
     notFound();
   }
+
+  const branch = buildBranchOverview(
+    branchRecord,
+    branches.find((item) => item._id === id),
+  );
 
   return (
     <Shell>
