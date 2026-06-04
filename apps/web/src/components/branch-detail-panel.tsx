@@ -72,6 +72,21 @@ export function BranchDetailPanel({
   const weeklyReportShareUrl = weeklyReportTemplate
     ? withBranchQuery(weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`, branch._id)
     : null;
+  const maagReportTemplate = templates.find(
+    (template) =>
+      template.kind === "maag_report" &&
+      template.isActive &&
+      template.branchId === branch._id,
+  ) || templates.find(
+    (template) =>
+      template.kind === "maag_report" &&
+      template.isActive &&
+      template.oversightRegion === branch.oversightRegion &&
+      template.district === branch.district,
+  ) || templates.find((template) => template.kind === "maag_report" && template.isActive);
+  const maagReportShareUrl = maagReportTemplate
+    ? withBranchQuery(maagReportTemplate.shareUrl || `/intake/${maagReportTemplate.slug}`, branch._id)
+    : null;
 
   const availableDistricts = useMemo(() => {
     if (isDistrictRole(currentUserRole) && defaultDistrict) {
@@ -191,6 +206,13 @@ export function BranchDetailPanel({
             title="Weekly report link"
             url={weeklyReportShareUrl}
             description="Send this branch-scoped spiritual indices report to branch leaders for weekly district reporting."
+          />
+        ) : null}
+        {maagReportShareUrl ? (
+          <ShareLinkCard
+            title="MAAG monthly report link"
+            url={maagReportShareUrl}
+            description="Send this branch-scoped MAAG form to branch leaders for monthly district reporting."
           />
         ) : null}
       </div>

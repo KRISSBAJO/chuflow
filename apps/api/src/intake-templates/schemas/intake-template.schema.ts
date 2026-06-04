@@ -23,7 +23,7 @@ const TemplateThemeSchema = raw({
 
 @Schema({ timestamps: true })
 export class IntakeTemplate {
-  @Prop({ required: true, enum: ['guest', 'member', 'attendance', 'weekly_report'] })
+  @Prop({ required: true, enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'] })
   kind!: string;
 
   @Prop({ required: true })

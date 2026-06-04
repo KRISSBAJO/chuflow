@@ -607,7 +607,7 @@ export type IntakeTemplateField = {
 
 export type IntakeTemplate = {
   _id: string;
-  kind: "guest" | "member" | "attendance" | "weekly_report";
+  kind: "guest" | "member" | "attendance" | "weekly_report" | "maag_report";
   name: string;
   slug: string;
   branchId?: string;
@@ -770,6 +770,95 @@ export type WeeklyReportListResponse = {
   branchTotals: WeeklyReportGroupTotal[];
   districtTotals: WeeklyReportGroupTotal[];
   trends: WeeklyReportGroupTotal[];
+};
+
+export type MaagReportItem = {
+  _id: string;
+  status: string;
+  branch: {
+    _id: string;
+    name: string;
+    oversightRegion: string;
+    district: string;
+    city?: string;
+    state?: string;
+  };
+  reportMonth: string;
+  nation: string;
+  stationName: string;
+  facilityType: string;
+  stationHeadDesignation: string;
+  mainHallCapacity: number;
+  mainChairsCount: number;
+  overflowCapacity: number;
+  overflowChairsCount: number;
+  youthHallCapacity: number;
+  youthChairsCount: number;
+  childrenHallCapacity: number;
+  childrenChairsCount: number;
+  servicesCount: number;
+  averageAttendance: number;
+  highestAttendance: number;
+  averageAdultAttendance: number;
+  averageChildrenAttendance: number;
+  chopAverageAttendance: number;
+  incomeAmount: number;
+  rofAmount: number;
+  expenseAmount: number;
+  wsfAverage: number;
+  firstTimersCount: number;
+  wofbiAttendance: number;
+  newConvertsCount: number;
+  foundationClassCount: number;
+  holyGhostBaptismCount: number;
+  waterBaptismCount: number;
+  pastorName?: string;
+  pastorPhone?: string;
+  stationStatusRemarks?: string;
+};
+
+export type MaagReportGroupTotal = {
+  key: string;
+  label: string;
+  oversightRegion?: string;
+  district?: string;
+  reports: number;
+  servicesCount: number;
+  averageAttendance: number;
+  highestAttendance: number;
+  averageAdultAttendance: number;
+  averageChildrenAttendance: number;
+  incomeAmount: number;
+  rofAmount: number;
+  expenseAmount: number;
+  firstTimersCount: number;
+  newConvertsCount: number;
+  foundationClassCount: number;
+  holyGhostBaptismCount: number;
+  waterBaptismCount: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+};
+
+export type MaagReportListResponse = {
+  filters: {
+    monthFrom: string;
+    monthTo: string;
+    branchId?: string;
+    oversightRegion?: string;
+    district?: string;
+    status?: string;
+  };
+  scope: {
+    branchCount: number;
+    branches: Array<BranchSummary & { hasReport?: boolean }>;
+  };
+  items: MaagReportItem[];
+  totals: MaagReportGroupTotal;
+  branchTotals: MaagReportGroupTotal[];
+  districtTotals: MaagReportGroupTotal[];
+  trends: MaagReportGroupTotal[];
 };
 
 export type PublicConnectOption = IntakeTemplate & {

@@ -48,7 +48,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       if (exists) {
         if (exists.isSeeded) {
           const shouldRefreshSeedContent =
-            ['member-growth-record', 'service-attendance-summary', 'weekly-spiritual-indices'].includes(template.slug) ||
+            ['member-growth-record', 'service-attendance-summary', 'weekly-spiritual-indices', 'maag-monthly-report'].includes(template.slug) ||
             (
               template.slug === 'winners-first-timer' &&
               !exists.fields?.some((field) => field.key === 'firstName') &&
@@ -93,6 +93,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       member: 'member-growth-record',
       attendance: 'service-attendance-summary',
       weekly_report: 'weekly-spiritual-indices',
+      maag_report: 'maag-monthly-report',
     } as const;
 
     for (const kind of Object.keys(fallbackSlugsByKind) as Array<keyof typeof fallbackSlugsByKind>) {
@@ -141,7 +142,7 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     await this.submissionModel.updateMany(
       {
-        templateKind: 'weekly_report',
+        templateKind: { $in: ['weekly_report', 'maag_report'] },
         status: { $exists: false },
       },
       { status: 'pending' },
@@ -1325,6 +1326,24 @@ export class IntakeTemplatesService implements OnModuleInit {
     };
   }
 
+  private buildMaagReportSubmissionSnapshot(
+    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    answers: Record<string, unknown>,
+    branchId: string,
+  ) {
+    const reportMonth = this.getAnswerString(template, answers, ['reportMonth'], ['month', 'year']);
+    const serviceDate = reportMonth && /^\d{4}-\d{2}$/.test(reportMonth)
+      ? new Date(`${reportMonth}-01T00:00:00.000Z`)
+      : new Date();
+
+    return {
+      branchId,
+      serviceDate,
+      serviceType: 'maag_monthly_report',
+      serviceName: 'MAAG monthly report',
+    };
+  }
+
   private getAttendanceSubmissionStatus(
     submission: IntakeSubmission & {
       status?: string;
@@ -1507,6 +1526,14 @@ export class IntakeTemplatesService implements OnModuleInit {
       return this.buildWeeklyReportSubmissionSnapshot(template, answers, branchId);
     }
 
+    if (template.kind === 'maag_report') {
+      if (!branchId) {
+        throw new BadRequestException('MAAG report template must be linked to a branch');
+      }
+
+      return this.buildMaagReportSubmissionSnapshot(template, answers, branchId);
+    }
+
     if (!branchId) {
       throw new BadRequestException('Attendance template must be linked to a branch');
     }
@@ -1529,7 +1556,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     );
     const normalizedStatus = this.toString(filters.status);
     const query: Record<string, unknown> = {
-      templateKind: { $in: ['attendance', 'weekly_report'] },
+      templateKind: { $in: ['attendance', 'weekly_report', 'maag_report'] },
       ...branchFilter,
       ...(normalizedStatus ? { status: normalizedStatus } : {}),
     };
@@ -1952,18 +1979,362 @@ export class IntakeTemplatesService implements OnModuleInit {
     return [headers, ...rows].map((row) => row.map((value) => this.buildCsvValue(value)).join(',')).join('\n');
   }
 
+  private answerNumber(answers: Record<string, unknown>, key: string) {
+    return this.numberValue(answers[key]);
+  }
+
+  private answerString(answers: Record<string, unknown>, key: string) {
+    return typeof answers[key] === 'string' ? String(answers[key]) : answers[key] === undefined ? '' : String(answers[key]);
+  }
+
+  private maagItemFromSubmission(submission: Record<string, unknown>) {
+    const branch =
+      typeof submission.branchId === 'object' && submission.branchId !== null
+        ? (submission.branchId as {
+            _id?: unknown;
+            name?: string;
+            oversightRegion?: string;
+            district?: string;
+            city?: string;
+            state?: string;
+          })
+        : {};
+    const answers =
+      typeof submission.answers === 'object' && submission.answers !== null
+        ? (submission.answers as Record<string, unknown>)
+        : {};
+
+    return {
+      _id: String(submission._id),
+      status: this.getAttendanceSubmissionStatus(submission as unknown as IntakeSubmission),
+      branch: {
+        _id: String(branch._id ?? ''),
+        name: branch.name || this.answerString(answers, 'stationName') || 'Unassigned',
+        oversightRegion: branch.oversightRegion || '',
+        district: branch.district || '',
+        city: branch.city,
+        state: branch.state,
+      },
+      reportMonth: this.answerString(answers, 'reportMonth') || (submission.serviceDate ? String(submission.serviceDate).slice(0, 7) : ''),
+      nation: this.answerString(answers, 'nation'),
+      stationName: this.answerString(answers, 'stationName'),
+      facilityType: this.answerString(answers, 'facilityType'),
+      stationHeadDesignation: this.answerString(answers, 'stationHeadDesignation'),
+      mainHallCapacity: this.answerNumber(answers, 'mainHallCapacity'),
+      mainChairsCount: this.answerNumber(answers, 'mainChairsCount'),
+      overflowCapacity: this.answerNumber(answers, 'overflowCapacity'),
+      overflowChairsCount: this.answerNumber(answers, 'overflowChairsCount'),
+      youthHallCapacity: this.answerNumber(answers, 'youthHallCapacity'),
+      youthChairsCount: this.answerNumber(answers, 'youthChairsCount'),
+      childrenHallCapacity: this.answerNumber(answers, 'childrenHallCapacity'),
+      childrenChairsCount: this.answerNumber(answers, 'childrenChairsCount'),
+      servicesCount: this.answerNumber(answers, 'servicesCount'),
+      averageAttendance: this.answerNumber(answers, 'averageAttendance'),
+      highestAttendance: this.answerNumber(answers, 'highestAttendance'),
+      averageAdultAttendance: this.answerNumber(answers, 'averageAdultAttendance'),
+      averageChildrenAttendance: this.answerNumber(answers, 'averageChildrenAttendance'),
+      chopAverageAttendance: this.answerNumber(answers, 'chopAverageAttendance'),
+      incomeAmount: this.answerNumber(answers, 'incomeAmount'),
+      rofAmount: this.answerNumber(answers, 'rofAmount'),
+      expenseAmount: this.answerNumber(answers, 'expenseAmount'),
+      wsfAverage: this.answerNumber(answers, 'wsfAverage'),
+      firstTimersCount: this.answerNumber(answers, 'firstTimersCount'),
+      wofbiAttendance: this.answerNumber(answers, 'wofbiAttendance'),
+      newConvertsCount: this.answerNumber(answers, 'newConvertsCount'),
+      foundationClassCount: this.answerNumber(answers, 'foundationClassCount'),
+      holyGhostBaptismCount: this.answerNumber(answers, 'holyGhostBaptismCount'),
+      waterBaptismCount: this.answerNumber(answers, 'waterBaptismCount'),
+      pastorName: this.answerString(answers, 'pastorName'),
+      pastorPhone: this.answerString(answers, 'pastorPhone'),
+      pastorMaritalStatus: this.answerString(answers, 'pastorMaritalStatus'),
+      pastorDobOrAge: this.answerString(answers, 'pastorDobOrAge'),
+      pastorKidsAge: this.answerString(answers, 'pastorKidsAge'),
+      pastorNationality: this.answerString(answers, 'pastorNationality'),
+      pastorNationOfEnlistment: this.answerString(answers, 'pastorNationOfEnlistment'),
+      pastorYearOfEnlistment: this.answerString(answers, 'pastorYearOfEnlistment'),
+      pastorDateOfResumption: this.answerString(answers, 'pastorDateOfResumption'),
+      pastorAttendanceDateOfResumption: this.answerString(answers, 'pastorAttendanceDateOfResumption'),
+      stationStatusRemarks: this.answerString(answers, 'stationStatusRemarks'),
+      createdAt: submission.createdAt ? new Date(String(submission.createdAt)).toISOString() : undefined,
+      approvedAt: submission.approvedAt ? new Date(String(submission.approvedAt)).toISOString() : undefined,
+    };
+  }
+
+  async listMaagReports(
+    currentUser: AuthUser,
+    filters: {
+      branchId?: string;
+      oversightRegion?: string;
+      district?: string;
+      status?: string;
+      monthFrom?: string;
+      monthTo?: string;
+    } = {},
+  ) {
+    this.ensureAttendanceSubmissionViewRole(currentUser);
+
+    const defaultStart = new Date();
+    defaultStart.setMonth(defaultStart.getMonth() - 11, 1);
+    const defaultEnd = new Date();
+    defaultEnd.setDate(1);
+    const startDate = this.normalizeDateBoundary(
+      filters.monthFrom && /^\d{4}-\d{2}$/.test(filters.monthFrom) ? `${filters.monthFrom}-01` : undefined,
+      defaultStart,
+    );
+    const endBase =
+      filters.monthTo && /^\d{4}-\d{2}$/.test(filters.monthTo)
+        ? new Date(`${filters.monthTo}-01T00:00:00.000Z`)
+        : defaultEnd;
+    endBase.setMonth(endBase.getMonth() + 1, 0);
+    const endDate = this.normalizeDateBoundary(endBase.toISOString(), endBase, true);
+    const branches = await this.resolveWeeklyReportBranches(currentUser, filters);
+    const branchIds = branches.map((branch) => new Types.ObjectId(String(branch._id)));
+
+    if (branchIds.length === 0) {
+      return {
+        filters: { monthFrom: startDate.toISOString().slice(0, 7), monthTo: endDate.toISOString().slice(0, 7) },
+        scope: { branchCount: 0, branches: [] },
+        items: [],
+        totals: {},
+        branchTotals: [],
+        districtTotals: [],
+        trends: [],
+      };
+    }
+
+    const submissions = await this.submissionModel
+      .find({
+        templateKind: 'maag_report',
+        branchId: { $in: branchIds },
+        serviceDate: { $gte: startDate, $lte: endDate },
+        ...(filters.status ? { status: filters.status } : {}),
+      })
+      .populate('branchId', 'name oversightRegion district city state')
+      .sort({ serviceDate: -1, createdAt: -1 })
+      .lean();
+    const items = submissions.map((submission) => this.maagItemFromSubmission(submission));
+    const emptyTotals = {
+      reports: 0,
+      servicesCount: 0,
+      averageAttendance: 0,
+      highestAttendance: 0,
+      averageAdultAttendance: 0,
+      averageChildrenAttendance: 0,
+      incomeAmount: 0,
+      rofAmount: 0,
+      expenseAmount: 0,
+      firstTimersCount: 0,
+      newConvertsCount: 0,
+      foundationClassCount: 0,
+      holyGhostBaptismCount: 0,
+      waterBaptismCount: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+    };
+    type MaagTotalsAccumulator = typeof emptyTotals & Record<string, unknown>;
+    const addItem = (
+      acc: MaagTotalsAccumulator,
+      item: ReturnType<typeof this.maagItemFromSubmission>,
+    ): MaagTotalsAccumulator => {
+      acc.reports += 1;
+      acc.servicesCount += item.servicesCount;
+      acc.averageAttendance += item.averageAttendance;
+      acc.highestAttendance += item.highestAttendance;
+      acc.averageAdultAttendance += item.averageAdultAttendance;
+      acc.averageChildrenAttendance += item.averageChildrenAttendance;
+      acc.incomeAmount += item.incomeAmount;
+      acc.rofAmount += item.rofAmount;
+      acc.expenseAmount += item.expenseAmount;
+      acc.firstTimersCount += item.firstTimersCount;
+      acc.newConvertsCount += item.newConvertsCount;
+      acc.foundationClassCount += item.foundationClassCount;
+      acc.holyGhostBaptismCount += item.holyGhostBaptismCount;
+      acc.waterBaptismCount += item.waterBaptismCount;
+      if (item.status === 'approved') acc.approved += 1;
+      else if (item.status === 'rejected') acc.rejected += 1;
+      else acc.pending += 1;
+      return acc;
+    };
+    const totals = items.reduce<MaagTotalsAccumulator>(addItem, { ...emptyTotals });
+    const summarizeGroup = (
+      groupItems: typeof items,
+      key: string,
+      label: string,
+      extra: Record<string, unknown> = {},
+    ) => groupItems.reduce<MaagTotalsAccumulator>(
+      (acc, item) => addItem(acc, item),
+      { key, label, ...emptyTotals, ...extra },
+    );
+    const branchTotals = branches.map((branch) =>
+      summarizeGroup(
+        items.filter((item) => item.branch._id === String(branch._id)),
+        String(branch._id),
+        branch.name,
+        { oversightRegion: branch.oversightRegion, district: branch.district },
+      ),
+    );
+    const districtKeys = Array.from(new Set(branches.map((branch) => `${branch.oversightRegion}::${branch.district}`)));
+    const districtTotals = districtKeys.map((key) => {
+      const [oversightRegion, district] = key.split('::');
+      return summarizeGroup(
+        items.filter((item) => item.branch.oversightRegion === oversightRegion && item.branch.district === district),
+        key,
+        district,
+        { oversightRegion, district },
+      );
+    });
+    const trendKeys = Array.from(new Set(items.map((item) => item.reportMonth).filter(Boolean))).sort();
+    const trends = trendKeys.map((month) => summarizeGroup(items.filter((item) => item.reportMonth === month), month, month));
+
+    return {
+      filters: {
+        monthFrom: startDate.toISOString().slice(0, 7),
+        monthTo: endDate.toISOString().slice(0, 7),
+        branchId: filters.branchId,
+        oversightRegion: filters.oversightRegion,
+        district: filters.district,
+        status: filters.status,
+      },
+      scope: {
+        branchCount: branches.length,
+        branches: branches.map((branch) => ({
+          _id: String(branch._id),
+          name: branch.name,
+          oversightRegion: branch.oversightRegion,
+          district: branch.district,
+          city: branch.city,
+          state: branch.state,
+          hasReport: items.some((item) => item.branch._id === String(branch._id)),
+        })),
+      },
+      items,
+      totals,
+      branchTotals,
+      districtTotals,
+      trends,
+    };
+  }
+
+  async exportMaagReportsCsv(
+    currentUser: AuthUser,
+    filters: {
+      branchId?: string;
+      oversightRegion?: string;
+      district?: string;
+      status?: string;
+      monthFrom?: string;
+      monthTo?: string;
+    } = {},
+  ) {
+    const report = await this.listMaagReports(currentUser, filters);
+    const headers = [
+      'Month',
+      'National Area',
+      'District',
+      'Nation',
+      'Station',
+      'Facility Type',
+      'Head Designation',
+      'Main Hall Capacity',
+      'Main Chairs',
+      'Overflow Capacity',
+      'Overflow Chairs',
+      'Youth Capacity',
+      'Youth Chairs',
+      'Children Capacity',
+      'Children Chairs',
+      'Services',
+      'Avg Attendance',
+      'Highest Attendance',
+      'Avg Adult',
+      'Avg Children',
+      'CHOP Avg',
+      'Income',
+      'ROF',
+      'Expense',
+      'WSF Avg',
+      'First Timers',
+      'WOFBI',
+      'New Converts',
+      'Foundation Class',
+      'Holy Ghost Baptism',
+      'Water Baptism',
+      'Pastor',
+      'Phone',
+      'Marital Status',
+      'DOB/Age',
+      'Kids/Age',
+      'Nationality',
+      'Nation of Enlistment',
+      'YOE',
+      'DOR',
+      'Attd as at Resumption',
+      'Status/Remarks',
+    ];
+    const rows = report.items.map((item: ReturnType<typeof this.maagItemFromSubmission>) => [
+      item.reportMonth,
+      item.branch.oversightRegion,
+      item.branch.district,
+      item.nation,
+      item.stationName || item.branch.name,
+      item.facilityType,
+      item.stationHeadDesignation,
+      item.mainHallCapacity,
+      item.mainChairsCount,
+      item.overflowCapacity,
+      item.overflowChairsCount,
+      item.youthHallCapacity,
+      item.youthChairsCount,
+      item.childrenHallCapacity,
+      item.childrenChairsCount,
+      item.servicesCount,
+      item.averageAttendance,
+      item.highestAttendance,
+      item.averageAdultAttendance,
+      item.averageChildrenAttendance,
+      item.chopAverageAttendance,
+      item.incomeAmount,
+      item.rofAmount,
+      item.expenseAmount,
+      item.wsfAverage,
+      item.firstTimersCount,
+      item.wofbiAttendance,
+      item.newConvertsCount,
+      item.foundationClassCount,
+      item.holyGhostBaptismCount,
+      item.waterBaptismCount,
+      item.pastorName,
+      item.pastorPhone,
+      item.pastorMaritalStatus,
+      item.pastorDobOrAge,
+      item.pastorKidsAge,
+      item.pastorNationality,
+      item.pastorNationOfEnlistment,
+      item.pastorYearOfEnlistment,
+      item.pastorDateOfResumption,
+      item.pastorAttendanceDateOfResumption,
+      item.stationStatusRemarks,
+    ]);
+
+    return [headers, ...rows].map((row) => row.map((value) => this.buildCsvValue(value)).join(',')).join('\n');
+  }
+
   async approveAttendanceSubmission(id: string, currentUser: AuthUser) {
     this.ensureAttendanceSubmissionApprover(currentUser);
 
     const submission = await this.submissionModel.findById(id).lean();
 
-    if (!submission || !['attendance', 'weekly_report'].includes(submission.templateKind)) {
+    if (!submission || !['attendance', 'weekly_report', 'maag_report'].includes(submission.templateKind)) {
       throw new NotFoundException('Attendance submission not found');
     }
 
     const status = this.getAttendanceSubmissionStatus(submission);
 
-    if (status === 'approved' && (submission.attendanceId || submission.templateKind === 'weekly_report')) {
+    if (
+      status === 'approved' &&
+      (submission.attendanceId || ['weekly_report', 'maag_report'].includes(submission.templateKind))
+    ) {
       throw new BadRequestException('This submission has already been approved');
     }
 
@@ -2010,7 +2381,13 @@ export class IntakeTemplatesService implements OnModuleInit {
       entityType: 'attendance_submission',
       entityId: id,
       action: 'approved',
-      summary: `${submission.templateKind === 'weekly_report' ? 'Weekly report' : 'Attendance submission'} approved for ${
+      summary: `${
+        submission.templateKind === 'weekly_report'
+          ? 'Weekly report'
+          : submission.templateKind === 'maag_report'
+            ? 'MAAG report'
+            : 'Attendance submission'
+      } approved for ${
         submission.serviceType || submission.templateName
       }`,
       actor: currentUser,
@@ -2041,7 +2418,7 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     const submission = await this.submissionModel.findById(id).lean();
 
-    if (!submission || !['attendance', 'weekly_report'].includes(submission.templateKind)) {
+    if (!submission || !['attendance', 'weekly_report', 'maag_report'].includes(submission.templateKind)) {
       throw new NotFoundException('Attendance submission not found');
     }
 
@@ -2148,7 +2525,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       templateKind: template.kind,
       branchId: template.branchId,
       answers,
-      status: ['attendance', 'weekly_report'].includes(template.kind) ? 'pending' : 'completed',
+      status: ['attendance', 'weekly_report', 'maag_report'].includes(template.kind) ? 'pending' : 'completed',
       ...domainRecord,
     });
 
@@ -2157,12 +2534,16 @@ export class IntakeTemplatesService implements OnModuleInit {
         ? 'Attendance summary received'
         : template.kind === 'weekly_report'
           ? 'Weekly report received'
+          : template.kind === 'maag_report'
+            ? 'MAAG report received'
         : template.successTitle;
     const successMessage =
       template.kind === 'attendance'
         ? 'This service attendance summary has been submitted and is awaiting branch approval.'
         : template.kind === 'weekly_report'
           ? 'This weekly spiritual indices report has been submitted and is awaiting district review.'
+          : template.kind === 'maag_report'
+            ? 'This monthly MAAG report has been submitted and is awaiting district review.'
         : template.successMessage;
 
     return {

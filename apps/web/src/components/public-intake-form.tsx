@@ -15,7 +15,7 @@ type IntakeStep = {
 };
 
 function getInputType(type: string) {
-  if (["email", "tel", "date", "number"].includes(type)) {
+  if (["email", "tel", "date", "month", "number"].includes(type)) {
     return type;
   }
 
@@ -327,6 +327,52 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
     ];
   }
 
+  if (kind === "maag_report") {
+    return [
+      {
+        key: "station",
+        title: "Station details",
+        description: "Confirm the month, nation, station, facility type, and station leadership.",
+        matches: (value: string) =>
+          matchesAny(value, ["reportmonth", "nation", "station", "facilitytype", "designation"]),
+      },
+      {
+        key: "facilities",
+        title: "Facilities",
+        description: "Enter auditorium, overflow, youth, and children facility capacities.",
+        matches: (value: string) =>
+          matchesAny(value, ["hallcapacity", "chairs", "overflow", "youth", "childrenfacility", "mainauditorium"]),
+      },
+      {
+        key: "attendance",
+        title: "Attendance",
+        description: "Record services, average attendance, highest attendance, adult, children, and CHOP figures.",
+        matches: (value: string) =>
+          matchesAny(value, ["servicescount", "attendance", "adult", "children", "chop"]),
+      },
+      {
+        key: "finance",
+        title: "Finance",
+        description: "Capture income, ROF, and expense values for the month.",
+        matches: (value: string) =>
+          matchesAny(value, ["income", "rof", "expense"]),
+      },
+      {
+        key: "indices",
+        title: "Spiritual indices",
+        description: "Capture WSF, first timers, WOFBI, new converts, foundation class, and baptisms.",
+        matches: (value: string) =>
+          matchesAny(value, ["wsf", "firsttimers", "wofbi", "newconverts", "foundation", "baptism"]),
+      },
+      {
+        key: "pastor",
+        title: "Pastor details",
+        description: "Record pastor contact, family, nationality, enlistment, resumption, and station remarks.",
+        matches: () => true,
+      },
+    ];
+  }
+
   return [
     {
       key: "service",
@@ -427,7 +473,10 @@ export function PublicIntakeForm({
   const submissionBranchId = template.branchId || branchId || selectedBranchId;
   const weeklyGrowthPreview =
     template.kind === "weekly_report" ? getWeeklyGrowthPreview(answers) : null;
-  const needsBranchSelection = template.kind === "weekly_report" && !template.branchId && !branchId;
+  const needsBranchSelection =
+    (template.kind === "weekly_report" || template.kind === "maag_report") &&
+    !template.branchId &&
+    !branchId;
   const oversightRegions = Array.from(new Set(branchOptions.map((branch) => branch.oversightRegion).filter(Boolean))).sort();
   const districtOptions = Array.from(
     new Set(
@@ -709,7 +758,7 @@ export function PublicIntakeForm({
                 <div className="mb-6 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm font-semibold text-slate-950">Report scope</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Choose the district and branch this weekly report belongs to before submitting.
+                    Choose the district and branch this report belongs to before submitting.
                   </p>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     <label className="space-y-2">

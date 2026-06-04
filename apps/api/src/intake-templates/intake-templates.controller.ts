@@ -129,6 +129,56 @@ export class IntakeTemplatesController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Get('maag-reports')
+  listMaagReports(
+    @CurrentUser() user: AuthUser,
+    @Query('branchId') branchId?: string,
+    @Query('oversightRegion') oversightRegion?: string,
+    @Query('district') district?: string,
+    @Query('status') status?: string,
+    @Query('monthFrom') monthFrom?: string,
+    @Query('monthTo') monthTo?: string,
+  ) {
+    return this.intakeTemplatesService.listMaagReports(user, {
+      branchId,
+      oversightRegion,
+      district,
+      status,
+      monthFrom,
+      monthTo,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Get('maag-reports/export.csv')
+  async exportMaagReportsCsv(
+    @CurrentUser() user: AuthUser,
+    @Res() response: Response,
+    @Query('branchId') branchId?: string,
+    @Query('oversightRegion') oversightRegion?: string,
+    @Query('district') district?: string,
+    @Query('status') status?: string,
+    @Query('monthFrom') monthFrom?: string,
+    @Query('monthTo') monthTo?: string,
+  ) {
+    const csv = await this.intakeTemplatesService.exportMaagReportsCsv(user, {
+      branchId,
+      oversightRegion,
+      district,
+      status,
+      monthFrom,
+      monthTo,
+    });
+    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    response.setHeader('Content-Disposition', 'attachment; filename="maag-monthly-report.csv"');
+    response.send(csv);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
   @Get(':id')
   findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.intakeTemplatesService.findOne(id, user, this.getWebUrl());

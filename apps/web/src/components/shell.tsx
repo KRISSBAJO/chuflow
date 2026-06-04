@@ -21,6 +21,7 @@ const links = [
   { href: "/service-units", label: "Service Units" },
   { href: "/attendance", label: "Attendance" },
   { href: "/weekly-reports", label: "Weekly Reports" },
+  { href: "/maag-reports", label: "MAAG Reports" },
   { href: "/finance", label: "Finance" },
   { href: "/branches", label: "Branches" },
   { href: "/structure", label: "Structure" },

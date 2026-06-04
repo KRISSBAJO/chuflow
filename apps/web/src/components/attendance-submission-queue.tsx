@@ -29,6 +29,10 @@ function getStatusTone(status: string) {
 }
 
 function formatKind(kind: string) {
+  if (kind === "maag_report") {
+    return "MAAG report";
+  }
+
   return kind === "weekly_report" ? "Weekly report" : "Attendance";
 }
 
@@ -96,6 +100,7 @@ export function AttendanceSubmissionQueue({
           const totalPeople =
             (item.adultsCount ?? 0) + (item.childrenCount ?? 0);
           const isWeeklyReport = item.templateKind === "weekly_report";
+          const isMaagReport = item.templateKind === "maag_report";
 
           return (
             <article
@@ -131,7 +136,11 @@ export function AttendanceSubmissionQueue({
                         ? new Date(item.serviceDate).toLocaleString()
                         : "No date"}
                     </span>
-                    {isWeeklyReport ? (
+                    {isMaagReport ? (
+                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
+                        MAAG monthly report
+                      </span>
+                    ) : isWeeklyReport ? (
                       <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
                         {item.currentAttendance ?? 0} current attendance
                       </span>
@@ -155,7 +164,16 @@ export function AttendanceSubmissionQueue({
                   </div>
 
                   <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-                    {(isWeeklyReport
+                    {(isMaagReport
+                      ? [
+                          ["Report", "Monthly"],
+                          ["Status", item.status],
+                          ["Branch", item.branchId?.name || "Branch"],
+                          ["Review", item.approvedAt ? "Reviewed" : "Pending"],
+                          ["Created", item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""],
+                          ["Type", "MAAG"],
+                        ]
+                      : isWeeklyReport
                       ? [
                           ["Previous", item.previousAttendance ?? 0],
                           ["Growth", item.growth ?? 0],

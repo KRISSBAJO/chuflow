@@ -73,8 +73,8 @@ class IntakeTemplateThemeDto {
 }
 
 export class CreateIntakeTemplateDto {
-  @ApiProperty({ enum: ['guest', 'member', 'attendance', 'weekly_report'] })
-  @IsIn(['guest', 'member', 'attendance', 'weekly_report'])
+  @ApiProperty({ enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'] })
+  @IsIn(['guest', 'member', 'attendance', 'weekly_report', 'maag_report'])
   kind!: string;
 
   @ApiProperty()

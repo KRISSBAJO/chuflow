@@ -34,7 +34,7 @@ export default async function PublicIntakePage({
     }
 
     const branchOptions =
-      template.kind === "weekly_report" && !branchId
+      (template.kind === "weekly_report" || template.kind === "maag_report") && !branchId
         ? await publicServerGet<PublicBranchOption[]>(
             `/intake-templates/public/branch-options${
               branchOptionQuery.toString() ? `?${branchOptionQuery.toString()}` : ""

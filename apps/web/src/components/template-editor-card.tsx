@@ -8,7 +8,7 @@ import { isBranchScopedRole, isDistrictRole, isNationalRole } from "@/lib/permis
 import { TemplateQrCard } from "./template-qr-card";
 import type { BranchSummary, IntakeTemplate, IntakeTemplateField } from "@/lib/types";
 
-const fieldTypes = ["text", "email", "tel", "date", "textarea", "radio", "select", "number"];
+const fieldTypes = ["text", "email", "tel", "date", "month", "textarea", "radio", "select", "number"];
 
 function slugify(value: string) {
   return value
@@ -47,6 +47,17 @@ function starterFields(kind: IntakeTemplate["kind"]): IntakeTemplateField[] {
       { key: "firstTimersCount", label: "FT - First timers", type: "number", required: false, width: "half" },
       { key: "newConvertsCount", label: "NC - New converts", type: "number", required: false, width: "half" },
       { key: "remarks", label: "Remarks", type: "textarea", required: false, width: "full" },
+    ];
+  }
+
+  if (kind === "maag_report") {
+    return [
+      { key: "reportMonth", label: "Month and year", type: "month", required: true, width: "half" },
+      { key: "nation", label: "Nation", type: "text", required: true, width: "half" },
+      { key: "stationName", label: "Station", type: "text", required: true, width: "half" },
+      { key: "facilityType", label: "Facility type", type: "select", required: true, width: "half", options: ["Ministry Owned", "Rented", "Temporary Structure"] },
+      { key: "averageAttendance", label: "Avg att'd", type: "number", required: true, width: "half" },
+      { key: "incomeAmount", label: "Income ($ dollars only)", type: "number", required: true, width: "half" },
     ];
   }
 
@@ -458,6 +469,7 @@ export function TemplateEditorCard({
             <option value="member">Member</option>
             <option value="attendance">Attendance summary</option>
             <option value="weekly_report">Weekly report</option>
+            <option value="maag_report">MAAG monthly report</option>
           </select>
           {!isBranchScopedRole(currentUserRole) ? (
             <select
