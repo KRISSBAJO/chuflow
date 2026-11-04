@@ -11,7 +11,9 @@ export default async function LoginPage({
   const notice =
     params.reason === "api-unavailable"
       ? "ChuFlow API is temporarily unavailable. Please try again shortly."
-      : null;
+      : params.reason === "session-expired"
+        ? "Your session has ended. Please sign in again."
+        : null;
 
   return (
     <AuthShell

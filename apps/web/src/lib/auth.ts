@@ -71,7 +71,9 @@ export async function requireServerSession() {
   }
 
   if (!user) {
-    redirect("/login");
+    // The cookie is still there but no longer valid. The reason tells the proxy not to bounce
+    // this visit back to /dashboard, which would loop forever.
+    redirect("/login?reason=session-expired");
   }
 
   return user;

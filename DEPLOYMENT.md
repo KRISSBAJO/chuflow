@@ -63,7 +63,14 @@ MAIL_SECURE=<optional>
 MAIL_USER=<optional>
 MAIL_PASS=<optional>
 MAIL_FROM=<optional>
+VAPID_PUBLIC_KEY=<from npx web-push generate-vapid-keys>
+VAPID_PRIVATE_KEY=<from npx web-push generate-vapid-keys>
+VAPID_SUBJECT=mailto:<a contact email>
 ```
+
+The three `VAPID_*` values turn on phone and desktop push notifications. Generate the pair once and
+keep it: changing the keys silently stops notifications on every device that already opted in. Without
+them the API still runs and the app hides the notification switch.
 
 ## Frontend on AWS Amplify
 

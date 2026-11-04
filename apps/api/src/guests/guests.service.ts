@@ -15,6 +15,7 @@ import {
   Communication,
   CommunicationDocument,
 } from '../communications/schemas/communication.schema';
+import { BRANCH_LEADERSHIP_ROLES } from '../common/constants/roles.constants';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
   FollowUp,
@@ -22,6 +23,7 @@ import {
 } from '../follow-ups/schemas/follow-up.schema';
 import { FollowUpsService } from '../follow-ups/follow-ups.service';
 import { Member, MemberDocument } from '../members/schemas/member.schema';
+import { PushService } from '../push/push.service';
 import { VisitsService } from '../visits/visits.service';
 import { Visit, VisitDocument } from '../visits/schemas/visit.schema';
 import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
@@ -43,7 +45,39 @@ export class GuestsService {
     private readonly visitsService: VisitsService,
     private readonly followUpsService: FollowUpsService,
     private readonly accessScopeService: AccessScopeService,
+    private readonly pushService: PushService,
   ) {}
+
+  /** Lets the branch's leaders and follow-up team know someone new just walked in. */
+  private announceNewGuest(
+    guest: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      visitStatus?: string;
+    },
+    branchId: string,
+    currentUser?: AuthUser,
+  ) {
+    const firstVisit = (guest.visitStatus ?? 'first_time') === 'first_time';
+    void this.pushService
+      .branchName(branchId)
+      .then((branchName) => {
+        const label = firstVisit ? 'New first-timer' : 'New guest';
+        this.pushService.notifyBranchTeam(
+          branchId,
+          [...BRANCH_LEADERSHIP_ROLES, 'follow_up'],
+          {
+            title: branchName ? `${label} at ${branchName}` : label,
+            body: `${guest.firstName} ${guest.lastName} just registered. Tap to welcome them.`,
+            url: `/guests/${guest.id}`,
+            tag: `new-guests-${branchId}`,
+          },
+          currentUser?.sub,
+        );
+      })
+      .catch(() => undefined);
+  }
 
   private async ensureGuestScope(
     guest: { branchId?: unknown },
@@ -169,6 +203,19 @@ export class GuestsService {
       },
       currentUser,
     );
+
+    if (branchId) {
+      this.announceNewGuest(
+        {
+          id: String(guest._id),
+          firstName: guest.firstName,
+          lastName: guest.lastName,
+          visitStatus: guest.visitStatus,
+        },
+        branchId,
+        currentUser,
+      );
+    }
 
     return this.findOne(guest.id, currentUser);
   }

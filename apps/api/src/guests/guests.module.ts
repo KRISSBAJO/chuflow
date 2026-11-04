@@ -16,6 +16,7 @@ import {
 import { Member, MemberSchema } from '../members/schemas/member.schema';
 import { Visit, VisitSchema } from '../visits/schemas/visit.schema';
 import { FollowUpsModule } from '../follow-ups/follow-ups.module';
+import { PushModule } from '../push/push.module';
 import { VisitsModule } from '../visits/visits.module';
 import { GuestsController } from './guests.controller';
 import { GuestsService } from './guests.service';
@@ -34,6 +35,7 @@ import { Guest, GuestSchema } from './schemas/guest.schema';
     ]),
     VisitsModule,
     FollowUpsModule,
+    PushModule,
   ],
   controllers: [GuestsController],
   providers: [GuestsService],

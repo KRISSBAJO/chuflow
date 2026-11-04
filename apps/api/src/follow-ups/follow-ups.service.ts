@@ -10,6 +10,7 @@ import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
+import { PushService } from '../push/push.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import {
   CreateFollowUpDto,
@@ -26,7 +27,28 @@ export class FollowUpsService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly accessScopeService: AccessScopeService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly pushService: PushService,
   ) {}
+
+  private announceAssignment(
+    assignedTo: string,
+    guest: { firstName?: string; lastName?: string } | null | undefined,
+    currentUser?: AuthUser,
+  ) {
+    const name = [guest?.firstName, guest?.lastName].filter(Boolean).join(' ');
+    this.pushService.notifyUsers(
+      [assignedTo],
+      {
+        title: 'Follow-up assigned to you',
+        body: name
+          ? `Please reach out to ${name}.`
+          : 'A guest is waiting for your call.',
+        url: '/follow-up',
+        tag: 'follow-up-assigned',
+      },
+      currentUser?.sub,
+    );
+  }
 
   private extractBranchId(value: unknown) {
     if (typeof value === 'string') {
@@ -181,9 +203,11 @@ export class FollowUpsService {
     }
 
     let guestBranchId = '';
+    let guest: { firstName?: string; lastName?: string } | null = null;
     if (currentUser) {
-      const guest = await this.getScopedGuest(dto.guestId, currentUser);
-      guestBranchId = this.extractBranchId(guest.branchId);
+      const scopedGuest = await this.getScopedGuest(dto.guestId, currentUser);
+      guest = scopedGuest;
+      guestBranchId = this.extractBranchId(scopedGuest.branchId);
     }
 
     if (currentUser && assignedTo) {
@@ -216,6 +240,10 @@ export class FollowUpsService {
         status: this.normalizeStatus(dto.status, assignedTo),
       },
     });
+
+    if (assignedTo) {
+      this.announceAssignment(assignedTo, guest, currentUser);
+    }
 
     return followUp;
   }
@@ -423,11 +451,12 @@ export class FollowUpsService {
       dto,
       'assignedTo',
     );
+    const previousAssignee = existing.assignedTo?._id
+      ? String(existing.assignedTo._id)
+      : undefined;
     const assignedTo = hasAssignedToField
       ? (dto.assignedTo ?? undefined)
-      : existing.assignedTo?._id
-        ? String(existing.assignedTo._id)
-        : undefined;
+      : previousAssignee;
 
     if (dto.guestId) {
       const guest = await this.getScopedGuest(dto.guestId, currentUser);
@@ -475,6 +504,14 @@ export class FollowUpsService {
         status: this.normalizeStatus(dto.status ?? existing.status, assignedTo),
       },
     });
+
+    if (assignedTo && assignedTo !== previousAssignee) {
+      this.announceAssignment(
+        assignedTo,
+        existing.guestId as { firstName?: string; lastName?: string } | null,
+        currentUser,
+      );
+    }
 
     return this.findOne(String(followUp._id), currentUser);
   }

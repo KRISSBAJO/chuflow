@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { forgetDeviceOnServer } from "@/lib/pwa";
 
 export function LogoutButton({ compact = false, icon = false }: { compact?: boolean; icon?: boolean }) {
   const [loading, setLoading] = useState(false);
@@ -10,6 +11,8 @@ export function LogoutButton({ compact = false, icon = false }: { compact?: bool
     setLoading(true);
 
     try {
+      // Stop this device getting the signed-out user's alerts (it may be a shared phone).
+      await forgetDeviceOnServer();
       await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",

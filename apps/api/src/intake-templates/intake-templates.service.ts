@@ -11,6 +11,7 @@ import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
+  BRANCH_LEADERSHIP_ROLES,
   isDistrictRole,
   isGlobalRole,
   isNationalRole,
@@ -19,6 +20,7 @@ import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import { AttendanceService } from '../attendance/attendance.service';
 import { GuestsService } from '../guests/guests.service';
 import { MembersService } from '../members/members.service';
+import { PushService } from '../push/push.service';
 import { ServiceTypesService } from '../service-types/service-types.service';
 import { ServiceUnitsService } from '../service-units/service-units.service';
 import {
@@ -54,7 +56,43 @@ export class IntakeTemplatesService implements OnModuleInit {
     private readonly serviceUnitsService: ServiceUnitsService,
     private readonly accessScopeService: AccessScopeService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly pushService: PushService,
   ) {}
+
+  /** Tells the people who review a submitted report that it is waiting for them. */
+  private announcePendingSubmission(
+    kind: string,
+    branchId: unknown,
+    label?: string,
+  ) {
+    if (!['attendance', 'weekly_report', 'maag_report'].includes(kind)) {
+      return;
+    }
+
+    void this.pushService
+      .branchName(branchId)
+      .then((branchName) => {
+        const from = branchName ?? 'A branch';
+        if (kind === 'attendance') {
+          this.pushService.notifyBranchTeam(branchId, BRANCH_LEADERSHIP_ROLES, {
+            title: 'Attendance waiting for approval',
+            body: `${from} submitted ${label ? `${label} ` : ''}attendance. Tap to review it.`,
+            url: '/approvals',
+            tag: `attendance-approvals-${String(branchId)}`,
+          });
+          return;
+        }
+
+        const weekly = kind === 'weekly_report';
+        this.pushService.notifyDistrictTeam(branchId, {
+          title: weekly ? 'Weekly report submitted' : 'MAAG report submitted',
+          body: `${from} sent its ${weekly ? 'weekly' : 'monthly MAAG'} report for review.`,
+          url: weekly ? '/weekly-reports' : '/maag-reports',
+          tag: `${kind}-${String(branchId)}`,
+        });
+      })
+      .catch(() => undefined);
+  }
 
   async onModuleInit() {
     for (const template of intakeTemplateDefaults) {
@@ -3180,6 +3218,14 @@ export class IntakeTemplatesService implements OnModuleInit {
         : 'completed',
       ...domainRecord,
     });
+
+    if (submission.status === 'pending') {
+      this.announcePendingSubmission(
+        template.kind,
+        submission.branchId,
+        submission.serviceType,
+      );
+    }
 
     const successTitle =
       template.kind === 'attendance'
