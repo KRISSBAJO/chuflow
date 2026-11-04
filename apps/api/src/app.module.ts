@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EvangelismModule } from './evangelism/evangelism.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigService } from '@nestjs/config';
@@ -49,6 +50,7 @@ import { PushModule } from './push/push.module';
       }),
     }),
     AuthModule,
+    EvangelismModule,
     UsersModule,
     BranchesModule,
     GuestsModule,

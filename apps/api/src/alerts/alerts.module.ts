@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import {
+  OutreachContact,
+  OutreachContactSchema,
+} from '../evangelism/evangelism.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
 import {
@@ -31,6 +35,7 @@ import { AlertsService } from './alerts.service';
   imports: [
     AccessScopeModule,
     MongooseModule.forFeature([
+      { name: OutreachContact.name, schema: OutreachContactSchema },
       { name: Branch.name, schema: BranchSchema },
       { name: Attendance.name, schema: AttendanceSchema },
       { name: FollowUp.name, schema: FollowUpSchema },

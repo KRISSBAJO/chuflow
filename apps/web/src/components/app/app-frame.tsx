@@ -27,6 +27,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "People",
     items: [
+      { href: "/evangelism", label: "Evangelism", icon: "share" },
       { href: "/guests", label: "Guests", icon: "guests", badge: "firstTimers" },
       { href: "/follow-up", label: "Follow-up", icon: "care", badge: "followUp" },
       { href: "/members", label: "Members", icon: "members" },
@@ -63,6 +64,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: "settings" };
 
 const QUICK_ACTIONS: { href: string; label: string; hint: string; icon: IconName }[] = [
+  { href: "/evangelism/new", label: "Add outreach contact", hint: "Follow up an outreach conversation", icon: "share" },
   { href: "/guests/new", label: "Register a guest", hint: "Capture a first-timer", icon: "guests" },
   { href: "/attendance", label: "Record attendance", hint: "Log a service count", icon: "attendance" },
   { href: "/follow-up/new", label: "Log follow-up", hint: "Assign care to someone", icon: "care" },

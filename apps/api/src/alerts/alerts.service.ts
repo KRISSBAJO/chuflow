@@ -1,6 +1,10 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import {
+  OutreachContact,
+  OutreachContactDocument,
+} from '../evangelism/evangelism.schema';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import {
   Attendance,
@@ -47,6 +51,8 @@ type AlertItem = {
 @Injectable()
 export class AlertsService {
   constructor(
+    @InjectModel(OutreachContact.name)
+    private readonly outreachModel: Model<OutreachContactDocument>,
     @InjectModel(Branch.name)
     private readonly branchModel: Model<BranchDocument>,
     @InjectModel(Attendance.name)
@@ -77,7 +83,7 @@ export class AlertsService {
     return date;
   }
 
-  private async buildScopeQuery(currentUser: AuthUser) {
+  private buildScopeQuery(currentUser: AuthUser) {
     if (isGlobalRole(currentUser.role)) {
       return {};
     }
@@ -108,7 +114,7 @@ export class AlertsService {
     const safeDays = this.normalizeDays(days);
     const rangeStart = this.startOfDayOffset(safeDays);
     const attendanceRecencyCutoff = this.startOfDayOffset(7);
-    const branchScopeQuery = await this.buildScopeQuery(currentUser);
+    const branchScopeQuery = this.buildScopeQuery(currentUser);
     const branches = await this.branchModel
       .find(branchScopeQuery)
       .select('name oversightRegion district city state status')
@@ -269,7 +275,43 @@ export class AlertsService {
       pendingExpenseApprovals +
       pendingWorkspaceRequests;
 
+    const outreachFilter = {
+      ...(branchMatch ? { branchId: branchMatch } : {}),
+      stage: { $nin: ['closed', 'do_not_contact'] },
+    };
+    const [overdueOutreach, unassignedOutreach] = await Promise.all([
+      this.outreachModel.countDocuments({
+        ...outreachFilter,
+        nextActionDate: { $lt: new Date() },
+      }),
+      this.outreachModel.countDocuments({
+        ...outreachFilter,
+        assignedTo: { $exists: false },
+      }),
+    ]);
     const items: AlertItem[] = [
+      overdueOutreach > 0
+        ? {
+            key: 'overdue_evangelism',
+            label: 'Evangelism follow-up overdue',
+            count: overdueOutreach,
+            tone: 'critical',
+            description:
+              'Outreach contacts are waiting past their next-action date.',
+            href: '/evangelism?queue=overdue',
+          }
+        : null,
+      unassignedOutreach > 0
+        ? {
+            key: 'unassigned_evangelism',
+            label: 'Evangelism contacts need an owner',
+            count: unassignedOutreach,
+            tone: 'warm',
+            description:
+              'Assign someone to follow up these outreach conversations.',
+            href: '/evangelism?queue=unassigned',
+          }
+        : null,
       pendingAttendanceApprovals > 0
         ? {
             key: 'attendance_approvals',
