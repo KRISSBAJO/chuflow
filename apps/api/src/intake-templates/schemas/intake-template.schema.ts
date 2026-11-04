@@ -4,6 +4,10 @@ import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 export type IntakeTemplateDocument = HydratedDocument<IntakeTemplate>;
 
 const TemplateFieldSchema = raw({
+  labelEs: { type: String },
+  optionsEs: { type: [String], default: undefined },
+  helpTextEs: { type: String },
+  placeholderEs: { type: String },
   key: { type: String, required: true },
   label: { type: String, required: true },
   type: { type: String, required: true },
@@ -26,6 +30,8 @@ const TemplateThemeSchema = raw({
 
 @Schema({ timestamps: true })
 export class IntakeTemplate {
+  @Prop({ type: Object })
+  spanish?: Record<string, string>;
   @Prop({
     required: true,
     enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'],
@@ -106,6 +112,10 @@ export class IntakeTemplate {
   fields!: Array<{
     key: string;
     label: string;
+    labelEs?: string;
+    optionsEs?: string[];
+    helpTextEs?: string;
+    placeholderEs?: string;
     type: string;
     required?: boolean;
     defaultValue?: string;

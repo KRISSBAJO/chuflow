@@ -394,6 +394,7 @@ export default async function GuestsPage({
                 <div className="space-y-4">
                   {guestTemplateCards.map((template) => (
                     <TemplateQrCard
+                      allowSpanish
                       key={template._id}
                       url={
                         template.shareUrl ||

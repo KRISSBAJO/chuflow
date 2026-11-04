@@ -1,4 +1,12 @@
 "use client";
+import { FormLanguagePicker } from "@/components/form-language-picker";
+import {
+  formText,
+  formFieldLabel,
+  formOptionLabel,
+  setFormLanguageInUrl,
+  type FormLanguage,
+} from "@/lib/form-language";
 import { validFormColor, formTextColor } from "@/lib/form-colors";
 
 import Image from "next/image";
@@ -523,17 +531,36 @@ function buildTemplateSteps(template: IntakeTemplate): IntakeStep[] {
 
 export function PublicIntakeForm({
   template,
+  initialLanguage = "en",
   branchId,
   branchOptions = [],
   defaultOversightRegion,
   defaultDistrict,
 }: {
   template: IntakeTemplate;
+  initialLanguage?: FormLanguage;
   branchId?: string;
   branchOptions?: PublicBranchOption[];
   defaultOversightRegion?: string;
   defaultDistrict?: string;
 }) {
+  const [language, setLanguage] = useState<FormLanguage>(initialLanguage);
+  const t = (value?: string) => formText(value, language);
+  const copy = (key: keyof NonNullable<IntakeTemplate["spanish"]>) =>
+    language === "es"
+      ? template.spanish?.[key] || t(template[key])
+      : template[key] || "";
+  const localizeError = (message?: string | null) => {
+    let value = message || "";
+    if (language === "es")
+      for (const field of template.fields)
+        if (value.startsWith(field.label)) {
+          value =
+            formFieldLabel(field, language) + value.slice(field.label.length);
+          break;
+        }
+    return t(value);
+  };
   const formRef = useRef<HTMLFormElement | null>(null);
   const [answers, setAnswers] = useState<Record<string, IntakeAnswerValue>>(
     () => createInitialAnswers(template.fields),
@@ -687,7 +714,7 @@ export function PublicIntakeForm({
       );
       setStepIndex(invalidStepIndex);
       setStepError(message);
-      toast.error("Complete the required fields", {
+      toast.error(t("Complete the required fields"), {
         description:
           message || "Please finish the highlighted step before submitting.",
       });
@@ -699,7 +726,7 @@ export function PublicIntakeForm({
     setStepError(null);
     setSuccess(null);
 
-    const loadingToast = toast.loading("Submitting your intake form...");
+    const loadingToast = toast.loading(t("Submitting your intake form..."));
 
     try {
       if (needsBranchSelection && !submissionBranchId) {
@@ -748,18 +775,26 @@ export function PublicIntakeForm({
         title: successTitle,
         message: successMessage,
       });
-      toast.success(successTitle || "Form submitted", {
-        id: loadingToast,
-        description: successMessage,
-      });
+      toast.success(
+        language === "es"
+          ? template.spanish?.successTitle || t(successTitle)
+          : successTitle || "Form submitted",
+        {
+          id: loadingToast,
+          description:
+            language === "es"
+              ? template.spanish?.successMessage || t(successMessage)
+              : successMessage,
+        },
+      );
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to submit form";
       setStatus(message);
-      toast.error("Submission failed", {
+      toast.error(t("Submission failed"), {
         id: loadingToast,
-        description: message,
+        description: localizeError(message),
       });
     } finally {
       setLoading(false);
@@ -769,14 +804,16 @@ export function PublicIntakeForm({
   const progress = success ? 100 : ((stepIndex + 1) / steps.length) * 100;
   const fieldLabel = (field: IntakeTemplate["fields"][number]) => (
     <span className="mb-2 block text-[14px] font-medium text-[var(--lp-ink)]">
-      {field.label}
+      {formFieldLabel(field, language)}
       {field.required ? <span style={{ color: accentColor }}> *</span> : null}
     </span>
   );
   const fieldHelp = (field: IntakeTemplate["fields"][number]) =>
-    field.helpText ? (
+    field.helpText || (language === "es" && field.helpTextEs) ? (
       <span className="-mt-1 mb-2 block text-[13px] text-[var(--lp-muted)]">
-        {field.helpText}
+        {language === "es"
+          ? field.helpTextEs || t(field.helpText)
+          : field.helpText}
       </span>
     ) : null;
   const optionClass =
@@ -784,11 +821,23 @@ export function PublicIntakeForm({
 
   return (
     <div
+      lang={language}
       className="lp-root lp-intake min-h-screen w-full bg-white"
       style={
         { "--accent": accentColor, "--accent-soft": softColor } as CSSProperties
       }
     >
+      {["guest", "member"].includes(template.kind) && (
+        <div className="flex justify-end px-5 pt-3 sm:px-10">
+          <FormLanguagePicker
+            value={language}
+            onChange={(value) => {
+              setLanguage(value);
+              setFormLanguageInUrl(value);
+            }}
+          />
+        </div>
+      )}
       <header
         className="flex h-20 items-center justify-between gap-4 px-5 sm:px-10"
         style={
@@ -813,11 +862,11 @@ export function PublicIntakeForm({
             />
           </span>
           <span className="truncate text-[15px] font-medium text-[var(--lp-ink)]">
-            {template.name}
+            {t(template.name)}
           </span>
         </div>
         <span className="flex shrink-0 items-center gap-2 text-[12px] text-[var(--lp-muted)]">
-          <span className="hidden sm:inline">Powered by</span>
+          <span className="hidden sm:inline">{t("Powered by")}</span>
           <Wordmark size={15} />
         </span>
       </header>
@@ -829,31 +878,31 @@ export function PublicIntakeForm({
               className="h-2 w-2 rounded-full"
               style={{ backgroundColor: accentColor, color: buttonText }}
             />
-            {template.badge || "Welcome"}
+            {t(template.badge || "Welcome")}
           </p>
           <h1 className="lp-heading mt-6 text-[2.5rem] leading-[1.04] sm:text-[3.25rem]">
-            {template.title}
+            {copy("title")}
           </h1>
-          {template.subtitle ? (
+          {copy("subtitle") ? (
             <p className="mt-4 text-[17px] leading-[1.6] text-[var(--lp-muted)]">
-              {template.subtitle}
+              {copy("subtitle")}
             </p>
           ) : null}
 
-          {template.introTitle || template.introBody || template.closingText ? (
+          {copy("introTitle") || copy("introBody") || copy("closingText") ? (
             <div className="mt-8 rounded-[24px] bg-[var(--lp-panel)] p-6 text-[15px] leading-[1.7] text-[var(--lp-ink)]">
-              {template.introTitle ? (
+              {copy("introTitle") ? (
                 <p className="text-[16px] font-semibold">
-                  {template.introTitle}
+                  {copy("introTitle")}
                 </p>
               ) : null}
-              {template.introBody ? (
+              {copy("introBody") ? (
                 <p className="mt-2 whitespace-pre-line text-[var(--lp-muted)]">
-                  {template.introBody}
+                  {copy("introBody")}
                 </p>
               ) : null}
-              {template.closingText ? (
-                <p className="mt-4 font-medium">{template.closingText}</p>
+              {copy("closingText") ? (
+                <p className="mt-4 font-medium">{copy("closingText")}</p>
               ) : null}
             </div>
           ) : null}
@@ -928,10 +977,14 @@ export function PublicIntakeForm({
                 </svg>
               </span>
               <h2 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">
-                {success.title}
+                {language === "es"
+                  ? template.spanish?.successTitle || t(success.title)
+                  : success.title}
               </h2>
               <p className="mx-auto mt-4 max-w-[440px] text-[16px] leading-[1.7] text-[var(--lp-muted)]">
-                {success.message}
+                {language === "es"
+                  ? template.spanish?.successMessage || t(success.message)
+                  : success.message}
               </p>
             </div>
           ) : (
@@ -945,7 +998,8 @@ export function PublicIntakeForm({
             >
               <div className="flex items-center justify-between gap-4">
                 <p className="text-[13px] font-medium text-[var(--lp-muted)]">
-                  Step {stepIndex + 1} of {steps.length}
+                  {language === "es" ? "Paso" : "Step"} {stepIndex + 1}{" "}
+                  {language === "es" ? "de" : "of"} {steps.length}
                 </p>
                 <div className="flex items-center gap-1.5">
                   {steps.map((step, index) => {
@@ -957,7 +1011,7 @@ export function PublicIntakeForm({
                         key={step.key}
                         type="button"
                         onClick={() => goToStep(index)}
-                        aria-label={`Go to step ${index + 1}: ${step.title}`}
+                        aria-label={`Go to step ${index + 1}: ${t(step.title)}`}
                         aria-current={isCurrent ? "step" : undefined}
                         className="h-2 rounded-full transition-all duration-500"
                         style={{
@@ -977,11 +1031,11 @@ export function PublicIntakeForm({
               <div key={stepIndex} className="lp-rise">
                 <div className="mb-8 mt-6">
                   <h2 className="lp-heading text-[1.85rem] leading-[1.1]">
-                    {currentStep.title}
+                    {t(currentStep.title)}
                   </h2>
                   {currentStep.description ? (
                     <p className="mt-2 text-[15px] leading-[1.6] text-[var(--lp-muted)]">
-                      {currentStep.description}
+                      {t(currentStep.description)}
                     </p>
                   ) : null}
                 </div>
@@ -1088,7 +1142,11 @@ export function PublicIntakeForm({
                                 updateAnswer(field.key, event.target.value)
                               }
                               required={field.required}
-                              placeholder={field.placeholder}
+                              placeholder={
+                                language === "es"
+                                  ? field.placeholderEs || t(field.placeholder)
+                                  : field.placeholder
+                              }
                               className="lp-input"
                             />
                           </label>
@@ -1136,7 +1194,7 @@ export function PublicIntakeForm({
                                     className="h-4 w-4 shrink-0"
                                     style={{ accentColor }}
                                   />
-                                  {option}
+                                  {formOptionLabel(field, option, language)}
                                 </label>
                               ))}
                             </div>
@@ -1159,11 +1217,14 @@ export function PublicIntakeForm({
                               className="lp-input"
                             >
                               <option value="">
-                                {field.placeholder || "Select an option"}
+                                {language === "es"
+                                  ? field.placeholderEs ||
+                                    t(field.placeholder || "Select an option")
+                                  : field.placeholder || "Select an option"}
                               </option>
                               {(field.options || []).map((option) => (
                                 <option key={option} value={option}>
-                                  {option}
+                                  {formOptionLabel(field, option, language)}
                                 </option>
                               ))}
                             </select>
@@ -1183,7 +1244,11 @@ export function PublicIntakeForm({
                               updateAnswer(field.key, event.target.value)
                             }
                             required={field.required}
-                            placeholder={field.placeholder}
+                            placeholder={
+                              language === "es"
+                                ? field.placeholderEs || t(field.placeholder)
+                                : field.placeholder
+                            }
                             max={
                               field.type === "date"
                                 ? getTodayDateString()
@@ -1207,19 +1272,33 @@ export function PublicIntakeForm({
                           className="rounded-[24px] bg-[var(--lp-panel)] p-5"
                         >
                           <p className="text-[15px] font-medium text-[var(--lp-ink)]">
-                            {step.title}
+                            {t(step.title)}
                           </p>
                           <dl className="mt-3 grid gap-x-6 gap-y-3 md:grid-cols-2">
                             {step.fields.map((field) => (
                               <div key={field.key}>
                                 <dt className="text-[12px] text-[var(--lp-muted)]">
-                                  {field.label}
+                                  {formFieldLabel(field, language)}
                                 </dt>
                                 <dd className="mt-0.5 text-[15px] text-[var(--lp-ink)]">
-                                  {formatAnswerForReview(
-                                    field,
-                                    answers[field.key],
-                                  )}
+                                  {Array.isArray(answers[field.key])
+                                    ? (answers[field.key] as string[])
+                                        .map((value) =>
+                                          formOptionLabel(
+                                            field,
+                                            value,
+                                            language,
+                                          ),
+                                        )
+                                        .join(", ") || t("Not provided")
+                                    : formOptionLabel(
+                                        field,
+                                        formatAnswerForReview(
+                                          field,
+                                          answers[field.key],
+                                        ),
+                                        language,
+                                      )}
                                 </dd>
                               </div>
                             ))}
@@ -1256,7 +1335,9 @@ export function PublicIntakeForm({
 
               {stepError || status ? (
                 <div className="mt-6">
-                  <Alert tone="error">{stepError || status}</Alert>
+                  <Alert tone="error">
+                    {localizeError(stepError || status)}
+                  </Alert>
                 </div>
               ) : null}
 
@@ -1270,7 +1351,7 @@ export function PublicIntakeForm({
                     }}
                     className="inline-flex h-12 items-center rounded-full bg-[var(--lp-panel)] px-6 text-[15px] font-medium text-[var(--lp-ink)] transition-colors hover:bg-[#ecebe7]"
                   >
-                    Back
+                    {t("Back")}
                   </button>
                 ) : (
                   <span />
@@ -1283,7 +1364,7 @@ export function PublicIntakeForm({
                     onClick={handleNextStep}
                     className="lp-pill-dark group inline-flex h-12 items-center gap-2 rounded-full pl-6 pr-5 text-[15px] font-medium"
                   >
-                    Continue
+                    {t("Continue")}
                     <svg
                       viewBox="0 0 24 24"
                       fill="none"
@@ -1312,10 +1393,10 @@ export function PublicIntakeForm({
                     {loading ? (
                       <>
                         <Spinner />
-                        Submitting...
+                        {t("Submitting...")}
                       </>
                     ) : (
-                      template.submitLabel || "Submit form"
+                      copy("submitLabel") || t("Submit form")
                     )}
                   </button>
                 )}

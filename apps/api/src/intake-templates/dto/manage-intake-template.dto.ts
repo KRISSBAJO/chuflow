@@ -12,6 +12,10 @@ import {
 } from 'class-validator';
 
 class IntakeTemplateFieldDto {
+  @IsOptional() @IsArray() @IsString({ each: true }) optionsEs?: string[];
+  @IsOptional() @IsString() labelEs?: string;
+  @IsOptional() @IsString() helpTextEs?: string;
+  @IsOptional() @IsString() placeholderEs?: string;
   @ApiProperty()
   @IsString()
   key!: string;
@@ -78,7 +82,22 @@ class IntakeTemplateThemeDto {
   softColor?: string;
 }
 
+class IntakeSpanishCopyDto {
+  @IsOptional() @IsString() title?: string;
+  @IsOptional() @IsString() subtitle?: string;
+  @IsOptional() @IsString() introTitle?: string;
+  @IsOptional() @IsString() introBody?: string;
+  @IsOptional() @IsString() closingText?: string;
+  @IsOptional() @IsString() submitLabel?: string;
+  @IsOptional() @IsString() successTitle?: string;
+  @IsOptional() @IsString() successMessage?: string;
+}
+
 export class CreateIntakeTemplateDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => IntakeSpanishCopyDto)
+  spanish?: IntakeSpanishCopyDto;
   @ApiProperty({
     enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'],
   })

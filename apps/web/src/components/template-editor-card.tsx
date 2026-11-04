@@ -260,6 +260,10 @@ function sanitizeField(field: IntakeTemplateField): IntakeTemplateField {
   return {
     key: slugify(field.key || field.label),
     label: field.label.trim() || "Untitled field",
+    labelEs: field.labelEs?.trim() || undefined,
+    optionsEs: field.optionsEs?.map((option) => option.trim()),
+    helpTextEs: field.helpTextEs?.trim() || undefined,
+    placeholderEs: field.placeholderEs?.trim() || undefined,
     type: field.type,
     required: !!field.required,
     defaultValue: field.defaultValue?.trim() || undefined,
@@ -311,6 +315,7 @@ function toEditableTemplate(template: IntakeTemplate): IntakeTemplate {
     successMessage:
       template.successMessage || "Your submission has been received.",
     logoPath: template.logoPath || "/logo.png",
+    spanish: template.spanish,
     shareUrl: template.shareUrl,
     theme: sanitizeTheme(template.theme),
     fields: template.fields.map(sanitizeField),
@@ -486,6 +491,7 @@ export function TemplateEditorCard({
         successTitle: draft.successTitle?.trim() || undefined,
         successMessage: draft.successMessage?.trim() || undefined,
         logoPath: draft.logoPath?.trim() || undefined,
+        spanish: draft.spanish,
         branchId: !isBranchScopedRole(currentUserRole)
           ? draft.branchId || undefined
           : defaultBranchId || undefined,
@@ -627,6 +633,7 @@ export function TemplateEditorCard({
       {template?.shareUrl &&
       !(isGlobalBaseTemplate && canCreateBranchVersion) ? (
         <TemplateQrCard
+          allowSpanish={draft.kind === "guest" || draft.kind === "member"}
           url={template.shareUrl}
           title={`${draft.name} share link`}
         />
@@ -884,6 +891,53 @@ export function TemplateEditorCard({
           </Field>
         </div>
 
+        {(draft.kind === "guest" || draft.kind === "member") && (
+          <details className="mt-5 rounded-xl border border-black/[0.06] p-4">
+            <summary className="cursor-pointer text-sm font-medium">
+              Optional Spanish wording
+            </summary>
+            <p className="mt-2 text-xs text-[#8a8780]">
+              Standard labels are translated automatically. Add Spanish wording
+              here for your custom introduction and confirmation. Church names
+              stay unchanged unless you provide a translated title.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  "title",
+                  "subtitle",
+                  "introTitle",
+                  "introBody",
+                  "closingText",
+                  "submitLabel",
+                  "successTitle",
+                  "successMessage",
+                ] as const
+              ).map((key) => (
+                <Field
+                  key={key}
+                  label={`${key.replace(/([A-Z])/g, " $1")} (Spanish)`}
+                >
+                  <textarea
+                    className="ui-input"
+                    rows={2}
+                    disabled={readonly}
+                    value={draft.spanish?.[key] || ""}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        spanish: {
+                          ...current.spanish,
+                          [key]: event.target.value,
+                        },
+                      }))
+                    }
+                  />
+                </Field>
+              ))}
+            </div>
+          </details>
+        )}
         <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">
           Theme colours
         </p>
@@ -1165,7 +1219,54 @@ export function TemplateEditorCard({
                     className="ui-input !min-h-20"
                   />
                 </Field>
-                {field.type === "select" || field.type === "radio" || field.type === "checkbox" ? (
+                <details className="mt-3 rounded-xl bg-[#f6f5f1] p-3">
+                  <summary className="cursor-pointer text-xs font-medium">
+                    Spanish field wording (optional)
+                  </summary>
+                  <div className="mt-3 grid gap-3">
+                    {(["labelEs", "placeholderEs", "helpTextEs"] as const).map(
+                      (key) => (
+                        <Field
+                          key={key}
+                          label={
+                            key === "labelEs"
+                              ? "Spanish label"
+                              : key === "placeholderEs"
+                                ? "Spanish placeholder"
+                                : "Spanish help text"
+                          }
+                        >
+                          <input
+                            className="ui-input"
+                            disabled={readonly}
+                            value={field[key] || ""}
+                            onChange={(event) =>
+                              updateField(index, { [key]: event.target.value })
+                            }
+                          />
+                        </Field>
+                      ),
+                    )}
+                  </div>
+                  {["radio", "select", "checkbox"].includes(field.type) && (
+                    <Field label="Spanish option labels (one per line, in the same order as the English options)">
+                      <textarea
+                        className="ui-input"
+                        rows={3}
+                        disabled={readonly}
+                        value={(field.optionsEs || []).join("\n")}
+                        onChange={(event) =>
+                          updateField(index, {
+                            optionsEs: event.target.value.split("\n"),
+                          })
+                        }
+                      />
+                    </Field>
+                  )}
+                </details>
+                {field.type === "select" ||
+                field.type === "radio" ||
+                field.type === "checkbox" ? (
                   <Field
                     label="Options"
                     hint="Separate options with commas."

@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { validFormColor, formTextColor } from "@/lib/form-colors";
+import { formText, type FormLanguage } from "@/lib/form-language";
 import { apiPost } from "@/lib/api";
 import { OUTREACH_INTERESTS, OUTREACH_METHODS } from "@/lib/evangelism";
 import type { BranchSummary } from "@/lib/types";
 import { Button, Card, Field } from "@/components/ui/ui";
 
 export function OutreachContactForm({
+  language = "en",
   token,
   branchName,
   branches = [],
@@ -16,6 +18,7 @@ export function OutreachContactForm({
   buttonColor,
   buttonTextColor,
 }: {
+  language?: FormLanguage;
   token?: string;
   branchName?: string;
   branches?: BranchSummary[];
@@ -24,6 +27,7 @@ export function OutreachContactForm({
   buttonTextColor?: string;
 }) {
   const router = useRouter();
+  const t = (value: string) => formText(value, language);
   const accent = validFormColor(buttonColor);
   const buttonText = validFormColor(buttonTextColor);
   const [busy, setBusy] = useState(false);
@@ -42,6 +46,20 @@ export function OutreachContactForm({
     const activeFields = form.querySelector<HTMLFieldSetElement>(
       `fieldset[data-step="${step}"]`,
     );
+    if (activeFields)
+      for (const field of activeFields.querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >("input, select, textarea")) {
+        field.setCustomValidity("");
+        if (language === "es") {
+          if (field.validity.valueMissing)
+            field.setCustomValidity("Complete este campo obligatorio.");
+          else if (field.validity.typeMismatch)
+            field.setCustomValidity("Ingrese un valor válido para este campo.");
+          else if (field.validity.tooShort)
+            field.setCustomValidity("El valor ingresado es demasiado corto.");
+        }
+      }
     if (
       activeFields &&
       !Array.from(
@@ -96,24 +114,40 @@ export function OutreachContactForm({
   if (done)
     return (
       <Card className="p-8" role="status">
-        <h2 className="text-2xl font-semibold">Thank you for connecting.</h2>
+        <h2 className="text-2xl font-semibold">
+          {t("Thank you for connecting.")}
+        </h2>
         <p className="mt-3 text-[#6b6b6b]">
-          Your details have been received by {branchName || "the church team"}.
-          We look forward to connecting with you.
+          {language === "es"
+            ? `${branchName || "La iglesia"} ha recibido sus datos. Esperamos poder acompañarle pronto.`
+            : `Your details have been received by ${branchName || "the church team"}. We look forward to connecting with you.`}
         </p>
       </Card>
     );
   return (
     <Card className="p-6 sm:p-8">
-      <form onSubmit={submit} noValidate className="space-y-5">
-        <nav aria-label="Form progress" className="flex gap-3 text-sm">
+      <form
+        onSubmit={submit}
+        onInput={(event) => {
+          const field = event.target;
+          if (
+            field instanceof HTMLInputElement ||
+            field instanceof HTMLSelectElement ||
+            field instanceof HTMLTextAreaElement
+          )
+            field.setCustomValidity("");
+        }}
+        noValidate
+        className="space-y-5"
+      >
+        <nav aria-label={t("Form progress")} className="flex gap-3 text-sm">
           <span
             aria-current={step === 1 ? "step" : undefined}
             className={
               step === 1 ? "font-semibold text-[#111111]" : "text-[#8a8780]"
             }
           >
-            1. Your details
+            1. {t("Your details")}
           </span>
           <span aria-hidden="true">/</span>
           <span
@@ -122,7 +156,7 @@ export function OutreachContactForm({
               step === 2 ? "font-semibold text-[#111111]" : "text-[#8a8780]"
             }
           >
-            2. How we can help
+            2. {t("How we can help")}
           </span>
         </nav>
         <h2
@@ -130,13 +164,18 @@ export function OutreachContactForm({
           tabIndex={-1}
           className="text-xl font-semibold outline-none"
         >
-          {step === 1 ? "Tell us about yourself" : "How can we support you?"}
+          {step === 1
+            ? t("Tell us about yourself")
+            : t("How can we support you?")}
         </h2>
-        <p className="text-xs text-[#8a8780]">Step {step} of 2</p>
+        <p className="text-xs text-[#8a8780]">
+          {language === "es" ? "Paso" : "Step"} {step}{" "}
+          {language === "es" ? "de" : "of"} 2
+        </p>
         <fieldset data-step="1" hidden={step !== 1} className="space-y-5">
           <legend className="sr-only">Your details</legend>
           {!token && (
-            <Field label="Branch" required>
+            <Field label={t("Branch")} required>
               <select
                 name="branchId"
                 defaultValue={defaultBranchId || branches[0]?._id}
@@ -152,7 +191,7 @@ export function OutreachContactForm({
             </Field>
           )}
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="First name" required>
+            <Field label={t("First name")} required>
               <input
                 name="firstName"
                 autoComplete="given-name"
@@ -161,7 +200,7 @@ export function OutreachContactForm({
                 maxLength={80}
               />
             </Field>
-            <Field label="Last name" required>
+            <Field label={t("Last name")} required>
               <input
                 name="lastName"
                 autoComplete="family-name"
@@ -171,9 +210,9 @@ export function OutreachContactForm({
               />
             </Field>
             <Field
-              label="Phone, including country code"
+              label={t("Phone, including country code")}
               required
-              hint="For example, +1 615 555 0123"
+              hint={t("For example, +1 615 555 0123")}
             >
               <input
                 name="phone"
@@ -185,7 +224,7 @@ export function OutreachContactForm({
                 maxLength={30}
               />
             </Field>
-            <Field label="Email" required={method === "email"}>
+            <Field label={t("Email")} required={method === "email"}>
               <input
                 name="email"
                 type="email"
@@ -195,7 +234,7 @@ export function OutreachContactForm({
                 maxLength={150}
               />
             </Field>
-            <Field label="City or area">
+            <Field label={t("City or area")}>
               <input
                 name="city"
                 autoComplete="address-level2"
@@ -203,7 +242,7 @@ export function OutreachContactForm({
                 maxLength={150}
               />
             </Field>
-            <Field label="Preferred way to connect" required>
+            <Field label={t("Preferred way to connect")} required>
               <select
                 className="ui-input"
                 value={method}
@@ -211,7 +250,7 @@ export function OutreachContactForm({
               >
                 {OUTREACH_METHODS.map(([key, label]) => (
                   <option key={key} value={key}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </select>
@@ -221,31 +260,33 @@ export function OutreachContactForm({
         <fieldset data-step="2" hidden={step !== 2} className="space-y-5">
           <legend className="sr-only">How we can help</legend>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="What would you like help with?">
+            <Field label={t("What would you like help with?")}>
               <select name="interest" className="ui-input" defaultValue="">
-                <option value="">Choose if you wish</option>
+                <option value="">{t("Choose if you wish")}</option>
                 {OUTREACH_INTERESTS.map(([key, label]) => (
                   <option key={key} value={key}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </select>
             </Field>
             <Field
-              label="Best time to contact you"
-              hint="Include your time zone if helpful."
+              label={t("Best time to contact you")}
+              hint={t("Include your time zone if helpful.")}
             >
               <input
                 name="preferredContactTime"
                 className="ui-input"
                 maxLength={150}
-                placeholder="For example, weekday evenings"
+                placeholder={t("For example, weekday evenings")}
               />
             </Field>
           </div>
           <Field
-            label="How can we pray for you?"
-            hint="Optional. Only share what you’re comfortable sharing with the church care team."
+            label={t("How can we pray for you?")}
+            hint={t(
+              "Optional. Only share what you’re comfortable sharing with the church care team.",
+            )}
           >
             <textarea
               name="prayerRequest"
@@ -264,14 +305,16 @@ export function OutreachContactForm({
             <input type="checkbox" name="consent" required className="mt-1" />
             <span>
               {token
-                ? `I agree that ${branchName || "this church"} may use these details to contact me about my request and church activities. I can ask the team to stop contacting me at any time.`
+                ? language === "es"
+                  ? `Acepto que ${branchName || "esta iglesia"} use estos datos para contactarme sobre mi solicitud y las actividades de la iglesia. Puedo pedir al equipo que deje de contactarme en cualquier momento.`
+                  : `I agree that ${branchName || "this church"} may use these details to contact me about my request and church activities. I can ask the team to stop contacting me at any time.`
                 : "The person has given permission for this church to record these details and contact them. They understand they can ask us to stop."}
             </span>
           </label>
         </fieldset>
         {error && (
           <p role="alert" className="text-sm text-red-700">
-            {error}
+            {t(error)}
           </p>
         )}
         <div className="flex items-center justify-between gap-3">
@@ -284,7 +327,7 @@ export function OutreachContactForm({
                 setStep(1);
               }}
             >
-              Back
+              {t("Back")}
             </Button>
           )}
           <Button
@@ -300,12 +343,12 @@ export function OutreachContactForm({
             }
           >
             {step === 1
-              ? "Continue"
+              ? t("Continue")
               : busy
-                ? "Submitting…"
+                ? t("Submitting…")
                 : token
-                  ? "Connect with us"
-                  : "Add outreach contact"}
+                  ? t("Connect with us")
+                  : t("Add outreach contact")}
           </Button>
         </div>
       </form>

@@ -1,3 +1,4 @@
+import { formLanguage } from "@/lib/form-language";
 import { notFound } from "next/navigation";
 import { PublicIntakeForm } from "@/components/public-intake-form";
 import { publicServerGet } from "@/lib/server-api";
@@ -8,10 +9,15 @@ export default async function PublicIntakePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ branchId?: string; oversightRegion?: string; district?: string }>;
+  searchParams: Promise<{
+    branchId?: string;
+    oversightRegion?: string;
+    district?: string;
+    lang?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { branchId, oversightRegion, district } = await searchParams;
+  const { branchId, oversightRegion, district, lang } = await searchParams;
 
   let template: IntakeTemplate;
   let branchOptions: PublicBranchOption[];
@@ -37,10 +43,13 @@ export default async function PublicIntakePage({
     }
 
     branchOptions =
-      (template.kind === "weekly_report" || template.kind === "maag_report") && !branchId
+      (template.kind === "weekly_report" || template.kind === "maag_report") &&
+      !branchId
         ? await publicServerGet<PublicBranchOption[]>(
             `/intake-templates/public/branch-options${
-              branchOptionQuery.toString() ? `?${branchOptionQuery.toString()}` : ""
+              branchOptionQuery.toString()
+                ? `?${branchOptionQuery.toString()}`
+                : ""
             }`,
           ).catch(() => [])
         : [];
@@ -51,6 +60,7 @@ export default async function PublicIntakePage({
   return (
     <PublicIntakeForm
       template={template}
+      initialLanguage={formLanguage(lang)}
       branchId={branchId}
       branchOptions={branchOptions}
       defaultOversightRegion={oversightRegion}

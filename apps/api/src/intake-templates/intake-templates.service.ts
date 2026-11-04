@@ -837,6 +837,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       successMessage: rootTemplate.successMessage,
       logoPath: rootTemplate.logoPath,
       theme: rootTemplate.theme,
+      spanish: rootTemplate.spanish,
       fields: rootTemplate.fields,
     });
 
@@ -926,6 +927,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       successMessage: rootTemplate.successMessage,
       logoPath: rootTemplate.logoPath,
       theme: rootTemplate.theme,
+      spanish: rootTemplate.spanish,
       fields: rootTemplate.fields,
     });
 

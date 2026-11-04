@@ -283,6 +283,7 @@ export default async function MembersPage({
             <div className="mt-5">
               {activeMemberTemplate ? (
                 <TemplateQrCard
+                  allowSpanish
                   url={
                     activeMemberTemplate.shareUrl ||
                     `http://localhost:3001/intake/${activeMemberTemplate.slug}`

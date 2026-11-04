@@ -53,6 +53,7 @@ export default async function OutreachLinksPage() {
               </p>
               {link.isActive ? (
                 <TemplateQrCard
+                  allowSpanish
                   url={`${origin}/outreach/${link.token}`}
                   title={link.name}
                 />

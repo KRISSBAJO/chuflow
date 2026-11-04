@@ -594,6 +594,10 @@ export type GuestListResponse = {
 };
 
 export type IntakeTemplateField = {
+  optionsEs?: string[];
+  labelEs?: string;
+  helpTextEs?: string;
+  placeholderEs?: string;
   key: string;
   label: string;
   type: string;
@@ -606,6 +610,7 @@ export type IntakeTemplateField = {
 };
 
 export type IntakeTemplate = {
+  spanish?: Partial<Record<"title" | "subtitle" | "introTitle" | "introBody" | "closingText" | "submitLabel" | "successTitle" | "successMessage", string>>;
   _id: string;
   kind: "guest" | "member" | "attendance" | "weekly_report" | "maag_report";
   name: string;
