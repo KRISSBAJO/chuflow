@@ -210,65 +210,77 @@ export class MembersService {
 
   private async resolveServiceUnitAssignment(
     branchId: string | undefined,
-    payload: Pick<CreateMemberDto, 'serviceUnitId' | 'serviceUnitInterest'>,
+    payload: Pick<
+      CreateMemberDto,
+      | 'serviceUnitIds'
+      | 'serviceUnitNames'
+      | 'serviceUnitId'
+      | 'serviceUnitInterest'
+    >,
   ) {
-    const requestedServiceUnitId =
-      typeof payload.serviceUnitId === 'string'
-        ? payload.serviceUnitId.trim()
-        : undefined;
-    const requestedServiceUnitName =
-      typeof payload.serviceUnitInterest === 'string'
-        ? payload.serviceUnitInterest.trim()
-        : undefined;
-
-    if (!branchId) {
-      return {
-        serviceUnitId: undefined,
-        serviceUnitInterest: requestedServiceUnitName,
-      };
-    }
-
-    if (requestedServiceUnitId) {
-      const serviceUnit = await this.serviceUnitModel
-        .findById(requestedServiceUnitId)
-        .lean();
-
-      if (!serviceUnit) {
-        throw new BadRequestException('Selected service unit was not found');
-      }
-
-      if (String(serviceUnit.branchId) !== branchId) {
-        throw new BadRequestException(
-          'Selected service unit must belong to the same branch',
-        );
-      }
-
-      return {
-        serviceUnitId: serviceUnit._id,
-        serviceUnitInterest: serviceUnit.name,
-      };
-    }
-
-    if (requestedServiceUnitName) {
-      const serviceUnit = await this.serviceUnitModel.findOne({
-        branchId,
-        name: {
-          $regex: new RegExp(
-            `^${this.escapeRegExp(requestedServiceUnitName)}$`,
-            'i',
-          ),
-        },
-      });
-
-      return {
-        serviceUnitId: serviceUnit?._id,
-        serviceUnitInterest: serviceUnit?.name ?? requestedServiceUnitName,
-      };
-    }
-
+    const hasIds = payload.serviceUnitIds !== undefined;
+    const hasNames = payload.serviceUnitNames !== undefined;
+    if (hasIds && !Array.isArray(payload.serviceUnitIds))
+      throw new BadRequestException('Service groups must be a list');
+    if (hasNames && !Array.isArray(payload.serviceUnitNames))
+      throw new BadRequestException('Service group names must be a list');
+    const ids = hasIds
+      ? [...new Set(payload.serviceUnitIds)]
+      : payload.serviceUnitId
+        ? [payload.serviceUnitId.trim()]
+        : [];
+    const names = hasIds
+      ? []
+      : hasNames
+        ? [
+            ...new Set(
+              payload.serviceUnitNames
+                ?.map((name) => name.trim())
+                .filter(Boolean),
+            ),
+          ]
+        : !hasIds && !ids.length && payload.serviceUnitInterest?.trim()
+          ? [payload.serviceUnitInterest.trim()]
+          : [];
+    if (!branchId && (ids.length || names.length))
+      throw new BadRequestException(
+        'Choose a branch before assigning service groups',
+      );
+    const units = ids.length
+      ? await this.serviceUnitModel.find({ _id: { $in: ids } }).lean()
+      : names.length
+        ? await this.serviceUnitModel
+            .find({
+              branchId,
+              $or: names.map((name) => ({
+                name: { $regex: `^${this.escapeRegExp(name)}$`, $options: 'i' },
+              })),
+            })
+            .lean()
+        : [];
+    if (ids.length && units.length !== ids.length)
+      throw new BadRequestException(
+        'One or more selected service groups were not found',
+      );
+    if (!hasIds && hasNames && units.length !== names.length)
+      throw new BadRequestException(
+        'One or more selected service groups were not found in this branch',
+      );
+    if (units.some((unit) => String(unit.branchId) !== branchId))
+      throw new BadRequestException(
+        'Every selected service group must belong to the member’s branch',
+      );
+    const ordered = ids.length
+      ? ids.map((id) => units.find((unit) => String(unit._id) === id)!)
+      : units;
     return {
-      serviceUnitId: undefined,
-      serviceUnitInterest: undefined,
+      serviceUnitIds: ordered.map((unit) => unit._id),
+      serviceUnitId: ordered[0]?._id,
+      serviceUnitInterest:
+        ordered.map((unit) => unit.name).join('; ') ||
+        (!hasIds && !hasNames
+          ? payload.serviceUnitInterest?.trim()
+          : undefined),
     };
   }
 
@@ -316,6 +328,7 @@ export class MembersService {
       .populate('branchId')
       .populate('guestId')
       .populate('serviceUnitId')
+      .populate('serviceUnitIds')
       .sort({ createdAt: -1 })
       .lean();
   }
@@ -344,7 +357,14 @@ export class MembersService {
     );
     const query: Record<string, unknown> = { ...scope };
     if (params.status) query.membershipStatus = params.status;
-    if (params.serviceUnitId) query.serviceUnitId = params.serviceUnitId;
+    if (params.serviceUnitId)
+      query.$or = [
+        { serviceUnitIds: params.serviceUnitId },
+        {
+          serviceUnitIds: { $exists: false },
+          serviceUnitId: params.serviceUnitId,
+        },
+      ];
     const positiveFormationValues = [
       'yes',
       'completed',
@@ -400,6 +420,7 @@ export class MembersService {
       .find(query)
       .populate('branchId', 'name')
       .populate('serviceUnitId', 'name')
+      .populate('serviceUnitIds', 'name')
       .collation({ locale: 'en', strength: 2 })
       .sort(sorts[params.sort || 'newest'] || sorts.newest)
       .skip((page - 1) * pageSize)
@@ -418,6 +439,7 @@ export class MembersService {
       .populate('branchId')
       .populate('guestId')
       .populate('serviceUnitId')
+      .populate('serviceUnitIds')
       .lean();
     if (!member) {
       throw new NotFoundException('Member not found');
@@ -451,37 +473,73 @@ export class MembersService {
         (existing.branchId?._id ? String(existing.branchId._id) : undefined),
       id,
     );
-    const hasServiceUnitPayload =
-      Object.prototype.hasOwnProperty.call(normalizedDto, 'serviceUnitId') ||
-      Object.prototype.hasOwnProperty.call(
-        normalizedDto,
-        'serviceUnitInterest',
-      );
-    const serviceUnitAssignment = hasServiceUnitPayload
-      ? await this.resolveServiceUnitAssignment(
-          branchId ??
-            (existing.branchId?._id
-              ? String(existing.branchId._id)
-              : undefined),
-          {
-            serviceUnitId: normalizedDto.serviceUnitId,
-            serviceUnitInterest: normalizedDto.serviceUnitInterest,
-          },
-        )
-      : null;
+    const assignmentChanged = [
+      'serviceUnitIds',
+      'serviceUnitNames',
+      'serviceUnitId',
+      'serviceUnitInterest',
+    ].some((key) => Object.prototype.hasOwnProperty.call(dto, key));
+    const oldBranchId = existing.branchId?._id
+      ? String(existing.branchId._id)
+      : String(existing.branchId);
+    const branchChanged = !!branchId && branchId !== oldBranchId;
+    const serviceUnitAssignment =
+      assignmentChanged || branchChanged
+        ? await this.resolveServiceUnitAssignment(
+            branchId || oldBranchId,
+            assignmentChanged
+              ? normalizedDto
+              : {
+                  serviceUnitIds: Array.isArray(existing.serviceUnitIds)
+                    ? existing.serviceUnitIds.map((unit) => String(unit._id))
+                    : existing.serviceUnitId
+                      ? [String(existing.serviceUnitId._id)]
+                      : [],
+                },
+          )
+        : null;
+    if (serviceUnitAssignment) {
+      delete normalizedDto.serviceUnitId;
+      delete normalizedDto.serviceUnitInterest;
+      delete normalizedDto.serviceUnitNames;
+    }
     const member = await this.memberModel
       .findByIdAndUpdate(
         id,
         {
           ...normalizedDto,
           ...(branchId ? { branchId } : {}),
-          ...(serviceUnitAssignment ?? {}),
+          ...(serviceUnitAssignment
+            ? {
+                serviceUnitIds: serviceUnitAssignment.serviceUnitIds,
+                ...(serviceUnitAssignment.serviceUnitId
+                  ? { serviceUnitId: serviceUnitAssignment.serviceUnitId }
+                  : {}),
+                ...(serviceUnitAssignment.serviceUnitInterest
+                  ? {
+                      serviceUnitInterest:
+                        serviceUnitAssignment.serviceUnitInterest,
+                    }
+                  : {}),
+              }
+            : {}),
+          ...(serviceUnitAssignment && !serviceUnitAssignment.serviceUnitId
+            ? {
+                $unset: {
+                  serviceUnitId: '',
+                  ...(!serviceUnitAssignment.serviceUnitInterest
+                    ? { serviceUnitInterest: '' }
+                    : {}),
+                },
+              }
+            : {}),
         },
         { new: true },
       )
       .populate('branchId')
       .populate('guestId')
       .populate('serviceUnitId')
+      .populate('serviceUnitIds')
       .lean();
     if (!member) {
       throw new NotFoundException('Member not found');

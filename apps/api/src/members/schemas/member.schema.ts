@@ -5,6 +5,11 @@ export type MemberDocument = HydratedDocument<Member>;
 
 @Schema({ timestamps: true })
 export class Member {
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: 'ServiceUnit' }],
+    default: undefined,
+  })
+  serviceUnitIds?: Types.ObjectId[];
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch', required: true })
   branchId!: Types.ObjectId;
 
@@ -87,3 +92,5 @@ export class Member {
 export const MemberSchema = SchemaFactory.createForClass(Member);
 MemberSchema.index({ branchId: 1, createdAt: -1, _id: -1 });
 MemberSchema.index({ branchId: 1, membershipStatus: 1 });
+
+MemberSchema.index({ branchId: 1, serviceUnitIds: 1 });

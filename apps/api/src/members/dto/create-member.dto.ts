@@ -1,7 +1,27 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsMongoId, IsOptional, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  IsArray,
+  ArrayMaxSize,
+} from 'class-validator';
 
 export class CreateMemberDto {
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsMongoId({ each: true })
+  serviceUnitIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  serviceUnitNames?: string[];
+
   @ApiProperty()
   @IsMongoId()
   branchId!: string;

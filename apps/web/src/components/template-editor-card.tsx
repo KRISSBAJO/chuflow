@@ -27,6 +27,7 @@ const fieldTypes = [
   "month",
   "textarea",
   "radio",
+  "checkbox",
   "select",
   "number",
 ];
@@ -1164,7 +1165,7 @@ export function TemplateEditorCard({
                     className="ui-input !min-h-20"
                   />
                 </Field>
-                {field.type === "select" || field.type === "radio" ? (
+                {field.type === "select" || field.type === "radio" || field.type === "checkbox" ? (
                   <Field
                     label="Options"
                     hint="Separate options with commas."

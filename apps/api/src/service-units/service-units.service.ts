@@ -97,7 +97,10 @@ export class ServiceUnitsService {
     );
 
     const memberCount = await this.memberModel.countDocuments({
-      serviceUnitId: unit._id,
+      $or: [
+        { serviceUnitIds: unit._id },
+        { serviceUnitIds: { $exists: false }, serviceUnitId: unit._id },
+      ],
     });
 
     return {
@@ -172,18 +175,35 @@ export class ServiceUnitsService {
       .sort({ createdAt: -1 })
       .lean();
 
-    const counts = await this.memberModel.aggregate([
+    const counts = await this.memberModel.aggregate<{
+      _id: unknown;
+      total: number;
+    }>([
       {
-        $match: {
-          serviceUnitId: { $in: units.map((unit) => unit._id) },
+        $project: {
+          units: {
+            $setUnion: [
+              {
+                $cond: [
+                  { $isArray: '$serviceUnitIds' },
+                  '$serviceUnitIds',
+                  {
+                    $cond: [
+                      { $ifNull: ['$serviceUnitId', false] },
+                      ['$serviceUnitId'],
+                      [],
+                    ],
+                  },
+                ],
+              },
+              [],
+            ],
+          },
         },
       },
-      {
-        $group: {
-          _id: '$serviceUnitId',
-          total: { $sum: 1 },
-        },
-      },
+      { $unwind: '$units' },
+      { $match: { units: { $in: units.map((unit) => unit._id) } } },
+      { $group: { _id: '$units', total: { $sum: 1 } } },
     ]);
 
     const countMap = new Map(

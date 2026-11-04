@@ -390,11 +390,11 @@ export class IntakeTemplatesService implements OnModuleInit {
         field.key === 'serviceUnitInterest'
           ? {
               ...field,
-              type: 'select',
+              type: 'checkbox',
               options: serviceUnitOptions,
               helpText:
                 field.helpText ||
-                'Choose the service unit this member serves in or intends to join for this branch.',
+                'Select every service group this member serves in or intends to join in this branch.',
             }
           : field.key === 'serviceType'
             ? {
@@ -1920,7 +1920,16 @@ export class IntakeTemplatesService implements OnModuleInit {
         );
       }
 
+      const selectedGroups = this.findAnswerValue(
+        template,
+        answers,
+        ['serviceUnitInterest'],
+        ['service', 'unit'],
+      );
       const member = await this.membersService.create({
+        serviceUnitNames: Array.isArray(selectedGroups)
+          ? selectedGroups.map((value) => String(value))
+          : undefined,
         branchId,
         title: this.getAnswerString(template, answers, ['title'], ['title']),
         firstName: this.extractPersonName(template, answers).firstName,

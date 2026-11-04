@@ -941,6 +941,7 @@ export type MemberListItem = {
   holySpiritBaptismStatus?: string;
   waterBaptismStatus?: string;
   serviceUnitInterest?: string;
+  serviceUnitIds?: { _id?: string; name?: string }[];
   serviceUnitId?: {
     _id?: string;
     name?: string;

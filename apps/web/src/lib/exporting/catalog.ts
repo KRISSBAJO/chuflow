@@ -200,7 +200,17 @@ export const EXPORTS: Record<string, ExportDefinition> = {
       col("Email", "email"),
       branch,
       col("Status", "membershipStatus"),
-      col("Service unit", "serviceUnitId.name"),
+      {
+        header: "Service groups",
+        value: (row) =>
+          Array.isArray(row.serviceUnitIds)
+            ? row.serviceUnitIds
+                .map((unit) => text(unit, "name"))
+                .filter(Boolean)
+                .join("; ")
+            : text(row, "serviceUnitId.name") ||
+              text(row, "serviceUnitInterest"),
+      },
       col("Joined", "dateJoinedChurch"),
       col("Foundation class", "believerFoundationClassStatus"),
       col("Holy Spirit baptism", "holySpiritBaptismStatus"),

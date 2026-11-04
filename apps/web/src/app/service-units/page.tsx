@@ -131,9 +131,9 @@ export default async function ServiceUnitsPage({
           tone="cool"
         />
         <MetricCard
-          label="Assigned members"
+          label="Group memberships"
           value={String(assignedMembers)}
-          delta="Members currently linked to a unit"
+          delta="Members serving in two groups count once in each group"
           tone="warm"
         />
       </section>

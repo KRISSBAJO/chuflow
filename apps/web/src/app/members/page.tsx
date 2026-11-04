@@ -1,3 +1,4 @@
+import { memberGroupNames } from "@/lib/member-service-groups";
 import {
   DirectoryControls,
   DirectoryPagination,
@@ -199,7 +200,7 @@ export default async function MembersPage({
                       <th>Status</th>
                       <th>Holy Spirit</th>
                       <th>Foundation</th>
-                      <th>Service unit</th>
+                      <th>Service groups</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -252,9 +253,7 @@ export default async function MembersPage({
                             </Badge>
                           </td>
                           <td className="text-[#55534e]">
-                            {member.serviceUnitId?.name ||
-                              member.serviceUnitInterest ||
-                              "Not set"}
+                            {memberGroupNames(member) || "Not set"}
                           </td>
                         </tr>
                       );

@@ -231,8 +231,8 @@ export const intakeTemplateDefaults: CreateIntakeTemplateDto[] = [
       },
       {
         key: 'serviceUnitInterest',
-        label: 'Service unit',
-        type: 'select',
+        label: 'Service groups',
+        type: 'checkbox',
         required: false,
         width: 'half',
         options: [],

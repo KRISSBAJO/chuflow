@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
+import { MemberServiceGroups } from "@/components/member-service-groups";
+import { memberGroupIds } from "@/lib/member-service-groups";
 import { API_URL } from "@/lib/api";
 import {
   formatMembershipStatus,
@@ -57,6 +59,7 @@ export function MemberProfileForm({
     holySpiritBaptismStatus?: string;
     waterBaptismStatus?: string;
     serviceUnitInterest?: string;
+    serviceUnitIds?: { _id?: string; name?: string }[];
     serviceUnitId?: { _id?: string; name?: string };
     familyDetails?: string;
     branchId?: { _id?: string; name?: string };
@@ -76,10 +79,12 @@ export function MemberProfileForm({
     [branchId, serviceUnits],
   );
 
-  const selectedServiceUnitId =
-    member.serviceUnitId?._id ||
-    scopedServiceUnits.find((unit) => unit.name === member.serviceUnitInterest)?._id ||
-    "";
+  const selectedServiceUnitIds =
+    Array.isArray(member.serviceUnitIds) || member.serviceUnitId
+      ? memberGroupIds(member)
+      : scopedServiceUnits
+          .filter((unit) => unit.name === member.serviceUnitInterest)
+          .map((unit) => unit._id);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -98,7 +103,7 @@ export function MemberProfileForm({
           phone: formData.get("phone") || undefined,
           membershipStatus: formData.get("membershipStatus") || undefined,
           dateJoinedChurch: formData.get("dateJoinedChurch") || undefined,
-          serviceUnitId: formData.get("serviceUnitId") || undefined,
+          serviceUnitIds: formData.getAll("serviceUnitIds"),
           believerFoundationClassStatus:
             formData.get("believerFoundationClassStatus") || undefined,
           believerFoundationClassDate:
@@ -155,7 +160,11 @@ export function MemberProfileForm({
       <form action={handleSubmit} className="mt-6 space-y-5">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Title">
-            <select name="title" defaultValue={member.title || ""} className="ui-input">
+            <select
+              name="title"
+              defaultValue={member.title || ""}
+              className="ui-input"
+            >
               <option value="">No title selected</option>
               {MEMBER_TITLE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -165,19 +174,45 @@ export function MemberProfileForm({
             </select>
           </Field>
           <Field label="First name" required>
-            <input name="firstName" defaultValue={member.firstName} required className="ui-input" />
+            <input
+              name="firstName"
+              defaultValue={member.firstName}
+              required
+              className="ui-input"
+            />
           </Field>
           <Field label="Last name" required>
-            <input name="lastName" defaultValue={member.lastName} required className="ui-input" />
+            <input
+              name="lastName"
+              defaultValue={member.lastName}
+              required
+              className="ui-input"
+            />
           </Field>
           <Field label="Phone number">
-            <input name="phone" defaultValue={member.phone || ""} className="ui-input" />
+            <input
+              name="phone"
+              defaultValue={member.phone || ""}
+              className="ui-input"
+            />
           </Field>
           <Field label="Email">
-            <input name="email" type="email" defaultValue={member.email || ""} className="ui-input" />
+            <input
+              name="email"
+              type="email"
+              defaultValue={member.email || ""}
+              className="ui-input"
+            />
           </Field>
-          <Field label="Membership status" hint={`Current status: ${formatMembershipStatus(member.membershipStatus)}`}>
-            <select name="membershipStatus" defaultValue={member.membershipStatus} className="ui-input">
+          <Field
+            label="Membership status"
+            hint={`Current status: ${formatMembershipStatus(member.membershipStatus)}`}
+          >
+            <select
+              name="membershipStatus"
+              defaultValue={member.membershipStatus}
+              className="ui-input"
+            >
               {MEMBERSHIP_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -197,35 +232,33 @@ export function MemberProfileForm({
         </div>
 
         <section className="rounded-2xl bg-[#f6f5f1] p-5">
-          <h3 className="text-[15px] font-semibold text-[#111111]">Service unit placement</h3>
-          <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Keep this member attached to the right branch service unit.</p>
-          <Field
-            label="Service unit"
-            className="mt-4"
-            hint={
-              member.serviceUnitInterest
-                ? `Previously recorded interest: ${member.serviceUnitInterest}.`
-                : "Assign a service unit rather than storing free-text interest."
-            }
-          >
-            <select name="serviceUnitId" defaultValue={selectedServiceUnitId} className="ui-input">
-              <option value="">No service unit assigned yet</option>
-              {scopedServiceUnits.map((unit) => (
-                <option key={unit._id} value={unit._id}>
-                  {unit.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <h3 className="text-[15px] font-semibold text-[#111111]">
+            Service group membership
+          </h3>
+          <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+            Choose every service group this member belongs to in this branch.
+          </p>
+          <MemberServiceGroups
+            key={selectedServiceUnitIds.join(",")}
+            units={scopedServiceUnits}
+            selected={selectedServiceUnitIds}
+          />
         </section>
 
         {MEMBER_COURSE_GROUPS.map((group) => {
-          const values = member as unknown as Record<string, string | undefined>;
+          const values = member as unknown as Record<
+            string,
+            string | undefined
+          >;
 
           return (
             <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
-              <h3 className="text-[15px] font-semibold text-[#111111]">{group.title}</h3>
-              <p className="mt-0.5 text-[13px] text-[#6b6b6b]">{group.helperText}</p>
+              <h3 className="text-[15px] font-semibold text-[#111111]">
+                {group.title}
+              </h3>
+              <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+                {group.helperText}
+              </p>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <Field label={group.question}>
                   <select
@@ -269,7 +302,9 @@ export function MemberProfileForm({
             <Field label="Holy Ghost baptism">
               <select
                 name="holySpiritBaptismStatus"
-                defaultValue={normalizeYesNoValue(member.holySpiritBaptismStatus)}
+                defaultValue={normalizeYesNoValue(
+                  member.holySpiritBaptismStatus,
+                )}
                 className="ui-input"
               >
                 <option value="">Select one</option>
