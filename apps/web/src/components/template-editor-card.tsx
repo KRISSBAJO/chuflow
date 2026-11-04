@@ -277,6 +277,8 @@ function sanitizeField(field: IntakeTemplateField): IntakeTemplateField {
 function sanitizeTheme(theme?: IntakeTemplate["theme"]) {
   return {
     headerColor: theme?.headerColor || undefined,
+    headerTextColor: theme?.headerTextColor || undefined,
+    buttonTextColor: theme?.buttonTextColor || undefined,
     accentColor: theme?.accentColor || "#dc2626",
     darkColor: theme?.darkColor || "#111827",
     softColor: theme?.softColor || "#fff7ed",
@@ -404,7 +406,13 @@ export function TemplateEditorCard({
   }
 
   function updateTheme(
-    key: "accentColor" | "darkColor" | "softColor" | "headerColor",
+    key:
+      | "accentColor"
+      | "darkColor"
+      | "softColor"
+      | "headerColor"
+      | "headerTextColor"
+      | "buttonTextColor",
     value: string,
   ) {
     setDraft((current) => ({
@@ -913,11 +921,66 @@ export function TemplateEditorCard({
               Use default header
             </Button>
           </div>
+
+          {(["headerTextColor", "buttonTextColor"] as const).map((key) => (
+            <label
+              key={key}
+              className="mt-3 flex flex-wrap items-center gap-3 text-sm"
+            >
+              <input
+                type="checkbox"
+                disabled={readonly}
+                checked={!!draft.theme?.[key]}
+                onChange={(event) =>
+                  updateTheme(
+                    key,
+                    event.target.checked
+                      ? key === "headerTextColor"
+                        ? formTextColor(draft.theme?.headerColor || "#ffffff")
+                        : "#ffffff"
+                      : "",
+                  )
+                }
+              />
+              {key === "headerTextColor"
+                ? "Customize header text"
+                : "Customize button text"}
+              <input
+                type="color"
+                aria-label={
+                  key === "headerTextColor"
+                    ? "Header text color"
+                    : "Button text color"
+                }
+                disabled={readonly || !draft.theme?.[key]}
+                value={
+                  draft.theme?.[key] ||
+                  (key === "headerTextColor"
+                    ? formTextColor(draft.theme?.headerColor || "#ffffff")
+                    : "#ffffff")
+                }
+                onChange={(event) => updateTheme(key, event.target.value)}
+              />
+            </label>
+          ))}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={readonly}
+            onClick={() => {
+              updateTheme("headerTextColor", "");
+              updateTheme("buttonTextColor", "");
+            }}
+          >
+            Use automatic text colors
+          </Button>
           <div
             className="mt-3 rounded-xl p-4 text-sm font-medium"
             style={{
               backgroundColor: draft.theme?.headerColor || "#ffffff",
-              color: formTextColor(draft.theme?.headerColor || "#ffffff"),
+              color:
+                draft.theme?.headerTextColor ||
+                formTextColor(draft.theme?.headerColor || "#ffffff"),
             }}
           >
             Header preview — {draft.name || "Your church form"}

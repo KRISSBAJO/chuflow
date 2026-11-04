@@ -630,6 +630,8 @@ export type IntakeTemplate = {
   logoPath?: string;
   shareUrl?: string;
   theme?: {
+    headerTextColor?: string;
+    buttonTextColor?: string;
     headerColor?: string;
     accentColor?: string;
     darkColor?: string;

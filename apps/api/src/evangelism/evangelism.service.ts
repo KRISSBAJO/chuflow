@@ -95,6 +95,8 @@ export class EvangelismService {
       branchId: branch._id,
       name: dto.name.trim(),
       churchName: dto.churchName?.trim() || branch.name,
+      headerTextColor: dto.headerTextColor || undefined,
+      buttonTextColor: dto.buttonTextColor || undefined,
       headerColor: dto.headerColor || undefined,
       buttonColor: dto.buttonColor || undefined,
       kind: dto.kind,
@@ -152,6 +154,10 @@ export class EvangelismService {
         throw new BadRequestException('Give this link a descriptive name');
       link.name = dto.name.trim();
     }
+    if (dto.headerTextColor !== undefined)
+      link.headerTextColor = dto.headerTextColor || undefined;
+    if (dto.buttonTextColor !== undefined)
+      link.buttonTextColor = dto.buttonTextColor || undefined;
     if (dto.isActive !== undefined) link.isActive = dto.isActive;
     if (dto.headerColor !== undefined)
       link.headerColor = dto.headerColor || undefined;
@@ -202,6 +208,12 @@ export class EvangelismService {
     return {
       branchName: branch.name,
       churchName: link.churchName || branch.name,
+      ...(link.headerTextColor
+        ? { headerTextColor: link.headerTextColor }
+        : {}),
+      ...(link.buttonTextColor
+        ? { buttonTextColor: link.buttonTextColor }
+        : {}),
       ...(link.headerColor ? { headerColor: link.headerColor } : {}),
       ...(link.buttonColor ? { buttonColor: link.buttonColor } : {}),
     };

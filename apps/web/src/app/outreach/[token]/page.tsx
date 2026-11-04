@@ -28,18 +28,22 @@ export default async function PublicOutreachPage({
   const info = (await response.json()) as {
     branchName: string;
     churchName?: string;
+    headerTextColor?: string;
+    buttonTextColor?: string;
     headerColor?: string;
     buttonColor?: string;
   };
   const headerColor = validFormColor(info.headerColor);
-  const headerText = headerColor ? formTextColor(headerColor) : undefined;
+  const headerText =
+    validFormColor(info.headerTextColor) ||
+    (headerColor ? formTextColor(headerColor) : undefined);
   const churchName = info.churchName || info.branchName;
   return (
     <div className="app-root min-h-screen bg-[#faf9f6] px-4 py-8 sm:py-12">
       <main className="mx-auto max-w-2xl">
         <header
           style={
-            headerColor
+            headerColor || headerText
               ? ({
                   backgroundColor: headerColor,
                   color: headerText,
@@ -62,7 +66,9 @@ export default async function PublicOutreachPage({
           </h1>
           <p
             className="mb-7 mt-4 text-base leading-7 text-[#6b6b6b]"
-            style={headerColor ? { color: headerText } : undefined}
+            style={
+              headerColor || headerText ? { color: headerText } : undefined
+            }
           >
             It was a pleasure connecting with you. Leave your details so our
             team can follow up, pray with you, or help you take your next step.
@@ -72,6 +78,7 @@ export default async function PublicOutreachPage({
           token={token}
           branchName={churchName}
           buttonColor={info.buttonColor}
+          buttonTextColor={info.buttonTextColor}
         />
         <p className="mt-6 text-center text-xs leading-6 text-[#8a8780]">
           Your details go to this church’s care team. You do not need a ChuFlow

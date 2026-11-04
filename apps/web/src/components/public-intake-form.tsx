@@ -559,7 +559,10 @@ export function PublicIntakeForm({
   const steps = buildTemplateSteps(template);
   const currentStep = steps[stepIndex];
   const headerColor = validFormColor(template.theme?.headerColor);
-  const headerText = headerColor ? formTextColor(headerColor) : undefined;
+  const headerText =
+    validFormColor(template.theme?.headerTextColor) ||
+    (headerColor ? formTextColor(headerColor) : undefined);
+  const buttonText = validFormColor(template.theme?.buttonTextColor);
   const accentColor = template.theme?.accentColor || "#dc2626";
   const softColor = template.theme?.softColor || "#fff7ed";
   const submissionBranchId = template.branchId || branchId || selectedBranchId;
@@ -789,7 +792,7 @@ export function PublicIntakeForm({
       <header
         className="flex h-20 items-center justify-between gap-4 px-5 sm:px-10"
         style={
-          headerColor
+          headerColor || headerText
             ? ({
                 backgroundColor: headerColor,
                 color: headerText,
@@ -824,7 +827,7 @@ export function PublicIntakeForm({
           <p className="inline-flex items-center gap-2 rounded-full bg-[var(--lp-panel)] px-3.5 py-1.5 text-[13px] font-medium text-[var(--lp-ink)]">
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: accentColor }}
+              style={{ backgroundColor: accentColor, color: buttonText }}
             />
             {template.badge || "Welcome"}
           </p>
@@ -867,7 +870,7 @@ export function PublicIntakeForm({
               >
                 <span
                   className="flex h-5 w-5 items-center justify-center rounded-full text-white"
-                  style={{ backgroundColor: accentColor }}
+                  style={{ backgroundColor: accentColor, color: buttonText }}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -907,6 +910,7 @@ export function PublicIntakeForm({
                 style={{
                   backgroundColor: accentColor,
                   boxShadow: `0 20px 40px -18px ${accentColor}`,
+                  color: buttonText,
                 }}
               >
                 <svg
@@ -1303,7 +1307,7 @@ export function PublicIntakeForm({
                     }}
                     disabled={loading}
                     className="inline-flex h-12 items-center gap-2 rounded-full px-7 text-[15px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                    style={{ backgroundColor: accentColor }}
+                    style={{ backgroundColor: accentColor, color: buttonText }}
                   >
                     {loading ? (
                       <>

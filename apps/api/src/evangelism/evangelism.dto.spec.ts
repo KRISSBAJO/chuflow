@@ -4,9 +4,27 @@ import {
   CaptureOutreachDto,
   OutreachListQueryDto,
   UpdateOutreachDto,
+  UpdateOutreachLinkDto,
 } from './evangelism.dto';
 
 describe('Evangelism request boundaries', () => {
+  it('validates custom text colors and permits returning to automatic colors', async () => {
+    const bad = await validate(
+      plainToInstance(UpdateOutreachLinkDto, {
+        headerTextColor: 'url(bad)',
+        buttonTextColor: '#fff',
+      }),
+    );
+    expect(bad).toHaveLength(2);
+    expect(
+      await validate(
+        plainToInstance(UpdateOutreachLinkDto, {
+          headerTextColor: null,
+          buttonTextColor: '#FFFFFF',
+        }),
+      ),
+    ).toHaveLength(0);
+  });
   const capture = {
     firstName: 'Ada',
     lastName: 'Okoro',

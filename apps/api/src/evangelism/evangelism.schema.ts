@@ -4,6 +4,8 @@ import { OUTREACH_METHODS, OUTREACH_STAGES } from './evangelism.dto';
 
 @Schema({ timestamps: true })
 export class OutreachLink {
+  @Prop() headerTextColor?: string;
+  @Prop() buttonTextColor?: string;
   @Prop() headerColor?: string;
   @Prop() buttonColor?: string;
   @Prop() churchName?: string;

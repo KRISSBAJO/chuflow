@@ -19,6 +19,12 @@ export function OutreachLinkForm({
   link?: OutreachLink;
 }) {
   const router = useRouter();
+  const [headerTextColor, setHeaderTextColor] = useState(
+    link?.headerTextColor || "",
+  );
+  const [buttonTextColor, setButtonTextColor] = useState(
+    link?.buttonTextColor || "",
+  );
   const [headerColor, setHeaderColor] = useState(link?.headerColor || "");
   const [buttonColor, setButtonColor] = useState(link?.buttonColor || "");
   const [busy, setBusy] = useState(false);
@@ -33,6 +39,8 @@ export function OutreachLinkForm({
       const payload = {
         name: data.get("name"),
         churchName: data.get("churchName"),
+        headerTextColor: headerTextColor || null,
+        buttonTextColor: buttonTextColor || null,
         headerColor: headerColor || null,
         buttonColor: buttonColor || null,
       };
@@ -163,11 +171,58 @@ export function OutreachLinkForm({
               onChange={(event) => setButtonColor(event.target.value)}
             />
           </label>
+
+          <label className="flex flex-wrap items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={!!headerTextColor}
+              onChange={(event) =>
+                setHeaderTextColor(
+                  event.target.checked
+                    ? formTextColor(headerColor || "#ffffff")
+                    : "",
+                )
+              }
+            />{" "}
+            Customize header text
+            <input
+              type="color"
+              aria-label="Header text color"
+              disabled={!headerTextColor}
+              value={headerTextColor || formTextColor(headerColor || "#ffffff")}
+              onChange={(event) => setHeaderTextColor(event.target.value)}
+            />
+          </label>
+          <label className="flex flex-wrap items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={!!buttonTextColor}
+              onChange={(event) =>
+                setButtonTextColor(
+                  event.target.checked
+                    ? formTextColor(buttonColor || "#111111")
+                    : "",
+                )
+              }
+            />{" "}
+            Customize button text
+            <input
+              type="color"
+              aria-label="Button text color"
+              disabled={!buttonTextColor}
+              value={buttonTextColor || formTextColor(buttonColor || "#111111")}
+              onChange={(event) => setButtonTextColor(event.target.value)}
+            />
+          </label>
+          <p className="text-xs text-[#8a8780]">
+            Leave text customization off for automatic readable colors. Preview
+            your choices below.
+          </p>
           <div
             className="rounded-xl p-4"
             style={{
               backgroundColor: headerColor || "#ffffff",
-              color: formTextColor(headerColor || "#ffffff"),
+              color: headerTextColor || formTextColor(headerColor || "#ffffff"),
             }}
           >
             <p className="font-semibold">Your church header</p>
@@ -176,7 +231,7 @@ export function OutreachLinkForm({
             className="inline-flex rounded-xl px-4 py-2 text-sm"
             style={{
               backgroundColor: buttonColor || "#111111",
-              color: formTextColor(buttonColor || "#111111"),
+              color: buttonTextColor || formTextColor(buttonColor || "#111111"),
             }}
           >
             Button preview
@@ -185,6 +240,8 @@ export function OutreachLinkForm({
             variant="secondary"
             size="sm"
             onClick={() => {
+              setHeaderTextColor("");
+              setButtonTextColor("");
               setHeaderColor("");
               setButtonColor("");
             }}

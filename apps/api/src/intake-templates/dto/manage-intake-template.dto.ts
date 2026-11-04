@@ -57,6 +57,8 @@ class IntakeTemplateFieldDto {
 }
 
 class IntakeTemplateThemeDto {
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerTextColor?: string;
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonTextColor?: string;
   @IsOptional()
   @Matches(/^#[0-9a-f]{6}$/i)
   headerColor?: string;

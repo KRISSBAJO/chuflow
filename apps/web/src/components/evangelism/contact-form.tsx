@@ -14,15 +14,18 @@ export function OutreachContactForm({
   branches = [],
   defaultBranchId,
   buttonColor,
+  buttonTextColor,
 }: {
   token?: string;
   branchName?: string;
   branches?: BranchSummary[];
   defaultBranchId?: string;
   buttonColor?: string;
+  buttonTextColor?: string;
 }) {
   const router = useRouter();
   const accent = validFormColor(buttonColor);
+  const buttonText = validFormColor(buttonTextColor);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -288,8 +291,11 @@ export function OutreachContactForm({
             type="submit"
             disabled={busy || (!token && !branches.length)}
             style={
-              accent
-                ? { backgroundColor: accent, color: formTextColor(accent) }
+              accent || buttonText
+                ? {
+                    backgroundColor: accent,
+                    color: buttonText || formTextColor(accent || "#111111"),
+                  }
                 : undefined
             }
           >

@@ -28,6 +28,8 @@ export type OutreachPerson = {
   lastName: string;
 };
 export type OutreachLink = {
+  headerTextColor?: string;
+  buttonTextColor?: string;
   headerColor?: string;
   buttonColor?: string;
   churchName?: string;

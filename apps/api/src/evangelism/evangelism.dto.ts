@@ -32,6 +32,8 @@ export const OUTREACH_METHODS = [
 ] as const;
 
 export class CreateOutreachLinkDto {
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerTextColor?: string | null;
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonTextColor?: string | null;
   @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerColor?: string | null;
   @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonColor?: string | null;
 
@@ -78,6 +80,8 @@ export class UpdateOutreachDto {
 }
 
 export class UpdateOutreachLinkDto {
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerTextColor?: string | null;
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonTextColor?: string | null;
   @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerColor?: string | null;
   @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonColor?: string | null;
 

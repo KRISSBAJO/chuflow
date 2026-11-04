@@ -324,15 +324,34 @@ describe('Evangelism follow-up safeguards', () => {
       token,
       headerColor: '#000000',
       buttonColor: '#ff8800',
+      headerTextColor: '#ffffff',
+      buttonTextColor: '#000000',
       save: jest.fn().mockResolvedValue({}),
     };
     links.findById.mockResolvedValue(link);
     await service.updateLink(user, String(new Types.ObjectId()), {
       headerColor: null,
       buttonColor: null,
+      headerTextColor: null,
+      buttonTextColor: null,
     });
     expect(link.headerColor).toBeUndefined();
     expect(link.buttonColor).toBeUndefined();
+    expect(link.headerTextColor).toBeUndefined();
+    expect(link.buttonTextColor).toBeUndefined();
     expect(link.token).toBe(token);
+  });
+
+  it('exposes saved text colors to the public form without changing the link', async () => {
+    links.findOne.mockResolvedValue({
+      branchId,
+      churchName: 'Grace Church',
+      headerTextColor: '#ffffff',
+      buttonTextColor: '#123456',
+    });
+    await expect(service.publicInfo(token)).resolves.toMatchObject({
+      headerTextColor: '#ffffff',
+      buttonTextColor: '#123456',
+    });
   });
 });
