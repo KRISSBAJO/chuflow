@@ -2,7 +2,10 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
-import { Attendance, AttendanceDocument } from '../attendance/schemas/attendance.schema';
+import {
+  Attendance,
+  AttendanceDocument,
+} from '../attendance/schemas/attendance.schema';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import {
   isBranchScopedRole,
@@ -11,8 +14,14 @@ import {
   isNationalRole,
 } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { ExpenseEntry, ExpenseEntryDocument } from '../finance/schemas/expense-entry.schema';
-import { FollowUp, FollowUpDocument } from '../follow-ups/schemas/follow-up.schema';
+import {
+  ExpenseEntry,
+  ExpenseEntryDocument,
+} from '../finance/schemas/expense-entry.schema';
+import {
+  FollowUp,
+  FollowUpDocument,
+} from '../follow-ups/schemas/follow-up.schema';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
 import {
   IntakeSubmission,
@@ -136,10 +145,15 @@ export class AlertsService {
       };
     }
 
-    const branchMatch =
-      branchIds.length > 0 ? { $in: branchIds } : undefined;
+    const branchMatch = branchIds.length > 0 ? { $in: branchIds } : undefined;
 
-    const pendingStatuses = ['new', 'assigned', 'contacted', 'prayed_with', 'invited_back'];
+    const pendingStatuses = [
+      'new',
+      'assigned',
+      'contacted',
+      'prayed_with',
+      'invited_back',
+    ];
 
     const scopedGuestIds = branchMatch
       ? await this.guestModel.find({ branchId: branchMatch }).distinct('_id')
@@ -225,7 +239,9 @@ export class AlertsService {
       ]),
     ]);
 
-    const recentAttendanceSet = new Set(recentAttendanceBranchIds.map((branchId) => String(branchId)));
+    const recentAttendanceSet = new Set(
+      recentAttendanceBranchIds.map((branchId) => String(branchId)),
+    );
     const leadershipMap = new Map(
       leadershipCounts.map((item) => [
         String(item._id),
@@ -249,7 +265,9 @@ export class AlertsService {
     }).length;
 
     const pendingApprovals =
-      pendingAttendanceApprovals + pendingExpenseApprovals + pendingWorkspaceRequests;
+      pendingAttendanceApprovals +
+      pendingExpenseApprovals +
+      pendingWorkspaceRequests;
 
     const items: AlertItem[] = [
       pendingAttendanceApprovals > 0
@@ -258,7 +276,8 @@ export class AlertsService {
             label: 'Attendance approvals',
             count: pendingAttendanceApprovals,
             tone: 'warm',
-            description: 'Shared attendance submissions are still waiting for review.',
+            description:
+              'Shared attendance submissions are still waiting for review.',
             href: '/approvals',
           }
         : null,
@@ -298,7 +317,8 @@ export class AlertsService {
             label: 'Branch leadership gaps',
             count: branchesMissingLeadership,
             tone: 'critical',
-            description: 'Some branches are missing a resident or associate pastor.',
+            description:
+              'Some branches are missing a resident or associate pastor.',
             href: '/branches',
           }
         : null,
@@ -308,7 +328,8 @@ export class AlertsService {
             label: 'No recent attendance',
             count: branchesWithoutRecentAttendance,
             tone: 'warm',
-            description: 'Branches in scope have not submitted recent attendance.',
+            description:
+              'Branches in scope have not submitted recent attendance.',
             href: '/dashboard',
           }
         : null,

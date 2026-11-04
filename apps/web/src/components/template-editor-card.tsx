@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { isBranchScopedRole, isDistrictRole, isNationalRole } from "@/lib/permissions";
 import { TemplateQrCard } from "./template-qr-card";
+import { Badge, Button, Field } from "@/components/ui/ui";
 import type { BranchSummary, IntakeTemplate, IntakeTemplateField } from "@/lib/types";
 
 const fieldTypes = ["text", "email", "tel", "date", "month", "textarea", "radio", "select", "number"];
@@ -378,16 +379,22 @@ export function TemplateEditorCard({
     }
   }
 
+
+  const checkRowClass =
+    "flex min-h-[40px] items-center gap-2.5 rounded-xl border border-[#e4e3df] bg-white px-3 text-[14px] text-[#55534e]";
+  const colorInputClass =
+    "h-10 w-full cursor-pointer rounded-xl border border-[#e4e3df] bg-white px-1.5 py-1 disabled:cursor-not-allowed disabled:opacity-60";
+
   return (
     <div className="space-y-4">
       {template?.shareUrl && !(isGlobalBaseTemplate && canCreateBranchVersion) ? (
         <TemplateQrCard url={template.shareUrl} title={`${draft.name} share link`} />
       ) : null}
       {template ? (
-        <section className="rounded-[20px] border border-slate-200 bg-white p-4">
+        <section className="rounded-2xl bg-[#f6f5f1] p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-[14px] font-medium text-[#111111]">
                 {isGlobalBaseTemplate
                   ? "Global base template"
                   : isDistrictVersion
@@ -396,7 +403,7 @@ export function TemplateEditorCard({
                       ? "Branch version"
                       : "Template"}
               </p>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-0.5 text-[13px] leading-[1.6] text-[#6b6b6b]">
                 {isGlobalBaseTemplate
                   ? "This shared template stays centrally managed."
                   : isDistrictVersion
@@ -404,326 +411,372 @@ export function TemplateEditorCard({
                   : `This version only applies to ${branchLabel || "the selected branch"}.`}
               </p>
             </div>
-            {isDistrictVersion && template?.district ? (
-              <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
-                {template.district}
-              </span>
-            ) : null}
-            {isBranchVersion && branchLabel ? (
-              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
-                {branchLabel}
-              </span>
-            ) : null}
+            {isDistrictVersion && template?.district ? <Badge tone="info">{template.district}</Badge> : null}
+            {isBranchVersion && branchLabel ? <Badge tone="info">{branchLabel}</Badge> : null}
           </div>
           {canCreateBranchVersion ? (
-            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
-              <p>Start a branch version to customize this template for your branch.</p>
-              <button
-                type="button"
-                onClick={handleCreateBranchVersion}
-                disabled={overrideLoading}
-                className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-              >
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
+              <p>Start a branch version to customise this template for your branch.</p>
+              <Button size="sm" onClick={handleCreateBranchVersion} disabled={overrideLoading}>
                 {overrideLoading ? "Creating..." : "Create branch version"}
-              </button>
+              </Button>
             </div>
           ) : null}
           {canCreateDistrictVersion ? (
-            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
               <p>Adopt this template for {defaultDistrict} so every branch in the district uses the district version.</p>
-              <button
-                type="button"
-                onClick={handleCreateDistrictVersion}
-                disabled={districtOverrideLoading}
-                className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-              >
+              <Button size="sm" onClick={handleCreateDistrictVersion} disabled={districtOverrideLoading}>
                 {districtOverrideLoading ? "Creating..." : "Create district version"}
-              </button>
+              </Button>
             </div>
           ) : null}
         </section>
       ) : null}
-      <section className="rounded-[20px] border border-slate-200 bg-white p-4">
-        <div className="grid gap-2.5 md:grid-cols-2">
-          <input
-            value={draft.name}
-            onChange={(event) => updateDraft("name", event.target.value)}
-            placeholder="Template name"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <input
-            value={draft.slug}
-            onChange={(event) => updateDraft("slug", event.target.value)}
-            placeholder="public-slug"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <select
-            value={draft.kind}
-            onChange={(event) => resetForKind(event.target.value as IntakeTemplate["kind"])}
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          >
-            <option value="guest">First timer</option>
-            <option value="member">Member</option>
-            <option value="attendance">Attendance summary</option>
-            <option value="weekly_report">Weekly report</option>
-            <option value="maag_report">MAAG monthly report</option>
-          </select>
-          {!isBranchScopedRole(currentUserRole) ? (
-            <select
-              value={draft.branchId || ""}
-              onChange={(event) => updateDraft("branchId", event.target.value || undefined)}
-              disabled={readonly}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-            >
-              <option value="">No branch selected</option>
-              {branches.map((branch) => (
-                <option key={branch._id} value={branch._id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
-          ) : (
+
+      <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
+        <p className="text-[14px] font-medium text-[#111111]">Basics</p>
+        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Name, public link, form type and branch.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="Template name">
             <input
-              value={branchLabel || "Current branch scope"}
-              readOnly
-              className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500 outline-none"
+              value={draft.name}
+              onChange={(event) => updateDraft("name", event.target.value)}
+              placeholder="Template name"
+              disabled={readonly}
+              className="ui-input"
             />
-          )}
-          <input
-            value={draft.badge || ""}
-            onChange={(event) => updateDraft("badge", event.target.value)}
-            placeholder="Badge / eyebrow"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+          </Field>
+          <Field label="Public link slug">
+            <input
+              value={draft.slug}
+              onChange={(event) => updateDraft("slug", event.target.value)}
+              placeholder="public-slug"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Form type">
+            <select
+              value={draft.kind}
+              onChange={(event) => resetForKind(event.target.value as IntakeTemplate["kind"])}
+              disabled={readonly}
+              className="ui-input"
+            >
+              <option value="guest">First timer</option>
+              <option value="member">Member</option>
+              <option value="attendance">Attendance summary</option>
+              <option value="weekly_report">Weekly report</option>
+              <option value="maag_report">MAAG monthly report</option>
+            </select>
+          </Field>
+          <Field label="Branch">
+            {!isBranchScopedRole(currentUserRole) ? (
+              <select
+                value={draft.branchId || ""}
+                onChange={(event) => updateDraft("branchId", event.target.value || undefined)}
+                disabled={readonly}
+                className="ui-input"
+              >
+                <option value="">No branch selected</option>
+                {branches.map((branch) => (
+                  <option key={branch._id} value={branch._id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={branchLabel || "Current branch scope"}
+                readOnly
+                className="ui-input !bg-[#f6f5f1] !text-[#8a8780]"
+              />
+            )}
+          </Field>
+          <Field label="Badge">
+            <input
+              value={draft.badge || ""}
+              onChange={(event) => updateDraft("badge", event.target.value)}
+              placeholder="Short label above the title"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <label className={`${checkRowClass} self-end`}>
             <input
               type="checkbox"
               checked={draft.isActive}
               onChange={(event) => updateDraft("isActive", event.target.checked)}
               disabled={readonly}
-              className="h-4 w-4"
+              className="h-4 w-4 accent-[#111111]"
             />
             Active public template
           </label>
-          <input
-            value={draft.title}
-            onChange={(event) => updateDraft("title", event.target.value)}
-            placeholder="Public title"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-          />
-          <input
-            value={draft.subtitle || ""}
-            onChange={(event) => updateDraft("subtitle", event.target.value)}
-            placeholder="Public subtitle"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-          />
-          <input
-            value={draft.introTitle || ""}
-            onChange={(event) => updateDraft("introTitle", event.target.value)}
-            placeholder="Intro title"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-          />
-          <textarea
-            value={draft.introBody || ""}
-            onChange={(event) => updateDraft("introBody", event.target.value)}
-            placeholder="Intro body"
-            disabled={readonly}
-            className="min-h-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-          />
-          <textarea
-            value={draft.closingText || ""}
-            onChange={(event) => updateDraft("closingText", event.target.value)}
-            placeholder="Closing text"
-            disabled={readonly}
-            className="min-h-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-          />
-          <input
-            value={draft.submitLabel || ""}
-            onChange={(event) => updateDraft("submitLabel", event.target.value)}
-            placeholder="Submit label"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <input
-            value={draft.logoPath || ""}
-            onChange={(event) => updateDraft("logoPath", event.target.value)}
-            placeholder="/logo.png"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <input
-            value={draft.successTitle || ""}
-            onChange={(event) => updateDraft("successTitle", event.target.value)}
-            placeholder="Success title"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <input
-            value={draft.successMessage || ""}
-            onChange={(event) => updateDraft("successMessage", event.target.value)}
-            placeholder="Success message"
-            disabled={readonly}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          />
-          <input
-            type="color"
-            value={draft.theme?.accentColor || "#dc2626"}
-            onChange={(event) => updateTheme("accentColor", event.target.value)}
-            disabled={readonly}
-            className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-1.5 py-1"
-          />
-          <input
-            type="color"
-            value={draft.theme?.darkColor || "#111827"}
-            onChange={(event) => updateTheme("darkColor", event.target.value)}
-            disabled={readonly}
-            className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-1.5 py-1"
-          />
-          <input
-            type="color"
-            value={draft.theme?.softColor || "#fff7ed"}
-            onChange={(event) => updateTheme("softColor", event.target.value)}
-            disabled={readonly}
-            className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-1.5 py-1"
-          />
         </div>
       </section>
 
-      <section className="rounded-[20px] border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between">
+      <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
+        <p className="text-[14px] font-medium text-[#111111]">Public page wording</p>
+        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">What visitors read before and after they submit.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="Public title" className="sm:col-span-2">
+            <input
+              value={draft.title}
+              onChange={(event) => updateDraft("title", event.target.value)}
+              placeholder="Public title"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Subtitle" className="sm:col-span-2">
+            <input
+              value={draft.subtitle || ""}
+              onChange={(event) => updateDraft("subtitle", event.target.value)}
+              placeholder="Public subtitle"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Intro title" className="sm:col-span-2">
+            <input
+              value={draft.introTitle || ""}
+              onChange={(event) => updateDraft("introTitle", event.target.value)}
+              placeholder="Intro title"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Intro text" className="sm:col-span-2">
+            <textarea
+              value={draft.introBody || ""}
+              onChange={(event) => updateDraft("introBody", event.target.value)}
+              placeholder="Intro body"
+              disabled={readonly}
+              className="ui-input !min-h-24"
+            />
+          </Field>
+          <Field label="Closing text" className="sm:col-span-2">
+            <textarea
+              value={draft.closingText || ""}
+              onChange={(event) => updateDraft("closingText", event.target.value)}
+              placeholder="Closing text"
+              disabled={readonly}
+              className="ui-input !min-h-20"
+            />
+          </Field>
+          <Field label="Submit button label">
+            <input
+              value={draft.submitLabel || ""}
+              onChange={(event) => updateDraft("submitLabel", event.target.value)}
+              placeholder="Submit label"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Logo path">
+            <input
+              value={draft.logoPath || ""}
+              onChange={(event) => updateDraft("logoPath", event.target.value)}
+              placeholder="/logo.png"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Success title">
+            <input
+              value={draft.successTitle || ""}
+              onChange={(event) => updateDraft("successTitle", event.target.value)}
+              placeholder="Success title"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+          <Field label="Success message">
+            <input
+              value={draft.successMessage || ""}
+              onChange={(event) => updateDraft("successMessage", event.target.value)}
+              placeholder="Success message"
+              disabled={readonly}
+              className="ui-input"
+            />
+          </Field>
+        </div>
+
+        <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">Theme colours</p>
+        <div className="mt-2 grid grid-cols-3 gap-3">
+          <Field label="Accent">
+            <input
+              type="color"
+              value={draft.theme?.accentColor || "#dc2626"}
+              onChange={(event) => updateTheme("accentColor", event.target.value)}
+              disabled={readonly}
+              className={colorInputClass}
+            />
+          </Field>
+          <Field label="Dark">
+            <input
+              type="color"
+              value={draft.theme?.darkColor || "#111827"}
+              onChange={(event) => updateTheme("darkColor", event.target.value)}
+              disabled={readonly}
+              className={colorInputClass}
+            />
+          </Field>
+          <Field label="Soft">
+            <input
+              type="color"
+              value={draft.theme?.softColor || "#fff7ed"}
+              onChange={(event) => updateTheme("softColor", event.target.value)}
+              disabled={readonly}
+              className={colorInputClass}
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Template fields</p>
-            <p className="mt-1 text-xs text-slate-500">Edit the labels, field types, options, and required rules.</p>
+            <p className="text-[14px] font-medium text-[#111111]">
+              Form fields <span className="ml-1 text-[#8a8780] tabular-nums">{draft.fields.length}</span>
+            </p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Edit labels, field types, options and required rules.</p>
           </div>
           {!readonly ? (
-            <button
-              type="button"
-              onClick={addField}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700"
-            >
+            <Button size="sm" variant="secondary" icon="plus" onClick={addField}>
               Add field
-            </button>
+            </Button>
           ) : null}
         </div>
         <div className="mt-4 space-y-3">
           {draft.fields.map((field, index) => (
-            <div key={`${field.key}-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div className="grid gap-2.5 md:grid-cols-2">
-                <input
-                  value={field.label}
-                  onChange={(event) => updateField(index, { label: event.target.value })}
-                  disabled={readonly}
-                  placeholder="Field label"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-                />
-                <input
-                  value={field.key}
-                  onChange={(event) => updateField(index, { key: event.target.value })}
-                  disabled={readonly}
-                  placeholder="field_key"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-                />
-                <select
-                  value={field.type}
-                  onChange={(event) => updateField(index, { type: event.target.value })}
-                  disabled={readonly}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-                >
-                  {fieldTypes.map((fieldType) => (
-                    <option key={fieldType} value={fieldType}>
-                      {fieldType}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={field.width || "half"}
-                  onChange={(event) => updateField(index, { width: event.target.value })}
-                  disabled={readonly}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-                >
-                  <option value="half">Half width</option>
-                  <option value="full">Full width</option>
-                </select>
-                <input
-                  value={field.placeholder || ""}
-                  onChange={(event) => updateField(index, { placeholder: event.target.value })}
-                  disabled={readonly}
-                  placeholder="Placeholder"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-                />
-                <input
-                  value={field.defaultValue || ""}
-                  onChange={(event) => updateField(index, { defaultValue: event.target.value })}
-                  disabled={readonly}
-                  placeholder="Default value"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-                />
-                <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
+            <div key={`${field.key}-${index}`} className="rounded-2xl bg-[#f6f5f1] p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-[13px] font-medium text-[#111111]">
+                  <span className="mr-1.5 text-[#8a8780] tabular-nums">{index + 1}.</span>
+                  {field.label || "Untitled field"}
+                </p>
+                {!readonly ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                    onClick={() => removeField(index)}
+                  >
+                    Remove field
+                  </Button>
+                ) : null}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Label">
+                  <input
+                    value={field.label}
+                    onChange={(event) => updateField(index, { label: event.target.value })}
+                    disabled={readonly}
+                    placeholder="Field label"
+                    className="ui-input"
+                  />
+                </Field>
+                <Field label="Key">
+                  <input
+                    value={field.key}
+                    onChange={(event) => updateField(index, { key: event.target.value })}
+                    disabled={readonly}
+                    placeholder="field_key"
+                    className="ui-input"
+                  />
+                </Field>
+                <Field label="Type">
+                  <select
+                    value={field.type}
+                    onChange={(event) => updateField(index, { type: event.target.value })}
+                    disabled={readonly}
+                    className="ui-input"
+                  >
+                    {fieldTypes.map((fieldType) => (
+                      <option key={fieldType} value={fieldType}>
+                        {fieldType}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Width">
+                  <select
+                    value={field.width || "half"}
+                    onChange={(event) => updateField(index, { width: event.target.value })}
+                    disabled={readonly}
+                    className="ui-input"
+                  >
+                    <option value="half">Half width</option>
+                    <option value="full">Full width</option>
+                  </select>
+                </Field>
+                <Field label="Placeholder">
+                  <input
+                    value={field.placeholder || ""}
+                    onChange={(event) => updateField(index, { placeholder: event.target.value })}
+                    disabled={readonly}
+                    placeholder="Placeholder"
+                    className="ui-input"
+                  />
+                </Field>
+                <Field label="Default value">
+                  <input
+                    value={field.defaultValue || ""}
+                    onChange={(event) => updateField(index, { defaultValue: event.target.value })}
+                    disabled={readonly}
+                    placeholder="Default value"
+                    className="ui-input"
+                  />
+                </Field>
+                <label className={`${checkRowClass} sm:col-span-2`}>
                   <input
                     type="checkbox"
                     checked={!!field.required}
                     onChange={(event) => updateField(index, { required: event.target.checked })}
                     disabled={readonly}
-                    className="h-4 w-4"
+                    className="h-4 w-4 accent-[#111111]"
                   />
                   Required field
                 </label>
-                <textarea
-                  value={field.helpText || ""}
-                  onChange={(event) => updateField(index, { helpText: event.target.value })}
-                  disabled={readonly}
-                  placeholder="Helper text"
-                  className="min-h-20 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none md:col-span-2"
-                />
-                {field.type === "select" || field.type === "radio" ? (
-                  <input
-                    value={(field.options || []).join(", ")}
-                    onChange={(event) =>
-                      updateField(index, {
-                        options: event.target.value.split(",").map((item) => item.trim()).filter(Boolean),
-                      })
-                    }
+                <Field label="Helper text" className="sm:col-span-2">
+                  <textarea
+                    value={field.helpText || ""}
+                    onChange={(event) => updateField(index, { helpText: event.target.value })}
                     disabled={readonly}
-                    placeholder="Option 1, Option 2, Option 3"
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none md:col-span-2"
+                    placeholder="Helper text"
+                    className="ui-input !min-h-20"
                   />
+                </Field>
+                {field.type === "select" || field.type === "radio" ? (
+                  <Field label="Options" hint="Separate options with commas." className="sm:col-span-2">
+                    <input
+                      value={(field.options || []).join(", ")}
+                      onChange={(event) =>
+                        updateField(index, {
+                          options: event.target.value.split(",").map((item) => item.trim()).filter(Boolean),
+                        })
+                      }
+                      disabled={readonly}
+                      placeholder="Option 1, Option 2, Option 3"
+                      className="ui-input"
+                    />
+                  </Field>
                 ) : null}
               </div>
-              {!readonly ? (
-                <button
-                  type="button"
-                  onClick={() => removeField(index)}
-                  className="mt-3 rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700"
-                >
-                  Remove field
-                </button>
-              ) : null}
             </div>
           ))}
         </div>
       </section>
 
       {!readonly ? (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading}
-            className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-          >
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={handleSubmit} disabled={loading}>
             {loading ? "Saving..." : template?._id ? "Update template" : "Create template"}
-          </button>
-          {status ? <p className="text-sm text-slate-600">{status}</p> : null}
+          </Button>
+          {status ? <p className="text-[13px] text-[#6b6b6b]">{status}</p> : null}
         </div>
       ) : (
-        <p className="text-sm text-slate-500">
+        <p className="rounded-2xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">
           {canCreateBranchVersion
             ? "This shared template stays locked at the global level. Create a branch version to make local changes."
             : "This shared template is locked at the global level."}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { Button, Card, Field } from "@/components/ui/ui";
 
 export function ChangePasswordForm() {
   const [status, setStatus] = useState<string | null>(null);
@@ -42,42 +43,51 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[28px] bg-white p-6">
-      <h3 className="text-xl font-semibold text-slate-950">Change password</h3>
-      <p className="mt-2 text-sm text-slate-500">
-        Update your password without leaving the application.
-      </p>
-      <div className="mt-5 space-y-3">
-        <input
-          name="currentPassword"
-          type="password"
-          placeholder="Current password"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          required
-        />
-        <input
-          name="newPassword"
-          type="password"
-          placeholder="New password"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          required
-        />
-        <input
-          name="confirmPassword"
-          type="password"
-          placeholder="Confirm new password"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          required
-        />
-      </div>
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-      >
-        {loading ? "Updating..." : "Update password"}
-      </button>
-      {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
-    </form>
+    <Card className="p-6 sm:p-7">
+      <form action={handleSubmit}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Current password" required className="md:col-span-2">
+            <input
+              name="currentPassword"
+              type="password"
+              placeholder="Current password"
+              autoComplete="current-password"
+              className="ui-input"
+              required
+            />
+          </Field>
+          <Field label="New password" required>
+            <input
+              name="newPassword"
+              type="password"
+              placeholder="New password"
+              autoComplete="new-password"
+              className="ui-input"
+              required
+            />
+          </Field>
+          <Field label="Confirm new password" required>
+            <input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm new password"
+              autoComplete="new-password"
+              className="ui-input"
+              required
+            />
+          </Field>
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-black/[0.06] pt-5 sm:flex-row sm:items-center sm:justify-end">
+          {status ? (
+            <p role="status" className="text-[13px] text-[#6b6b6b] sm:mr-auto">
+              {status}
+            </p>
+          ) : null}
+          <Button type="submit" disabled={loading}>
+            {loading ? "Updating..." : "Update password"}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

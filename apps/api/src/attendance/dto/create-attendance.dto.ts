@@ -1,6 +1,12 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsMongoId, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateAttendanceDto {
   @ApiProperty({ required: false })

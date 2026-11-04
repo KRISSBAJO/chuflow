@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -18,7 +27,9 @@ export class WorkspaceRequestsController {
 
   @Public()
   @Post()
-  create(@Body() dto: CreateWorkspaceRequestDto): Promise<Record<string, unknown>> {
+  create(
+    @Body() dto: CreateWorkspaceRequestDto,
+  ): Promise<Record<string, unknown>> {
     return this.workspaceRequestsService.create(dto);
   }
 

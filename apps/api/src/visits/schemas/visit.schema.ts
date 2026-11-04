@@ -1,14 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type VisitDocument = HydratedDocument<Visit>;
 
 @Schema({ timestamps: true })
 export class Visit {
-  @Prop({ type: Types.ObjectId, ref: 'Guest', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Guest', required: true })
   guestId!: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch', required: true })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true })

@@ -1,10 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { CreateDistrictDto, UpdateDistrictDto } from './dto/manage-district.dto';
+import {
+  CreateDistrictDto,
+  UpdateDistrictDto,
+} from './dto/manage-district.dto';
 import { DistrictSummary, DistrictsService } from './districts.service';
 
 @ApiTags('Districts')

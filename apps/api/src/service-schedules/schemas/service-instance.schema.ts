@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type ServiceInstanceDocument = HydratedDocument<ServiceInstance>;
 
 @Schema({ timestamps: true })
 export class ServiceInstance {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'Branch',
+    required: true,
+    index: true,
+  })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -14,13 +19,18 @@ export class ServiceInstance {
   @Prop({ required: true })
   district!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceSchedule', index: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceSchedule', index: true })
   serviceScheduleId?: Types.ObjectId;
 
   @Prop()
   serviceScheduleName?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceType', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'ServiceType',
+    required: true,
+    index: true,
+  })
   serviceTypeId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -41,7 +51,11 @@ export class ServiceInstance {
   @Prop({ required: true, default: 'America/Chicago' })
   timezone!: string;
 
-  @Prop({ required: true, enum: ['open', 'approved', 'locked'], default: 'open' })
+  @Prop({
+    required: true,
+    enum: ['open', 'approved', 'locked'],
+    default: 'open',
+  })
   status!: string;
 
   @Prop({ default: 0 })
@@ -54,7 +68,8 @@ export class ServiceInstance {
   lastActivityAt?: Date;
 }
 
-export const ServiceInstanceSchema = SchemaFactory.createForClass(ServiceInstance);
+export const ServiceInstanceSchema =
+  SchemaFactory.createForClass(ServiceInstance);
 ServiceInstanceSchema.index(
   { branchId: 1, serviceScheduleId: 1, serviceDateKey: 1 },
   { unique: true, sparse: true },

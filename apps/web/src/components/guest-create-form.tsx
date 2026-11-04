@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { BranchSummary, ServiceTypeSummary, UserSummary } from "@/lib/types";
 
@@ -93,83 +94,101 @@ export function GuestCreateForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[22px] bg-white p-4">
-      <h3 className="text-lg font-semibold text-slate-950">Register guest</h3>
-      <div className="mt-4 grid gap-2.5 md:grid-cols-2">
+    <form action={handleSubmit}>
+      <div className="grid gap-4 md:grid-cols-2">
         {branches.length > 1 ? (
-          <select
-            name="branchId"
-            value={selectedBranchId}
-            onChange={(event) => setSelectedBranchId(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-            required
-          >
-            <option value="">Select branch</option>
-            {branches.map((branch) => (
-              <option key={branch._id} value={branch._id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
+          <Field label="Branch" required>
+            <select
+              name="branchId"
+              value={selectedBranchId}
+              onChange={(event) => setSelectedBranchId(event.target.value)}
+              className="ui-input"
+              required
+            >
+              <option value="">Select branch</option>
+              {branches.map((branch) => (
+                <option key={branch._id} value={branch._id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </Field>
         ) : selectedBranch ? (
-          <>
+          <Field label="Branch">
             <input type="hidden" name="branchId" value={selectedBranch._id} />
-            <input value={selectedBranch.name} readOnly className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500 outline-none" />
-          </>
+            <input value={selectedBranch.name} readOnly disabled className="ui-input" />
+          </Field>
         ) : (
-          <>
+          <Field label="Branch">
             <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
-            <input value="Current branch scope" readOnly className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500 outline-none" />
-          </>
+            <input value="Current branch scope" readOnly disabled className="ui-input" />
+          </Field>
         )}
-        {filteredServiceTypes.length > 0 ? (
-          <select
-            name="serviceType"
-            defaultValue={filteredServiceTypes[0]?.name || ""}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-            required
-          >
-            <option value="">Select service type</option>
-            {filteredServiceTypes.map((serviceType) => (
-              <option key={serviceType._id} value={serviceType.name}>
-                {serviceType.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            name="serviceType"
-            placeholder="Service type"
-            defaultValue="Sunday service"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-            required
-          />
-        )}
-        <input name="firstName" placeholder="First name" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none" required />
-        <input name="lastName" placeholder="Last name" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none" required />
-        <input name="phone" placeholder="Phone number" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none" required />
-        <input name="email" placeholder="Email" type="email" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none" />
-        <input name="invitedBy" placeholder="Invited by" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none" />
-        <input name="heardAboutChurch" placeholder="How they heard" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none" />
+        <Field label="Service type" required>
+          {filteredServiceTypes.length > 0 ? (
+            <select
+              name="serviceType"
+              defaultValue={filteredServiceTypes[0]?.name || ""}
+              className="ui-input"
+              required
+            >
+              <option value="">Select service type</option>
+              {filteredServiceTypes.map((serviceType) => (
+                <option key={serviceType._id} value={serviceType.name}>
+                  {serviceType.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              name="serviceType"
+              placeholder="Service type"
+              defaultValue="Sunday service"
+              className="ui-input"
+              required
+            />
+          )}
+        </Field>
+        <Field label="First name" required>
+          <input name="firstName" placeholder="First name" className="ui-input" required />
+        </Field>
+        <Field label="Last name" required>
+          <input name="lastName" placeholder="Last name" className="ui-input" required />
+        </Field>
+        <Field label="Phone number" required>
+          <input name="phone" placeholder="Phone number" className="ui-input" required />
+        </Field>
+        <Field label="Email">
+          <input name="email" placeholder="name@example.com" type="email" className="ui-input" />
+        </Field>
+        <Field label="Invited by">
+          <input name="invitedBy" placeholder="Who invited them?" className="ui-input" />
+        </Field>
+        <Field label="How they heard about us">
+          <input name="heardAboutChurch" placeholder="Friend, social media, walk-in…" className="ui-input" />
+        </Field>
         {filteredAssignableUsers.length > 0 ? (
-          <select
-            name="assignedFollowUpUserId"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-          >
-            <option value="">Leave unassigned</option>
-            {filteredAssignableUsers.map((user) => (
-              <option key={user._id} value={user._id}>
-                {user.firstName} {user.lastName}
-                {user.branchId ? ` · ${branchMap.get(user.branchId) || "Assigned branch"}` : ""}
-              </option>
-            ))}
-          </select>
+          <Field label="Follow-up owner" className="md:col-span-2">
+            <select name="assignedFollowUpUserId" className="ui-input">
+              <option value="">Leave unassigned</option>
+              {filteredAssignableUsers.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.firstName} {user.lastName}
+                  {user.branchId ? ` · ${branchMap.get(user.branchId) || "Assigned branch"}` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
         ) : null}
-        <textarea name="prayerRequest" placeholder="Prayer request" className="min-h-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2" />
+        <Field label="Prayer request" className="md:col-span-2">
+          <textarea name="prayerRequest" placeholder="Anything they would like prayer for" className="ui-input" />
+        </Field>
       </div>
-      <button type="submit" disabled={loading} className="mt-4 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white">
-        {loading ? "Saving..." : "Save guest"}
-      </button>
+      <div className="mt-6 flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : "Save guest"}
+        </Button>
+      </div>
     </form>
   );
 }

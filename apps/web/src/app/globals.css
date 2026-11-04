@@ -2,6 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+/* Design-system controls for signed-in pages. */
+.ui-input {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid #e4e3df;
+  background-color: #ffffff;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #111111;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ui-input::placeholder {
+  color: #a3a09a;
+}
+.ui-input:hover {
+  border-color: #cfcdc8;
+}
+.ui-input:focus {
+  border-color: #111111;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+}
+.ui-input:disabled {
+  cursor: not-allowed;
+  background-color: #f6f5f1;
+  color: #8a8780;
+}
+textarea.ui-input {
+  min-height: 96px;
+  resize: vertical;
+}
+select.ui-input {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8780' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 14px;
+}
+.ui-table thead th {
+  border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+  padding: 0 12px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a8780;
+  white-space: nowrap;
+}
+.ui-table tbody td {
+  border-bottom: 1px solid rgba(17, 17, 17, 0.05);
+  padding: 14px 12px;
+  color: #111111;
+  vertical-align: middle;
+}
+.ui-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.ui-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+.ui-table tbody tr:hover {
+  background-color: #faf9f6;
+}
+.ui-table th:first-child,
+.ui-table td:first-child {
+  padding-left: 4px;
+}
+.ui-table th:last-child,
+.ui-table td:last-child {
+  padding-right: 4px;
+}
+}
+
 :root {
   --background: #f4f6f8;
   --foreground: #172033;
@@ -48,4 +132,668 @@ code {
   background: rgba(15, 23, 42, 0.06);
   padding: 0.2rem 0.55rem;
   font-size: 0.82em;
+}
+
+/* ---------- Landing page ---------- */
+
+.lp-root {
+  --lp-ink: #111111;
+  --lp-muted: #6b6b6b;
+  --lp-panel: #f4f3f0;
+  background: #ffffff;
+  color: var(--lp-ink);
+  font-family: var(--font-landing), system-ui, sans-serif;
+}
+
+.lp-heading {
+  font-family: var(--font-landing), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  color: var(--lp-ink);
+}
+
+.lp-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lp-ink);
+}
+.lp-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+}
+
+.lp-flame-text {
+  background: linear-gradient(100deg, #f59e0b 0%, #ea580c 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lp-flame-bg {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+}
+
+.lp-pill-dark {
+  background: var(--lp-ink);
+  color: #ffffff;
+  transition: background-color 0.25s ease, transform 0.25s ease;
+}
+.lp-pill-dark:hover {
+  background: #2b2b2b;
+}
+
+.lp-card {
+  border-radius: 32px;
+  background: var(--lp-panel);
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-card:hover {
+  transform: translateY(-4px);
+}
+
+.lp-tile-center {
+  width: min(46vw, 320px);
+  aspect-ratio: 3 / 4;
+}
+.lp-tile-inner {
+  width: min(30vw, 250px);
+  aspect-ratio: 3 / 4;
+}
+.lp-tile-outer {
+  display: none;
+}
+@media (min-width: 768px) {
+  .lp-tile-outer {
+    display: block;
+    width: min(17vw, 220px);
+    aspect-ratio: 3 / 4;
+  }
+}
+
+.lp-ribbon {
+  stroke-dasharray: 1;
+  transition: stroke-dashoffset 0.2s linear;
+}
+
+.lp-ribbon-loop {
+  stroke-dasharray: 0.35 0.65;
+  animation: lp-ribbon-loop 7s linear infinite;
+}
+@keyframes lp-ribbon-loop {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.lp-wordmark {
+  font-family: var(--font-landing), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.07em;
+  background: linear-gradient(180deg, #ecebe6 0%, #ffffff 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lp-rise {
+  animation: lp-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.lp-bar {
+  transform-origin: bottom;
+  animation: lp-bar 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.lp-reveal:not([data-shown="true"]) .lp-bar {
+  animation-play-state: paused;
+}
+@keyframes lp-bar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* Hero photo fan: --mx/--my (pointer) and --p (scroll) are written by HeroMosaic. */
+.lp-mosaic {
+  --mx: 0;
+  --my: 0;
+  --p: 0;
+}
+.lp-mosaic-stage {
+  perspective: 1600px;
+}
+.lp-mosaic-glow {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  width: min(72vw, 780px);
+  height: 62%;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(245, 158, 11, 0.3), rgba(234, 88, 12, 0.12) 55%, transparent);
+  filter: blur(34px);
+  transform: translate(calc(-50% + var(--mx) * 70px), calc(var(--my) * 34px)) scale(calc(1 + var(--p) * 0.35));
+  opacity: calc(0.5 + var(--p) * 0.6);
+  pointer-events: none;
+  animation: lp-glow-in 1.8s ease 0.6s both;
+}
+@keyframes lp-glow-in {
+  from { opacity: 0; }
+}
+.lp-mosaic-ribbon {
+  stroke-dashoffset: max(0, calc(1 - var(--p) * 2.4));
+}
+
+.lp-tile:hover {
+  z-index: 30 !important;
+}
+.lp-tile-deal {
+  transform-origin: 50% 100%;
+  animation: lp-deal 1.3s cubic-bezier(0.16, 1.2, 0.3, 1) var(--deal-delay) both;
+}
+@keyframes lp-deal {
+  0% {
+    opacity: 0;
+    transform: translateX(var(--from)) translateY(70px) rotate(calc(var(--tilt) * -0.8deg)) scale(0.7);
+    filter: blur(16px);
+  }
+  35% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.lp-tile-bob {
+  animation: lp-bob var(--bob-duration) ease-in-out var(--bob-delay) infinite;
+}
+@keyframes lp-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.lp-tile-motion {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transform:
+    translate3d(
+      calc(var(--mx) * var(--depth) * 22px),
+      calc(var(--lift) * 1px - var(--p) * 120px * var(--drift) + var(--my) * var(--depth) * 10px),
+      0
+    )
+    rotateY(calc(var(--mx) * 10deg))
+    rotateX(calc(var(--my) * -7deg))
+    rotate(calc(var(--tilt) * 1deg * (1 - var(--p) * 0.6)));
+}
+.lp-tile-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--lp-panel);
+  box-shadow: calc(var(--mx) * -26px) calc(36px + var(--my) * -14px) 64px -30px rgba(17, 17, 17, 0.45);
+  transition: transform 0.75s cubic-bezier(0.2, 1.3, 0.3, 1), filter 0.5s ease;
+}
+.lp-tile:hover .lp-tile-card {
+  transform:
+    translate(calc(var(--hx, 0) * 10px), calc(-18px + var(--hy, 0) * 8px))
+    scale(1.07)
+    rotate(calc(var(--tilt) * -0.85deg))
+    rotateY(calc(var(--hx, 0) * 9deg))
+    rotateX(calc(var(--hy, 0) * -9deg));
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1), filter 0.5s ease;
+}
+.lp-tile:hover .lp-tile-glare {
+  background: radial-gradient(
+    circle at calc(50% + var(--hx, 0) * 50%) calc(50% + var(--hy, 0) * 50%),
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0) 50%
+  );
+}
+.lp-mosaic-stage:hover .lp-tile:not(:hover) .lp-tile-card {
+  transform: scale(0.97);
+  filter: saturate(0.7) brightness(0.96);
+}
+.lp-tile-photo {
+  position: absolute;
+  inset: -7%;
+  transform:
+    translate3d(calc(var(--mx) * var(--depth) * -12px), calc(var(--my) * var(--depth) * -9px), 0)
+    scale(calc(1.12 - var(--p) * 0.12));
+}
+.lp-tile-photo img {
+  transition: transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-tile:hover .lp-tile-photo img {
+  transform: scale(1.08);
+}
+.lp-tile-glare {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at calc(50% + var(--mx) * 55%) calc(22% + var(--my) * 40%),
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0) 46%
+  );
+  mix-blend-mode: soft-light;
+}
+.lp-tile-glare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.7) 50%, transparent 65%);
+  transform: translateX(-130%);
+  animation: lp-sheen 1.5s ease calc(var(--deal-delay) + 750ms) both;
+}
+.lp-tile:hover .lp-tile-glare::after {
+  animation: lp-sheen-again 1s ease both;
+}
+@keyframes lp-sheen {
+  to { transform: translateX(130%); }
+}
+@keyframes lp-sheen-again {
+  from { transform: translateX(-130%); }
+  to { transform: translateX(130%); }
+}
+
+/* Living photos: each new photo opens with a circular reveal. */
+.lp-tile-layer {
+  position: absolute;
+  inset: 0;
+}
+.lp-tile-layer-in {
+  animation: lp-photo-reveal 1.35s cubic-bezier(0.65, 0, 0.2, 1) both;
+}
+@keyframes lp-photo-reveal {
+  from {
+    clip-path: circle(0% at 50% 62%);
+    transform: scale(1.28);
+  }
+  to {
+    clip-path: circle(150% at 50% 62%);
+    transform: scale(1);
+  }
+}
+.lp-tile-caption {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 3;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lp-ink);
+  opacity: 0;
+  transform: translateY(140%);
+  transition: transform 0.55s cubic-bezier(0.2, 1.3, 0.3, 1), opacity 0.3s ease;
+}
+.lp-tile:hover .lp-tile-caption {
+  opacity: 1;
+  transform: none;
+}
+
+/* Entrance flare as the deck fans out. */
+.lp-mosaic-burst {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 280px;
+  height: 280px;
+  margin: -140px 0 0 -140px;
+  border-radius: 9999px;
+  border: 2px solid rgba(249, 115, 22, 0.55);
+  box-shadow: 0 0 70px 12px rgba(245, 158, 11, 0.35), inset 0 0 50px rgba(245, 158, 11, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  animation: lp-burst 1.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.5s both;
+}
+@keyframes lp-burst {
+  0% { transform: scale(0.2); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: scale(4.2); opacity: 0; }
+}
+
+/* A glowing comet that keeps racing along the flow line. */
+.lp-comet {
+  stroke-dasharray: 0.045 0.955;
+  stroke-dashoffset: 0.05;
+  opacity: 0;
+  animation: lp-comet 4.6s cubic-bezier(0.45, 0, 0.55, 1) 1.8s infinite;
+}
+@keyframes lp-comet {
+  0% { stroke-dashoffset: 0.05; opacity: 0; }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { stroke-dashoffset: -0.97; opacity: 0; }
+}
+
+/* ---------- Signed-in app ---------- */
+
+.app-root {
+  background: #ffffff;
+}
+/* Cards match the landing page: soft grey panels on a white page, no border or shadow. */
+.app-card {
+  border-radius: 24px;
+  border: 1px solid transparent;
+  background: #f4f3f0;
+}
+/* Inside a grey card, the light panel tones flip to white so nested panels, empty states,
+   bar tracks, badges and avatars still read as separate surfaces. */
+.app-card :is(.bg-\[\#f6f5f1\], .bg-\[\#f1f0ec\], .bg-\[\#faf9f6\]) {
+  background-color: #ffffff;
+}
+.app-card :is(.hover\:bg-\[\#f6f5f1\], .hover\:bg-\[\#faf9f6\], .hover\:bg-\[\#f2f1ed\]):hover {
+  background-color: rgba(255, 255, 255, 0.75);
+}
+.app-card .ui-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+/* Session loader: the wordmark's flame stroke draws on a loop while a short bar glides. */
+.app-loader {
+  animation: app-fade 0.4s ease both;
+}
+.app-loader .lp-logo-swoosh path {
+  animation: app-loader-swoosh 1.8s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+@keyframes app-loader-swoosh {
+  0% { stroke-dashoffset: 1; }
+  45%, 60% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1; }
+}
+.app-loader-bar {
+  animation: app-loader-bar 1.4s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+@keyframes app-loader-bar {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(320%); }
+}
+.app-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17, 17, 17, 0.12) transparent;
+}
+.app-rise {
+  animation: app-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes app-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.app-pop {
+  transform-origin: top right;
+  animation: app-pop 0.18s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes app-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.app-drawer {
+  animation: app-drawer 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes app-drawer {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+.app-fade {
+  animation: app-fade 0.3s ease both;
+}
+@keyframes app-fade {
+  from { opacity: 0; }
+}
+.app-bar {
+  transform-origin: left;
+  animation: app-bar 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes app-bar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/*
+ * Bridge layer: maps the pre-redesign patterns (slate greys, `surface` boxes, `eyebrow` labels,
+ * plain inputs and tables) onto the new palette inside signed-in pages, so any screen not yet
+ * rebuilt with the design system still matches. Scoped to page content (`main`) only.
+ */
+:is(.app-root main, .app-modal) .surface {
+  border-radius: 24px;
+  border: 1px solid transparent;
+  background: #f4f3f0;
+  box-shadow: none;
+}
+:is(.app-root main, .app-modal) .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #111111;
+}
+:is(.app-root main, .app-modal) .eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+}
+:is(.app-root main, .app-modal) .heading {
+  font-family: var(--font-landing), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+:is(.app-root main, .app-modal) .bg-slate-50,
+:is(.app-root main, .app-modal) .hover\:bg-slate-50:hover {
+  background-color: #f6f5f1;
+}
+:is(.app-root main, .app-modal) .bg-slate-100,
+:is(.app-root main, .app-modal) .hover\:bg-slate-100:hover {
+  background-color: #efeee9;
+}
+:is(.app-root main, .app-modal) .bg-slate-900,
+:is(.app-root main, .app-modal) .bg-slate-950 {
+  background-color: #111111;
+}
+:is(.app-root main, .app-modal) .hover\:bg-slate-800:hover {
+  background-color: #2b2b2b;
+}
+:is(.app-root main, .app-modal) .border-slate-100,
+:is(.app-root main, .app-modal) .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(17, 17, 17, 0.05);
+}
+:is(.app-root main, .app-modal) .border-slate-200,
+:is(.app-root main, .app-modal) .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(17, 17, 17, 0.08);
+}
+:is(.app-root main, .app-modal) .border-slate-300 {
+  border-color: rgba(17, 17, 17, 0.14);
+}
+:is(.app-root main, .app-modal) .text-slate-950,
+:is(.app-root main, .app-modal) .text-slate-900,
+:is(.app-root main, .app-modal) .text-slate-800 {
+  color: #111111;
+}
+:is(.app-root main, .app-modal) .text-slate-700,
+:is(.app-root main, .app-modal) .text-slate-600 {
+  color: #55534e;
+}
+:is(.app-root main, .app-modal) .text-slate-500 {
+  color: #6b6b6b;
+}
+:is(.app-root main, .app-modal) .text-slate-400,
+:is(.app-root main, .app-modal) .text-slate-300 {
+  color: #8a8780;
+}
+:is(.app-root main, .app-modal) .text-teal-700,
+:is(.app-root main, .app-modal) .text-teal-800 {
+  color: #c2410c;
+}
+:is(.app-root main, .app-modal) .shadow-sm {
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04);
+}
+:is(.app-root main, .app-modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]), select, textarea):not(.ui-input):not(.lp-input) {
+  border-color: #e4e3df;
+  background-color: #ffffff;
+  color: #111111;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+:is(.app-root main, .app-modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]), select, textarea):not(.ui-input):not(.lp-input):focus {
+  border-color: #111111;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+}
+:is(.app-root main, .app-modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]), select, textarea):not(.ui-input):not(.lp-input):disabled {
+  background-color: #f6f5f1;
+  color: #8a8780;
+}
+:is(.app-root main, .app-modal) input[type="checkbox"],
+:is(.app-root main, .app-modal) input[type="radio"] {
+  accent-color: #ea580c;
+}
+:is(.app-root main, .app-modal) table:not(.ui-table) thead {
+  background: transparent;
+}
+:is(.app-root main, .app-modal) table:not(.ui-table) thead th {
+  border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #8a8780;
+}
+:is(.app-root main, .app-modal) table:not(.ui-table) tbody tr:hover {
+  background-color: #faf9f6;
+}
+
+/* Guest intake forms take the church's own accent colour (--accent) for focus. */
+.lp-intake .lp-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Wordmark logo */
+.lp-logo {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-landing), system-ui, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  color: var(--lp-ink, #111111);
+  padding-bottom: 0.18em;
+}
+.lp-logo-flow {
+  position: relative;
+}
+.lp-logo-swoosh {
+  position: absolute;
+  left: 0.04em;
+  right: -0.08em;
+  bottom: -0.3em;
+  width: calc(100% + 0.04em);
+  height: 0.32em;
+  overflow: visible;
+}
+.lp-logo-swoosh path {
+  fill: none;
+  stroke: url(#lp-logo-gradient);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.lp-logo:hover .lp-logo-swoosh path,
+a:hover > .lp-logo .lp-logo-swoosh path {
+  animation: lp-swoosh 0.9s cubic-bezier(0.6, 0, 0.2, 1);
+}
+@keyframes lp-swoosh {
+  0% { stroke-dashoffset: 0; }
+  45% { stroke-dashoffset: -1; }
+  46% { stroke-dashoffset: 1; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* Auth and public form controls */
+.lp-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid #e4e3df;
+  background: #ffffff;
+  padding: 0 16px;
+  font-size: 15px;
+  color: var(--lp-ink);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.lp-input::placeholder {
+  color: #a3a29e;
+}
+.lp-input:hover {
+  border-color: #cfcdc8;
+}
+.lp-input:focus {
+  border-color: var(--lp-ink);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+}
+textarea.lp-input {
+  height: auto;
+  min-height: 112px;
+  padding: 12px 16px;
+  resize: vertical;
+}
+select.lp-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-rise,
+  .app-pop,
+  .app-drawer,
+  .app-fade,
+  .app-bar {
+    animation: none;
+  }
+  .lp-root *,
+  .lp-root *::before,
+  .lp-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .lp-reveal { opacity: 1; transform: none; }
+  .lp-ribbon { stroke-dashoffset: 0 !important; }
 }

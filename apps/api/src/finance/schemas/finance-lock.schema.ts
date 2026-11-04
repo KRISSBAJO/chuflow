@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type FinanceLockDocument = HydratedDocument<FinanceLock>;
 
 @Schema({ timestamps: true })
 export class FinanceLock {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'Branch',
+    required: true,
+    index: true,
+  })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -20,7 +25,7 @@ export class FinanceLock {
   @Prop()
   reason?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
   lockedBy!: Types.ObjectId;
 
   @Prop({ required: true, default: () => new Date() })

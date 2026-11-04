@@ -10,7 +10,16 @@ import type { Response } from 'express';
 @ApiTags('Reports')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+@Roles(
+  'super_admin',
+  'national_admin',
+  'national_pastor',
+  'district_admin',
+  'district_pastor',
+  'branch_admin',
+  'resident_pastor',
+  'associate_pastor',
+)
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
@@ -47,9 +56,16 @@ export class ReportsController {
     @Query('branchId') branchId?: string,
     @Query('days') days?: string,
   ) {
-    const csv = await this.reportsService.exportCsv(user, branchId, Number(days) || 30);
+    const csv = await this.reportsService.exportCsv(
+      user,
+      branchId,
+      Number(days) || 30,
+    );
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    response.setHeader('Content-Disposition', 'attachment; filename="church-report.csv"');
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="church-report.csv"',
+    );
     response.send(csv);
   }
 }

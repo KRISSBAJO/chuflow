@@ -8,11 +8,12 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import {
-  isGlobalRole,
-} from '../common/constants/roles.constants';
+import { isGlobalRole } from '../common/constants/roles.constants';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
-import { District, DistrictDocument } from '../districts/schemas/district.schema';
+import {
+  District,
+  DistrictDocument,
+} from '../districts/schemas/district.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import {
   CreateOversightRegionDto,
@@ -83,7 +84,9 @@ export class OversightRegionsService implements OnModuleInit {
       !isGlobalRole(currentUser.role) &&
       this.toKey(region.name) !== this.toKey(currentUser.oversightRegion || '')
     ) {
-      throw new ForbiddenException('You cannot access oversight regions outside your scope');
+      throw new ForbiddenException(
+        'You cannot access oversight regions outside your scope',
+      );
     }
 
     return region;
@@ -181,9 +184,7 @@ export class OversightRegionsService implements OnModuleInit {
     );
   }
 
-  async create(
-    dto: CreateOversightRegionDto,
-  ): Promise<OversightRegionSummary> {
+  async create(dto: CreateOversightRegionDto): Promise<OversightRegionSummary> {
     const region = await this.ensureExists(dto.name);
 
     if (dto.isActive !== undefined && region.isActive !== dto.isActive) {
@@ -208,7 +209,10 @@ export class OversightRegionsService implements OnModuleInit {
           normalizedName: this.toKey(currentUser.oversightRegion || ''),
         };
 
-    const regions = await this.oversightRegionModel.find(query).sort({ name: 1 }).lean();
+    const regions = await this.oversightRegionModel
+      .find(query)
+      .sort({ name: 1 })
+      .lean();
 
     return regions.map((region) => this.toSummary(region, counts));
   }
@@ -249,7 +253,9 @@ export class OversightRegionsService implements OnModuleInit {
       });
 
       if (existingRegion) {
-        throw new BadRequestException('An oversight region with that name already exists');
+        throw new BadRequestException(
+          'An oversight region with that name already exists',
+        );
       }
     }
 

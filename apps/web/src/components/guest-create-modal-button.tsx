@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GuestCreateForm } from "@/components/guest-create-form";
 import { ModalShell } from "@/components/modal-shell";
+import { buttonClass } from "@/components/ui/ui";
 import type { BranchSummary, ServiceTypeSummary, UserSummary } from "@/lib/types";
 
 export function GuestCreateModalButton({
@@ -11,7 +12,7 @@ export function GuestCreateModalButton({
   serviceTypes,
   defaultBranchId,
   label = "New guest",
-  className = "rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white",
+  className = buttonClass("primary"),
 }: {
   branches: BranchSummary[];
   users: UserSummary[];
@@ -31,19 +32,17 @@ export function GuestCreateModalButton({
         open={open}
         onClose={() => setOpen(false)}
         eyebrow="Guest capture"
-        title="Register a guest with the full desk form"
-        description="Use the full assisted-registration form here for ushers or office staff. Public self-registration and QR capture can use the public guest form instead."
-        maxWidthClass="max-w-7xl"
+        title="Register a guest"
+        description="The full assisted-registration form for ushers and office staff. Guests registering themselves or by QR code use the public guest form instead."
+        maxWidthClass="max-w-3xl"
       >
-        <div className="px-2 pb-3 pt-2">
-            <GuestCreateForm
-              branches={branches}
-              users={users}
-              serviceTypes={serviceTypes}
-              defaultBranchId={defaultBranchId}
-              onSuccess={() => setOpen(false)}
-            />
-        </div>
+        <GuestCreateForm
+          branches={branches}
+          users={users}
+          serviceTypes={serviceTypes}
+          defaultBranchId={defaultBranchId}
+          onSuccess={() => setOpen(false)}
+        />
       </ModalShell>
     </>
   );

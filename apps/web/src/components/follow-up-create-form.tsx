@@ -9,6 +9,7 @@ import {
   FOLLOW_UP_STATUS_OPTIONS,
   normalizeFollowUpStatus,
 } from "@/lib/follow-up-options";
+import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import type { GuestListItem, UserSummary } from "@/lib/types";
 
 export function FollowUpCreateForm({
@@ -88,105 +89,89 @@ export function FollowUpCreateForm({
     }
   }
 
+
   return (
-    <form action={handleSubmit} className="rounded-[28px] bg-white p-6">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xl font-semibold text-slate-950">Add follow-up</h3>
-        <p className="text-sm leading-6 text-slate-500">
-          Choose the guest, assign a care owner when needed, and pick the next ministry action.
-        </p>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-slate-700">Guest</span>
-          <select
-            name="guestId"
-            disabled={guestSelectionDisabled}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+    <Card className="app-rise p-6 sm:p-7">
+      <form action={handleSubmit}>
+        <CardHeader
+          label="New care task"
+          title="Add follow-up"
+          description="Choose the guest, assign a care owner when needed, and pick the next ministry action."
+        />
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <Field
+            label="Guest"
             required
+            className="md:col-span-2"
+            hint={
+              guestSelectionHint ||
+              "Pick the guest record that needs care so the next step is logged against the right person."
+            }
           >
-            <option value="">Select guest</option>
-            {guests.map((guest) => (
-              <option key={guest._id} value={guest._id}>
-                {guest.firstName} {guest.lastName}
-                {guest.branchId?.name ? ` · ${guest.branchId.name}` : ""}
-                {guest.phone ? ` · ${guest.phone}` : ""}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500">
-            {guestSelectionHint ||
-              "Pick the guest record that needs care so the next step is logged against the right person."}
-          </p>
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Assign to</span>
-          <select
-            name="assignedTo"
-            disabled={assignmentDisabled}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            <select name="guestId" disabled={guestSelectionDisabled} className="ui-input" required>
+              <option value="">Select guest</option>
+              {guests.map((guest) => (
+                <option key={guest._id} value={guest._id}>
+                  {guest.firstName} {guest.lastName}
+                  {guest.branchId?.name ? ` · ${guest.branchId.name}` : ""}
+                  {guest.phone ? ` · ${guest.phone}` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Assign to"
+            hint={assignmentHint || "Assigning a care worker automatically moves this record from New to Assigned."}
           >
-            <option value="">Leave unassigned</option>
-            {visibleAssignableUsers.map((user) => (
-              <option key={user._id} value={user._id}>
-                {user.firstName} {user.lastName}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500">
-            {assignmentHint ||
-              "Assigning a care worker automatically moves this record from New to Assigned."}
-          </p>
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Workflow status</span>
-          <select
-            name="status"
-            defaultValue="new"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            <select name="assignedTo" disabled={assignmentDisabled} className="ui-input">
+              <option value="">Leave unassigned</option>
+              {visibleAssignableUsers.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.firstName} {user.lastName}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Workflow stage"
             required
+            hint="Choosing Contacted or Returned moves the task to that stage after saving."
           >
-            {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500">
-            Choosing Contacted or Returned moves the card into that board column after save.
-          </p>
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Contact method</span>
-          <select
-            name="contactMethod"
-            defaultValue="phone_call"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          >
-            {FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Next action date</span>
-          <input name="nextActionDate" type="datetime-local" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none" />
-        </label>
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-slate-700">Care note</span>
-          <textarea name="note" placeholder="What should happen next, and who owns it?" className="min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none" required />
-        </label>
-      </div>
-      <button
-        type="submit"
-        disabled={loading || guestSelectionDisabled}
-        className="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-      >
-        {loading ? "Saving..." : "Save follow-up"}
-      </button>
-    </form>
+            <select name="status" defaultValue="new" className="ui-input" required>
+              {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Contact method" required>
+            <select name="contactMethod" defaultValue="phone_call" className="ui-input" required>
+              {FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Next action date">
+            <input name="nextActionDate" type="datetime-local" className="ui-input" />
+          </Field>
+          <Field label="Care note" required className="md:col-span-2">
+            <textarea
+              name="note"
+              placeholder="What should happen next, and who owns it?"
+              className="ui-input !min-h-28"
+              required
+            />
+          </Field>
+        </div>
+        <div className="mt-6 flex justify-end border-t border-black/[0.06] pt-5">
+          <Button type="submit" disabled={loading || guestSelectionDisabled}>
+            {loading ? "Saving..." : "Save follow-up"}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

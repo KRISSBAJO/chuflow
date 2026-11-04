@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type {
   BranchSummary,
@@ -97,24 +98,21 @@ export function ExpenseEntryForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[24px] bg-white p-5">
-      <div className="flex flex-col gap-2">
-        <p className="eyebrow">Record expense</p>
-        <h3 className="text-lg font-semibold text-slate-950">Branch expense submission</h3>
-        <p className="text-sm leading-6 text-slate-500">
-          Branch leadership can submit expenses, while oversight roles can enter and approve directly.
-        </p>
-      </div>
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="Record expense"
+        title="Submit a branch expense"
+        description="Branch leaders submit expenses for approval. Oversight roles can enter and approve directly."
+      />
 
-      <div className="mt-4 grid gap-3">
+      <form action={handleSubmit} className="mt-6 grid gap-4">
         {canChooseBranch ? (
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Branch</span>
+          <Field label="Branch" required>
             <select
               name="branchId"
               value={selectedBranchId}
               onChange={(event) => setSelectedBranchId(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value="">Select branch</option>
@@ -124,24 +122,17 @@ export function ExpenseEntryForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         ) : (
           <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
         )}
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Expense date</span>
-            <input
-              name="expenseDate"
-              type="date"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              required
-            />
-          </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Expense date" required>
+            <input name="expenseDate" type="date" className="ui-input" required />
+          </Field>
 
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Expense category</span>
+          <Field label="Category" required>
             <select
               name="expenseCategoryId"
               value={selectedCategoryId}
@@ -157,7 +148,7 @@ export function ExpenseEntryForm({
                   setSelectedAccountId(matchingAccount._id);
                 }
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value="">Select category</option>
@@ -169,15 +160,14 @@ export function ExpenseEntryForm({
                   </option>
                 ))}
             </select>
-          </label>
+          </Field>
 
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Account / fund</span>
+          <Field label="Account or fund" required>
             <select
               name="accountId"
               value={selectedAccountId}
               onChange={(event) => setSelectedAccountId(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value="">Select account</option>
@@ -189,36 +179,26 @@ export function ExpenseEntryForm({
                   </option>
                 ))}
             </select>
-          </label>
+          </Field>
 
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Amount</span>
+          <Field label="Amount" required>
             <input
               name="amount"
               type="number"
               min="0.01"
               step="0.01"
               placeholder="0.00"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input tabular-nums"
               required
             />
-          </label>
+          </Field>
 
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Currency</span>
-            <input
-              name="currency"
-              defaultValue="USD"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            />
-          </label>
+          <Field label="Currency">
+            <input name="currency" defaultValue="USD" className="ui-input" />
+          </Field>
 
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Linked service</span>
-            <select
-              name="serviceScheduleId"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            >
+          <Field label="Linked service">
+            <select name="serviceScheduleId" className="ui-input">
               <option value="">No linked service</option>
               {filteredSchedules.map((schedule) => (
                 <option key={schedule._id} value={schedule._id}>
@@ -226,54 +206,40 @@ export function ExpenseEntryForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         </div>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Payee / vendor</span>
-          <input
-            name="payee"
-            placeholder="Who received the payment?"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          />
-        </label>
+        <Field label="Payee or vendor">
+          <input name="payee" placeholder="Who received the payment?" className="ui-input" />
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Description</span>
+        <Field label="Description" required>
           <input
             name="description"
             placeholder="Sound maintenance, diesel purchase, welfare support..."
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            className="ui-input"
             required
           />
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Receipt URL</span>
-          <input
-            name="receiptUrl"
-            placeholder="Optional cloud file or receipt link"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          />
-        </label>
+        <Field label="Receipt link" hint="Optional link to a scanned receipt or cloud file.">
+          <input name="receiptUrl" placeholder="https://" className="ui-input" />
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Notes</span>
+        <Field label="Notes">
           <textarea
             name="notes"
-            placeholder="Optional finance note for approval or reconciliation"
-            className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            placeholder="Optional note for approval or reconciliation"
+            className="ui-input"
           />
-        </label>
-      </div>
+        </Field>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-      >
-        {loading ? "Recording..." : "Record expense"}
-      </button>
-    </form>
+        <div className="pt-1">
+          <Button type="submit" disabled={loading}>
+            {loading ? "Recording..." : "Record expense"}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

@@ -76,10 +76,9 @@ export class SettingsService {
       const shouldRefreshBranding =
         (existing.organizationName === 'ChurchFlow' ||
           existing.organizationName === 'Church Management System') &&
-        [
-          'Ministry, simplified.',
-          'Ministry, beautifully managed.',
-        ].includes(existing.organizationTagline);
+        ['Ministry, simplified.', 'Ministry, beautifully managed.'].includes(
+          existing.organizationTagline,
+        );
 
       if (shouldRefreshBranding) {
         const updated = await this.appSettingModel
@@ -159,13 +158,15 @@ export class SettingsService {
         { scopeKey: 'global' },
         {
           organizationName:
-            this.normalizeText(dto.organizationName) ?? current.organizationName,
+            this.normalizeText(dto.organizationName) ??
+            current.organizationName,
           organizationTagline:
             this.normalizeText(dto.organizationTagline) ??
             current.organizationTagline,
           publicConnectEnabled:
             dto.publicConnectEnabled ?? current.publicConnectEnabled ?? true,
-          defaultReportDays: dto.defaultReportDays ?? current.defaultReportDays ?? 30,
+          defaultReportDays:
+            dto.defaultReportDays ?? current.defaultReportDays ?? 30,
         },
         { new: true, upsert: true },
       )
@@ -287,10 +288,9 @@ export class SettingsService {
           defaultServiceDurationMinutes:
             dto.defaultServiceDurationMinutes ??
             current.defaultServiceDurationMinutes,
-          attendanceApprovalRoles:
-            dto.attendanceApprovalRoles?.length
-              ? dto.attendanceApprovalRoles
-              : current.attendanceApprovalRoles,
+          attendanceApprovalRoles: dto.attendanceApprovalRoles?.length
+            ? dto.attendanceApprovalRoles
+            : current.attendanceApprovalRoles,
           publicGuestIntakeEnabled:
             dto.publicGuestIntakeEnabled ?? current.publicGuestIntakeEnabled,
           publicMemberIntakeEnabled:
@@ -332,17 +332,17 @@ export class SettingsService {
         currency: updated.currency,
         locale: updated.locale,
         defaultServiceDurationMinutes: updated.defaultServiceDurationMinutes,
-          attendanceApprovalRoles: updated.attendanceApprovalRoles,
-          publicGuestIntakeEnabled: updated.publicGuestIntakeEnabled,
-          publicMemberIntakeEnabled: updated.publicMemberIntakeEnabled,
-          publicAttendanceEntryEnabled: updated.publicAttendanceEntryEnabled,
-          notifyOnMissingAttendance: updated.notifyOnMissingAttendance,
-          notifyOnFollowUpBacklog: updated.notifyOnFollowUpBacklog,
-          notifyOnFinanceApprovals: updated.notifyOnFinanceApprovals,
-          dailySummaryEnabled: updated.dailySummaryEnabled,
-          weeklyLeadershipDigestEnabled: updated.weeklyLeadershipDigestEnabled,
-        },
-      });
+        attendanceApprovalRoles: updated.attendanceApprovalRoles,
+        publicGuestIntakeEnabled: updated.publicGuestIntakeEnabled,
+        publicMemberIntakeEnabled: updated.publicMemberIntakeEnabled,
+        publicAttendanceEntryEnabled: updated.publicAttendanceEntryEnabled,
+        notifyOnMissingAttendance: updated.notifyOnMissingAttendance,
+        notifyOnFollowUpBacklog: updated.notifyOnFollowUpBacklog,
+        notifyOnFinanceApprovals: updated.notifyOnFinanceApprovals,
+        dailySummaryEnabled: updated.dailySummaryEnabled,
+        weeklyLeadershipDigestEnabled: updated.weeklyLeadershipDigestEnabled,
+      },
+    });
 
     return {
       branch,

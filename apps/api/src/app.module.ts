@@ -32,6 +32,7 @@ import { FinanceModule } from './finance/finance.module';
 import { ServiceSchedulesModule } from './service-schedules/service-schedules.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { SearchModule } from './search/search.module';
+import { DatabaseMaintenanceModule } from './database-maintenance/database-maintenance.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { SearchModule } from './search/search.module';
     ServiceSchedulesModule,
     AlertsModule,
     SearchModule,
+    DatabaseMaintenanceModule,
   ],
   controllers: [AppController],
   providers: [

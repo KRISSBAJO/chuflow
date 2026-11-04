@@ -5,7 +5,7 @@ export type IntakeSubmissionDocument = HydratedDocument<IntakeSubmission>;
 
 @Schema({ timestamps: true })
 export class IntakeSubmission {
-  @Prop({ type: Types.ObjectId, ref: 'IntakeTemplate', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'IntakeTemplate', required: true })
   templateId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -14,7 +14,7 @@ export class IntakeSubmission {
   @Prop({ required: true })
   templateKind!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Branch' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
   @Prop({ type: SchemaTypes.Mixed, required: true })
@@ -95,26 +95,27 @@ export class IntakeSubmission {
   @Prop()
   remarks?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Guest' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Guest' })
   guestId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Member' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Member' })
   memberId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Attendance' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Attendance' })
   attendanceId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   approvedBy?: Types.ObjectId;
 
   @Prop()
   approvedAt?: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   rejectedBy?: Types.ObjectId;
 
   @Prop()
   rejectedAt?: Date;
 }
 
-export const IntakeSubmissionSchema = SchemaFactory.createForClass(IntakeSubmission);
+export const IntakeSubmissionSchema =
+  SchemaFactory.createForClass(IntakeSubmission);

@@ -11,8 +11,14 @@ import { ServiceTypesModule } from '../service-types/service-types.module';
 import { ServiceUnitsModule } from '../service-units/service-units.module';
 import { IntakeTemplatesController } from './intake-templates.controller';
 import { IntakeTemplatesService } from './intake-templates.service';
-import { IntakeSubmission, IntakeSubmissionSchema } from './schemas/intake-submission.schema';
-import { IntakeTemplate, IntakeTemplateSchema } from './schemas/intake-template.schema';
+import {
+  IntakeSubmission,
+  IntakeSubmissionSchema,
+} from './schemas/intake-submission.schema';
+import {
+  IntakeTemplate,
+  IntakeTemplateSchema,
+} from './schemas/intake-template.schema';
 
 @Module({
   imports: [

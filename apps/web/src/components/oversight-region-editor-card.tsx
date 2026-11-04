@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Badge, Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { OversightRegionOption } from "@/lib/types";
 
@@ -49,59 +50,60 @@ export function OversightRegionEditorCard({
   }
 
   return (
-    <section className="surface rounded-[28px] p-6">
-      <p className="eyebrow">National Area</p>
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-950">{region.name}</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {region.districtCount} districts · {region.branchCount} branches
-            </p>
-          </div>
-          <span
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
-              region.isActive
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {region.isActive ? "active" : "inactive"}
-          </span>
-        </div>
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="National area"
+        title={region.name}
+        description={
+          <>
+            <span className="tabular-nums">{region.districtCount}</span> districts ·{" "}
+            <span className="tabular-nums">{region.branchCount}</span> branches
+          </>
+        }
+        action={
+          <Badge tone={region.isActive ? "success" : "neutral"} dot>
+            {region.isActive ? "Active" : "Inactive"}
+          </Badge>
+        }
+      />
 
-        {canEdit ? (
-          <form action={handleSubmit} className="mt-5 grid gap-3 md:grid-cols-2">
+      {canEdit ? (
+        <form action={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
+          <Field label="National area name" required>
             <input
               name="name"
               defaultValue={region.name}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+              className="ui-input"
               required
             />
+          </Field>
+          <Field label="Status">
             <select
               name="isActive"
               defaultValue={region.isActive ? "active" : "inactive"}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+              className="ui-input"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-            >
+          </Field>
+          <div>
+            <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save national area"}
-            </button>
-          </form>
-        ) : (
-          <p className="mt-4 text-sm text-slate-500">
-            You can view this national area, but only national admin or overall oversight admin can edit it.
-          </p>
-        )}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <p className="mt-6 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">
+          You can view this national area, but only a national admin or overall oversight admin can edit it.
+        </p>
+      )}
 
-        {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
-      </div>
-    </section>
+      {status ? (
+        <p role="status" className="mt-4 text-[14px] text-[#55534e]">
+          {status}
+        </p>
+      ) : null}
+    </Card>
   );
 }

@@ -10,8 +10,9 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port') ?? 4000;
-  const corsAllowedOrigins =
-    configService.get<string[]>('corsAllowedOrigins') ?? ['http://localhost:3001'];
+  const corsAllowedOrigins = configService.get<string[]>(
+    'corsAllowedOrigins',
+  ) ?? ['http://localhost:3001'];
 
   app.setGlobalPrefix('api');
   app.use(cookieParser());
@@ -29,7 +30,9 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ChuFlow API')
-    .setDescription('MVP API for guest capture, follow-up, membership, attendance, and reporting.')
+    .setDescription(
+      'MVP API for guest capture, follow-up, membership, attendance, and reporting.',
+    )
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();

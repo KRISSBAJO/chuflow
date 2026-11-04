@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -23,15 +29,24 @@ import {
 } from './dto/manage-intake-template.dto';
 import { PublicTemplateSubmitDto } from './dto/public-submit.dto';
 import { intakeTemplateDefaults } from './intake-template.defaults';
-import { IntakeSubmission, IntakeSubmissionDocument } from './schemas/intake-submission.schema';
-import { IntakeTemplate, IntakeTemplateDocument } from './schemas/intake-template.schema';
+import {
+  IntakeSubmission,
+  IntakeSubmissionDocument,
+} from './schemas/intake-submission.schema';
+import {
+  IntakeTemplate,
+  IntakeTemplateDocument,
+} from './schemas/intake-template.schema';
 
 @Injectable()
 export class IntakeTemplatesService implements OnModuleInit {
   constructor(
-    @InjectModel(IntakeTemplate.name) private readonly templateModel: Model<IntakeTemplateDocument>,
-    @InjectModel(IntakeSubmission.name) private readonly submissionModel: Model<IntakeSubmissionDocument>,
-    @InjectModel(Branch.name) private readonly branchModel: Model<BranchDocument>,
+    @InjectModel(IntakeTemplate.name)
+    private readonly templateModel: Model<IntakeTemplateDocument>,
+    @InjectModel(IntakeSubmission.name)
+    private readonly submissionModel: Model<IntakeSubmissionDocument>,
+    @InjectModel(Branch.name)
+    private readonly branchModel: Model<BranchDocument>,
     private readonly guestsService: GuestsService,
     private readonly membersService: MembersService,
     private readonly attendanceService: AttendanceService,
@@ -43,17 +58,22 @@ export class IntakeTemplatesService implements OnModuleInit {
 
   async onModuleInit() {
     for (const template of intakeTemplateDefaults) {
-      const exists = await this.templateModel.findOne({ slug: template.slug }).lean();
+      const exists = await this.templateModel
+        .findOne({ slug: template.slug })
+        .lean();
 
       if (exists) {
         if (exists.isSeeded) {
           const shouldRefreshSeedContent =
-            ['member-growth-record', 'service-attendance-summary', 'weekly-spiritual-indices', 'maag-monthly-report'].includes(template.slug) ||
-            (
-              template.slug === 'winners-first-timer' &&
+            [
+              'member-growth-record',
+              'service-attendance-summary',
+              'weekly-spiritual-indices',
+              'maag-monthly-report',
+            ].includes(template.slug) ||
+            (template.slug === 'winners-first-timer' &&
               !exists.fields?.some((field) => field.key === 'firstName') &&
-              !exists.fields?.some((field) => field.key === 'lastName')
-            );
+              !exists.fields?.some((field) => field.key === 'lastName'));
 
           await this.templateModel.updateOne(
             { _id: exists._id },
@@ -96,7 +116,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       maag_report: 'maag-monthly-report',
     } as const;
 
-    for (const kind of Object.keys(fallbackSlugsByKind) as Array<keyof typeof fallbackSlugsByKind>) {
+    for (const kind of Object.keys(fallbackSlugsByKind) as Array<
+      keyof typeof fallbackSlugsByKind
+    >) {
       const activeTemplate = await this.templateModel
         .findOne({ kind, isActive: true, branchId: { $exists: false } })
         .lean();
@@ -107,7 +129,11 @@ export class IntakeTemplatesService implements OnModuleInit {
 
       const fallbackTemplate =
         (await this.templateModel
-          .findOne({ kind, slug: fallbackSlugsByKind[kind], branchId: { $exists: false } })
+          .findOne({
+            kind,
+            slug: fallbackSlugsByKind[kind],
+            branchId: { $exists: false },
+          })
           .lean()) ??
         (await this.templateModel
           .findOne({ kind, branchId: { $exists: false } })
@@ -118,7 +144,10 @@ export class IntakeTemplatesService implements OnModuleInit {
         continue;
       }
 
-      await this.templateModel.updateOne({ _id: fallbackTemplate._id }, { isActive: true });
+      await this.templateModel.updateOne(
+        { _id: fallbackTemplate._id },
+        { isActive: true },
+      );
       await this.activateTemplate(String(fallbackTemplate._id), kind);
     }
 
@@ -179,7 +208,10 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
 
     if (isDistrictRole(currentUser.role)) {
-      return currentUser.oversightRegion === oversightRegion && currentUser.district === district;
+      return (
+        currentUser.oversightRegion === oversightRegion &&
+        currentUser.district === district
+      );
     }
 
     return false;
@@ -205,7 +237,11 @@ export class IntakeTemplatesService implements OnModuleInit {
       ? { branchId }
       : district && oversightRegion
         ? { branchId: { $exists: false }, oversightRegion, district }
-        : { branchId: { $exists: false }, district: { $exists: false }, oversightRegion: { $exists: false } };
+        : {
+            branchId: { $exists: false },
+            district: { $exists: false },
+            oversightRegion: { $exists: false },
+          };
 
     await this.templateModel.updateMany(
       {
@@ -220,7 +256,11 @@ export class IntakeTemplatesService implements OnModuleInit {
   private buildShareUrl(
     slug: string,
     webUrl?: string,
-    scope?: { branchId?: unknown; oversightRegion?: unknown; district?: unknown },
+    scope?: {
+      branchId?: unknown;
+      oversightRegion?: unknown;
+      district?: unknown;
+    },
   ) {
     const baseUrl = (webUrl || 'http://localhost:3001').replace(/\/$/, '');
     const url = new URL(`${baseUrl}/intake/${slug}`);
@@ -244,7 +284,9 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private async applyPublicBranchContext<
-    T extends IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    T extends
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
   >(template: T, requestedBranchId?: string): Promise<T> {
     const branchId = this.toString(requestedBranchId);
 
@@ -256,7 +298,10 @@ export class IntakeTemplatesService implements OnModuleInit {
       throw new NotFoundException('Branch not found');
     }
 
-    const branch = await this.branchModel.findById(branchId).select('_id').lean();
+    const branch = await this.branchModel
+      .findById(branchId)
+      .select('_id')
+      .lean();
 
     if (!branch?._id) {
       throw new NotFoundException('Branch not found');
@@ -269,13 +314,17 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private async hydrateDynamicFields<
-    T extends IntakeTemplateDocument | (IntakeTemplate & { branchId?: unknown }),
+    T extends
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { branchId?: unknown }),
   >(template: T): Promise<T> {
     const branchId = this.toString(template.branchId);
 
     if (
       !branchId ||
-      (template.kind !== 'member' && template.kind !== 'attendance' && template.kind !== 'weekly_report')
+      (template.kind !== 'member' &&
+        template.kind !== 'attendance' &&
+        template.kind !== 'weekly_report')
     ) {
       return template;
     }
@@ -318,30 +367,36 @@ export class IntakeTemplatesService implements OnModuleInit {
                   field.helpText ||
                   'Choose the service type configured for this branch.',
               }
-          : field.key === 'previousAttendance' && weeklyReportDefaults.previousAttendance !== undefined
-            ? {
-                ...field,
-                defaultValue: String(weeklyReportDefaults.previousAttendance),
-              }
-          : field.key === 'averageLastPeriod' && weeklyReportDefaults.averageLastPeriod !== undefined
-            ? {
-                ...field,
-                defaultValue: String(weeklyReportDefaults.averageLastPeriod),
-              }
-          : field.key === 'averageLastYear' && weeklyReportDefaults.averageLastYear !== undefined
-            ? {
-                ...field,
-                defaultValue: String(weeklyReportDefaults.averageLastYear),
-              }
-          : field,
+            : field.key === 'previousAttendance' &&
+                weeklyReportDefaults.previousAttendance !== undefined
+              ? {
+                  ...field,
+                  defaultValue: String(weeklyReportDefaults.previousAttendance),
+                }
+              : field.key === 'averageLastPeriod' &&
+                  weeklyReportDefaults.averageLastPeriod !== undefined
+                ? {
+                    ...field,
+                    defaultValue: String(
+                      weeklyReportDefaults.averageLastPeriod,
+                    ),
+                  }
+                : field.key === 'averageLastYear' &&
+                    weeklyReportDefaults.averageLastYear !== undefined
+                  ? {
+                      ...field,
+                      defaultValue: String(
+                        weeklyReportDefaults.averageLastYear,
+                      ),
+                    }
+                  : field,
       ),
     };
   }
 
-  private toResponse<T extends { _id?: unknown; slug: string; branchId?: unknown }>(
-    template: T,
-    webUrl?: string,
-  ) {
+  private toResponse<
+    T extends { _id?: unknown; slug: string; branchId?: unknown },
+  >(template: T, webUrl?: string) {
     return {
       ...template,
       _id: String(template._id ?? ''),
@@ -367,8 +422,15 @@ export class IntakeTemplatesService implements OnModuleInit {
     };
   }
 
-  private async buildBranchOverrideSlug(baseSlug: string, branchId: string, currentId?: string) {
-    const branch = await this.branchModel.findById(branchId).select('name').lean();
+  private async buildBranchOverrideSlug(
+    baseSlug: string,
+    branchId: string,
+    currentId?: string,
+  ) {
+    const branch = await this.branchModel
+      .findById(branchId)
+      .select('name')
+      .lean();
 
     if (!branch?._id) {
       throw new NotFoundException('Branch not found');
@@ -380,7 +442,9 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     // Keep branch override slugs unique without forcing manual slug edits.
     while (true) {
-      const existing = await this.templateModel.findOne({ slug: nextSlug }).lean();
+      const existing = await this.templateModel
+        .findOne({ slug: nextSlug })
+        .lean();
 
       if (!existing || String(existing._id) === currentId) {
         return nextSlug;
@@ -391,13 +455,22 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
   }
 
-  private async buildDistrictOverrideSlug(baseSlug: string, oversightRegion: string, district: string, currentId?: string) {
-    const baseValue = this.slugify(`${baseSlug}-${oversightRegion}-${district}`);
+  private async buildDistrictOverrideSlug(
+    baseSlug: string,
+    oversightRegion: string,
+    district: string,
+    currentId?: string,
+  ) {
+    const baseValue = this.slugify(
+      `${baseSlug}-${oversightRegion}-${district}`,
+    );
     let nextSlug = baseValue;
     let counter = 2;
 
     while (true) {
-      const existing = await this.templateModel.findOne({ slug: nextSlug }).lean();
+      const existing = await this.templateModel
+        .findOne({ slug: nextSlug })
+        .lean();
 
       if (!existing || String(existing._id) === currentId) {
         return nextSlug;
@@ -409,13 +482,17 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private async findRootTemplate(
-    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; baseTemplateId?: unknown }),
+    template:
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; baseTemplateId?: unknown }),
   ) {
     if (!template.baseTemplateId) {
       return template;
     }
 
-    const rootTemplate = await this.templateModel.findById(template.baseTemplateId).lean();
+    const rootTemplate = await this.templateModel
+      .findById(template.baseTemplateId)
+      .lean();
 
     if (!rootTemplate) {
       throw new NotFoundException('Base template not found');
@@ -439,7 +516,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     ];
 
     if (!allowed.includes(currentUser.role)) {
-      throw new ForbiddenException('You cannot view attendance submissions from your role');
+      throw new ForbiddenException(
+        'You cannot view attendance submissions from your role',
+      );
     }
   }
 
@@ -457,30 +536,44 @@ export class IntakeTemplatesService implements OnModuleInit {
     ];
 
     if (!allowed.includes(currentUser.role)) {
-      throw new ForbiddenException('You cannot approve attendance submissions from your role');
+      throw new ForbiddenException(
+        'You cannot approve attendance submissions from your role',
+      );
     }
   }
 
   async findAll(currentUser: AuthUser, webUrl?: string) {
-    const branchFilter = await this.accessScopeService.buildBranchFilter(currentUser);
-    const districtTemplateFilter =
-      isGlobalRole(currentUser.role)
-        ? {}
-        : currentUser.oversightRegion && currentUser.district
+    const branchFilter =
+      await this.accessScopeService.buildBranchFilter(currentUser);
+    const districtTemplateFilter = isGlobalRole(currentUser.role)
+      ? {}
+      : currentUser.oversightRegion && currentUser.district
+        ? {
+            $or: [
+              {
+                district: { $exists: false },
+                oversightRegion: { $exists: false },
+              },
+              {
+                oversightRegion: currentUser.oversightRegion,
+                district: currentUser.district,
+              },
+            ],
+          }
+        : currentUser.oversightRegion
           ? {
               $or: [
-                { district: { $exists: false }, oversightRegion: { $exists: false } },
-                { oversightRegion: currentUser.oversightRegion, district: currentUser.district },
+                {
+                  district: { $exists: false },
+                  oversightRegion: { $exists: false },
+                },
+                { oversightRegion: currentUser.oversightRegion },
               ],
             }
-          : currentUser.oversightRegion
-            ? {
-                $or: [
-                  { district: { $exists: false }, oversightRegion: { $exists: false } },
-                  { oversightRegion: currentUser.oversightRegion },
-                ],
-              }
-            : { district: { $exists: false }, oversightRegion: { $exists: false } };
+          : {
+              district: { $exists: false },
+              oversightRegion: { $exists: false },
+            };
     const query = Object.keys(branchFilter).length
       ? {
           $or: [
@@ -493,12 +586,17 @@ export class IntakeTemplatesService implements OnModuleInit {
         }
       : {};
 
-    const templates = await this.templateModel.find(query).sort({ kind: 1, updatedAt: -1 }).lean();
+    const templates = await this.templateModel
+      .find(query)
+      .sort({ kind: 1, updatedAt: -1 })
+      .lean();
     const hydratedTemplates = await Promise.all(
       templates.map(async (template) => this.hydrateDynamicFields(template)),
     );
 
-    return hydratedTemplates.map((template) => this.toResponse(template, webUrl));
+    return hydratedTemplates.map((template) =>
+      this.toResponse(template, webUrl),
+    );
   }
 
   async findOne(id: string, currentUser: AuthUser, webUrl?: string) {
@@ -514,8 +612,16 @@ export class IntakeTemplatesService implements OnModuleInit {
         String(template.branchId),
       );
     } else if (template.district || template.oversightRegion) {
-      if (!this.canEditDistrictTemplate(currentUser, template.oversightRegion, template.district)) {
-        throw new ForbiddenException('You cannot access templates outside your district scope');
+      if (
+        !this.canEditDistrictTemplate(
+          currentUser,
+          template.oversightRegion,
+          template.district,
+        )
+      ) {
+        throw new ForbiddenException(
+          'You cannot access templates outside your district scope',
+        );
       }
     } else if (!this.canEditGlobalTemplates(currentUser)) {
       // Non-site users can view global templates but not edit them.
@@ -525,12 +631,21 @@ export class IntakeTemplatesService implements OnModuleInit {
     return this.toResponse(hydratedTemplate, webUrl);
   }
 
-  async create(dto: CreateIntakeTemplateDto, currentUser: AuthUser, webUrl?: string) {
+  async create(
+    dto: CreateIntakeTemplateDto,
+    currentUser: AuthUser,
+    webUrl?: string,
+  ) {
     const slug = this.slugify(dto.slug || dto.name);
-    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
+    const branchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      dto.branchId,
+    );
 
-     if (!branchId && !this.canEditGlobalTemplates(currentUser)) {
-      throw new ForbiddenException('Only the site admin can create global base templates');
+    if (!branchId && !this.canEditGlobalTemplates(currentUser)) {
+      throw new ForbiddenException(
+        'Only the site admin can create global base templates',
+      );
     }
 
     await this.ensureUniqueSlug(slug);
@@ -557,7 +672,12 @@ export class IntakeTemplatesService implements OnModuleInit {
     return this.findOne(template.id, currentUser, webUrl);
   }
 
-  async update(id: string, dto: UpdateIntakeTemplateDto, currentUser: AuthUser, webUrl?: string) {
+  async update(
+    id: string,
+    dto: UpdateIntakeTemplateDto,
+    currentUser: AuthUser,
+    webUrl?: string,
+  ) {
     const existing = await this.templateModel.findById(id);
 
     if (!existing) {
@@ -570,11 +690,21 @@ export class IntakeTemplatesService implements OnModuleInit {
         String(existing.branchId),
       );
     } else if (existing.district || existing.oversightRegion) {
-      if (!this.canEditDistrictTemplate(currentUser, existing.oversightRegion, existing.district)) {
-        throw new ForbiddenException('You cannot edit templates outside your district scope');
+      if (
+        !this.canEditDistrictTemplate(
+          currentUser,
+          existing.oversightRegion,
+          existing.district,
+        )
+      ) {
+        throw new ForbiddenException(
+          'You cannot edit templates outside your district scope',
+        );
       }
     } else if (!this.canEditGlobalTemplates(currentUser)) {
-      throw new ForbiddenException('Only the site admin can edit global base templates');
+      throw new ForbiddenException(
+        'Only the site admin can edit global base templates',
+      );
     }
 
     const slug = dto.slug ? this.slugify(dto.slug) : existing.slug;
@@ -629,7 +759,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     );
 
     if (!branchId) {
-      throw new BadRequestException('A branch is required to create a branch override');
+      throw new BadRequestException(
+        'A branch is required to create a branch override',
+      );
     }
 
     const existingOverride = await this.templateModel
@@ -643,7 +775,10 @@ export class IntakeTemplatesService implements OnModuleInit {
       return this.findOne(String(existingOverride._id), currentUser, webUrl);
     }
 
-    const slug = await this.buildBranchOverrideSlug(rootTemplate.slug, branchId);
+    const slug = await this.buildBranchOverrideSlug(
+      rootTemplate.slug,
+      branchId,
+    );
     const overrideTemplate = await this.templateModel.create({
       kind: rootTemplate.kind,
       name: rootTemplate.name,
@@ -668,7 +803,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     });
 
     if (overrideTemplate.isActive) {
-      await this.activateTemplate(overrideTemplate.id, overrideTemplate.kind, { branchId });
+      await this.activateTemplate(overrideTemplate.id, overrideTemplate.kind, {
+        branchId,
+      });
     }
 
     return this.findOne(overrideTemplate.id, currentUser, webUrl);
@@ -694,15 +831,20 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
 
     const rootTemplate = await this.findRootTemplate(sourceTemplate);
-    const oversightRegion = dto.oversightRegion?.trim() || currentUser.oversightRegion;
+    const oversightRegion =
+      dto.oversightRegion?.trim() || currentUser.oversightRegion;
     const district = dto.district?.trim() || currentUser.district;
 
     if (!oversightRegion || !district) {
-      throw new BadRequestException('An oversight region and district are required to create a district template');
+      throw new BadRequestException(
+        'An oversight region and district are required to create a district template',
+      );
     }
 
     if (!this.canEditDistrictTemplate(currentUser, oversightRegion, district)) {
-      throw new ForbiddenException('You cannot create templates outside your district scope');
+      throw new ForbiddenException(
+        'You cannot create templates outside your district scope',
+      );
     }
 
     const existingOverride = await this.templateModel
@@ -718,7 +860,11 @@ export class IntakeTemplatesService implements OnModuleInit {
       return this.findOne(String(existingOverride._id), currentUser, webUrl);
     }
 
-    const slug = await this.buildDistrictOverrideSlug(rootTemplate.slug, oversightRegion, district);
+    const slug = await this.buildDistrictOverrideSlug(
+      rootTemplate.slug,
+      oversightRegion,
+      district,
+    );
     const overrideTemplate = await this.templateModel.create({
       kind: rootTemplate.kind,
       name: rootTemplate.name,
@@ -763,8 +909,8 @@ export class IntakeTemplatesService implements OnModuleInit {
         .lean()) ??
       (await this.templateModel
         .findOne({ kind, isActive: true })
-      .sort({ branchId: -1, updatedAt: -1 })
-      .lean());
+        .sort({ branchId: -1, updatedAt: -1 })
+        .lean());
 
     if (!template) {
       throw new NotFoundException('No active public template was found');
@@ -796,7 +942,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       .select('name address city state country contactInfo serviceTimes status')
       .lean();
 
-    const branchMap = new Map(branches.map((branch) => [String(branch._id), branch]));
+    const branchMap = new Map(
+      branches.map((branch) => [String(branch._id), branch]),
+    );
 
     return hydratedTemplates.map((template) => {
       const branchId = this.toString(template.branchId);
@@ -820,7 +968,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     });
   }
 
-  async listPublicBranchOptions(filters: { oversightRegion?: string; district?: string } = {}) {
+  async listPublicBranchOptions(
+    filters: { oversightRegion?: string; district?: string } = {},
+  ) {
     const query: Record<string, unknown> = { status: 'active' };
 
     if (filters.oversightRegion?.trim()) {
@@ -847,8 +997,14 @@ export class IntakeTemplatesService implements OnModuleInit {
     }));
   }
 
-  async getPublicTemplateBySlug(slug: string, webUrl?: string, requestedBranchId?: string) {
-    let template = await this.templateModel.findOne({ slug, isActive: true }).lean();
+  async getPublicTemplateBySlug(
+    slug: string,
+    webUrl?: string,
+    requestedBranchId?: string,
+  ) {
+    let template = await this.templateModel
+      .findOne({ slug, isActive: true })
+      .lean();
 
     if (!template) {
       throw new NotFoundException('Public template not found');
@@ -892,15 +1048,14 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
 
     const hydratedTemplate = await this.hydrateDynamicFields(
-      await this.applyPublicBranchContext(
-        template,
-        requestedBranchId,
-      ),
+      await this.applyPublicBranchContext(template, requestedBranchId),
     );
     return this.toResponse(hydratedTemplate, webUrl);
   }
 
-  private getFieldMap(template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown })) {
+  private getFieldMap(
+    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown }),
+  ) {
     return new Map((template.fields ?? []).map((field) => [field.key, field]));
   }
 
@@ -939,12 +1094,16 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private validateFieldValue(
-    field: IntakeTemplateDocument['fields'][number] | (IntakeTemplate['fields'][number] & { _id?: unknown }),
+    field:
+      | IntakeTemplateDocument['fields'][number]
+      | (IntakeTemplate['fields'][number] & { _id?: unknown }),
     value: unknown,
   ) {
     if (field.type === 'checkbox') {
       if (!Array.isArray(value)) {
-        throw new BadRequestException(`${field.label} must be a list of selected options`);
+        throw new BadRequestException(
+          `${field.label} must be a list of selected options`,
+        );
       }
 
       const options = field.options || [];
@@ -954,8 +1113,13 @@ export class IntakeTemplatesService implements OnModuleInit {
         throw new BadRequestException(`${field.label} is required`);
       }
 
-      if (options.length > 0 && selected.some((item) => !options.includes(item))) {
-        throw new BadRequestException(`${field.label} contains an invalid option`);
+      if (
+        options.length > 0 &&
+        selected.some((item) => !options.includes(item))
+      ) {
+        throw new BadRequestException(
+          `${field.label} contains an invalid option`,
+        );
       }
 
       return selected.length > 0 ? selected : undefined;
@@ -975,7 +1139,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       const email = String(normalized).toLowerCase();
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw new BadRequestException(`${field.label} must be a valid email address`);
+        throw new BadRequestException(
+          `${field.label} must be a valid email address`,
+        );
       }
 
       return email;
@@ -986,7 +1152,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       const digits = phone.replace(/\D/g, '');
 
       if (digits.length < 7 || digits.length > 15) {
-        throw new BadRequestException(`${field.label} must be a valid phone number`);
+        throw new BadRequestException(
+          `${field.label} must be a valid phone number`,
+        );
       }
 
       return phone;
@@ -1011,7 +1179,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       const options = field.options || [];
 
       if (options.length > 0 && !options.includes(selected)) {
-        throw new BadRequestException(`${field.label} contains an invalid option`);
+        throw new BadRequestException(
+          `${field.label} contains an invalid option`,
+        );
       }
 
       return selected;
@@ -1020,7 +1190,10 @@ export class IntakeTemplatesService implements OnModuleInit {
     return normalized;
   }
 
-  private normalizeAnswers(template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown }), answers: Record<string, unknown>) {
+  private normalizeAnswers(
+    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown }),
+    answers: Record<string, unknown>,
+  ) {
     const fieldMap = this.getFieldMap(template);
     const normalized: Record<string, unknown> = {};
 
@@ -1063,7 +1236,11 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private toString(value: unknown) {
-    return typeof value === 'string' ? value.trim() : value !== undefined && value !== null ? String(value) : undefined;
+    return typeof value === 'string'
+      ? value.trim()
+      : value !== undefined && value !== null
+        ? String(value)
+        : undefined;
   }
 
   private normalizeLookupValue(value: string) {
@@ -1076,7 +1253,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     keys: string[],
     labelTerms: string[] = [],
   ) {
-    const normalizedCandidates = keys.map((key) => this.normalizeLookupValue(key));
+    const normalizedCandidates = keys.map((key) =>
+      this.normalizeLookupValue(key),
+    );
 
     for (const [key, value] of Object.entries(answers)) {
       const normalizedKey = this.normalizeLookupValue(key);
@@ -1084,7 +1263,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       if (
         normalizedCandidates.includes(normalizedKey) ||
         normalizedCandidates.some(
-          (candidate) => normalizedKey.includes(candidate) || candidate.includes(normalizedKey),
+          (candidate) =>
+            normalizedKey.includes(candidate) ||
+            candidate.includes(normalizedKey),
         )
       ) {
         return value;
@@ -1096,7 +1277,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
 
     const matchingField = (template.fields ?? []).find((field) => {
-      const normalizedFieldText = this.normalizeLookupValue(`${field.key} ${field.label}`);
+      const normalizedFieldText = this.normalizeLookupValue(
+        `${field.key} ${field.label}`,
+      );
       return labelTerms.every((term) =>
         normalizedFieldText.includes(this.normalizeLookupValue(term)),
       );
@@ -1115,7 +1298,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     keys: string[],
     labelTerms: string[] = [],
   ) {
-    return this.toString(this.findAnswerValue(template, answers, keys, labelTerms));
+    return this.toString(
+      this.findAnswerValue(template, answers, keys, labelTerms),
+    );
   }
 
   private getAnswerNumber(
@@ -1124,7 +1309,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     keys: string[],
     labelTerms: string[] = [],
   ) {
-    return this.toNumber(this.findAnswerValue(template, answers, keys, labelTerms));
+    return this.toNumber(
+      this.findAnswerValue(template, answers, keys, labelTerms),
+    );
   }
 
   private extractPersonName(
@@ -1140,7 +1327,14 @@ export class IntakeTemplatesService implements OnModuleInit {
     let lastName = this.getAnswerString(
       template,
       answers,
-      ['lastName', 'last_name', 'lastname', 'surname', 'familyName', 'nameLast'],
+      [
+        'lastName',
+        'last_name',
+        'lastname',
+        'surname',
+        'familyName',
+        'nameLast',
+      ],
       ['last', 'name'],
     );
 
@@ -1165,7 +1359,9 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     if (!firstName || !lastName) {
       const candidateFields = (template.fields ?? []).filter((field) => {
-        const normalizedFieldText = this.normalizeLookupValue(`${field.key} ${field.label}`);
+        const normalizedFieldText = this.normalizeLookupValue(
+          `${field.key} ${field.label}`,
+        );
 
         return (
           normalizedFieldText.includes('name') &&
@@ -1218,24 +1414,66 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private buildAttendanceCreatePayload(
-    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    template:
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
     answers: Record<string, unknown>,
     branchId: string,
   ) {
     return {
       branchId,
-      serviceDate: this.getAnswerString(template, answers, ['serviceDate', 'dayOfService'], ['service', 'date'])!,
+      serviceDate: this.getAnswerString(
+        template,
+        answers,
+        ['serviceDate', 'dayOfService'],
+        ['service', 'date'],
+      )!,
       serviceType:
-        this.getAnswerString(template, answers, ['serviceType'], ['service', 'type']) ?? 'Service',
-      serviceName: this.getAnswerString(template, answers, ['serviceName'], ['service', 'name']),
+        this.getAnswerString(
+          template,
+          answers,
+          ['serviceType'],
+          ['service', 'type'],
+        ) ?? 'Service',
+      serviceName: this.getAnswerString(
+        template,
+        answers,
+        ['serviceName'],
+        ['service', 'name'],
+      ),
       entryMode: 'summary',
       personType: 'summary',
       menCount: this.getAnswerNumber(template, answers, ['menCount'], ['men']),
-      womenCount: this.getAnswerNumber(template, answers, ['womenCount'], ['women']),
-      childrenCount: this.getAnswerNumber(template, answers, ['childrenCount'], ['children']),
-      adultsCount: this.getAnswerNumber(template, answers, ['adultsCount'], ['adults']),
-      firstTimersCount: this.getAnswerNumber(template, answers, ['firstTimersCount'], ['first', 'timer']),
-      newConvertsCount: this.getAnswerNumber(template, answers, ['newConvertsCount'], ['new', 'convert']),
+      womenCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['womenCount'],
+        ['women'],
+      ),
+      childrenCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['childrenCount'],
+        ['children'],
+      ),
+      adultsCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['adultsCount'],
+        ['adults'],
+      ),
+      firstTimersCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['firstTimersCount'],
+        ['first', 'timer'],
+      ),
+      newConvertsCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['newConvertsCount'],
+        ['new', 'convert'],
+      ),
       holySpiritBaptismCount: this.getAnswerNumber(
         template,
         answers,
@@ -1246,15 +1484,23 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private buildAttendanceSubmissionSnapshot(
-    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    template:
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
     answers: Record<string, unknown>,
     branchId: string,
   ) {
-    const payload = this.buildAttendanceCreatePayload(template, answers, branchId);
+    const payload = this.buildAttendanceCreatePayload(
+      template,
+      answers,
+      branchId,
+    );
 
     return {
       branchId,
-      serviceDate: payload.serviceDate ? new Date(payload.serviceDate) : undefined,
+      serviceDate: payload.serviceDate
+        ? new Date(payload.serviceDate)
+        : undefined,
       serviceType: payload.serviceType,
       serviceName: payload.serviceName,
       menCount: payload.menCount,
@@ -1268,26 +1514,44 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private buildWeeklyReportSubmissionSnapshot(
-    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    template:
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
     answers: Record<string, unknown>,
     branchId: string,
   ) {
-    const currentAttendance = this.getAnswerNumber(template, answers, ['currentAttendance'], ['current', 'attendance']);
-    const previousAttendance = this.getAnswerNumber(template, answers, ['previousAttendance'], ['previous', 'attendance']);
+    const currentAttendance = this.getAnswerNumber(
+      template,
+      answers,
+      ['currentAttendance'],
+      ['current', 'attendance'],
+    );
+    const previousAttendance = this.getAnswerNumber(
+      template,
+      answers,
+      ['previousAttendance'],
+      ['previous', 'attendance'],
+    );
     const growth =
       currentAttendance !== undefined && previousAttendance !== undefined
         ? currentAttendance - previousAttendance
         : undefined;
     const growthPercent =
-      growth !== undefined && previousAttendance !== undefined && previousAttendance > 0
+      growth !== undefined &&
+      previousAttendance !== undefined &&
+      previousAttendance > 0
         ? Number(((growth / previousAttendance) * 100).toFixed(2))
         : undefined;
 
     return {
       branchId,
       serviceDate: new Date(
-        this.getAnswerString(template, answers, ['reportWeek', 'weekEnding'], ['report', 'week']) ??
-          new Date().toISOString(),
+        this.getAnswerString(
+          template,
+          answers,
+          ['reportWeek', 'weekEnding'],
+          ['report', 'week'],
+        ) ?? new Date().toISOString(),
       ),
       serviceType: 'weekly_spiritual_indices',
       serviceName: 'Weekly spiritual indices',
@@ -1295,18 +1559,48 @@ export class IntakeTemplatesService implements OnModuleInit {
       previousAttendance,
       growth,
       growthPercent,
-      averageLastYear: this.getAnswerNumber(template, answers, ['averageLastYear'], ['avg', 'last', 'year']),
-      averageLastPeriod: this.getAnswerNumber(template, answers, ['averageLastPeriod'], ['avg', 'recent']),
-      firstTimersCount: this.getAnswerNumber(template, answers, ['firstTimersCount'], ['first', 'timer']),
-      newConvertsCount: this.getAnswerNumber(template, answers, ['newConvertsCount'], ['new', 'convert']),
+      averageLastYear: this.getAnswerNumber(
+        template,
+        answers,
+        ['averageLastYear'],
+        ['avg', 'last', 'year'],
+      ),
+      averageLastPeriod: this.getAnswerNumber(
+        template,
+        answers,
+        ['averageLastPeriod'],
+        ['avg', 'recent'],
+      ),
+      firstTimersCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['firstTimersCount'],
+        ['first', 'timer'],
+      ),
+      newConvertsCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['newConvertsCount'],
+        ['new', 'convert'],
+      ),
       believersFoundationClassCount: this.getAnswerNumber(
         template,
         answers,
         ['believersFoundationClassCount'],
         ['believers', 'foundation'],
       ),
-      holySpiritBaptismCount: this.getAnswerNumber(template, answers, ['holySpiritBaptismCount'], ['holy', 'ghost']),
-      waterBaptismCount: this.getAnswerNumber(template, answers, ['waterBaptismCount'], ['water', 'baptism']),
+      holySpiritBaptismCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['holySpiritBaptismCount'],
+        ['holy', 'ghost'],
+      ),
+      waterBaptismCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['waterBaptismCount'],
+        ['water', 'baptism'],
+      ),
       covenantHourOfPrayerAttendance: this.getAnswerNumber(
         template,
         answers,
@@ -1319,22 +1613,50 @@ export class IntakeTemplatesService implements OnModuleInit {
         ['winnersSatelliteFellowshipAverage'],
         ['satellite', 'fellowship'],
       ),
-      cellCount: this.getAnswerNumber(template, answers, ['cellCount'], ['cells']),
-      newCellCount: this.getAnswerNumber(template, answers, ['newCellCount'], ['new', 'cells']),
-      wofbiAttendance: this.getAnswerNumber(template, answers, ['wofbiAttendance'], ['wofbi']),
-      remarks: this.getAnswerString(template, answers, ['remarks'], ['remarks']),
+      cellCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['cellCount'],
+        ['cells'],
+      ),
+      newCellCount: this.getAnswerNumber(
+        template,
+        answers,
+        ['newCellCount'],
+        ['new', 'cells'],
+      ),
+      wofbiAttendance: this.getAnswerNumber(
+        template,
+        answers,
+        ['wofbiAttendance'],
+        ['wofbi'],
+      ),
+      remarks: this.getAnswerString(
+        template,
+        answers,
+        ['remarks'],
+        ['remarks'],
+      ),
     };
   }
 
   private buildMaagReportSubmissionSnapshot(
-    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    template:
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
     answers: Record<string, unknown>,
     branchId: string,
   ) {
-    const reportMonth = this.getAnswerString(template, answers, ['reportMonth'], ['month', 'year']);
-    const serviceDate = reportMonth && /^\d{4}-\d{2}$/.test(reportMonth)
-      ? new Date(`${reportMonth}-01T00:00:00.000Z`)
-      : new Date();
+    const reportMonth = this.getAnswerString(
+      template,
+      answers,
+      ['reportMonth'],
+      ['month', 'year'],
+    );
+    const serviceDate =
+      reportMonth && /^\d{4}-\d{2}$/.test(reportMonth)
+        ? new Date(`${reportMonth}-01T00:00:00.000Z`)
+        : new Date();
 
     return {
       branchId,
@@ -1371,16 +1693,20 @@ export class IntakeTemplatesService implements OnModuleInit {
         ? {
             _id: String((submission.branchId as { _id?: unknown })._id ?? ''),
             name: (submission.branchId as { name?: string }).name,
-            oversightRegion: (submission.branchId as { oversightRegion?: string }).oversightRegion,
+            oversightRegion: (
+              submission.branchId as { oversightRegion?: string }
+            ).oversightRegion,
             district: (submission.branchId as { district?: string }).district,
           }
         : undefined;
 
     const approvedByValue =
-      typeof submission.approvedBy === 'object' && submission.approvedBy !== null
+      typeof submission.approvedBy === 'object' &&
+      submission.approvedBy !== null
         ? {
             _id: String((submission.approvedBy as { _id?: unknown })._id ?? ''),
-            firstName: (submission.approvedBy as { firstName?: string }).firstName,
+            firstName: (submission.approvedBy as { firstName?: string })
+              .firstName,
             lastName: (submission.approvedBy as { lastName?: string }).lastName,
             email: (submission.approvedBy as { email?: string }).email,
             role: (submission.approvedBy as { role?: string }).role,
@@ -1388,10 +1714,12 @@ export class IntakeTemplatesService implements OnModuleInit {
         : undefined;
 
     const rejectedByValue =
-      typeof submission.rejectedBy === 'object' && submission.rejectedBy !== null
+      typeof submission.rejectedBy === 'object' &&
+      submission.rejectedBy !== null
         ? {
             _id: String((submission.rejectedBy as { _id?: unknown })._id ?? ''),
-            firstName: (submission.rejectedBy as { firstName?: string }).firstName,
+            firstName: (submission.rejectedBy as { firstName?: string })
+              .firstName,
             lastName: (submission.rejectedBy as { lastName?: string }).lastName,
             email: (submission.rejectedBy as { email?: string }).email,
             role: (submission.rejectedBy as { role?: string }).role,
@@ -1402,11 +1730,21 @@ export class IntakeTemplatesService implements OnModuleInit {
       _id: String(submission._id),
       templateName: String(submission.templateName ?? ''),
       templateKind: String(submission.templateKind ?? ''),
-      status: this.getAttendanceSubmissionStatus(submission as unknown as IntakeSubmission),
+      status: this.getAttendanceSubmissionStatus(
+        submission as unknown as IntakeSubmission,
+      ),
       branchId: branchValue,
-      serviceDate: submission.serviceDate ? new Date(String(submission.serviceDate)) : undefined,
-      serviceType: typeof submission.serviceType === 'string' ? submission.serviceType : undefined,
-      serviceName: typeof submission.serviceName === 'string' ? submission.serviceName : undefined,
+      serviceDate: submission.serviceDate
+        ? new Date(String(submission.serviceDate))
+        : undefined,
+      serviceType:
+        typeof submission.serviceType === 'string'
+          ? submission.serviceType
+          : undefined,
+      serviceName:
+        typeof submission.serviceName === 'string'
+          ? submission.serviceName
+          : undefined,
       menCount: this.toNumber(submission.menCount),
       womenCount: this.toNumber(submission.womenCount),
       childrenCount: this.toNumber(submission.childrenCount),
@@ -1420,37 +1758,57 @@ export class IntakeTemplatesService implements OnModuleInit {
       growthPercent: this.toNumber(submission.growthPercent),
       averageLastYear: this.toNumber(submission.averageLastYear),
       averageLastPeriod: this.toNumber(submission.averageLastPeriod),
-      believersFoundationClassCount: this.toNumber(submission.believersFoundationClassCount),
+      believersFoundationClassCount: this.toNumber(
+        submission.believersFoundationClassCount,
+      ),
       waterBaptismCount: this.toNumber(submission.waterBaptismCount),
-      covenantHourOfPrayerAttendance: this.toNumber(submission.covenantHourOfPrayerAttendance),
-      winnersSatelliteFellowshipAverage: this.toNumber(submission.winnersSatelliteFellowshipAverage),
+      covenantHourOfPrayerAttendance: this.toNumber(
+        submission.covenantHourOfPrayerAttendance,
+      ),
+      winnersSatelliteFellowshipAverage: this.toNumber(
+        submission.winnersSatelliteFellowshipAverage,
+      ),
       cellCount: this.toNumber(submission.cellCount),
       newCellCount: this.toNumber(submission.newCellCount),
       wofbiAttendance: this.toNumber(submission.wofbiAttendance),
-      remarks: typeof submission.remarks === 'string' ? submission.remarks : undefined,
+      remarks:
+        typeof submission.remarks === 'string' ? submission.remarks : undefined,
       answers:
         typeof submission.answers === 'object' && submission.answers !== null
           ? submission.answers
           : {},
-      attendanceId: submission.attendanceId ? String(submission.attendanceId) : undefined,
+      attendanceId: submission.attendanceId
+        ? String(submission.attendanceId)
+        : undefined,
       duplicateSummaryCount,
-      approvedAt: submission.approvedAt ? new Date(String(submission.approvedAt)) : undefined,
-      rejectedAt: submission.rejectedAt ? new Date(String(submission.rejectedAt)) : undefined,
+      approvedAt: submission.approvedAt
+        ? new Date(String(submission.approvedAt))
+        : undefined,
+      rejectedAt: submission.rejectedAt
+        ? new Date(String(submission.rejectedAt))
+        : undefined,
       approvedBy: approvedByValue,
       rejectedBy: rejectedByValue,
-      createdAt: submission.createdAt ? new Date(String(submission.createdAt)) : undefined,
+      createdAt: submission.createdAt
+        ? new Date(String(submission.createdAt))
+        : undefined,
     };
   }
 
   private async createDomainRecord(
-    template: IntakeTemplateDocument | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
+    template:
+      | IntakeTemplateDocument
+      | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
     answers: Record<string, unknown>,
   ) {
-    const branchId = this.toString(template.branchId) || this.toString(answers.branchId);
+    const branchId =
+      this.toString(template.branchId) || this.toString(answers.branchId);
 
     if (template.kind === 'guest') {
       if (!branchId) {
-        throw new BadRequestException('Guest intake template must be linked to a branch');
+        throw new BadRequestException(
+          'Guest intake template must be linked to a branch',
+        );
       }
 
       const { firstName, lastName } = this.extractPersonName(template, answers);
@@ -1459,25 +1817,59 @@ export class IntakeTemplatesService implements OnModuleInit {
         branchId,
         firstName,
         lastName,
-        phone: this.getAnswerString(template, answers, ['phone', 'phoneNumber', 'mobile'], ['phone'])!,
+        phone: this.getAnswerString(
+          template,
+          answers,
+          ['phone', 'phoneNumber', 'mobile'],
+          ['phone'],
+        )!,
         email: this.getAnswerString(template, answers, ['email'], ['email']),
-        address: this.getAnswerString(template, answers, ['address', 'streetAddress', 'street'], ['address']),
+        address: this.getAnswerString(
+          template,
+          answers,
+          ['address', 'streetAddress', 'street'],
+          ['address'],
+        ),
         city: this.getAnswerString(template, answers, ['city'], ['city']),
         state: this.getAnswerString(template, answers, ['state'], ['state']),
-        zipCode: this.getAnswerString(template, answers, ['zipCode', 'zip', 'postalCode'], ['zip']),
+        zipCode: this.getAnswerString(
+          template,
+          answers,
+          ['zipCode', 'zip', 'postalCode'],
+          ['zip'],
+        ),
         gender: this.getAnswerString(template, answers, ['gender'], ['gender']),
-        invitedBy: this.getAnswerString(template, answers, ['invitedBy', 'inviter'], ['invite']),
+        invitedBy: this.getAnswerString(
+          template,
+          answers,
+          ['invitedBy', 'inviter'],
+          ['invite'],
+        ),
         heardAboutChurch: this.getAnswerString(
           template,
           answers,
           ['heardAboutChurch', 'heardAboutUs', 'howDidYouHearAboutUs'],
           ['hear', 'about'],
         ),
-        prayerRequest: this.getAnswerString(template, answers, ['prayerRequest'], ['prayer']),
+        prayerRequest: this.getAnswerString(
+          template,
+          answers,
+          ['prayerRequest'],
+          ['prayer'],
+        ),
         serviceType:
-          this.getAnswerString(template, answers, ['serviceType', 'serviceName'], ['service', 'type']) ??
-          'Sunday service',
-        visitDate: this.getAnswerString(template, answers, ['visitDate', 'serviceDate'], ['date']),
+          this.getAnswerString(
+            template,
+            answers,
+            ['serviceType', 'serviceName'],
+            ['service', 'type'],
+          ) ?? 'Sunday service',
+        visitDate: this.getAnswerString(
+          template,
+          answers,
+          ['visitDate', 'serviceDate'],
+          ['date'],
+        ),
       });
 
       return { guestId: guest._id };
@@ -1485,7 +1877,9 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     if (template.kind === 'member') {
       if (!branchId) {
-        throw new BadRequestException('Member intake template must be linked to a branch');
+        throw new BadRequestException(
+          'Member intake template must be linked to a branch',
+        );
       }
 
       const member = await this.membersService.create({
@@ -1493,15 +1887,49 @@ export class IntakeTemplatesService implements OnModuleInit {
         title: this.getAnswerString(template, answers, ['title'], ['title']),
         firstName: this.extractPersonName(template, answers).firstName,
         lastName: this.extractPersonName(template, answers).lastName,
-        phone: this.getAnswerString(template, answers, ['phone', 'phoneNumber', 'mobile'], ['phone']),
+        phone: this.getAnswerString(
+          template,
+          answers,
+          ['phone', 'phoneNumber', 'mobile'],
+          ['phone'],
+        ),
         email: this.getAnswerString(template, answers, ['email'], ['email']),
-        familyDetails: this.getAnswerString(template, answers, ['familyDetails'], ['family']),
-        membershipStatus: this.getAnswerString(template, answers, ['membershipStatus'], ['membership', 'status']) ?? 'active',
-        serviceUnitInterest: this.getAnswerString(template, answers, ['serviceUnitInterest'], ['service', 'unit']),
-        dateJoinedChurch: this.getAnswerString(template, answers, ['dateJoinedChurch'], ['date', 'joined']),
-        believerFoundationClassStatus: this.getAnswerString(template, answers, ['believerFoundationClassStatus']),
-        believerFoundationClassDate: this.getAnswerString(template, answers, ['believerFoundationClassDate']),
-        believerFoundationClassLocation: this.getAnswerString(template, answers, ['believerFoundationClassLocation']),
+        familyDetails: this.getAnswerString(
+          template,
+          answers,
+          ['familyDetails'],
+          ['family'],
+        ),
+        membershipStatus:
+          this.getAnswerString(
+            template,
+            answers,
+            ['membershipStatus'],
+            ['membership', 'status'],
+          ) ?? 'active',
+        serviceUnitInterest: this.getAnswerString(
+          template,
+          answers,
+          ['serviceUnitInterest'],
+          ['service', 'unit'],
+        ),
+        dateJoinedChurch: this.getAnswerString(
+          template,
+          answers,
+          ['dateJoinedChurch'],
+          ['date', 'joined'],
+        ),
+        believerFoundationClassStatus: this.getAnswerString(template, answers, [
+          'believerFoundationClassStatus',
+        ]),
+        believerFoundationClassDate: this.getAnswerString(template, answers, [
+          'believerFoundationClassDate',
+        ]),
+        believerFoundationClassLocation: this.getAnswerString(
+          template,
+          answers,
+          ['believerFoundationClassLocation'],
+        ),
         bccStatus: this.getAnswerString(template, answers, ['bccStatus']),
         bccDate: this.getAnswerString(template, answers, ['bccDate']),
         bccLocation: this.getAnswerString(template, answers, ['bccLocation']),
@@ -1511,8 +1939,12 @@ export class IntakeTemplatesService implements OnModuleInit {
         lcdStatus: this.getAnswerString(template, answers, ['lcdStatus']),
         lcdDate: this.getAnswerString(template, answers, ['lcdDate']),
         lcdLocation: this.getAnswerString(template, answers, ['lcdLocation']),
-        holySpiritBaptismStatus: this.getAnswerString(template, answers, ['holySpiritBaptismStatus']),
-        waterBaptismStatus: this.getAnswerString(template, answers, ['waterBaptismStatus']),
+        holySpiritBaptismStatus: this.getAnswerString(template, answers, [
+          'holySpiritBaptismStatus',
+        ]),
+        waterBaptismStatus: this.getAnswerString(template, answers, [
+          'waterBaptismStatus',
+        ]),
       });
 
       return { memberId: member._id };
@@ -1520,22 +1952,36 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     if (template.kind === 'weekly_report') {
       if (!branchId) {
-        throw new BadRequestException('Weekly report template must be linked to a branch');
+        throw new BadRequestException(
+          'Weekly report template must be linked to a branch',
+        );
       }
 
-      return this.buildWeeklyReportSubmissionSnapshot(template, answers, branchId);
+      return this.buildWeeklyReportSubmissionSnapshot(
+        template,
+        answers,
+        branchId,
+      );
     }
 
     if (template.kind === 'maag_report') {
       if (!branchId) {
-        throw new BadRequestException('MAAG report template must be linked to a branch');
+        throw new BadRequestException(
+          'MAAG report template must be linked to a branch',
+        );
       }
 
-      return this.buildMaagReportSubmissionSnapshot(template, answers, branchId);
+      return this.buildMaagReportSubmissionSnapshot(
+        template,
+        answers,
+        branchId,
+      );
     }
 
     if (!branchId) {
-      throw new BadRequestException('Attendance template must be linked to a branch');
+      throw new BadRequestException(
+        'Attendance template must be linked to a branch',
+      );
     }
 
     return this.buildAttendanceSubmissionSnapshot(template, answers, branchId);
@@ -1550,10 +1996,11 @@ export class IntakeTemplatesService implements OnModuleInit {
   ) {
     this.ensureAttendanceSubmissionViewRole(currentUser);
 
-    const branchFilter = await this.accessScopeService.buildBranchObjectIdFilter(
-      currentUser,
-      filters.branchId,
-    );
+    const branchFilter =
+      await this.accessScopeService.buildBranchObjectIdFilter(
+        currentUser,
+        filters.branchId,
+      );
     const normalizedStatus = this.toString(filters.status);
     const query: Record<string, unknown> = {
       templateKind: { $in: ['attendance', 'weekly_report', 'maag_report'] },
@@ -1586,22 +2033,31 @@ export class IntakeTemplatesService implements OnModuleInit {
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay.setHours(23, 59, 59, 999);
 
-        return this.attendanceService.list(currentUser, {
-          branchId:
-            typeof submission.branchId === 'object' && submission.branchId !== null
-              ? String((submission.branchId as { _id?: unknown })._id ?? '')
-              : String(submission.branchId),
-          entryMode: 'summary',
-          serviceType: String(submission.serviceType),
-          serviceName: typeof submission.serviceName === 'string' ? submission.serviceName : undefined,
-          dateFrom: startOfDay.toISOString(),
-          dateTo: endOfDay.toISOString(),
-        }).then((records) => records.length);
+        return this.attendanceService
+          .list(currentUser, {
+            branchId:
+              typeof submission.branchId === 'object' &&
+              submission.branchId !== null
+                ? String((submission.branchId as { _id?: unknown })._id ?? '')
+                : String(submission.branchId),
+            entryMode: 'summary',
+            serviceType: String(submission.serviceType),
+            serviceName:
+              typeof submission.serviceName === 'string'
+                ? submission.serviceName
+                : undefined,
+            dateFrom: startOfDay.toISOString(),
+            dateTo: endOfDay.toISOString(),
+          })
+          .then((records) => records.length);
       }),
     );
 
     const items = submissions.map((submission, index) =>
-      this.toAttendanceSubmissionResponse(submission, duplicateSummaryCounts[index] ?? 0),
+      this.toAttendanceSubmissionResponse(
+        submission,
+        duplicateSummaryCounts[index] ?? 0,
+      ),
     );
 
     return {
@@ -1614,14 +2070,23 @@ export class IntakeTemplatesService implements OnModuleInit {
     };
   }
 
-  private normalizeDateBoundary(value: string | undefined, fallback: Date, endOfDay = false) {
+  private normalizeDateBoundary(
+    value: string | undefined,
+    fallback: Date,
+    endOfDay = false,
+  ) {
     const parsed = value ? new Date(value) : fallback;
 
     if (Number.isNaN(parsed.getTime())) {
       return fallback;
     }
 
-    parsed.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+    parsed.setHours(
+      endOfDay ? 23 : 0,
+      endOfDay ? 59 : 0,
+      endOfDay ? 59 : 0,
+      endOfDay ? 999 : 0,
+    );
     return parsed;
   }
 
@@ -1642,11 +2107,15 @@ export class IntakeTemplatesService implements OnModuleInit {
       district?: string;
     },
   ) {
-    const baseQuery = await this.accessScopeService.getBranchDocumentQuery(currentUser);
+    const baseQuery =
+      await this.accessScopeService.getBranchDocumentQuery(currentUser);
     const query: Record<string, unknown> = { ...baseQuery };
 
     if (filters.branchId) {
-      await this.accessScopeService.ensureBranchAccess(currentUser, filters.branchId);
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        filters.branchId,
+      );
       query._id = new Types.ObjectId(filters.branchId);
     } else {
       if (filters.oversightRegion) {
@@ -1684,7 +2153,9 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     return {
       _id: String(submission._id),
-      status: this.getAttendanceSubmissionStatus(submission as unknown as IntakeSubmission),
+      status: this.getAttendanceSubmissionStatus(
+        submission as unknown as IntakeSubmission,
+      ),
       templateName: String(submission.templateName ?? ''),
       branch: {
         _id: String(branch._id ?? ''),
@@ -1694,7 +2165,9 @@ export class IntakeTemplatesService implements OnModuleInit {
         city: branch.city,
         state: branch.state,
       },
-      reportWeek: submission.serviceDate ? new Date(String(submission.serviceDate)).toISOString() : undefined,
+      reportWeek: submission.serviceDate
+        ? new Date(String(submission.serviceDate)).toISOString()
+        : undefined,
       currentAttendance: this.numberValue(submission.currentAttendance),
       previousAttendance: this.numberValue(submission.previousAttendance),
       growth: this.numberValue(submission.growth),
@@ -1703,17 +2176,32 @@ export class IntakeTemplatesService implements OnModuleInit {
       averageLastPeriod: this.numberValue(submission.averageLastPeriod),
       firstTimersCount: this.numberValue(submission.firstTimersCount),
       newConvertsCount: this.numberValue(submission.newConvertsCount),
-      believersFoundationClassCount: this.numberValue(submission.believersFoundationClassCount),
-      holySpiritBaptismCount: this.numberValue(submission.holySpiritBaptismCount),
+      believersFoundationClassCount: this.numberValue(
+        submission.believersFoundationClassCount,
+      ),
+      holySpiritBaptismCount: this.numberValue(
+        submission.holySpiritBaptismCount,
+      ),
       waterBaptismCount: this.numberValue(submission.waterBaptismCount),
-      covenantHourOfPrayerAttendance: this.numberValue(submission.covenantHourOfPrayerAttendance),
-      winnersSatelliteFellowshipAverage: this.numberValue(submission.winnersSatelliteFellowshipAverage),
+      covenantHourOfPrayerAttendance: this.numberValue(
+        submission.covenantHourOfPrayerAttendance,
+      ),
+      winnersSatelliteFellowshipAverage: this.numberValue(
+        submission.winnersSatelliteFellowshipAverage,
+      ),
       cellCount: this.numberValue(submission.cellCount),
       newCellCount: this.numberValue(submission.newCellCount),
       wofbiAttendance: this.numberValue(submission.wofbiAttendance),
-      remarks: typeof submission.remarks === 'string' ? submission.remarks : String(answers.remarks ?? ''),
-      createdAt: submission.createdAt ? new Date(String(submission.createdAt)).toISOString() : undefined,
-      approvedAt: submission.approvedAt ? new Date(String(submission.approvedAt)).toISOString() : undefined,
+      remarks:
+        typeof submission.remarks === 'string'
+          ? submission.remarks
+          : String(answers.remarks ?? ''),
+      createdAt: submission.createdAt
+        ? new Date(String(submission.createdAt)).toISOString()
+        : undefined,
+      approvedAt: submission.approvedAt
+        ? new Date(String(submission.approvedAt)).toISOString()
+        : undefined,
     };
   }
 
@@ -1733,10 +2221,22 @@ export class IntakeTemplatesService implements OnModuleInit {
     const defaultStart = new Date();
     defaultStart.setDate(defaultStart.getDate() - 83);
     const defaultEnd = new Date();
-    const startDate = this.normalizeDateBoundary(filters.dateFrom, defaultStart);
-    const endDate = this.normalizeDateBoundary(filters.dateTo, defaultEnd, true);
-    const branches = await this.resolveWeeklyReportBranches(currentUser, filters);
-    const branchIds = branches.map((branch) => new Types.ObjectId(String(branch._id)));
+    const startDate = this.normalizeDateBoundary(
+      filters.dateFrom,
+      defaultStart,
+    );
+    const endDate = this.normalizeDateBoundary(
+      filters.dateTo,
+      defaultEnd,
+      true,
+    );
+    const branches = await this.resolveWeeklyReportBranches(
+      currentUser,
+      filters,
+    );
+    const branchIds = branches.map(
+      (branch) => new Types.ObjectId(String(branch._id)),
+    );
 
     if (branchIds.length === 0) {
       return {
@@ -1764,7 +2264,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       .populate('branchId', 'name oversightRegion district city state')
       .sort({ serviceDate: -1, createdAt: -1 })
       .lean();
-    const items = submissions.map((submission) => this.weeklyItemFromSubmission(submission));
+    const items = submissions.map((submission) =>
+      this.weeklyItemFromSubmission(submission),
+    );
 
     const emptyTotals = {
       reports: 0,
@@ -1797,8 +2299,10 @@ export class IntakeTemplatesService implements OnModuleInit {
         acc.believersFoundationClassCount += item.believersFoundationClassCount;
         acc.holySpiritBaptismCount += item.holySpiritBaptismCount;
         acc.waterBaptismCount += item.waterBaptismCount;
-        acc.covenantHourOfPrayerAttendance += item.covenantHourOfPrayerAttendance;
-        acc.winnersSatelliteFellowshipAverage += item.winnersSatelliteFellowshipAverage;
+        acc.covenantHourOfPrayerAttendance +=
+          item.covenantHourOfPrayerAttendance;
+        acc.winnersSatelliteFellowshipAverage +=
+          item.winnersSatelliteFellowshipAverage;
         acc.cellCount += item.cellCount;
         acc.newCellCount += item.newCellCount;
         acc.wofbiAttendance += item.wofbiAttendance;
@@ -1810,9 +2314,16 @@ export class IntakeTemplatesService implements OnModuleInit {
       { ...emptyTotals },
     );
     totals.averageGrowthPercent =
-      totals.previousAttendance > 0 ? Number(((totals.growth / totals.previousAttendance) * 100).toFixed(2)) : 0;
+      totals.previousAttendance > 0
+        ? Number(((totals.growth / totals.previousAttendance) * 100).toFixed(2))
+        : 0;
 
-    const summarizeGroup = (groupItems: typeof items, key: string, label: string, extra: Record<string, unknown> = {}) => {
+    const summarizeGroup = (
+      groupItems: typeof items,
+      key: string,
+      label: string,
+      extra: Record<string, unknown> = {},
+    ) => {
       const groupTotals = groupItems.reduce(
         (acc, item) => {
           acc.reports += 1;
@@ -1842,7 +2353,12 @@ export class IntakeTemplatesService implements OnModuleInit {
       );
       groupTotals.growthPercent =
         groupTotals.previousAttendance > 0
-          ? Number(((groupTotals.growth / groupTotals.previousAttendance) * 100).toFixed(2))
+          ? Number(
+              (
+                (groupTotals.growth / groupTotals.previousAttendance) *
+                100
+              ).toFixed(2),
+            )
           : 0;
       return groupTotals;
     };
@@ -1860,12 +2376,20 @@ export class IntakeTemplatesService implements OnModuleInit {
       );
     });
     const districtKeys = Array.from(
-      new Set(branches.map((branch) => `${branch.oversightRegion}::${branch.district}`)),
+      new Set(
+        branches.map(
+          (branch) => `${branch.oversightRegion}::${branch.district}`,
+        ),
+      ),
     );
     const districtTotals = districtKeys.map((key) => {
       const [oversightRegion, district] = key.split('::');
       return summarizeGroup(
-        items.filter((item) => item.branch.oversightRegion === oversightRegion && item.branch.district === district),
+        items.filter(
+          (item) =>
+            item.branch.oversightRegion === oversightRegion &&
+            item.branch.district === district,
+        ),
         key,
         district,
         { oversightRegion, district },
@@ -1904,7 +2428,9 @@ export class IntakeTemplatesService implements OnModuleInit {
           district: branch.district,
           city: branch.city,
           state: branch.state,
-          hasReport: items.some((item) => item.branch._id === String(branch._id)),
+          hasReport: items.some(
+            (item) => item.branch._id === String(branch._id),
+          ),
         })),
       },
       items,
@@ -1951,32 +2477,36 @@ export class IntakeTemplatesService implements OnModuleInit {
       'WOFBI',
       'Remarks',
     ];
-    const rows = report.items.map((item: ReturnType<typeof this.weeklyItemFromSubmission>) => [
-      item.reportWeek ? item.reportWeek.slice(0, 10) : '',
-      item.branch.oversightRegion,
-      item.branch.district,
-      item.branch.name,
-      item.status,
-      item.currentAttendance,
-      item.previousAttendance,
-      item.growth,
-      item.growthPercent,
-      item.averageLastYear,
-      item.averageLastPeriod,
-      item.firstTimersCount,
-      item.newConvertsCount,
-      item.believersFoundationClassCount,
-      item.holySpiritBaptismCount,
-      item.waterBaptismCount,
-      item.covenantHourOfPrayerAttendance,
-      item.winnersSatelliteFellowshipAverage,
-      item.cellCount,
-      item.newCellCount,
-      item.wofbiAttendance,
-      item.remarks,
-    ]);
+    const rows = report.items.map(
+      (item: ReturnType<typeof this.weeklyItemFromSubmission>) => [
+        item.reportWeek ? item.reportWeek.slice(0, 10) : '',
+        item.branch.oversightRegion,
+        item.branch.district,
+        item.branch.name,
+        item.status,
+        item.currentAttendance,
+        item.previousAttendance,
+        item.growth,
+        item.growthPercent,
+        item.averageLastYear,
+        item.averageLastPeriod,
+        item.firstTimersCount,
+        item.newConvertsCount,
+        item.believersFoundationClassCount,
+        item.holySpiritBaptismCount,
+        item.waterBaptismCount,
+        item.covenantHourOfPrayerAttendance,
+        item.winnersSatelliteFellowshipAverage,
+        item.cellCount,
+        item.newCellCount,
+        item.wofbiAttendance,
+        item.remarks,
+      ],
+    );
 
-    return [headers, ...rows].map((row) => row.map((value) => this.buildCsvValue(value)).join(',')).join('\n');
+    return [headers, ...rows]
+      .map((row) => row.map((value) => this.buildCsvValue(value)).join(','))
+      .join('\n');
   }
 
   private answerNumber(answers: Record<string, unknown>, key: string) {
@@ -1984,7 +2514,11 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private answerString(answers: Record<string, unknown>, key: string) {
-    return typeof answers[key] === 'string' ? String(answers[key]) : answers[key] === undefined ? '' : String(answers[key]);
+    return typeof answers[key] === 'string'
+      ? String(answers[key])
+      : answers[key] === undefined
+        ? ''
+        : String(answers[key]);
   }
 
   private maagItemFromSubmission(submission: Record<string, unknown>) {
@@ -2006,20 +2540,32 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     return {
       _id: String(submission._id),
-      status: this.getAttendanceSubmissionStatus(submission as unknown as IntakeSubmission),
+      status: this.getAttendanceSubmissionStatus(
+        submission as unknown as IntakeSubmission,
+      ),
       branch: {
         _id: String(branch._id ?? ''),
-        name: branch.name || this.answerString(answers, 'stationName') || 'Unassigned',
+        name:
+          branch.name ||
+          this.answerString(answers, 'stationName') ||
+          'Unassigned',
         oversightRegion: branch.oversightRegion || '',
         district: branch.district || '',
         city: branch.city,
         state: branch.state,
       },
-      reportMonth: this.answerString(answers, 'reportMonth') || (submission.serviceDate ? String(submission.serviceDate).slice(0, 7) : ''),
+      reportMonth:
+        this.answerString(answers, 'reportMonth') ||
+        (submission.serviceDate
+          ? String(submission.serviceDate).slice(0, 7)
+          : ''),
       nation: this.answerString(answers, 'nation'),
       stationName: this.answerString(answers, 'stationName'),
       facilityType: this.answerString(answers, 'facilityType'),
-      stationHeadDesignation: this.answerString(answers, 'stationHeadDesignation'),
+      stationHeadDesignation: this.answerString(
+        answers,
+        'stationHeadDesignation',
+      ),
       mainHallCapacity: this.answerNumber(answers, 'mainHallCapacity'),
       mainChairsCount: this.answerNumber(answers, 'mainChairsCount'),
       overflowCapacity: this.answerNumber(answers, 'overflowCapacity'),
@@ -2031,9 +2577,18 @@ export class IntakeTemplatesService implements OnModuleInit {
       servicesCount: this.answerNumber(answers, 'servicesCount'),
       averageAttendance: this.answerNumber(answers, 'averageAttendance'),
       highestAttendance: this.answerNumber(answers, 'highestAttendance'),
-      averageAdultAttendance: this.answerNumber(answers, 'averageAdultAttendance'),
-      averageChildrenAttendance: this.answerNumber(answers, 'averageChildrenAttendance'),
-      chopAverageAttendance: this.answerNumber(answers, 'chopAverageAttendance'),
+      averageAdultAttendance: this.answerNumber(
+        answers,
+        'averageAdultAttendance',
+      ),
+      averageChildrenAttendance: this.answerNumber(
+        answers,
+        'averageChildrenAttendance',
+      ),
+      chopAverageAttendance: this.answerNumber(
+        answers,
+        'chopAverageAttendance',
+      ),
       incomeAmount: this.answerNumber(answers, 'incomeAmount'),
       rofAmount: this.answerNumber(answers, 'rofAmount'),
       expenseAmount: this.answerNumber(answers, 'expenseAmount'),
@@ -2042,7 +2597,10 @@ export class IntakeTemplatesService implements OnModuleInit {
       wofbiAttendance: this.answerNumber(answers, 'wofbiAttendance'),
       newConvertsCount: this.answerNumber(answers, 'newConvertsCount'),
       foundationClassCount: this.answerNumber(answers, 'foundationClassCount'),
-      holyGhostBaptismCount: this.answerNumber(answers, 'holyGhostBaptismCount'),
+      holyGhostBaptismCount: this.answerNumber(
+        answers,
+        'holyGhostBaptismCount',
+      ),
       waterBaptismCount: this.answerNumber(answers, 'waterBaptismCount'),
       pastorName: this.answerString(answers, 'pastorName'),
       pastorPhone: this.answerString(answers, 'pastorPhone'),
@@ -2050,13 +2608,29 @@ export class IntakeTemplatesService implements OnModuleInit {
       pastorDobOrAge: this.answerString(answers, 'pastorDobOrAge'),
       pastorKidsAge: this.answerString(answers, 'pastorKidsAge'),
       pastorNationality: this.answerString(answers, 'pastorNationality'),
-      pastorNationOfEnlistment: this.answerString(answers, 'pastorNationOfEnlistment'),
-      pastorYearOfEnlistment: this.answerString(answers, 'pastorYearOfEnlistment'),
-      pastorDateOfResumption: this.answerString(answers, 'pastorDateOfResumption'),
-      pastorAttendanceDateOfResumption: this.answerString(answers, 'pastorAttendanceDateOfResumption'),
+      pastorNationOfEnlistment: this.answerString(
+        answers,
+        'pastorNationOfEnlistment',
+      ),
+      pastorYearOfEnlistment: this.answerString(
+        answers,
+        'pastorYearOfEnlistment',
+      ),
+      pastorDateOfResumption: this.answerString(
+        answers,
+        'pastorDateOfResumption',
+      ),
+      pastorAttendanceDateOfResumption: this.answerString(
+        answers,
+        'pastorAttendanceDateOfResumption',
+      ),
       stationStatusRemarks: this.answerString(answers, 'stationStatusRemarks'),
-      createdAt: submission.createdAt ? new Date(String(submission.createdAt)).toISOString() : undefined,
-      approvedAt: submission.approvedAt ? new Date(String(submission.approvedAt)).toISOString() : undefined,
+      createdAt: submission.createdAt
+        ? new Date(String(submission.createdAt)).toISOString()
+        : undefined,
+      approvedAt: submission.approvedAt
+        ? new Date(String(submission.approvedAt)).toISOString()
+        : undefined,
     };
   }
 
@@ -2078,7 +2652,9 @@ export class IntakeTemplatesService implements OnModuleInit {
     const defaultEnd = new Date();
     defaultEnd.setDate(1);
     const startDate = this.normalizeDateBoundary(
-      filters.monthFrom && /^\d{4}-\d{2}$/.test(filters.monthFrom) ? `${filters.monthFrom}-01` : undefined,
+      filters.monthFrom && /^\d{4}-\d{2}$/.test(filters.monthFrom)
+        ? `${filters.monthFrom}-01`
+        : undefined,
       defaultStart,
     );
     const endBase =
@@ -2086,13 +2662,25 @@ export class IntakeTemplatesService implements OnModuleInit {
         ? new Date(`${filters.monthTo}-01T00:00:00.000Z`)
         : defaultEnd;
     endBase.setMonth(endBase.getMonth() + 1, 0);
-    const endDate = this.normalizeDateBoundary(endBase.toISOString(), endBase, true);
-    const branches = await this.resolveWeeklyReportBranches(currentUser, filters);
-    const branchIds = branches.map((branch) => new Types.ObjectId(String(branch._id)));
+    const endDate = this.normalizeDateBoundary(
+      endBase.toISOString(),
+      endBase,
+      true,
+    );
+    const branches = await this.resolveWeeklyReportBranches(
+      currentUser,
+      filters,
+    );
+    const branchIds = branches.map(
+      (branch) => new Types.ObjectId(String(branch._id)),
+    );
 
     if (branchIds.length === 0) {
       return {
-        filters: { monthFrom: startDate.toISOString().slice(0, 7), monthTo: endDate.toISOString().slice(0, 7) },
+        filters: {
+          monthFrom: startDate.toISOString().slice(0, 7),
+          monthTo: endDate.toISOString().slice(0, 7),
+        },
         scope: { branchCount: 0, branches: [] },
         items: [],
         totals: {},
@@ -2112,7 +2700,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       .populate('branchId', 'name oversightRegion district city state')
       .sort({ serviceDate: -1, createdAt: -1 })
       .lean();
-    const items = submissions.map((submission) => this.maagItemFromSubmission(submission));
+    const items = submissions.map((submission) =>
+      this.maagItemFromSubmission(submission),
+    );
     const emptyTotals = {
       reports: 0,
       servicesCount: 0,
@@ -2156,16 +2746,19 @@ export class IntakeTemplatesService implements OnModuleInit {
       else acc.pending += 1;
       return acc;
     };
-    const totals = items.reduce<MaagTotalsAccumulator>(addItem, { ...emptyTotals });
+    const totals = items.reduce<MaagTotalsAccumulator>(addItem, {
+      ...emptyTotals,
+    });
     const summarizeGroup = (
       groupItems: typeof items,
       key: string,
       label: string,
       extra: Record<string, unknown> = {},
-    ) => groupItems.reduce<MaagTotalsAccumulator>(
-      (acc, item) => addItem(acc, item),
-      { key, label, ...emptyTotals, ...extra },
-    );
+    ) =>
+      groupItems.reduce<MaagTotalsAccumulator>(
+        (acc, item) => addItem(acc, item),
+        { key, label, ...emptyTotals, ...extra },
+      );
     const branchTotals = branches.map((branch) =>
       summarizeGroup(
         items.filter((item) => item.branch._id === String(branch._id)),
@@ -2174,18 +2767,36 @@ export class IntakeTemplatesService implements OnModuleInit {
         { oversightRegion: branch.oversightRegion, district: branch.district },
       ),
     );
-    const districtKeys = Array.from(new Set(branches.map((branch) => `${branch.oversightRegion}::${branch.district}`)));
+    const districtKeys = Array.from(
+      new Set(
+        branches.map(
+          (branch) => `${branch.oversightRegion}::${branch.district}`,
+        ),
+      ),
+    );
     const districtTotals = districtKeys.map((key) => {
       const [oversightRegion, district] = key.split('::');
       return summarizeGroup(
-        items.filter((item) => item.branch.oversightRegion === oversightRegion && item.branch.district === district),
+        items.filter(
+          (item) =>
+            item.branch.oversightRegion === oversightRegion &&
+            item.branch.district === district,
+        ),
         key,
         district,
         { oversightRegion, district },
       );
     });
-    const trendKeys = Array.from(new Set(items.map((item) => item.reportMonth).filter(Boolean))).sort();
-    const trends = trendKeys.map((month) => summarizeGroup(items.filter((item) => item.reportMonth === month), month, month));
+    const trendKeys = Array.from(
+      new Set(items.map((item) => item.reportMonth).filter(Boolean)),
+    ).sort();
+    const trends = trendKeys.map((month) =>
+      summarizeGroup(
+        items.filter((item) => item.reportMonth === month),
+        month,
+        month,
+      ),
+    );
 
     return {
       filters: {
@@ -2205,7 +2816,9 @@ export class IntakeTemplatesService implements OnModuleInit {
           district: branch.district,
           city: branch.city,
           state: branch.state,
-          hasReport: items.some((item) => item.branch._id === String(branch._id)),
+          hasReport: items.some(
+            (item) => item.branch._id === String(branch._id),
+          ),
         })),
       },
       items,
@@ -2272,52 +2885,56 @@ export class IntakeTemplatesService implements OnModuleInit {
       'Attd as at Resumption',
       'Status/Remarks',
     ];
-    const rows = report.items.map((item: ReturnType<typeof this.maagItemFromSubmission>) => [
-      item.reportMonth,
-      item.branch.oversightRegion,
-      item.branch.district,
-      item.nation,
-      item.stationName || item.branch.name,
-      item.facilityType,
-      item.stationHeadDesignation,
-      item.mainHallCapacity,
-      item.mainChairsCount,
-      item.overflowCapacity,
-      item.overflowChairsCount,
-      item.youthHallCapacity,
-      item.youthChairsCount,
-      item.childrenHallCapacity,
-      item.childrenChairsCount,
-      item.servicesCount,
-      item.averageAttendance,
-      item.highestAttendance,
-      item.averageAdultAttendance,
-      item.averageChildrenAttendance,
-      item.chopAverageAttendance,
-      item.incomeAmount,
-      item.rofAmount,
-      item.expenseAmount,
-      item.wsfAverage,
-      item.firstTimersCount,
-      item.wofbiAttendance,
-      item.newConvertsCount,
-      item.foundationClassCount,
-      item.holyGhostBaptismCount,
-      item.waterBaptismCount,
-      item.pastorName,
-      item.pastorPhone,
-      item.pastorMaritalStatus,
-      item.pastorDobOrAge,
-      item.pastorKidsAge,
-      item.pastorNationality,
-      item.pastorNationOfEnlistment,
-      item.pastorYearOfEnlistment,
-      item.pastorDateOfResumption,
-      item.pastorAttendanceDateOfResumption,
-      item.stationStatusRemarks,
-    ]);
+    const rows = report.items.map(
+      (item: ReturnType<typeof this.maagItemFromSubmission>) => [
+        item.reportMonth,
+        item.branch.oversightRegion,
+        item.branch.district,
+        item.nation,
+        item.stationName || item.branch.name,
+        item.facilityType,
+        item.stationHeadDesignation,
+        item.mainHallCapacity,
+        item.mainChairsCount,
+        item.overflowCapacity,
+        item.overflowChairsCount,
+        item.youthHallCapacity,
+        item.youthChairsCount,
+        item.childrenHallCapacity,
+        item.childrenChairsCount,
+        item.servicesCount,
+        item.averageAttendance,
+        item.highestAttendance,
+        item.averageAdultAttendance,
+        item.averageChildrenAttendance,
+        item.chopAverageAttendance,
+        item.incomeAmount,
+        item.rofAmount,
+        item.expenseAmount,
+        item.wsfAverage,
+        item.firstTimersCount,
+        item.wofbiAttendance,
+        item.newConvertsCount,
+        item.foundationClassCount,
+        item.holyGhostBaptismCount,
+        item.waterBaptismCount,
+        item.pastorName,
+        item.pastorPhone,
+        item.pastorMaritalStatus,
+        item.pastorDobOrAge,
+        item.pastorKidsAge,
+        item.pastorNationality,
+        item.pastorNationOfEnlistment,
+        item.pastorYearOfEnlistment,
+        item.pastorDateOfResumption,
+        item.pastorAttendanceDateOfResumption,
+        item.stationStatusRemarks,
+      ],
+    );
 
-    return [headers, ...rows].map((row) => row.map((value) => this.buildCsvValue(value)).join(',')).join('\n');
+    return [headers, ...rows]
+      .map((row) => row.map((value) => this.buildCsvValue(value)).join(','))
+      .join('\n');
   }
 
   async approveAttendanceSubmission(id: string, currentUser: AuthUser) {
@@ -2325,7 +2942,12 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     const submission = await this.submissionModel.findById(id).lean();
 
-    if (!submission || !['attendance', 'weekly_report', 'maag_report'].includes(submission.templateKind)) {
+    if (
+      !submission ||
+      !['attendance', 'weekly_report', 'maag_report'].includes(
+        submission.templateKind,
+      )
+    ) {
       throw new NotFoundException('Attendance submission not found');
     }
 
@@ -2333,13 +2955,18 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     if (
       status === 'approved' &&
-      (submission.attendanceId || ['weekly_report', 'maag_report'].includes(submission.templateKind))
+      (submission.attendanceId ||
+        ['weekly_report', 'maag_report'].includes(submission.templateKind))
     ) {
-      throw new BadRequestException('This submission has already been approved');
+      throw new BadRequestException(
+        'This submission has already been approved',
+      );
     }
 
     if (status === 'rejected') {
-      throw new BadRequestException('Rejected attendance submissions cannot be approved again');
+      throw new BadRequestException(
+        'Rejected attendance submissions cannot be approved again',
+      );
     }
 
     const branchId = this.toString(submission.branchId);
@@ -2350,7 +2977,9 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
 
-    const template = await this.templateModel.findById(submission.templateId).lean();
+    const template = await this.templateModel
+      .findById(submission.templateId)
+      .lean();
 
     if (!template) {
       throw new NotFoundException('Template not found');
@@ -2360,7 +2989,10 @@ export class IntakeTemplatesService implements OnModuleInit {
       submission.templateKind === 'attendance'
         ? await this.attendanceService.create(
             this.buildAttendanceCreatePayload(
-              template as IntakeTemplate & { _id?: unknown; branchId?: unknown },
+              template as IntakeTemplate & {
+                _id?: unknown;
+                branchId?: unknown;
+              },
               submission.answers,
               branchId,
             ),
@@ -2387,9 +3019,7 @@ export class IntakeTemplatesService implements OnModuleInit {
           : submission.templateKind === 'maag_report'
             ? 'MAAG report'
             : 'Attendance submission'
-      } approved for ${
-        submission.serviceType || submission.templateName
-      }`,
+      } approved for ${submission.serviceType || submission.templateName}`,
       actor: currentUser,
       branchId,
       metadata: {
@@ -2418,24 +3048,35 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     const submission = await this.submissionModel.findById(id).lean();
 
-    if (!submission || !['attendance', 'weekly_report', 'maag_report'].includes(submission.templateKind)) {
+    if (
+      !submission ||
+      !['attendance', 'weekly_report', 'maag_report'].includes(
+        submission.templateKind,
+      )
+    ) {
       throw new NotFoundException('Attendance submission not found');
     }
 
     const status = this.getAttendanceSubmissionStatus(submission);
 
     if (status === 'approved') {
-      throw new BadRequestException('Approved attendance submissions cannot be rejected here');
+      throw new BadRequestException(
+        'Approved attendance submissions cannot be rejected here',
+      );
     }
 
     if (status === 'rejected') {
-      throw new BadRequestException('This attendance submission has already been rejected');
+      throw new BadRequestException(
+        'This attendance submission has already been rejected',
+      );
     }
 
     const branchId = this.toString(submission.branchId);
 
     if (!branchId) {
-      throw new BadRequestException('Attendance submission is missing a branch');
+      throw new BadRequestException(
+        'Attendance submission is missing a branch',
+      );
     }
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
@@ -2479,7 +3120,10 @@ export class IntakeTemplatesService implements OnModuleInit {
     webUrl?: string,
     requestedBranchId?: string,
   ) {
-    const templateDocument = await this.templateModel.findOne({ slug, isActive: true });
+    const templateDocument = await this.templateModel.findOne({
+      slug,
+      isActive: true,
+    });
 
     if (!templateDocument) {
       throw new NotFoundException('Public template not found');
@@ -2504,28 +3148,36 @@ export class IntakeTemplatesService implements OnModuleInit {
         (error as { name?: string }).name === 'ValidationError'
       ) {
         const validationMessages =
-          'errors' in error && typeof (error as { errors?: unknown }).errors === 'object'
-            ? Object.values((error as { errors?: Record<string, { message?: string }> }).errors ?? {})
+          'errors' in error &&
+          typeof (error as { errors?: unknown }).errors === 'object'
+            ? Object.values(
+                (error as { errors?: Record<string, { message?: string }> })
+                  .errors ?? {},
+              )
                 .map((item) => item?.message)
                 .filter((message): message is string => !!message)
             : [];
 
         throw new BadRequestException(
-          validationMessages[0] || 'The public intake submission is missing a required field.',
+          validationMessages[0] ||
+            'The public intake submission is missing a required field.',
         );
       }
 
       throw error;
     }
 
-    const submission =
-      await this.submissionModel.create({
+    const submission = await this.submissionModel.create({
       templateId: template._id,
       templateName: template.name,
       templateKind: template.kind,
       branchId: template.branchId,
       answers,
-      status: ['attendance', 'weekly_report', 'maag_report'].includes(template.kind) ? 'pending' : 'completed',
+      status: ['attendance', 'weekly_report', 'maag_report'].includes(
+        template.kind,
+      )
+        ? 'pending'
+        : 'completed',
       ...domainRecord,
     });
 
@@ -2536,7 +3188,7 @@ export class IntakeTemplatesService implements OnModuleInit {
           ? 'Weekly report received'
           : template.kind === 'maag_report'
             ? 'MAAG report received'
-        : template.successTitle;
+            : template.successTitle;
     const successMessage =
       template.kind === 'attendance'
         ? 'This service attendance summary has been submitted and is awaiting branch approval.'
@@ -2544,7 +3196,7 @@ export class IntakeTemplatesService implements OnModuleInit {
           ? 'This weekly spiritual indices report has been submitted and is awaiting district review.'
           : template.kind === 'maag_report'
             ? 'This monthly MAAG report has been submitted and is awaiting district review.'
-        : template.successMessage;
+            : template.successMessage;
 
     return {
       successTitle,

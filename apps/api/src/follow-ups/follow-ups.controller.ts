@@ -1,7 +1,19 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { FollowUpsService } from './follow-ups.service';
-import { CreateFollowUpDto, UpdateFollowUpDto } from './dto/create-follow-up.dto';
+import {
+  CreateFollowUpDto,
+  UpdateFollowUpDto,
+} from './dto/create-follow-up.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -10,7 +22,17 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 @ApiTags('Follow Ups')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up')
+@Roles(
+  'super_admin',
+  'national_admin',
+  'national_pastor',
+  'district_admin',
+  'district_pastor',
+  'branch_admin',
+  'resident_pastor',
+  'associate_pastor',
+  'follow_up',
+)
 @Controller('follow-ups')
 export class FollowUpsController {
   constructor(private readonly followUpsService: FollowUpsService) {}
@@ -48,7 +70,11 @@ export class FollowUpsController {
   }
 
   @Patch(':id')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateFollowUpDto) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateFollowUpDto,
+  ) {
     return this.followUpsService.update(id, dto, user);
   }
 }

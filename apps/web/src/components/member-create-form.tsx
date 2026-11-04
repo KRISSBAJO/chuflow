@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import {
   MEMBER_COURSE_GROUPS,
@@ -122,25 +123,15 @@ export function MemberCreateForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[28px] bg-white p-6">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xl font-semibold text-slate-950">Add member</h3>
-        <p className="text-sm leading-6 text-slate-500">
-          Direct member intake. No guest record is required. Use the optional
-          guest selector only when you are attaching this member to an existing
-          guest journey.
-        </p>
-      </div>
-
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
+    <form action={handleSubmit} className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2">
         {branches.length > 0 ? (
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Branch</span>
+          <Field label="Branch" required>
             <select
               name="branchId"
               value={selectedBranchId}
               onChange={(event) => setSelectedBranchId(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value="">Select branch</option>
@@ -150,27 +141,16 @@ export function MemberCreateForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         ) : (
-          <>
+          <Field label="Branch">
             <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Branch</span>
-              <div className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-500">
-                Current branch scope
-              </div>
-            </div>
-          </>
+            <input value="Current branch scope" readOnly disabled className="ui-input" />
+          </Field>
         )}
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">
-            Optional guest record
-          </span>
-          <select
-            name="guestId"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          >
+        <Field label="Linked guest record" hint="Optional. Public member intake submits directly as a member without creating a guest first.">
+          <select name="guestId" className="ui-input">
             <option value="">No guest record attached</option>
             {scopedGuests.map((guest) => (
               <option key={guest._id} value={guest._id}>
@@ -178,19 +158,10 @@ export function MemberCreateForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500">
-            Public member intake should submit directly as a member without first
-            creating a guest.
-          </p>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Title</span>
-          <select
-            name="title"
-            defaultValue=""
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          >
+        <Field label="Title">
+          <select name="title" defaultValue="" className="ui-input">
             <option value="">No title selected</option>
             {MEMBER_TITLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -198,91 +169,46 @@ export function MemberCreateForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">First name</span>
-          <input
-            name="firstName"
-            placeholder="First name"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Last name</span>
-          <input
-            name="lastName"
-            placeholder="Last name"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Phone number</span>
-          <input
-            name="phone"
-            placeholder="Phone number"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Email</span>
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">
-            Membership status
-          </span>
-          <select
-            name="membershipStatus"
-            defaultValue="active"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          >
+        </Field>
+        <Field label="First name" required>
+          <input name="firstName" placeholder="First name" className="ui-input" required />
+        </Field>
+        <Field label="Last name" required>
+          <input name="lastName" placeholder="Last name" className="ui-input" required />
+        </Field>
+        <Field label="Phone number" required>
+          <input name="phone" placeholder="Phone number" className="ui-input" required />
+        </Field>
+        <Field label="Email" required>
+          <input name="email" type="email" placeholder="name@example.com" className="ui-input" required />
+        </Field>
+        <Field label="Membership status">
+          <select name="membershipStatus" defaultValue="active" className="ui-input">
             {MEMBERSHIP_STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">
-            Date joined church
-          </span>
-          <input
-            name="dateJoinedChurch"
-            type="date"
-            max={getTodayDateString()}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          />
-          <p className="text-xs text-slate-500">
-            This date cannot be in the future.
-          </p>
-        </label>
+        </Field>
+        <Field label="Date joined church" hint="This date cannot be in the future.">
+          <input name="dateJoinedChurch" type="date" max={getTodayDateString()} className="ui-input" />
+        </Field>
       </div>
 
-      <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-        <div className="flex flex-col gap-1">
-          <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Service Unit Placement
-          </h4>
-          <p className="text-sm text-slate-500">
-            Link this member to a real service unit in the selected branch.
-          </p>
-        </div>
-        <label className="mt-4 block space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service unit</span>
-          <select
-            name="serviceUnitId"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-          >
+      <section className="rounded-2xl bg-[#f6f5f1] p-5">
+        <h3 className="text-[15px] font-semibold text-[#111111]">Service unit placement</h3>
+        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Link this member to a service unit in the selected branch.</p>
+        <Field
+          label="Service unit"
+          className="mt-4"
+          hint={
+            scopedServiceUnits.length > 0
+              ? "Only active service units from this branch appear here."
+              : "Create service units first if you want members to pick from a branch unit list."
+          }
+        >
+          <select name="serviceUnitId" className="ui-input">
             <option value="">No service unit assigned yet</option>
             {scopedServiceUnits.map((unit) => (
               <option key={unit._id} value={unit._id}>
@@ -290,122 +216,66 @@ export function MemberCreateForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500">
-            {scopedServiceUnits.length > 0
-              ? "Only active service units from this branch appear here."
-              : "Create service units first if you want members to pick from a branch unit list."}
-          </p>
-        </label>
-      </div>
+        </Field>
+      </section>
 
-      <div className="mt-6 space-y-4">
-        {MEMBER_COURSE_GROUPS.map((group) => (
-          <section
-            key={group.key}
-            className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4"
-          >
-            <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {group.title}
-              </h4>
-              <p className="text-sm text-slate-500">{group.helperText}</p>
-            </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">
-                  {group.question}
-                </span>
-                <select
-                  name={group.statusName}
-                  defaultValue="no"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-                >
-                  {YES_NO_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Date or year
-                </span>
-                <input
-                  name={group.dateName}
-                  type="date"
-                  max={getTodayDateString()}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Location
-                </span>
-                <input
-                  name={group.locationName}
-                  placeholder={`${group.title} location`}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-                />
-              </label>
-            </div>
-          </section>
-        ))}
-      </div>
+      {MEMBER_COURSE_GROUPS.map((group) => (
+        <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
+          <h3 className="text-[15px] font-semibold text-[#111111]">{group.title}</h3>
+          <p className="mt-0.5 text-[13px] text-[#6b6b6b]">{group.helperText}</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field label={group.question} className="sm:col-span-2">
+              <select name={group.statusName} defaultValue="no" className="ui-input">
+                {YES_NO_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Date or year">
+              <input name={group.dateName} type="date" max={getTodayDateString()} className="ui-input" />
+            </Field>
+            <Field label="Location">
+              <input name={group.locationName} placeholder={`${group.title} location`} className="ui-input" />
+            </Field>
+          </div>
+        </section>
+      ))}
 
-      <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">
-              Holy Ghost baptism
-            </span>
-            <select
-              name="holySpiritBaptismStatus"
-              defaultValue="no"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-            >
+      <section className="rounded-2xl bg-[#f6f5f1] p-5">
+        <h3 className="text-[15px] font-semibold text-[#111111]">Baptism</h3>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="Holy Ghost baptism">
+            <select name="holySpiritBaptismStatus" defaultValue="no" className="ui-input">
               {YES_NO_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">
-              Water baptism
-            </span>
-            <select
-              name="waterBaptismStatus"
-              defaultValue="no"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-            >
+          </Field>
+          <Field label="Water baptism">
+            <select name="waterBaptismStatus" defaultValue="no" className="ui-input">
               {YES_NO_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         </div>
+      </section>
+
+      <Field label="Family details">
+        <textarea name="familyDetails" placeholder="Family details, dependants or pastoral notes" className="ui-input" />
+      </Field>
+
+      <div className="flex justify-end border-t border-black/[0.06] pt-5">
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : "Save member"}
+        </Button>
       </div>
-
-      <label className="mt-6 block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Family details</span>
-        <textarea
-          name="familyDetails"
-          placeholder="Family details, dependants, or pastoral notes"
-          className="min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-        />
-      </label>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-      >
-        {loading ? "Saving..." : "Save member"}
-      </button>
     </form>
   );
 }

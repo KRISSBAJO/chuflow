@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Icon } from "@/components/app/icons";
 import { ExpenseCategoryManagementCard } from "@/components/expense-category-management-card";
 import { ExpenseEntriesTable } from "@/components/expense-entries-table";
 import { ExpenseEntryForm } from "@/components/expense-entry-form";
@@ -12,6 +12,7 @@ import { OfferingEntryForm } from "@/components/offering-entry-form";
 import { OfferingTypeManagementCard } from "@/components/offering-type-management-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Badge, buttonClass, Card, CardHeader, EmptyState, Pagination, TabLinks } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import {
@@ -254,6 +255,15 @@ export default async function FinancePage({
     });
   }
 
+  const pagerHrefs = (
+    pageKey: "offeringPage" | "expensePage" | "ledgerPage",
+    page: number,
+    totalPages: number,
+  ) => ({
+    prevHref: buildPageHref(pageKey, Math.max(page - 1, 1)),
+    nextHref: buildPageHref(pageKey, Math.min(page + 1, totalPages)),
+  });
+
   const tabs = [
     {
       id: "ledger",
@@ -285,25 +295,22 @@ export default async function FinancePage({
       : []),
   ];
 
+  const showExpenseSide = canCreateExpenses || canApproveExpenses;
+
   return (
     <Shell>
       <PageHeader
         eyebrow="Finance"
-        title="Ledger, expenses, approvals, and branch balance control"
-        description="Run branch offerings and expenses through one scoped finance ledger with approvals, account routing, month-end locks, and oversight visibility."
+        title="Ledger, offerings and expenses"
+        description="Record offerings and expenses, route them to the right account, approve spending and lock closed months, all in one scoped ledger."
         action={
           canCreateOfferings || canCreateExpenses ? (
-            <a
-              href="#finance-entry"
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-            >
-              Open finance entry
+            <a href="#finance-entry" className={buttonClass("primary", "md")}>
+              <Icon name="plus" className="h-4 w-4" />
+              New finance entry
             </a>
           ) : (
-            <a
-              href="#ledger"
-              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700"
-            >
+            <a href="#ledger" className={buttonClass("secondary", "md")}>
               Review ledger
             </a>
           )
@@ -329,7 +336,7 @@ export default async function FinancePage({
         accounts={accounts}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Total credits"
           value={formatMoney(ledger.summary.totalCredits)}
@@ -339,7 +346,7 @@ export default async function FinancePage({
         <MetricCard
           label="Total debits"
           value={formatMoney(ledger.summary.totalDebits)}
-          delta="Expense load in this scope"
+          delta="Approved spending in this scope"
           tone="warm"
         />
         <MetricCard
@@ -357,131 +364,104 @@ export default async function FinancePage({
         <MetricCard
           label="Locked periods"
           value={ledger.summary.lockedPeriods}
-          delta="Month-end finance locks in scope"
+          delta="Closed months in this scope"
           tone="warm"
         />
       </section>
 
-      <section className="surface rounded-[24px] p-4">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-
-            return (
-              <Link
-                key={tab.id}
-                href={buildFinanceHref({ tab: tab.id })}
-                className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                  isActive
-                    ? "border-slate-950 bg-slate-950 text-white"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs ${
-                    isActive ? "bg-white/15 text-white" : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      <TabLinks
+        className="self-start"
+        items={tabs.map((tab) => ({
+          href: buildFinanceHref({ tab: tab.id }),
+          label: tab.label,
+          count: tab.count,
+          active: activeTab === tab.id,
+        }))}
+      />
 
       {activeTab === "ledger" ? (
-        <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-          <div className="space-y-5">
-            <div id="ledger">
-              <FinanceLedgerTable
-                ledger={ledger}
-                previousHref={buildPageHref(
-                  "ledgerPage",
-                  Math.max(ledger.pagination.page - 1, 1),
-                )}
-                nextHref={buildPageHref(
-                  "ledgerPage",
-                  Math.min(ledger.pagination.page + 1, ledger.pagination.totalPages),
-                )}
-              />
-            </div>
+        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
+          <div id="ledger" className="min-w-0">
+            <FinanceLedgerTable
+              ledger={ledger}
+              previousHref={buildPageHref(
+                "ledgerPage",
+                Math.max(ledger.pagination.page - 1, 1),
+              )}
+              nextHref={buildPageHref(
+                "ledgerPage",
+                Math.min(ledger.pagination.page + 1, ledger.pagination.totalPages),
+              )}
+            />
           </div>
 
-          <div className="space-y-5">
-            <section className="surface rounded-[24px] p-5">
-              <div className="flex flex-col gap-2">
-                <p className="eyebrow">Branch balance</p>
-                <h3 className="text-lg font-semibold text-slate-950">
-                  Where balance pressure sits
-                </h3>
-              </div>
-              <div className="mt-4 space-y-3">
-                {ledger.byBranch.length > 0 ? (
-                  ledger.byBranch.slice(0, 8).map((item) => (
-                    <div
+          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+            <CardHeader
+              label="Branch balance"
+              title="Balance by branch"
+              description="Where funds are building up or running low."
+            />
+            <div className="mt-6">
+              {ledger.byBranch.length > 0 ? (
+                <ul className="divide-y divide-black/[0.05]">
+                  {ledger.byBranch.slice(0, 8).map((item) => (
+                    <li
                       key={item.branchId}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                      className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {item.district} · {item.oversightRegion}
-                          </p>
-                        </div>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {formatMoney(item.balance)}
-                        </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-medium text-[#111111]">{item.name}</p>
+                        <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
+                          {item.district} · {item.oversightRegion}
+                        </p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">
-                    No branch balance data exists in this scope yet.
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
+                      <span
+                        className={`shrink-0 text-[14px] font-semibold tabular-nums ${
+                          item.balance < 0 ? "text-red-700" : "text-[#111111]"
+                        }`}
+                      >
+                        {formatMoney(item.balance)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState icon="branches" title="No balances yet">
+                  No branch balance data exists in this scope yet.
+                </EmptyState>
+              )}
+            </div>
+          </Card>
         </section>
       ) : null}
 
       {activeTab === "offerings" ? (
-        <section className="grid gap-5 xl:grid-cols-[0.78fr_1.22fr]">
-          <div className="space-y-5" id="finance-entry">
-            {canCreateOfferings ? (
-              <section className="surface rounded-[24px] p-1.5">
-                <OfferingEntryForm
-                  defaultBranchId={user.branchId}
-                  branches={branches}
-                  offeringTypes={offeringTypes}
-                  serviceTypes={serviceTypes}
-                  serviceSchedules={serviceSchedules}
-                  accounts={accounts}
-                />
-              </section>
-            ) : null}
-          </div>
-
-          <section className="surface rounded-[24px] p-5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="eyebrow">Offering records</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                  Branch offering intake
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Review giving by service, offering type, and finance account.
-                </p>
-              </div>
-              <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {offeringList.pagination.total} offering entries
-              </div>
+        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          {canCreateOfferings ? (
+            <div id="finance-entry" className="min-w-0">
+              <OfferingEntryForm
+                defaultBranchId={user.branchId}
+                branches={branches}
+                offeringTypes={offeringTypes}
+                serviceTypes={serviceTypes}
+                serviceSchedules={serviceSchedules}
+                accounts={accounts}
+              />
             </div>
+          ) : null}
 
-            <div className="mt-5">
+          <Card
+            className={`app-rise p-6 sm:p-7 ${canCreateOfferings ? "" : "xl:col-span-2"}`}
+            style={{ animationDelay: "60ms" }}
+          >
+            <CardHeader
+              label="Offering records"
+              title="Branch offerings"
+              description="Giving by service, offering type and finance account."
+              action={<Badge>{offeringList.pagination.total} entries</Badge>}
+            />
+
+            <div className="mt-6">
               <OfferingEntriesTable
                 entries={offeringList.items}
                 offeringTypes={offeringTypes}
@@ -490,51 +470,22 @@ export default async function FinancePage({
               />
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2 text-sm">
-              <Link
-                href={buildPageHref(
-                  "offeringPage",
-                  Math.max(offeringList.pagination.page - 1, 1),
-                )}
-                aria-disabled={offeringList.pagination.page <= 1}
-                className={`rounded-xl border px-4 py-2 ${
-                  offeringList.pagination.page <= 1
-                    ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
-              >
-                Previous
-              </Link>
-              <span className="text-slate-500">
-                Page {offeringList.pagination.page} of {offeringList.pagination.totalPages}
-              </span>
-              <Link
-                href={buildPageHref(
-                  "offeringPage",
-                  Math.min(
-                    offeringList.pagination.page + 1,
-                    offeringList.pagination.totalPages,
-                  ),
-                )}
-                aria-disabled={offeringList.pagination.page >= offeringList.pagination.totalPages}
-                className={`rounded-xl border px-4 py-2 ${
-                  offeringList.pagination.page >= offeringList.pagination.totalPages
-                    ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
-              >
-                Next
-              </Link>
+            <div className="mt-5">
+              <Pagination
+                page={offeringList.pagination.page}
+                totalPages={offeringList.pagination.totalPages}
+                {...pagerHrefs("offeringPage", offeringList.pagination.page, offeringList.pagination.totalPages)}
+              />
             </div>
-          </section>
+          </Card>
         </section>
       ) : null}
 
       {activeTab === "expenses" ? (
-        <section className="grid gap-5 xl:grid-cols-[0.78fr_1.22fr]">
-          <div className="space-y-5" id="finance-entry">
-            {canCreateExpenses ? (
-              <section className="surface rounded-[24px] p-1.5">
+        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          {showExpenseSide ? (
+            <div id="finance-entry" className="min-w-0 space-y-4">
+              {canCreateExpenses ? (
                 <ExpenseEntryForm
                   defaultBranchId={selectedBranchId || user.branchId}
                   branches={branches}
@@ -543,56 +494,47 @@ export default async function FinancePage({
                   serviceSchedules={serviceSchedules}
                   canChooseBranch={canChooseBranch}
                 />
-              </section>
-            ) : null}
+              ) : null}
 
-            {canApproveExpenses ? (
-              <section className="surface rounded-[24px] p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <p className="eyebrow">Expense approvals</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                      Pending branch finance requests
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Review submitted expenses before they become approved debits.
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {pendingExpenses.summary.pendingCount} pending
-                  </div>
-                </div>
-
-                <div className="mt-5">
-                  <ExpenseEntriesTable
-                    entries={pendingExpenses.items}
-                    accounts={accounts}
-                    expenseCategories={expenseCategories}
-                    serviceSchedules={serviceSchedules}
-                    canApprove={canApproveExpenses}
+              {canApproveExpenses ? (
+                <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+                  <CardHeader
+                    label="Expense approvals"
+                    title="Waiting for approval"
+                    description="Review submitted expenses before they post to the ledger."
+                    action={
+                      <Badge tone={pendingExpenses.summary.pendingCount ? "warning" : "neutral"}>
+                        {pendingExpenses.summary.pendingCount} pending
+                      </Badge>
+                    }
                   />
-                </div>
-              </section>
-            ) : null}
-          </div>
 
-          <section className="surface rounded-[24px] p-5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="eyebrow">Expense records</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                  Reviewed and submitted expenses
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Track spending, category routing, and approved finance history.
-                </p>
-              </div>
-              <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {expenseList.pagination.total} expense entries
-              </div>
+                  <div className="mt-6">
+                    <ExpenseEntriesTable
+                      entries={pendingExpenses.items}
+                      accounts={accounts}
+                      expenseCategories={expenseCategories}
+                      serviceSchedules={serviceSchedules}
+                      canApprove={canApproveExpenses}
+                    />
+                  </div>
+                </Card>
+              ) : null}
             </div>
+          ) : null}
 
-            <div className="mt-5">
+          <Card
+            className={`app-rise p-6 sm:p-7 ${showExpenseSide ? "" : "xl:col-span-2"}`}
+            style={{ animationDelay: "120ms" }}
+          >
+            <CardHeader
+              label="Expense records"
+              title="All expenses"
+              description="Spending by category and account, with approval history."
+              action={<Badge>{expenseList.pagination.total} entries</Badge>}
+            />
+
+            <div className="mt-6">
               <ExpenseEntriesTable
                 entries={expenseList.items}
                 accounts={accounts}
@@ -602,57 +544,31 @@ export default async function FinancePage({
               />
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2 text-sm">
-              <Link
-                href={buildPageHref(
-                  "expensePage",
-                  Math.max(expenseList.pagination.page - 1, 1),
-                )}
-                aria-disabled={expenseList.pagination.page <= 1}
-                className={`rounded-xl border px-4 py-2 ${
-                  expenseList.pagination.page <= 1
-                    ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
-              >
-                Previous
-              </Link>
-              <span className="text-slate-500">
-                Page {expenseList.pagination.page} of {expenseList.pagination.totalPages}
-              </span>
-              <Link
-                href={buildPageHref(
-                  "expensePage",
-                  Math.min(expenseList.pagination.page + 1, expenseList.pagination.totalPages),
-                )}
-                aria-disabled={expenseList.pagination.page >= expenseList.pagination.totalPages}
-                className={`rounded-xl border px-4 py-2 ${
-                  expenseList.pagination.page >= expenseList.pagination.totalPages
-                    ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
-              >
-                Next
-              </Link>
+            <div className="mt-5">
+              <Pagination
+                page={expenseList.pagination.page}
+                totalPages={expenseList.pagination.totalPages}
+                {...pagerHrefs("expensePage", expenseList.pagination.page, expenseList.pagination.totalPages)}
+              />
             </div>
-          </section>
+          </Card>
         </section>
       ) : null}
 
       {activeTab === "setup" ? (
-        <section className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
-          <div className="space-y-5">
-            {canManageLocks ? (
+        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          {canManageLocks ? (
+            <div className="min-w-0 space-y-4">
               <FinanceLockManagementCard
                 locks={locks}
                 branches={branches}
                 defaultBranchId={selectedBranchId || user.branchId}
                 canChooseBranch={canChooseBranch}
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
-          <div className="space-y-5">
+          <div className={`min-w-0 space-y-4 ${canManageLocks ? "" : "xl:col-span-2"}`}>
             {canManageTypes ? (
               <>
                 <FinanceAccountManagementCard accounts={accounts} />
@@ -663,12 +579,11 @@ export default async function FinancePage({
                 <OfferingTypeManagementCard offeringTypes={offeringTypes} />
               </>
             ) : (
-              <section className="surface rounded-[24px] p-5">
-                <p className="text-sm text-slate-500">
-                  Finance setup is limited to the roles that manage shared accounts,
-                  categories, offering types, and period locks.
-                </p>
-              </section>
+              <Card className="p-6 sm:p-7">
+                <EmptyState icon="settings" title="Limited access">
+                  Shared accounts, expense categories and offering types are managed by finance administrators.
+                </EmptyState>
+              </Card>
             )}
           </div>
         </section>

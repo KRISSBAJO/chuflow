@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Alert, AuthHeading, Field, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 
 export function ForgotPasswordForm() {
   const [status, setStatus] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [resetUrl, setResetUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setStatus(null);
+    setFailed(false);
     setResetUrl(null);
 
     try {
@@ -33,6 +36,7 @@ export function ForgotPasswordForm() {
       );
       setResetUrl(result.resetUrl ?? null);
     } catch (error) {
+      setFailed(true);
       setStatus(error instanceof Error ? error.message : "Unable to start password reset");
     } finally {
       setLoading(false);
@@ -40,38 +44,44 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form action={handleSubmit} className="surface rounded-[32px] bg-white/95 p-7">
-      <p className="eyebrow">Password Recovery</p>
-      <h1 className="heading mt-3 text-4xl font-semibold text-slate-950">Forgot password?</h1>
-      <p className="mt-3 text-slate-600">
-        Enter your email and we’ll generate a reset link for this MVP environment.
-      </p>
-      <input
-        name="email"
-        type="email"
-        placeholder="admin@church.local"
-        className="mt-6 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-        required
+    <div>
+      <AuthHeading
+        title="Reset your password"
+        body="Enter the email on your account and we'll send you a link to choose a new password."
       />
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 font-semibold text-white"
-      >
-        {loading ? "Generating..." : "Generate reset link"}
-      </button>
-      {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
+
+      <form action={handleSubmit} className="space-y-5">
+        <Field label="Email">
+          <input name="email" type="email" placeholder="you@church.org" autoComplete="email" className="lp-input" required />
+        </Field>
+        <div className="pt-2">
+          <SubmitButton loading={loading} loadingLabel="Sending link...">
+            Send reset link
+          </SubmitButton>
+        </div>
+      </form>
+
+      {status ? (
+        <div className="mt-5">
+          <Alert tone={failed ? "error" : "success"}>{status}</Alert>
+        </div>
+      ) : null}
+
       {resetUrl ? (
-        <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-4 text-sm text-orange-900">
-          <p className="font-semibold">SMTP preview mode</p>
-          <a href={resetUrl} className="mt-2 block font-semibold underline">
+        <div className="mt-3 rounded-2xl bg-[var(--lp-panel)] px-4 py-4 text-[14px]">
+          <p className="text-[var(--lp-muted)]">Email delivery isn&apos;t set up yet, so here is your link directly.</p>
+          <a href={resetUrl} className="mt-2 inline-flex font-medium text-[var(--lp-ink)] underline underline-offset-4">
             Open reset page
           </a>
         </div>
       ) : null}
-      <p className="mt-5 text-sm text-slate-500">
-        Remembered your password? <Link href="/login" className="font-semibold text-slate-900">Back to login</Link>
+
+      <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
+        Remembered it?{" "}
+        <Link href="/login" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
+          Back to sign in
+        </Link>
       </p>
-    </form>
+    </div>
   );
 }

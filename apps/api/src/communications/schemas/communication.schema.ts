@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type CommunicationDocument = HydratedDocument<Communication>;
 
@@ -14,16 +14,16 @@ export class Communication {
   @Prop({ required: true })
   channel!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Guest' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Guest' })
   guestId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Member' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Member' })
   memberId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Branch' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   sentBy?: Types.ObjectId;
 
   @Prop()

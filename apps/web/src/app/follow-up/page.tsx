@@ -3,6 +3,18 @@ import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { FollowUpScopeFilterBar } from "@/components/follow-up-scope-filter-bar";
+import { Icon } from "@/components/app/icons";
+import {
+  Badge,
+  Button,
+  buttonClass,
+  Card,
+  CardHeader,
+  EmptyState,
+  Pagination,
+  statusTone,
+  TableWrap,
+} from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   FOLLOW_UP_STATUS_OPTIONS,
@@ -20,25 +32,6 @@ import type {
   FollowUpListResponse,
   OversightRegionOption,
 } from "@/lib/types";
-
-function buildStatusTone(status?: string) {
-  switch (status) {
-    case "assigned":
-      return "bg-amber-50 text-amber-800";
-    case "contacted":
-      return "bg-sky-50 text-sky-800";
-    case "returned":
-      return "bg-emerald-50 text-emerald-800";
-    case "prayed_with":
-      return "bg-violet-50 text-violet-800";
-    case "invited_back":
-      return "bg-indigo-50 text-indigo-800";
-    case "converted":
-      return "bg-teal-50 text-teal-800";
-    default:
-      return "bg-orange-50 text-orange-800";
-  }
-}
 
 export default async function FollowUpPage({
   searchParams,
@@ -172,15 +165,13 @@ export default async function FollowUpPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Follow-Up"
+        eyebrow="Follow-up"
         title="Care workflow"
-        description="Branch-aware follow-up that helps every guest move from first contact to return, prayer, and next steps with accountability."
+        description="Help every guest move from first contact to return, prayer and next steps, with clear ownership in each branch."
         action={
-          <a
-            href={buildCreateHref()}
-            className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-          >
-            + Add follow-up
+          <a href={buildCreateHref()} className={buttonClass("primary")}>
+            <Icon name="plus" className="h-4 w-4" />
+            Add follow-up
           </a>
         }
       />
@@ -199,7 +190,7 @@ export default async function FollowUpPage({
         branches={branches}
       />
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="New"
           value={followUpList.summary.new}
@@ -226,180 +217,137 @@ export default async function FollowUpPage({
         />
       </section>
 
-      <section className="surface overflow-hidden rounded-[24px]">
-        <div className="p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="eyebrow">Care queue</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">Follow-up tasks by scope</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  {scopeLabel}. Search notes or guest details, narrow to a branch when needed, and
-                  page through the queue without overloading the board.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {secondaryStages.map((stage) => (
-                  <span
-                    key={stage.label}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600"
-                  >
-                    {stage.label} {stage.value}
-                  </span>
-                ))}
-              </div>
-            </div>
+      <Card className="app-rise p-6 sm:p-7">
+        <CardHeader
+          label="Care queue"
+          title="Follow-up tasks"
+          description={`${scopeLabel}. Search notes or guest details, narrow to a stage, and page through the queue.`}
+          action={secondaryStages.map((stage) => (
+            <Badge key={stage.label}>
+              {stage.label} <span className="tabular-nums">{stage.value}</span>
+            </Badge>
+          ))}
+        />
 
-            <form className="mt-5 grid gap-3 lg:grid-cols-[1fr_0.8fr_auto]">
-              {requestedOversightRegion ? (
-                <input type="hidden" name="oversightRegion" value={requestedOversightRegion} />
-              ) : null}
-              {requestedDistrict ? (
-                <input type="hidden" name="district" value={requestedDistrict} />
-              ) : null}
-              {effectiveBranchId ? (
-                <input type="hidden" name="branchId" value={effectiveBranchId} />
-              ) : null}
-              <input
-                name="search"
-                defaultValue={search}
-                placeholder="Search guest name, phone, email, or note"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-              />
-              <select
-                name="status"
-                defaultValue={selectedStatus || ""}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-              >
-                <option value="">All stages</option>
-                {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <input type="hidden" name="page" value="1" />
-              <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
-                Apply
-              </button>
-            </form>
+        <form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+          {requestedOversightRegion ? (
+            <input type="hidden" name="oversightRegion" value={requestedOversightRegion} />
+          ) : null}
+          {requestedDistrict ? (
+            <input type="hidden" name="district" value={requestedDistrict} />
+          ) : null}
+          {effectiveBranchId ? (
+            <input type="hidden" name="branchId" value={effectiveBranchId} />
+          ) : null}
+          <input
+            name="search"
+            defaultValue={search}
+            placeholder="Search guest name, phone, email or note"
+            aria-label="Search follow-up tasks"
+            className="ui-input"
+          />
+          <select name="status" defaultValue={selectedStatus || ""} aria-label="Stage" className="ui-input">
+            <option value="">All stages</option>
+            {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <input type="hidden" name="page" value="1" />
+          <Button type="submit" variant="secondary" icon="search">
+            Apply
+          </Button>
+        </form>
+
+        <div className="mt-6">
+          {followUpList.items.length > 0 ? (
+            <TableWrap>
+              <table className="ui-table">
+                <thead>
+                  <tr>
+                    <th>Stage</th>
+                    <th>Guest</th>
+                    <th>Owner</th>
+                    <th>Next action</th>
+                    <th>Method</th>
+                    <th>Note</th>
+                    <th className="text-right">
+                      <span className="sr-only">Open</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {followUpList.items.map((item) => {
+                    const guestName = item.guestId
+                      ? `${item.guestId.firstName} ${item.guestId.lastName}`
+                      : "Guest record unavailable";
+                    const branchName = item.guestId?.branchId?.name;
+                    const assignedName = item.assignedTo
+                      ? `${item.assignedTo.firstName} ${item.assignedTo.lastName}`
+                      : "Unassigned";
+
+                    return (
+                      <tr key={item._id} className="align-top">
+                        <td>
+                          <Badge tone={statusTone(item.status)} dot>
+                            {formatFollowUpValue(item.status)}
+                          </Badge>
+                        </td>
+                        <td>
+                          <p className="font-medium text-[#111111]">{guestName}</p>
+                          <p className="mt-0.5 text-[12px] text-[#8a8780]">{branchName || "Branch"}</p>
+                        </td>
+                        <td className="whitespace-nowrap !text-[#55534e]">{assignedName}</td>
+                        <td className="!text-[#55534e]">
+                          {item.nextActionDate
+                            ? new Date(item.nextActionDate).toLocaleString()
+                            : "No next action date"}
+                          <span className="mt-0.5 block text-[12px] text-[#8a8780]">
+                            Updated {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "recently"}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap !text-[#55534e]">{formatFollowUpValue(item.contactMethod)}</td>
+                        <td className="max-w-md text-[13px] leading-[1.6] !text-[#6b6b6b]">{item.note}</td>
+                        <td className="text-right">
+                          {item.guestId?._id ? (
+                            <Link
+                              href={`/guests/${item.guestId._id}`}
+                              aria-label={`Open ${guestName}`}
+                              className={buttonClass("ghost", "sm", "w-8 px-0")}
+                            >
+                              <Icon name="arrowUpRight" className="h-4 w-4" />
+                            </Link>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </TableWrap>
+          ) : (
+            <EmptyState icon="care" title="No follow-up tasks">
+              No follow-up tasks match the current filters.
+            </EmptyState>
+          )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              <tr>
-                <th className="px-5 py-3">Stage</th>
-                <th className="px-5 py-3">Guest</th>
-                <th className="px-5 py-3">Owner</th>
-                <th className="px-5 py-3">Next action</th>
-                <th className="px-5 py-3">Method</th>
-                <th className="px-5 py-3">Note</th>
-                <th className="px-5 py-3 text-right">Open</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {followUpList.items.length > 0 ? (
-                followUpList.items.map((item) => {
-                  const guestName = item.guestId
-                    ? `${item.guestId.firstName} ${item.guestId.lastName}`
-                    : "Guest record unavailable";
-                  const branchName = item.guestId?.branchId?.name;
-                  const assignedName = item.assignedTo
-                    ? `${item.assignedTo.firstName} ${item.assignedTo.lastName}`
-                    : "Unassigned";
-
-                  return (
-                    <tr key={item._id} className="align-top">
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${buildStatusTone(
-                            item.status,
-                          )}`}
-                        >
-                          <span aria-hidden="true">●</span>
-                          {formatFollowUpValue(item.status)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="font-semibold text-slate-950">{guestName}</p>
-                        <p className="mt-1 text-xs text-slate-500">{branchName || "Branch"}</p>
-                      </td>
-                      <td className="px-5 py-4 text-slate-700">{assignedName}</td>
-                      <td className="px-5 py-4 text-slate-700">
-                        {item.nextActionDate
-                          ? new Date(item.nextActionDate).toLocaleString()
-                          : "No next action date"}
-                        <span className="block text-xs text-slate-400">
-                          Updated {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "recently"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-700">{formatFollowUpValue(item.contactMethod)}</td>
-                      <td className="max-w-md px-5 py-4 text-slate-600">{item.note}</td>
-                      <td className="px-5 py-4 text-right">
-                        {item.guestId?._id ? (
-                          <Link
-                            href={`/guests/${item.guestId._id}`}
-                            aria-label={`Open ${guestName}`}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-teal-700"
-                          >
-                            ↗
-                          </Link>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-500">
-                    No follow-up tasks match the current filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Showing {startItem}-{endItem} of {followUpList.pagination.total}
+        <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-[#8a8780]">
+            Showing <span className="tabular-nums text-[#111111]">{startItem}–{endItem}</span> of{" "}
+            <span className="tabular-nums">{followUpList.pagination.total}</span>
           </p>
-          <div className="flex items-center gap-2">
-            <Link
-              href={buildPageHref(Math.max(followUpList.pagination.page - 1, 1))}
-              aria-disabled={followUpList.pagination.page <= 1}
-              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
-                followUpList.pagination.page <= 1
-                  ? "pointer-events-none border-slate-200 bg-slate-50 text-slate-400"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-              }`}
-            >
-              Previous
-            </Link>
-            <span className="text-sm text-slate-500">
-              Page {followUpList.pagination.page} of {followUpList.pagination.totalPages}
-            </span>
-            <Link
-              href={buildPageHref(
-                Math.min(
-                  followUpList.pagination.page + 1,
-                  followUpList.pagination.totalPages,
-                ),
-              )}
-              aria-disabled={
-                followUpList.pagination.page >= followUpList.pagination.totalPages
-              }
-              className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
-                followUpList.pagination.page >= followUpList.pagination.totalPages
-                  ? "pointer-events-none border-slate-200 bg-slate-50 text-slate-400"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-              }`}
-            >
-              Next
-            </Link>
-          </div>
+          <Pagination
+            page={followUpList.pagination.page}
+            totalPages={followUpList.pagination.totalPages}
+            prevHref={buildPageHref(Math.max(followUpList.pagination.page - 1, 1))}
+            nextHref={buildPageHref(
+              Math.min(followUpList.pagination.page + 1, followUpList.pagination.totalPages),
+            )}
+          />
         </div>
-      </section>
+      </Card>
     </Shell>
   );
 }

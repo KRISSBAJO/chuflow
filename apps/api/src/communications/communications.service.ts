@@ -17,7 +17,10 @@ import {
   CreateCommunicationTemplateDto,
   UpdateCommunicationTemplateDto,
 } from './dto/manage-template.dto';
-import { Communication, CommunicationDocument } from './schemas/communication.schema';
+import {
+  Communication,
+  CommunicationDocument,
+} from './schemas/communication.schema';
 import {
   CommunicationTemplate,
   CommunicationTemplateDocument,
@@ -98,7 +101,8 @@ export class CommunicationsService {
   }
 
   private async ensureDefaultTemplates() {
-    const existingCount = await this.communicationTemplateModel.countDocuments();
+    const existingCount =
+      await this.communicationTemplateModel.countDocuments();
 
     if (existingCount > 0) {
       return;
@@ -130,14 +134,20 @@ export class CommunicationsService {
     return { guestIds, memberIds };
   }
 
-  private async resolveRecipientScope(dto: CreateCommunicationDto, currentUser: AuthUser) {
+  private async resolveRecipientScope(
+    dto: CreateCommunicationDto,
+    currentUser: AuthUser,
+  ) {
     if (dto.guestId) {
       const guest = await this.guestModel.findById(dto.guestId).lean();
       if (!guest) {
         throw new NotFoundException('Guest not found');
       }
 
-      await this.accessScopeService.ensureBranchAccess(currentUser, String(guest.branchId));
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        String(guest.branchId),
+      );
       return {
         branchId: String(guest.branchId),
         recipientName: `${guest.firstName} ${guest.lastName}`,
@@ -150,7 +160,10 @@ export class CommunicationsService {
         throw new NotFoundException('Member not found');
       }
 
-      await this.accessScopeService.ensureBranchAccess(currentUser, String(member.branchId));
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        String(member.branchId),
+      );
       return {
         branchId: String(member.branchId),
         recipientName: `${member.firstName} ${member.lastName}`,
@@ -402,34 +415,40 @@ export class CommunicationsService {
 
     const [items, channelBuckets, statusBuckets, deliveryModeBuckets] =
       await Promise.all([
-      this.communicationModel
-        .find(query)
-        .populate({
-          path: 'guestId',
-          populate: { path: 'branchId', select: 'name oversightRegion district' },
-        })
-        .populate({
-          path: 'memberId',
-          populate: { path: 'branchId', select: 'name oversightRegion district' },
-        })
-        .populate('branchId', 'name oversightRegion district')
-        .populate('sentBy', 'firstName lastName email')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .lean(),
-      this.communicationModel.aggregate<{ _id: string; total: number }>([
-        { $match: query },
-        { $group: { _id: '$channel', total: { $sum: 1 } } },
-      ]),
-      this.communicationModel.aggregate<{ _id: string; total: number }>([
-        { $match: query },
-        { $group: { _id: '$status', total: { $sum: 1 } } },
-      ]),
-      this.communicationModel.aggregate<{ _id: string; total: number }>([
-        { $match: query },
-        { $group: { _id: '$deliveryMode', total: { $sum: 1 } } },
-      ]),
+        this.communicationModel
+          .find(query)
+          .populate({
+            path: 'guestId',
+            populate: {
+              path: 'branchId',
+              select: 'name oversightRegion district',
+            },
+          })
+          .populate({
+            path: 'memberId',
+            populate: {
+              path: 'branchId',
+              select: 'name oversightRegion district',
+            },
+          })
+          .populate('branchId', 'name oversightRegion district')
+          .populate('sentBy', 'firstName lastName email')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(safeLimit)
+          .lean(),
+        this.communicationModel.aggregate<{ _id: string; total: number }>([
+          { $match: query },
+          { $group: { _id: '$channel', total: { $sum: 1 } } },
+        ]),
+        this.communicationModel.aggregate<{ _id: string; total: number }>([
+          { $match: query },
+          { $group: { _id: '$status', total: { $sum: 1 } } },
+        ]),
+        this.communicationModel.aggregate<{ _id: string; total: number }>([
+          { $match: query },
+          { $group: { _id: '$deliveryMode', total: { $sum: 1 } } },
+        ]),
       ]);
 
     const channelSummary = {
@@ -500,16 +519,39 @@ export class CommunicationsService {
     };
   }
 
-  async list(currentUser: AuthUser, filters: { guestId?: string; memberId?: string }) {
+  async list(
+    currentUser: AuthUser,
+    filters: { guestId?: string; memberId?: string },
+  ) {
     if (filters.guestId) {
-      await this.resolveRecipientScope({ ...filters, templateName: 'filter', channel: 'filter', recipient: 'filter', message: 'filter' }, currentUser);
+      await this.resolveRecipientScope(
+        {
+          ...filters,
+          templateName: 'filter',
+          channel: 'filter',
+          recipient: 'filter',
+          message: 'filter',
+        },
+        currentUser,
+      );
     }
 
     if (filters.memberId) {
-      await this.resolveRecipientScope({ ...filters, templateName: 'filter', channel: 'filter', recipient: 'filter', message: 'filter' }, currentUser);
+      await this.resolveRecipientScope(
+        {
+          ...filters,
+          templateName: 'filter',
+          channel: 'filter',
+          recipient: 'filter',
+          message: 'filter',
+        },
+        currentUser,
+      );
     }
 
-    const query = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+    const query = Object.fromEntries(
+      Object.entries(filters).filter(([, value]) => value),
+    );
     const records = await this.communicationModel
       .find(query)
       .populate({
@@ -529,27 +571,41 @@ export class CommunicationsService {
       return records;
     }
 
-    const branchFilter = await this.accessScopeService.buildBranchFilter(currentUser);
+    const branchFilter =
+      await this.accessScopeService.buildBranchFilter(currentUser);
     const visibleGuestIds = new Set(
-      (await this.guestModel.find(branchFilter).distinct('_id')).map((value) => String(value)),
+      (await this.guestModel.find(branchFilter).distinct('_id')).map((value) =>
+        String(value),
+      ),
     );
     const visibleMemberIds = new Set(
-      (await this.memberModel.find(branchFilter).distinct('_id')).map((value) => String(value)),
+      (await this.memberModel.find(branchFilter).distinct('_id')).map((value) =>
+        String(value),
+      ),
     );
 
     return records.filter((record) => {
-      const guestId = record.guestId && typeof record.guestId === 'object' && '_id' in record.guestId
-        ? String(record.guestId._id)
-        : record.guestId
-          ? String(record.guestId)
-          : undefined;
-      const memberId = record.memberId && typeof record.memberId === 'object' && '_id' in record.memberId
-        ? String(record.memberId._id)
-        : record.memberId
-          ? String(record.memberId)
-          : undefined;
+      const guestId =
+        record.guestId &&
+        typeof record.guestId === 'object' &&
+        '_id' in record.guestId
+          ? String(record.guestId._id)
+          : record.guestId
+            ? String(record.guestId)
+            : undefined;
+      const memberId =
+        record.memberId &&
+        typeof record.memberId === 'object' &&
+        '_id' in record.memberId
+          ? String(record.memberId._id)
+          : record.memberId
+            ? String(record.memberId)
+            : undefined;
 
-      return (guestId && visibleGuestIds.has(guestId)) || (memberId && visibleMemberIds.has(memberId));
+      return (
+        (guestId && visibleGuestIds.has(guestId)) ||
+        (memberId && visibleMemberIds.has(memberId))
+      );
     });
   }
 }

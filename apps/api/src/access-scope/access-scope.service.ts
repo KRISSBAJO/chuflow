@@ -13,7 +13,8 @@ import {
 @Injectable()
 export class AccessScopeService {
   constructor(
-    @InjectModel(Branch.name) private readonly branchModel: Model<BranchDocument>,
+    @InjectModel(Branch.name)
+    private readonly branchModel: Model<BranchDocument>,
   ) {}
 
   private ensureScopeValue(value: string | undefined, label: string) {
@@ -24,7 +25,8 @@ export class AccessScopeService {
     return value;
   }
 
-  private buildBranchReferenceValues(branchIds: string[]) {
+  /** Both the string and ObjectId form of each id, so filters also work inside aggregations (no casting). */
+  buildBranchReferenceValues(branchIds: string[]) {
     const values = new Map<string, string | Types.ObjectId>();
 
     for (const branchId of branchIds) {
@@ -98,7 +100,9 @@ export class AccessScopeService {
     };
   }
 
-  async getAccessibleBranchIds(currentUser: AuthUser): Promise<string[] | null> {
+  async getAccessibleBranchIds(
+    currentUser: AuthUser,
+  ): Promise<string[] | null> {
     if (isGlobalRole(currentUser.role)) {
       return null;
     }

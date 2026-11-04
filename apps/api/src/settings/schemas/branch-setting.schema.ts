@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type BranchSettingDocument = HydratedDocument<BranchSetting>;
 
 @Schema({ timestamps: true })
 export class BranchSetting {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true, unique: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'Branch',
+    required: true,
+    unique: true,
+  })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true, default: 'America/Chicago' })
@@ -22,7 +27,12 @@ export class BranchSetting {
 
   @Prop({
     type: [String],
-    default: ['branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up'],
+    default: [
+      'branch_admin',
+      'resident_pastor',
+      'associate_pastor',
+      'follow_up',
+    ],
   })
   attendanceApprovalRoles!: string[];
 

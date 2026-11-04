@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { Button } from "@/components/ui/ui";
 
 export function TemplateQrCard({
   url,
@@ -20,7 +21,7 @@ export function TemplateQrCard({
       margin: 1,
       width: 200,
       color: {
-        dark: "#0f172a",
+        dark: "#111111",
         light: "#ffffff",
       },
     })
@@ -51,31 +52,31 @@ export function TemplateQrCard({
   }
 
   return (
-    <section className="rounded-[20px] border border-slate-200 bg-white p-4">
+    <section className="rounded-2xl border border-black/[0.06] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          <p className="mt-1 break-all text-xs text-slate-500">{url}</p>
+        <div className="min-w-0">
+          <p className="text-[14px] font-medium text-[#111111]">{title}</p>
+          <p className="mt-0.5 break-all text-[12px] leading-[1.5] text-[#8a8780]">{url}</p>
         </div>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700"
-        >
+        <Button size="sm" variant="secondary" onClick={handleCopy}>
           {copied ? "Copied" : "Copy link"}
-        </button>
+        </Button>
       </div>
       <div className="mt-4 flex items-center gap-4">
         {qrDataUrl ? (
-          <img src={qrDataUrl} alt={`QR code for ${title}`} className="h-28 w-28 rounded-xl border border-slate-200 bg-white p-2" />
+          <img
+            src={qrDataUrl}
+            alt={`QR code for ${title}`}
+            className="h-28 w-28 shrink-0 rounded-xl border border-black/[0.06] bg-white p-2"
+          />
         ) : (
-          <div className="flex h-28 w-28 items-center justify-center rounded-xl border border-dashed border-slate-300 text-xs text-slate-400">
-            QR loading
+          <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[12px] text-[#8a8780]">
+            Loading QR
           </div>
         )}
-        <div className="space-y-2 text-sm text-slate-600">
-          <p>Scan this QR code to open the public form instantly.</p>
-          <p>Perfect for a screen slide, standee, or printed intake desk card.</p>
+        <div className="space-y-1.5 text-[13px] leading-[1.6] text-[#6b6b6b]">
+          <p>Scan this code to open the public form instantly.</p>
+          <p>Great for a screen slide, standee or printed welcome desk card.</p>
         </div>
       </div>
     </section>

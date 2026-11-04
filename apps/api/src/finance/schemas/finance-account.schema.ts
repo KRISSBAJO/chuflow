@@ -24,4 +24,5 @@ export class FinanceAccount {
   sortOrder!: number;
 }
 
-export const FinanceAccountSchema = SchemaFactory.createForClass(FinanceAccount);
+export const FinanceAccountSchema =
+  SchemaFactory.createForClass(FinanceAccount);

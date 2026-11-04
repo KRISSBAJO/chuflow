@@ -1,10 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { CreateServiceScheduleDto, UpdateServiceScheduleDto } from './dto/create-service-schedule.dto';
+import {
+  CreateServiceScheduleDto,
+  UpdateServiceScheduleDto,
+} from './dto/create-service-schedule.dto';
 import { ServiceSchedulesService } from './service-schedules.service';
 
 @ApiTags('Service schedules')
@@ -12,7 +24,9 @@ import { ServiceSchedulesService } from './service-schedules.service';
 @UseGuards(JwtAuthGuard)
 @Controller('service-schedules')
 export class ServiceSchedulesController {
-  constructor(private readonly serviceSchedulesService: ServiceSchedulesService) {}
+  constructor(
+    private readonly serviceSchedulesService: ServiceSchedulesService,
+  ) {}
 
   @Get()
   @Roles(

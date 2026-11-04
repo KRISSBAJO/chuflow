@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -20,7 +24,9 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByEmailWithPassword(loginDto.email);
+    const user = await this.usersService.findByEmailWithPassword(
+      loginDto.email,
+    );
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -60,7 +66,8 @@ export class AuthService {
         district: user.district,
         branchId: user.branchId,
       },
-      cookieName: this.configService.get<string>('cookieName') ?? 'cms_access_token',
+      cookieName:
+        this.configService.get<string>('cookieName') ?? 'cms_access_token',
     };
   }
 
@@ -70,17 +77,24 @@ export class AuthService {
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
     if (dto.currentPassword === dto.newPassword) {
-      throw new BadRequestException('New password must be different from current password');
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
     }
 
     const user = await this.usersService.findById(userId);
-    const userWithPassword = await this.usersService.findByEmailWithPassword(user.email);
+    const userWithPassword = await this.usersService.findByEmailWithPassword(
+      user.email,
+    );
 
     if (!userWithPassword) {
       throw new UnauthorizedException('User not found');
     }
 
-    const isValid = await bcrypt.compare(dto.currentPassword, userWithPassword.password);
+    const isValid = await bcrypt.compare(
+      dto.currentPassword,
+      userWithPassword.password,
+    );
     if (!isValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
@@ -97,7 +111,8 @@ export class AuthService {
 
     if (!user) {
       return {
-        message: 'If an account exists for that email, password reset instructions have been prepared.',
+        message:
+          'If an account exists for that email, password reset instructions have been prepared.',
       };
     }
 
@@ -105,9 +120,14 @@ export class AuthService {
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
 
-    await this.usersService.setPasswordResetToken(user.id, tokenHash, expiresAt);
+    await this.usersService.setPasswordResetToken(
+      user.id,
+      tokenHash,
+      expiresAt,
+    );
 
-    const webUrl = this.configService.get<string>('webUrl') ?? 'http://localhost:3001';
+    const webUrl =
+      this.configService.get<string>('webUrl') ?? 'http://localhost:3001';
     const resetUrl = `${webUrl}/reset-password?token=${rawToken}`;
     const mailResult = await this.mailService.sendPasswordResetEmail(
       user.email,

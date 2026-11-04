@@ -2,11 +2,13 @@ import { AttendanceManagementTable } from "@/components/attendance-management-ta
 import { AttendanceSubmissionQueue } from "@/components/attendance-submission-queue";
 import { AttendanceSummaryModalButton } from "@/components/attendance-summary-modal-button";
 import { AttendanceSummaryTable } from "@/components/attendance-summary-table";
+import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { ShareLinkCard } from "@/components/share-link-card";
 import { ServiceScheduleManagementModalButton } from "@/components/service-schedule-management-modal-button";
 import { ServiceTypeManagementModalButton } from "@/components/service-type-management-modal-button";
 import { Shell } from "@/components/shell";
+import { Badge, Card, CardHeader, Stat } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import { canManageServiceSchedules } from "@/lib/permissions";
@@ -97,8 +99,8 @@ export default async function AttendancePage({
     <Shell>
       <PageHeader
         eyebrow="Attendance"
-        title="Attendance totals, service types, and clean service records"
-        description="Track total men, women, children, adults, first timers, and new converts with managed service types instead of loose text values."
+        title="Attendance and services"
+        description="Track men, women, children, adults, first timers and new converts against managed service types and schedules."
         action={
           <div className="flex flex-wrap gap-2">
             {canDirectEditAttendance ? (
@@ -129,156 +131,103 @@ export default async function AttendancePage({
           </div>
         }
       />
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <div className="surface rounded-[28px] p-5">
-          <p className="eyebrow">Adults</p>
-          <p className="mt-5 text-3xl font-bold text-slate-950">{totalAdults}</p>
-          <p className="mt-2 max-w-[18ch] text-sm leading-6 text-slate-500">
-            Adults recorded in service summaries.
-          </p>
-        </div>
-        <div className="surface rounded-[28px] p-5">
-          <p className="eyebrow">Children</p>
-          <p className="mt-5 text-3xl font-bold text-slate-950">{totalChildren}</p>
-          <p className="mt-2 max-w-[18ch] text-sm leading-6 text-slate-500">
-            Children recorded across services.
-          </p>
-        </div>
-        <div className="surface rounded-[28px] p-5">
-          <p className="eyebrow">First timers</p>
-          <p className="mt-5 text-3xl font-bold text-slate-950">{totalFirstTimers}</p>
-          <p className="mt-2 max-w-[18ch] text-sm leading-6 text-slate-500">
-            First-timer count captured in summaries.
-          </p>
-        </div>
-        <div className="surface rounded-[28px] p-5">
-          <p className="eyebrow">New converts</p>
-          <p className="mt-5 text-3xl font-bold text-slate-950">{totalNewConverts}</p>
-          <p className="mt-2 max-w-[18ch] text-sm leading-6 text-slate-500">
-            New-convert count across recorded services.
-          </p>
-        </div>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Adults" value={totalAdults} delta="Recorded in service summaries" tone="warm" />
+        <MetricCard label="Children" value={totalChildren} delta="Recorded across services" tone="cool" />
+        <MetricCard label="First timers" value={totalFirstTimers} delta="Captured in service summaries" tone="warm" />
+        <MetricCard label="New converts" value={totalNewConverts} delta="Across recorded services" tone="cool" />
       </section>
-      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-        <div className="min-w-0 xl:col-span-3">
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            <div className="surface flex min-h-[176px] flex-col justify-between rounded-[28px] p-5">
-              <div>
-              <p className="eyebrow">Summary submissions</p>
-              <p className="mt-5 text-3xl font-bold text-slate-950">{summaryRecords.length}</p>
-              </div>
-              <p className="max-w-[20ch] text-sm leading-6 text-slate-500">
-                Service totals entered from admin or public attendance flow.
-              </p>
-            </div>
-            <div className="surface flex min-h-[176px] flex-col justify-between rounded-[28px] p-5">
-              <div>
-                <p className="eyebrow">Busiest summary</p>
-                <p className="mt-5 text-2xl font-bold leading-tight text-slate-950">
-                {busiestSummary?.serviceName ||
-                  busiestSummary?.serviceTypeLabel ||
-                  busiestSummary?.serviceType ||
-                  "No data"}
-                </p>
-              </div>
-              <p className="max-w-[20ch] text-sm leading-6 text-slate-500">
-                {busiestSummary
+
+      <section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+        <Card className="app-rise min-w-0 p-6 sm:p-7">
+          <CardHeader label="Overview" title="Submissions at a glance" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <Stat
+              label="Summary submissions"
+              value={summaryRecords.length}
+              hint="Service totals from admin or public attendance forms"
+            />
+            <Stat
+              label="Busiest service"
+              value={
+                <span className="block truncate text-[18px] leading-tight">
+                  {busiestSummary?.serviceName ||
+                    busiestSummary?.serviceTypeLabel ||
+                    busiestSummary?.serviceType ||
+                    "No data"}
+                </span>
+              }
+              hint={
+                busiestSummary
                   ? `${(busiestSummary.adultsCount ?? 0) + (busiestSummary.childrenCount ?? 0)} people recorded`
-                  : "Attendance data will appear here"}
-              </p>
-            </div>
-            <div className="surface flex min-h-[176px] flex-col justify-between rounded-[28px] p-5">
-              <div>
-              <p className="eyebrow">Individual check-ins</p>
-              <p className="mt-5 text-3xl font-bold text-slate-950">{individualRecords.length}</p>
-              </div>
-              <p className="max-w-[20ch] text-sm leading-6 text-slate-500">
-                Older guest and member records still available for cleanup.
-              </p>
-            </div>
-            <div className="surface flex min-h-[176px] flex-col justify-between rounded-[28px] p-5">
-              <div>
-                <p className="eyebrow">Pending approvals</p>
-                <p className="mt-5 text-3xl font-bold text-slate-950">
-                  {attendanceSubmissions.summary.pending}
-                </p>
-              </div>
-              <p className="max-w-[20ch] text-sm leading-6 text-slate-500">
-                Public attendance entries waiting for branch approval.
-              </p>
-            </div>
-          </section>
-        </div>
-        <div className="min-w-0">
-          <div className="space-y-4">
-            {attendanceShareUrl ? (
-              <ShareLinkCard
-                title="Share attendance entry"
-                url={attendanceShareUrl}
-                description="Send this branch-specific form to ushers or service staff so they can submit totals for approval."
-              />
-            ) : null}
-            <section className="surface rounded-[28px] p-5">
-              <p className="eyebrow">Legacy Records</p>
-              <h2 className="mt-3 text-lg font-semibold leading-8 text-slate-950">
-                Old individual attendance still visible
-              </h2>
-              <p className="mt-3 text-sm leading-6 text-slate-500">
-                Older guest and member attendance records are still preserved for
-                correction.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3 text-sm">
-                <span className="rounded-full bg-orange-50 px-3 py-2 font-semibold text-orange-700">
-                  {guestTotal} guest check-ins
-                </span>
-                <span className="rounded-full bg-sky-50 px-3 py-2 font-semibold text-sky-700">
-                  {memberTotal} member check-ins
-                </span>
-              </div>
-            </section>
+                  : "Attendance data will appear here"
+              }
+            />
+            <Stat
+              label="Individual check-ins"
+              value={individualRecords.length}
+              hint="Older guest and member records available for cleanup"
+            />
+            <Stat
+              label="Pending approvals"
+              value={attendanceSubmissions.summary.pending}
+              hint="Public attendance entries waiting for branch approval"
+            />
           </div>
+        </Card>
+
+        <div className="flex min-w-0 flex-col gap-4">
+          {attendanceShareUrl ? (
+            <ShareLinkCard
+              title="Share attendance entry"
+              url={attendanceShareUrl}
+              description="Send this branch form to ushers or service staff so they can submit totals for approval."
+            />
+          ) : null}
+          <Card className="app-rise p-6" style={{ animationDelay: "60ms" }}>
+            <CardHeader
+              label="Older records"
+              title="Individual attendance"
+              description="Older guest and member check-ins are kept so they can still be corrected."
+            />
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Badge tone="flame">{guestTotal} guest check-ins</Badge>
+              <Badge tone="info">{memberTotal} member check-ins</Badge>
+            </div>
+          </Card>
         </div>
       </section>
-      <section className="surface min-w-0 overflow-hidden rounded-[24px] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-5">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Attendance approval queue</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Review public attendance entries before they become approved service summaries.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-amber-50 px-3 py-2 text-amber-700">
-              {attendanceSubmissions.summary.pending} pending
-            </span>
-            <span className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">
-              {attendanceSubmissions.summary.approved} approved
-            </span>
-            <span className="rounded-full bg-rose-50 px-3 py-2 text-rose-700">
-              {attendanceSubmissions.summary.rejected} rejected
-            </span>
-          </div>
-        </div>
-        <div className="mt-4">
+
+      <Card className="app-rise min-w-0 p-6 sm:p-7">
+        <CardHeader
+          label="Approvals"
+          title="Attendance approval queue"
+          description="Review public attendance entries before they become approved service summaries."
+          action={
+            <>
+              <Badge tone="warning">{attendanceSubmissions.summary.pending} pending</Badge>
+              <Badge tone="success">{attendanceSubmissions.summary.approved} approved</Badge>
+              <Badge tone="danger">{attendanceSubmissions.summary.rejected} rejected</Badge>
+            </>
+          }
+        />
+        <div className="mt-6">
           <AttendanceSubmissionQueue
             items={attendanceSubmissions.items}
             canApprove={canApproveAttendance}
           />
         </div>
-      </section>
-      <section className="surface min-w-0 overflow-hidden rounded-[24px] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-5">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Service summary submissions</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Use filters, pagination, and inline editing to keep summary attendance clean as volume grows.
-            </p>
-          </div>
-          <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {summaryRecords.length} summaries
-          </div>
-        </div>
-        <div className="mt-4">
+      </Card>
+
+      <Card className="app-rise min-w-0 p-6 sm:p-7">
+        <CardHeader
+          label="Service summaries"
+          title="Service summary submissions"
+          description="Filter, page through and edit summary attendance as volume grows."
+          action={<Badge>{summaryRecords.length} summaries</Badge>}
+        />
+        <div className="mt-6">
           <AttendanceSummaryTable
             records={summaryRecords}
             branches={branches}
@@ -288,15 +237,16 @@ export default async function AttendancePage({
             canEdit={canDirectEditAttendance}
           />
         </div>
-      </section>
-      <section className="surface min-w-0 overflow-hidden rounded-[24px] p-5">
-        <div className="border-b border-slate-200 px-6 py-5">
-          <h2 className="text-lg font-semibold text-slate-950">Individual attendance cleanup</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Use this only for older guest/member attendance records that still need correction.
-          </p>
-        </div>
-        <div className="mt-4">
+      </Card>
+
+      <Card className="app-rise min-w-0 p-6 sm:p-7">
+        <CardHeader
+          label="Cleanup"
+          title="Individual attendance cleanup"
+          description="Only for older guest and member attendance records that still need correction."
+          action={<Badge>{individualRecords.length} records</Badge>}
+        />
+        <div className="mt-6">
           <AttendanceManagementTable
             records={individualRecords}
             guests={guests}
@@ -305,7 +255,7 @@ export default async function AttendancePage({
             canEdit={canDirectEditAttendance}
           />
         </div>
-      </section>
+      </Card>
     </Shell>
   );
 }

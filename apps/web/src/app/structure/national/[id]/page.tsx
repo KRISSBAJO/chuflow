@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { TeamPills } from "@/components/structure-cards";
 import { UserCreateForm } from "@/components/user-create-form";
+import { Icon } from "@/components/app/icons";
+import { Badge, ButtonLink, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   formatRoleLabel,
@@ -69,29 +71,34 @@ export default async function NationalStructureDetailPage({
 
   return (
     <Shell>
-      <PageHeader
-        eyebrow="National Detail"
-        title={region.name}
-        description="Inspect the full national area, drill into districts underneath it, and manage the national record without losing sight of the branches and leaders under its care."
-        action={
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/structure"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
-            >
-              Back to structure
-            </Link>
-            <Link
-              href={`/users?oversightRegion=${encodeURIComponent(region.name)}`}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Open national staff
-            </Link>
-          </div>
-        }
-      />
+      <div className="space-y-3">
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#8a8780]">
+          <Link href="/structure" className="rounded-md px-1 py-0.5 font-medium text-[#6b6b6b] transition-colors hover:bg-white hover:text-[#111111]">
+            Structure
+          </Link>
+          <span aria-hidden>/</span>
+          <span aria-current="page" className="px-1 font-medium text-[#111111]">
+            {region.name}
+          </span>
+        </nav>
+        <PageHeader
+          eyebrow="National area"
+          title={region.name}
+          description="See the whole national area, drill into its districts and manage the national record without losing sight of the branches and leaders in its care."
+          action={
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href="/structure" variant="secondary">
+                Back to structure
+              </ButtonLink>
+              <ButtonLink href={`/users?oversightRegion=${encodeURIComponent(region.name)}`} icon="users">
+                Open national staff
+              </ButtonLink>
+            </div>
+          }
+        />
+      </div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Districts"
           value={regionStructure.districts.length}
@@ -105,7 +112,7 @@ export default async function NationalStructureDetailPage({
           tone="cool"
         />
         <MetricCard
-          label="Guests + Members"
+          label="Guests and members"
           value={regionStructure.guestCount + regionStructure.memberCount}
           delta={`${regionStructure.guestCount} guests · ${regionStructure.memberCount} members`}
           tone="warm"
@@ -118,12 +125,12 @@ export default async function NationalStructureDetailPage({
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <div className="space-y-4">
           <OversightRegionEditorCard region={region} canEdit={canEdit} />
 
           {canCreateNationalLeadership ? (
-            <section className="surface rounded-[28px] p-1.5">
+            <Card className="app-rise p-1.5" style={{ animationDelay: "60ms" }}>
               <UserCreateForm
                 branches={[]}
                 currentUserRole={user.role}
@@ -132,19 +139,17 @@ export default async function NationalStructureDetailPage({
                 districts={districtOptions}
                 allowedRoles={["national_admin", "national_pastor"]}
                 title="Add national leadership"
-                description="Create national admins and national pastors directly inside this national area so they inherit the correct scope immediately."
+                description="Create national admins and national pastors inside this national area so they get the right scope straight away."
                 submitLabel="Add national leader"
               />
-            </section>
+            </Card>
           ) : null}
 
-          <section className="surface rounded-[28px] p-6">
-            <p className="eyebrow">National Leadership</p>
-            <div className="mt-4 grid gap-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-500">
-                  National Admins
-                </p>
+          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
+            <CardHeader label="National leadership" title="Who leads this area" />
+            <div className="mt-5 grid gap-4">
+              <div className="rounded-2xl bg-[#f6f5f1] p-4">
+                <p className="text-[12px] font-medium text-[#6b6b6b]">National admins</p>
                 <div className="mt-3">
                   <TeamPills
                     users={regionStructure.nationalAdmins}
@@ -152,10 +157,8 @@ export default async function NationalStructureDetailPage({
                   />
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-600">
-                  National Pastors
-                </p>
+              <div className="rounded-2xl bg-[#f6f5f1] p-4">
+                <p className="text-[12px] font-medium text-[#6b6b6b]">National pastors</p>
                 <div className="mt-3">
                   <TeamPills
                     users={regionStructure.nationalPastors}
@@ -164,50 +167,56 @@ export default async function NationalStructureDetailPage({
                 </div>
               </div>
             </div>
-          </section>
+          </Card>
         </div>
 
-        <section className="surface rounded-[28px] p-6">
-          <p className="eyebrow">District Drill-Down</p>
-          <div className="mt-4 space-y-4">
+        <Card className="app-rise self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+          <CardHeader
+            label="District drill-down"
+            title="Districts in this area"
+            description="Open a district to see its branches and teams."
+            action={
+              <Badge>
+                <span className="tabular-nums">{regionStructure.districts.length}</span> districts
+              </Badge>
+            }
+          />
+          <div className="mt-6 space-y-4">
             {regionStructure.districts.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+              <EmptyState icon="pin" title="No districts yet">
                 No districts have been attached to this national area yet.
-              </div>
+              </EmptyState>
             ) : (
               regionStructure.districts.map((district) => (
                 <article
                   key={`${region.name}-${district.name}`}
-                  className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+                  className="rounded-2xl border border-black/[0.06] p-5 transition-colors hover:border-black/[0.12]"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        District
-                      </p>
-                      <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                        {district.name}
-                      </h2>
-                      <p className="mt-2 text-sm text-slate-500">
-                        {district.branchCount} branches · {district.guestCount} guests ·{" "}
-                        {district.memberCount} members
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[#111111]">
+                        <Icon name="pin" className="h-[18px] w-[18px]" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[12px] text-[#8a8780]">District</p>
+                        <h3 className="lp-heading text-[18px]">{district.name}</h3>
+                        <p className="mt-1 text-[13px] text-[#6b6b6b]">
+                          <span className="tabular-nums">{district.branchCount}</span> branches ·{" "}
+                          <span className="tabular-nums">{district.guestCount}</span> guests ·{" "}
+                          <span className="tabular-nums">{district.memberCount}</span> members
+                        </p>
+                      </div>
                     </div>
                     {districtIdByName.get(district.name) ? (
-                      <Link
-                        href={`/structure/district/${districtIdByName.get(district.name)}`}
-                        className="rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
-                      >
+                      <ButtonLink href={`/structure/district/${districtIdByName.get(district.name)}`} size="sm">
                         Open district
-                      </Link>
+                      </ButtonLink>
                     ) : null}
                   </div>
 
                   <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        District Admins
-                      </p>
+                    <div className="rounded-2xl bg-[#f6f5f1] p-4">
+                      <p className="text-[12px] font-medium text-[#6b6b6b]">District admins</p>
                       <div className="mt-3">
                         <TeamPills
                           users={district.districtAdmins}
@@ -215,10 +224,8 @@ export default async function NationalStructureDetailPage({
                         />
                       </div>
                     </div>
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        District Pastors
-                      </p>
+                    <div className="rounded-2xl bg-[#f6f5f1] p-4">
+                      <p className="text-[12px] font-medium text-[#6b6b6b]">District pastors</p>
                       <div className="mt-3">
                         <TeamPills
                           users={district.districtPastors}
@@ -229,24 +236,27 @@ export default async function NationalStructureDetailPage({
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Link
+                    <ButtonLink
                       href={`/structure?oversightRegion=${encodeURIComponent(region.name)}&district=${encodeURIComponent(district.name)}`}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
+                      variant="secondary"
+                      size="sm"
                     >
                       Focus in overview
-                    </Link>
-                    <Link
+                    </ButtonLink>
+                    <ButtonLink
                       href={`/users?oversightRegion=${encodeURIComponent(region.name)}&district=${encodeURIComponent(district.name)}`}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
+                      variant="ghost"
+                      size="sm"
+                      icon="users"
                     >
                       Open district staff
-                    </Link>
+                    </ButtonLink>
                   </div>
                 </article>
               ))
             )}
           </div>
-        </section>
+        </Card>
       </section>
     </Shell>
   );

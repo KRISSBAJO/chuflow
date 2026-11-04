@@ -1,11 +1,23 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { AttendanceService } from './attendance.service';
-import { CreateAttendanceDto, UpdateAttendanceDto } from './dto/create-attendance.dto';
+import {
+  CreateAttendanceDto,
+  UpdateAttendanceDto,
+} from './dto/create-attendance.dto';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
@@ -78,7 +90,11 @@ export class AttendanceController {
     'usher',
   )
   @Patch(':id')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateAttendanceDto) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateAttendanceDto,
+  ) {
     return this.attendanceService.update(id, dto, user);
   }
 

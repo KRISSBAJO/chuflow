@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { VisitsService } from './visits.service';
 import { CreateVisitDto } from './dto/create-visit.dto';
@@ -10,7 +18,18 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 @ApiTags('Visits')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher')
+@Roles(
+  'super_admin',
+  'national_admin',
+  'national_pastor',
+  'district_admin',
+  'district_pastor',
+  'branch_admin',
+  'resident_pastor',
+  'associate_pastor',
+  'follow_up',
+  'usher',
+)
 @Controller('visits')
 export class VisitsController {
   constructor(private readonly visitsService: VisitsService) {}
@@ -21,7 +40,11 @@ export class VisitsController {
   }
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query('branchId') branchId?: string, @Query('guestId') guestId?: string) {
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query('branchId') branchId?: string,
+    @Query('guestId') guestId?: string,
+  ) {
     return this.visitsService.findAll(user, branchId, guestId);
   }
 

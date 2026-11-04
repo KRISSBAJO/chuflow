@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
-import { Attendance, AttendanceSchema } from '../attendance/schemas/attendance.schema';
+import {
+  Attendance,
+  AttendanceSchema,
+} from '../attendance/schemas/attendance.schema';
 import { Branch, BranchSchema } from '../branches/schemas/branch.schema';
-import { ExpenseEntry, ExpenseEntrySchema } from '../finance/schemas/expense-entry.schema';
-import { FollowUp, FollowUpSchema } from '../follow-ups/schemas/follow-up.schema';
+import {
+  ExpenseEntry,
+  ExpenseEntrySchema,
+} from '../finance/schemas/expense-entry.schema';
+import {
+  FollowUp,
+  FollowUpSchema,
+} from '../follow-ups/schemas/follow-up.schema';
 import { Guest, GuestSchema } from '../guests/schemas/guest.schema';
 import {
   IntakeSubmission,

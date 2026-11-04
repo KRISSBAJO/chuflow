@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type OfferingEntryDocument = HydratedDocument<OfferingEntry>;
 
 @Schema({ timestamps: true })
 export class OfferingEntry {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'Branch',
+    required: true,
+    index: true,
+  })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -17,16 +22,16 @@ export class OfferingEntry {
   @Prop({ required: true })
   serviceDate!: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceSchedule' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceSchedule' })
   serviceScheduleId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceInstance' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceInstance' })
   serviceInstanceId?: Types.ObjectId;
 
   @Prop()
   serviceLabel?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceType', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceType', required: true })
   serviceTypeId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -35,7 +40,12 @@ export class OfferingEntry {
   @Prop({ required: true })
   serviceTypeLabel!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'OfferingType', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'OfferingType',
+    required: true,
+    index: true,
+  })
   offeringTypeId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -44,7 +54,7 @@ export class OfferingEntry {
   @Prop({ required: true })
   offeringTypeLabel!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'FinanceAccount' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'FinanceAccount' })
   accountId?: Types.ObjectId;
 
   @Prop()
@@ -62,10 +72,10 @@ export class OfferingEntry {
   @Prop()
   notes?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
   createdBy!: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   updatedBy?: Types.ObjectId;
 }
 

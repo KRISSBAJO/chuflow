@@ -28,4 +28,6 @@ export class CreateFinanceAccountDto {
   sortOrder?: number;
 }
 
-export class UpdateFinanceAccountDto extends PartialType(CreateFinanceAccountDto) {}
+export class UpdateFinanceAccountDto extends PartialType(
+  CreateFinanceAccountDto,
+) {}

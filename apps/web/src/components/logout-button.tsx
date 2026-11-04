@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
 
-export function LogoutButton({ compact = false }: { compact?: boolean }) {
+export function LogoutButton({ compact = false, icon = false }: { compact?: boolean; icon?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
@@ -17,6 +17,23 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
     } finally {
       window.location.href = "/login";
     }
+  }
+
+  if (icon) {
+    return (
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loading}
+        aria-label="Sign out"
+        title="Sign out"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#8a8780] transition-colors hover:bg-white hover:text-[var(--lp-ink)] disabled:opacity-50"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="h-[18px] w-[18px]" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17l5-5-5-5M20 12H9M12 21H5a2 2 0 01-2-2V5a2 2 0 012-2h7" />
+        </svg>
+      </button>
+    );
   }
 
   return (

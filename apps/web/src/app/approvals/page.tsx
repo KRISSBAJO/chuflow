@@ -5,6 +5,7 @@ import { ExpenseEntriesTable } from "@/components/expense-entries-table";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Badge, Button, Card, CardHeader, EmptyState, Pagination, TabLinks } from "@/components/ui/ui";
 import { WorkspaceRequestReviewList } from "@/components/workspace-request-review-list";
 import { requireServerRole } from "@/lib/auth";
 import { canApproveExpenseEntries } from "@/lib/permissions";
@@ -190,6 +191,11 @@ export default async function ApprovalsPage({
     },
   ].filter((tab) => tab.visible);
 
+  const pagerHrefs = (tab: string, key: string, page: number, totalPages: number) => ({
+    prevHref: buildApprovalsHref(params, { tab, [key]: String(Math.max(page - 1, 1)) }),
+    nextHref: buildApprovalsHref(params, { tab, [key]: String(Math.min(page + 1, totalPages)) }),
+  });
+
   return (
     <Shell>
       <PageHeader
@@ -198,407 +204,211 @@ export default async function ApprovalsPage({
         description="Review attendance, finance, onboarding, and operational oversight in one place."
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Pending approvals"
           value={alertsSummary.quickStats.pendingApprovals}
-          delta="Combined attendance, finance, and onboarding load"
+          delta="Attendance, finance and onboarding combined"
           tone="warm"
         />
         <MetricCard
           label="Expense approvals"
           value={alertsSummary.counts.pendingExpenseApprovals}
-          delta="Submitted finance requests awaiting approval"
+          delta="Finance requests awaiting approval"
           tone="warm"
         />
         <MetricCard
           label="Overdue follow-up"
           value={alertsSummary.counts.overdueFollowUp}
-          delta="Tasks that have passed their next-action date"
+          delta="Past their next-action date"
           tone="cool"
         />
         <MetricCard
           label="Leadership gaps"
           value={alertsSummary.counts.branchesMissingLeadership}
-          delta="Branches still missing pastoral coverage"
+          delta="Branches missing pastoral coverage"
           tone="warm"
         />
       </section>
 
-      <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="eyebrow">Review streams</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-              Review work by approval stream
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Attendance, finance, workspace onboarding, and governance are organized here for review.
-            </p>
+      <TabLinks
+        className="self-start"
+        items={tabs.map((tab) => ({
+          href: buildApprovalsHref(params, { tab: tab.key, page: undefined }),
+          label: tab.label,
+          count: tab.count,
+          active: activeTab === tab.key,
+        }))}
+      />
+
+      {activeTab === "attendance" ? (
+        <Card className="app-rise p-6 sm:p-7">
+          <CardHeader
+            label="Attendance review"
+            title="Pending attendance submissions"
+            description="Service reports waiting for a leader to approve."
+            action={
+              <Badge tone={attendanceSubmissions.summary.pending ? "warning" : "neutral"}>
+                {attendanceSubmissions.summary.pending} pending
+              </Badge>
+            }
+          />
+          <div className="mt-6">
+            <AttendanceSubmissionQueue items={attendanceSubmissions.items} canApprove={canApproveAttendance(user.role)} />
           </div>
+        </Card>
+      ) : null}
 
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((tab) => (
-              <Link
-                key={tab.key}
-                href={buildApprovalsHref(params, { tab: tab.key, page: undefined })}
-                className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                  activeTab === tab.key
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs ${
-                    activeTab === tab.key
-                      ? "bg-white/15 text-white"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </Link>
-            ))}
+      {activeTab === "finance" && canApproveExpenses ? (
+        <Card className="app-rise p-6 sm:p-7">
+          <CardHeader
+            label="Finance approvals"
+            title="Submitted expense requests"
+            description="Expenses waiting for approval before they post to the ledger."
+            action={
+              <Badge tone={pendingExpenses.summary.pendingCount ? "warning" : "neutral"}>
+                {pendingExpenses.summary.pendingCount} pending
+              </Badge>
+            }
+          />
+          <div className="mt-6">
+            <ExpenseEntriesTable
+              entries={pendingExpenses.items}
+              accounts={accounts}
+              expenseCategories={expenseCategories}
+              serviceSchedules={serviceSchedules}
+              canApprove
+            />
           </div>
-        </div>
+          <div className="mt-5">
+            <Pagination
+              page={pendingExpenses.pagination.page}
+              totalPages={pendingExpenses.pagination.totalPages}
+              {...pagerHrefs("finance", "expensePage", pendingExpenses.pagination.page, pendingExpenses.pagination.totalPages)}
+            />
+          </div>
+        </Card>
+      ) : null}
 
-        <div className="mt-5">
-          {activeTab === "attendance" ? (
-            <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="eyebrow">Attendance review</p>
-                  <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                    Pending attendance submissions
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Attendance submissions waiting for review.
-                  </p>
-                </div>
-                <div className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {attendanceSubmissions.summary.pending} pending
-                </div>
-              </div>
+      {activeTab === "workspace" && isSuperAdmin && workspaceRequests ? (
+        <Card className="app-rise p-6 sm:p-7">
+          <CardHeader
+            label="Workspace onboarding"
+            title="Workspace requests"
+            description="Review new churches asking for a workspace and record your decision before provisioning."
+          />
 
-              <div className="mt-5">
-                <AttendanceSubmissionQueue
-                  items={attendanceSubmissions.items}
-                  canApprove={canApproveAttendance(user.role)}
-                />
-              </div>
-            </section>
-          ) : null}
+          <form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+            <input type="hidden" name="tab" value="workspace" />
+            <input type="hidden" name="auditSearch" defaultValue={auditSearch} />
+            <input type="hidden" name="auditEntityType" defaultValue={auditEntityType} />
+            <input
+              type="text"
+              name="workspaceSearch"
+              defaultValue={workspaceSearch}
+              placeholder="Search organization, contact or city"
+              aria-label="Search workspace requests"
+              className="ui-input"
+            />
+            <select name="workspaceStatus" defaultValue={workspaceStatus || ""} aria-label="Status" className="ui-input">
+              <option value="">All statuses</option>
+              <option value="new">New</option>
+              <option value="in_review">In review</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="provisioned">Provisioned</option>
+            </select>
+            <Button type="submit" variant="secondary" icon="search">
+              Filter
+            </Button>
+          </form>
 
-          {activeTab === "finance" && canApproveExpenses ? (
-            <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="eyebrow">Finance approvals</p>
-                  <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                    Submitted expense requests
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Expense requests awaiting approval before posting to the ledger.
-                  </p>
-                </div>
-                <div className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {pendingExpenses.summary.pendingCount} pending
-                </div>
-              </div>
+          <div className="mt-6">
+            <WorkspaceRequestReviewList items={workspaceRequests.items} />
+          </div>
+          <div className="mt-5">
+            <Pagination
+              page={workspaceRequests.pagination.page}
+              totalPages={workspaceRequests.pagination.totalPages}
+              {...pagerHrefs("workspace", "workspacePage", workspaceRequests.pagination.page, workspaceRequests.pagination.totalPages)}
+            />
+          </div>
+        </Card>
+      ) : null}
 
-              <div className="mt-5">
-                <ExpenseEntriesTable
-                  entries={pendingExpenses.items}
-                  accounts={accounts}
-                  expenseCategories={expenseCategories}
-                  serviceSchedules={serviceSchedules}
-                  canApprove
-                />
-              </div>
-
-              <div className="mt-5 flex items-center justify-end gap-2 text-sm">
-                <Link
-                  href={buildApprovalsHref(params, {
-                    tab: "finance",
-                    expensePage: String(Math.max(pendingExpenses.pagination.page - 1, 1)),
-                  })}
-                  aria-disabled={pendingExpenses.pagination.page <= 1}
-                  className={`rounded-xl border px-4 py-2 ${
-                    pendingExpenses.pagination.page <= 1
-                      ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                      : "border-slate-200 bg-white text-slate-700"
-                  }`}
-                >
-                  Previous
-                </Link>
-                <span className="text-slate-500">
-                  Page {pendingExpenses.pagination.page} of {pendingExpenses.pagination.totalPages}
-                </span>
-                <Link
-                  href={buildApprovalsHref(params, {
-                    tab: "finance",
-                    expensePage: String(
-                      Math.min(
-                        pendingExpenses.pagination.page + 1,
-                        pendingExpenses.pagination.totalPages,
-                      ),
-                    ),
-                  })}
-                  aria-disabled={
-                    pendingExpenses.pagination.page >= pendingExpenses.pagination.totalPages
-                  }
-                  className={`rounded-xl border px-4 py-2 ${
-                    pendingExpenses.pagination.page >= pendingExpenses.pagination.totalPages
-                      ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                      : "border-slate-200 bg-white text-slate-700"
-                  }`}
-                >
-                  Next
-                </Link>
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "workspace" && isSuperAdmin && workspaceRequests ? (
-            <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="eyebrow">Workspace onboarding</p>
-                  <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                    Workspace request review
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Review workspace requests and record decisions before provisioning.
-                  </p>
-                </div>
-
-                <form method="get" className="grid gap-3 sm:grid-cols-[1.4fr_1fr_auto]">
-                  <input type="hidden" name="tab" value="workspace" />
-                  <input
-                    type="hidden"
-                    name="auditSearch"
-                    defaultValue={auditSearch}
-                  />
-                  <input
-                    type="hidden"
-                    name="auditEntityType"
-                    defaultValue={auditEntityType}
-                  />
-                  <input
-                    type="text"
-                    name="workspaceSearch"
-                    defaultValue={workspaceSearch}
-                    placeholder="Search organization, contact, or city"
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-                  />
-                  <select
-                    name="workspaceStatus"
-                    defaultValue={workspaceStatus || ""}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-                  >
-                    <option value="">All statuses</option>
-                    <option value="new">New</option>
-                    <option value="in_review">In review</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                    <option value="provisioned">Provisioned</option>
-                  </select>
-                  <button className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
-                    Filter
-                  </button>
-                </form>
-              </div>
-
-              <div className="mt-5">
-                <WorkspaceRequestReviewList items={workspaceRequests.items} />
-              </div>
-
-              <div className="mt-5 flex items-center justify-end gap-2 text-sm">
-                <Link
-                  href={buildApprovalsHref(params, {
-                    tab: "workspace",
-                    workspacePage: String(Math.max(workspaceRequests.pagination.page - 1, 1)),
-                  })}
-                  aria-disabled={workspaceRequests.pagination.page <= 1}
-                  className={`rounded-xl border px-4 py-2 ${
-                    workspaceRequests.pagination.page <= 1
-                      ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                      : "border-slate-200 bg-white text-slate-700"
-                  }`}
-                >
-                  Previous
-                </Link>
-                <span className="text-slate-500">
-                  Page {workspaceRequests.pagination.page} of {workspaceRequests.pagination.totalPages}
-                </span>
-                <Link
-                  href={buildApprovalsHref(params, {
-                    tab: "workspace",
-                    workspacePage: String(
-                      Math.min(
-                        workspaceRequests.pagination.page + 1,
-                        workspaceRequests.pagination.totalPages,
-                      ),
-                    ),
-                  })}
-                  aria-disabled={
-                    workspaceRequests.pagination.page >= workspaceRequests.pagination.totalPages
-                  }
-                  className={`rounded-xl border px-4 py-2 ${
-                    workspaceRequests.pagination.page >= workspaceRequests.pagination.totalPages
-                      ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                      : "border-slate-200 bg-white text-slate-700"
-                  }`}
-                >
-                  Next
-                </Link>
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "governance" ? (
-            <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-              <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-                <div className="flex flex-col gap-2">
-                  <p className="eyebrow">Live alerts</p>
-                  <h2 className="text-xl font-semibold text-slate-950">Operational watchlist</h2>
-                  <p className="text-sm text-slate-500">
-                    Active issues that need leadership attention.
-                  </p>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {alertsSummary.items.length > 0 ? (
-                    alertsSummary.items.map((item) => (
-                      <Link
-                        key={item.key}
-                        href={item.href}
-                        className="block rounded-[22px] border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-slate-300"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                            <p className="mt-1 text-sm text-slate-500">{item.description}</p>
-                          </div>
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${
-                              item.tone === "critical"
-                                ? "bg-rose-100 text-rose-800"
-                                : item.tone === "warm"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-sky-100 text-sky-800"
-                            }`}
-                          >
-                            {item.count}
-                          </span>
-                        </div>
+      {activeTab === "governance" ? (
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          <Card className="app-rise p-6 sm:p-7">
+            <CardHeader label="Live alerts" title="Operational watchlist" description="Active issues that need leadership attention." />
+            <div className="mt-6">
+              {alertsSummary.items.length > 0 ? (
+                <ul className="divide-y divide-black/[0.05]">
+                  {alertsSummary.items.map((item) => (
+                    <li key={item.key}>
+                      <Link href={item.href} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-[#f6f5f1]">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] font-medium text-[#111111]">{item.label}</span>
+                          <span className="block text-[13px] text-[#6b6b6b]">{item.description}</span>
+                        </span>
+                        <Badge tone={item.tone === "critical" ? "danger" : item.tone === "warm" ? "warning" : "info"}>
+                          {item.count}
+                        </Badge>
                       </Link>
-                    ))
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">
-                      No live operational alerts in the current scope.
-                    </div>
-                  )}
-                </div>
-              </section>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState icon="approvals" title="All clear">
+                  No live operational alerts in the current scope.
+                </EmptyState>
+              )}
+            </div>
+          </Card>
 
-              <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <p className="eyebrow">Audit trail</p>
-                    <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                      Recent governance activity
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Search recent changes by actor, summary, or entity.
-                    </p>
-                  </div>
+          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+            <CardHeader label="Audit trail" title="Recent governance activity" description="Search recent changes by person, summary or record type." />
 
-                  <form method="get" className="grid gap-3 sm:grid-cols-[1.25fr_1fr_auto]">
-                    <input type="hidden" name="tab" value="governance" />
-                    <input
-                      type="hidden"
-                      name="workspaceSearch"
-                      defaultValue={workspaceSearch}
-                    />
-                    <input
-                      type="hidden"
-                      name="workspaceStatus"
-                      defaultValue={workspaceStatus}
-                    />
-                    <input
-                      type="text"
-                      name="auditSearch"
-                      defaultValue={auditSearch}
-                      placeholder="Search actor or summary"
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-                    />
-                    <select
-                      name="auditEntityType"
-                      defaultValue={auditEntityType || ""}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-                    >
-                      <option value="">All entities</option>
-                      <option value="attendance">Attendance</option>
-                      <option value="attendance_submission">Attendance submission</option>
-                      <option value="expense_entry">Expense entry</option>
-                      <option value="workspace_request">Workspace request</option>
-                      <option value="follow_up">Follow-up</option>
-                      <option value="user">User</option>
-                      <option value="settings">Settings</option>
-                      <option value="service_schedule">Service schedule</option>
-                    </select>
-                    <button className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
-                      Filter
-                    </button>
-                  </form>
-                </div>
+            <form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_auto]">
+              <input type="hidden" name="tab" value="governance" />
+              <input type="hidden" name="workspaceSearch" defaultValue={workspaceSearch} />
+              <input type="hidden" name="workspaceStatus" defaultValue={workspaceStatus} />
+              <input
+                type="text"
+                name="auditSearch"
+                defaultValue={auditSearch}
+                placeholder="Search person or summary"
+                aria-label="Search audit trail"
+                className="ui-input"
+              />
+              <select name="auditEntityType" defaultValue={auditEntityType || ""} aria-label="Record type" className="ui-input">
+                <option value="">All records</option>
+                <option value="attendance">Attendance</option>
+                <option value="attendance_submission">Attendance submission</option>
+                <option value="expense_entry">Expense entry</option>
+                <option value="workspace_request">Workspace request</option>
+                <option value="follow_up">Follow-up</option>
+                <option value="user">User</option>
+                <option value="settings">Settings</option>
+                <option value="service_schedule">Service schedule</option>
+              </select>
+              <Button type="submit" variant="secondary" icon="search">
+                Filter
+              </Button>
+            </form>
 
-                <div className="mt-5">
-                  <AuditLogFeed items={auditLogs.items} />
-                </div>
-
-                <div className="mt-5 flex items-center justify-end gap-2 text-sm">
-                  <Link
-                    href={buildApprovalsHref(params, {
-                      tab: "governance",
-                      auditPage: String(Math.max(auditLogs.pagination.page - 1, 1)),
-                    })}
-                    aria-disabled={auditLogs.pagination.page <= 1}
-                    className={`rounded-xl border px-4 py-2 ${
-                      auditLogs.pagination.page <= 1
-                        ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                        : "border-slate-200 bg-white text-slate-700"
-                    }`}
-                  >
-                    Previous
-                  </Link>
-                  <span className="text-slate-500">
-                    Page {auditLogs.pagination.page} of {auditLogs.pagination.totalPages}
-                  </span>
-                  <Link
-                    href={buildApprovalsHref(params, {
-                      tab: "governance",
-                      auditPage: String(
-                        Math.min(auditLogs.pagination.page + 1, auditLogs.pagination.totalPages),
-                      ),
-                    })}
-                    aria-disabled={auditLogs.pagination.page >= auditLogs.pagination.totalPages}
-                    className={`rounded-xl border px-4 py-2 ${
-                      auditLogs.pagination.page >= auditLogs.pagination.totalPages
-                        ? "pointer-events-none border-slate-200 bg-slate-100 text-slate-400"
-                        : "border-slate-200 bg-white text-slate-700"
-                    }`}
-                  >
-                    Next
-                  </Link>
-                </div>
-              </section>
-            </section>
-          ) : null}
-        </div>
-      </section>
+            <div className="mt-6">
+              <AuditLogFeed items={auditLogs.items} />
+            </div>
+            <div className="mt-5">
+              <Pagination
+                page={auditLogs.pagination.page}
+                totalPages={auditLogs.pagination.totalPages}
+                {...pagerHrefs("governance", "auditPage", auditLogs.pagination.page, auditLogs.pagination.totalPages)}
+              />
+            </div>
+          </Card>
+        </section>
+      ) : null}
     </Shell>
   );
 }

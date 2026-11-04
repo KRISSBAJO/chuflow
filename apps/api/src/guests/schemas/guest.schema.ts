@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type GuestDocument = HydratedDocument<Guest>;
 
 @Schema({ timestamps: true })
 export class Guest {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch', required: true })
   branchId!: Types.ObjectId;
 
   @Prop()

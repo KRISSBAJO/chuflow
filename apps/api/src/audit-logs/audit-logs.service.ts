@@ -78,8 +78,10 @@ export class AuditLogsService {
     const branchScope = await this.resolveScopeFromBranch(params.branchId);
     const oversightRegion =
       this.normalizeText(params.oversightRegion) ?? branchScope.oversightRegion;
-    const district = this.normalizeText(params.district) ?? branchScope.district;
-    const branchId = this.normalizeText(params.branchId) ?? branchScope.branchId;
+    const district =
+      this.normalizeText(params.district) ?? branchScope.district;
+    const branchId =
+      this.normalizeText(params.branchId) ?? branchScope.branchId;
     const actorId =
       params.actor?.sub && Types.ObjectId.isValid(params.actor.sub)
         ? new Types.ObjectId(params.actor.sub)
@@ -91,8 +93,7 @@ export class AuditLogsService {
       action: params.action,
       summary: params.summary,
       actorId,
-      actorName:
-        params.actorName ?? params.actor?.email,
+      actorName: params.actorName ?? params.actor?.email,
       actorEmail: params.actorEmail ?? params.actor?.email,
       actorRole: params.actorRole ?? params.actor?.role,
       oversightRegion,
@@ -113,9 +114,15 @@ export class AuditLogsService {
       };
     }
 
-    const branchQuery = await this.accessScopeService.getBranchDocumentQuery(currentUser);
-    const visibleBranches = await this.branchModel.find(branchQuery).select('_id').lean();
-    const branchIds = visibleBranches.map((branch) => new Types.ObjectId(String(branch._id)));
+    const branchQuery =
+      await this.accessScopeService.getBranchDocumentQuery(currentUser);
+    const visibleBranches = await this.branchModel
+      .find(branchQuery)
+      .select('_id')
+      .lean();
+    const branchIds = visibleBranches.map(
+      (branch) => new Types.ObjectId(String(branch._id)),
+    );
 
     if (isDistrictRole(currentUser.role)) {
       return {
@@ -179,7 +186,10 @@ export class AuditLogsService {
     }
 
     if (normalizedBranchId) {
-      await this.accessScopeService.ensureBranchAccess(currentUser, normalizedBranchId);
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        normalizedBranchId,
+      );
       query.branchId = new Types.ObjectId(normalizedBranchId);
     }
 
@@ -222,7 +232,8 @@ export class AuditLogsService {
             ? {
                 _id: String((item.branchId as { _id?: unknown })._id ?? ''),
                 name: (item.branchId as { name?: string }).name,
-                oversightRegion: (item.branchId as { oversightRegion?: string }).oversightRegion,
+                oversightRegion: (item.branchId as { oversightRegion?: string })
+                  .oversightRegion,
                 district: (item.branchId as { district?: string }).district,
               }
             : undefined,

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ModalShell } from "@/components/modal-shell";
+import { Button } from "@/components/ui/ui";
 import { UserCreateForm } from "@/components/user-create-form";
 import type {
   BranchSummary,
@@ -30,13 +31,9 @@ export function UserCreateModalButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-      >
+      <Button icon="plus" onClick={() => setOpen(true)}>
         Create user
-      </button>
+      </Button>
 
       <ModalShell
         open={open}

@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type ServiceScheduleDocument = HydratedDocument<ServiceSchedule>;
 
 @Schema({ timestamps: true })
 export class ServiceSchedule {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'Branch',
+    required: true,
+    index: true,
+  })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -14,7 +19,12 @@ export class ServiceSchedule {
   @Prop({ required: true })
   district!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceType', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'ServiceType',
+    required: true,
+    index: true,
+  })
   serviceTypeId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -28,7 +38,15 @@ export class ServiceSchedule {
 
   @Prop({
     required: true,
-    enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+    enum: [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ],
   })
   dayOfWeek!: string;
 
@@ -54,7 +72,8 @@ export class ServiceSchedule {
   isActive!: boolean;
 }
 
-export const ServiceScheduleSchema = SchemaFactory.createForClass(ServiceSchedule);
+export const ServiceScheduleSchema =
+  SchemaFactory.createForClass(ServiceSchedule);
 ServiceScheduleSchema.index(
   { branchId: 1, dayOfWeek: 1, startTime: 1, name: 1 },
   { unique: true, partialFilterExpression: { isActive: true } },

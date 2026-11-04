@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Alert, AuthHeading, Field, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 import { useGeo } from "@/hooks/use-geo";
 
-const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-400 transition focus:border-amber-400 focus:ring-3 focus:ring-amber-400/10";
-
-const labelClass =
-  "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400";
+function SectionTitle({ step, title }: { step: number; title: string }) {
+  return (
+    <p className="mb-5 flex items-center gap-3 text-[15px] font-medium text-[var(--lp-ink)]">
+      <span className="lp-flame-bg flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-semibold text-white">{step}</span>
+      {title}
+    </p>
+  );
+}
 
 export function WorkspaceRequestForm() {
   const { country, states } = useGeo();
@@ -61,18 +65,15 @@ export function WorkspaceRequestForm() {
 
   if (isSuccess) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-8 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-6 w-6 text-emerald-600">
+      <div className="lp-rise text-center">
+        <div className="lp-flame-bg mx-auto flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_20px_40px_-15px_rgba(234,88,12,0.6)]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-7 w-7">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <p className="mb-1 text-base font-semibold text-emerald-900">Request sent</p>
-        <p className="mb-5 text-sm text-emerald-700">{message}</p>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:to-orange-500 transition-all"
-        >
+        <h1 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">Request received</h1>
+        <p className="mx-auto mt-3 max-w-[380px] text-[16px] leading-[1.6] text-[var(--lp-muted)]">{message}</p>
+        <Link href="/login" className="lp-pill-dark mt-9 inline-flex h-12 items-center justify-center rounded-full px-7 text-[15px] font-medium">
           Back to sign in
         </Link>
       </div>
@@ -80,132 +81,78 @@ export function WorkspaceRequestForm() {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-5">
+    <div>
+      <AuthHeading
+        title="Request a workspace"
+        body="Tell us about your church and we'll set up your workspace, structure and first accounts."
+      />
 
-      <div>
-        <label className={labelClass}>Church / Organization name</label>
-        <input
-          name="organizationName"
-          placeholder="Grace Community Church"
-          className={inputClass}
-          required
-        />
-      </div>
+      <form action={handleSubmit}>
+        <SectionTitle step={1} title="Your church" />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Field label="Church or organization name">
+              <input name="organizationName" placeholder="Grace Community Church" className="lp-input" required />
+            </Field>
+          </div>
+          <Field label="City">
+            <input name="city" placeholder="Lagos" className="lp-input" />
+          </Field>
+          <Field label="State or province">
+            <select name="state" defaultValue="" className="lp-input">
+              <option value="">Select state</option>
+              {states.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.name} ({state.code})
+                </option>
+              ))}
+            </select>
+            <input type="hidden" name="country" value={country.name} />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="How many branches?" hint="An estimate is fine. You can add more later.">
+              <input name="branchCount" type="number" min="1" placeholder="e.g. 5" className="lp-input" />
+            </Field>
+          </div>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass}>Primary contact</label>
-          <input
-            name="contactName"
-            placeholder="Pastor John Smith"
-            className={inputClass}
-            required
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Email address</label>
-          <input
-            name="email"
-            type="email"
-            placeholder="pastor@church.org"
-            className={inputClass}
-            required
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Phone number</label>
-          <input
-            name="phone"
-            type="tel"
-            placeholder="+1 (555) 000-0000"
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>City</label>
-          <input
-            name="city"
-            placeholder="Lagos, Abuja..."
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>State / Province</label>
-          <select
-            name="state"
-            defaultValue=""
-            className={inputClass}
-          >
-            <option value="">Select state</option>
-            {states.map((state) => (
-              <option key={state.code} value={state.code}>
-                {state.name} ({state.code})
-              </option>
-            ))}
-          </select>
-          <input type="hidden" name="country" value={country.name} />
-        </div>
-        <div>
-          <label className={labelClass}>Expected branches</label>
-          <input
-            name="branchCount"
-            type="number"
-            min="1"
-            placeholder="e.g. 5"
-            className={inputClass}
-          />
-        </div>
-      </div>
+        <div className="my-9 h-px bg-black/[0.06]" />
 
-      <div>
-        <label className={labelClass}>Anything we should know?</label>
-        <textarea
-          name="notes"
-          placeholder="Your church structure, special requirements, timeline..."
-          className={`${inputClass} min-h-[96px] resize-none`}
-        />
-      </div>
-
-      {message && !isSuccess && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {message}
+        <SectionTitle step={2} title="Main contact" />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Field label="Full name">
+              <input name="contactName" placeholder="Pastor John Smith" autoComplete="name" className="lp-input" required />
+            </Field>
+          </div>
+          <Field label="Email">
+            <input name="email" type="email" placeholder="pastor@church.org" autoComplete="email" className="lp-input" required />
+          </Field>
+          <Field label="Phone">
+            <input name="phone" type="tel" placeholder="+234 800 000 0000" autoComplete="tel" className="lp-input" />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Anything we should know?">
+              <textarea name="notes" placeholder="Your church structure, special requirements, timeline..." className="lp-input" />
+            </Field>
+          </div>
         </div>
-      )}
 
-      <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500">
-          Already set up?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-slate-900 hover:text-amber-600 transition-colors"
-          >
-            Sign in →
-          </Link>
-        </p>
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all hover:to-orange-500 disabled:opacity-60"
-        >
-          {loading ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Sending...
-            </>
-          ) : (
-            <>
-              Send request
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </>
-          )}
-        </button>
-      </div>
+        {message ? (
+          <div className="mt-6">
+            <Alert tone="error">{message}</Alert>
+          </div>
+        ) : null}
 
-    </form>
+        <div className="mt-8">
+          <SubmitButton loading={loading} loadingLabel="Sending request...">
+            Send request
+          </SubmitButton>
+          <p className="mt-4 text-center text-[13px] text-[var(--lp-muted)]">
+            We&apos;ll review your request and get back to you by email.
+          </p>
+        </div>
+      </form>
+    </div>
   );
 }

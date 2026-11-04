@@ -17,12 +17,17 @@ export default () => {
   return {
     appName: process.env.APP_NAME ?? 'ChuFlow',
     port: parseInt(process.env.PORT ?? '4000', 10),
-    mongodbUri: process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/church_mgt',
+    mongodbUri:
+      process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/church_mgt',
     jwtSecret: process.env.JWT_SECRET ?? 'super-secret-change-me',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
     webUrl,
     corsAllowedOrigins: Array.from(
-      new Set([webUrl, ...parseCsv(process.env.CORS_ALLOWED_ORIGINS), ...localFrontendOrigins]),
+      new Set([
+        webUrl,
+        ...parseCsv(process.env.CORS_ALLOWED_ORIGINS),
+        ...localFrontendOrigins,
+      ]),
     ),
     cookieName: process.env.AUTH_COOKIE_NAME ?? 'cms_access_token',
     cookieSecure: process.env.COOKIE_SECURE === 'true',
@@ -31,7 +36,9 @@ export default () => {
     adminEmail: process.env.ADMIN_EMAIL ?? 'admin@church.local',
     adminPassword: process.env.ADMIN_PASSWORD ?? 'ChangeMe123!',
     mailHost: process.env.MAIL_HOST,
-    mailPort: process.env.MAIL_PORT ? parseInt(process.env.MAIL_PORT, 10) : undefined,
+    mailPort: process.env.MAIL_PORT
+      ? parseInt(process.env.MAIL_PORT, 10)
+      : undefined,
     mailSecure: process.env.MAIL_SECURE === 'true',
     mailUser: process.env.MAIL_USER,
     mailPass: process.env.MAIL_PASS,

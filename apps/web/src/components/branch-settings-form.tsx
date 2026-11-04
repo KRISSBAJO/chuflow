@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { Badge, Button, Card, EmptyState, Field } from "@/components/ui/ui";
 import type { BranchSettingsOverview, BranchSummary } from "@/lib/types";
 
 const TIMEZONE_OPTIONS = [
@@ -118,28 +119,31 @@ export function BranchSettingsForm({
     }
   }
 
+
   return (
-    <section className="rounded-[28px] bg-white p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="eyebrow">Branch defaults</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-            Timezone, currency, approvals, and public links
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Keep branch-level operations aligned without changing the whole app.
-          </p>
-        </div>
+    <Card className="p-6 sm:p-7">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        {overview ? (
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="lp-heading text-[18px]">{overview.branch.name}</p>
+              {!overview.canEdit ? <Badge>View only</Badge> : null}
+            </div>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+              {overview.branch.city}, {overview.branch.state} · {overview.branch.district} ·{" "}
+              {overview.branch.oversightRegion}
+            </p>
+          </div>
+        ) : (
+          <div />
+        )}
 
         {canSelectBranch && branches.length > 1 ? (
-          <label className="flex min-w-[240px] flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-              Branch
-            </span>
+          <Field label="Branch" className="w-full sm:w-64">
             <select
               value={activeBranchId}
               onChange={(event) => handleBranchChange(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+              className="ui-input"
             >
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
@@ -147,28 +151,19 @@ export function BranchSettingsForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         ) : null}
       </div>
 
       {overview ? (
-        <form action={handleSubmit} className="mt-6 space-y-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-            <p className="font-semibold text-slate-900">{overview.branch.name}</p>
-            <p className="mt-1">
-              {overview.branch.city}, {overview.branch.state} ·{" "}
-              {overview.branch.district} · {overview.branch.oversightRegion}
-            </p>
-          </div>
-
+        <form action={handleSubmit} className="mt-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Timezone</span>
+            <Field label="Timezone">
               <select
                 name="timezone"
                 defaultValue={overview.settings.timezone}
                 disabled={!overview.canEdit}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none disabled:opacity-60"
+                className="ui-input"
               >
                 {TIMEZONE_OPTIONS.map((timezone) => (
                   <option key={timezone} value={timezone}>
@@ -176,15 +171,14 @@ export function BranchSettingsForm({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Currency</span>
+            <Field label="Currency">
               <select
                 name="currency"
                 defaultValue={overview.settings.currency}
                 disabled={!overview.canEdit}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none disabled:opacity-60"
+                className="ui-input"
               >
                 {CURRENCY_OPTIONS.map((currency) => (
                   <option key={currency} value={currency}>
@@ -192,22 +186,18 @@ export function BranchSettingsForm({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Locale</span>
+            <Field label="Locale">
               <input
                 name="locale"
                 defaultValue={overview.settings.locale}
                 disabled={!overview.canEdit}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none disabled:opacity-60"
+                className="ui-input"
               />
-            </label>
+            </Field>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">
-                Default service duration
-              </span>
+            <Field label="Default service duration" hint="In minutes, between 30 and 600.">
               <input
                 type="number"
                 min={30}
@@ -215,20 +205,19 @@ export function BranchSettingsForm({
                 name="defaultServiceDurationMinutes"
                 defaultValue={overview.settings.defaultServiceDurationMinutes}
                 disabled={!overview.canEdit}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none disabled:opacity-60"
+                className="ui-input tabular-nums"
               />
-            </label>
+            </Field>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-sm font-medium text-slate-700">
-              Attendance approval owners
-            </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div>
+            <p className="text-[13px] font-medium text-[#111111]">Attendance approval owners</p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Roles that can approve attendance for this branch.</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {APPROVAL_ROLE_OPTIONS.map((role) => (
                 <label
                   key={role.value}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                  className="flex items-center gap-3 rounded-xl border border-black/[0.06] px-4 py-3 text-[14px] text-[#111111] transition-colors hover:bg-[#faf9f6]"
                 >
                   <input
                     type="checkbox"
@@ -236,7 +225,7 @@ export function BranchSettingsForm({
                     value={role.value}
                     defaultChecked={selectedApprovalRoles.has(role.value)}
                     disabled={!overview.canEdit}
-                    className="h-4 w-4"
+                    className="h-4 w-4 accent-[#111111]"
                   />
                   {role.label}
                 </label>
@@ -244,119 +233,122 @@ export function BranchSettingsForm({
             </div>
           </div>
 
-          <div className="grid gap-3">
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
-              <input
-                type="checkbox"
+          <div>
+            <p className="text-[13px] font-medium text-[#111111]">Public links</p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Which public forms can be shared for this branch.</p>
+            <div className="mt-3 divide-y divide-black/[0.05] rounded-2xl border border-black/[0.06]">
+              <CheckRow
                 name="publicGuestIntakeEnabled"
                 defaultChecked={overview.settings.publicGuestIntakeEnabled}
                 disabled={!overview.canEdit}
-                className="h-4 w-4"
-              />
-              Public guest intake can stay live for this branch.
-            </label>
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
-              <input
-                type="checkbox"
+              >
+                Public guest intake can stay live for this branch.
+              </CheckRow>
+              <CheckRow
                 name="publicMemberIntakeEnabled"
                 defaultChecked={overview.settings.publicMemberIntakeEnabled}
                 disabled={!overview.canEdit}
-                className="h-4 w-4"
-              />
-              Public member intake links are enabled for this branch.
-            </label>
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
-              <input
-                type="checkbox"
+              >
+                Public member intake links are enabled for this branch.
+              </CheckRow>
+              <CheckRow
                 name="publicAttendanceEntryEnabled"
                 defaultChecked={overview.settings.publicAttendanceEntryEnabled}
                 disabled={!overview.canEdit}
-                className="h-4 w-4"
-              />
-              Shareable attendance entry links are enabled for this branch.
-            </label>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-sm font-medium text-slate-700">
-              Branch notification preferences
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              These preferences shape which branch operations should raise alerts and digest reminders.
-            </p>
-            <div className="mt-4 grid gap-3">
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="notifyOnMissingAttendance"
-                  defaultChecked={overview.settings.notifyOnMissingAttendance}
-                  disabled={!overview.canEdit}
-                  className="h-4 w-4"
-                />
-                Alert this branch when attendance submissions are missing.
-              </label>
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="notifyOnFollowUpBacklog"
-                  defaultChecked={overview.settings.notifyOnFollowUpBacklog}
-                  disabled={!overview.canEdit}
-                  className="h-4 w-4"
-                />
-                Alert this branch when follow-up backlog is building.
-              </label>
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="notifyOnFinanceApprovals"
-                  defaultChecked={overview.settings.notifyOnFinanceApprovals}
-                  disabled={!overview.canEdit}
-                  className="h-4 w-4"
-                />
-                Alert this branch when finance approvals need attention.
-              </label>
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="dailySummaryEnabled"
-                  defaultChecked={overview.settings.dailySummaryEnabled}
-                  disabled={!overview.canEdit}
-                  className="h-4 w-4"
-                />
-                Enable daily branch summary reminders.
-              </label>
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  name="weeklyLeadershipDigestEnabled"
-                  defaultChecked={overview.settings.weeklyLeadershipDigestEnabled}
-                  disabled={!overview.canEdit}
-                  className="h-4 w-4"
-                />
-                Enable weekly leadership digest reminders.
-              </label>
+              >
+                Shareable attendance entry links are enabled for this branch.
+              </CheckRow>
             </div>
           </div>
 
-          {overview.canEdit ? (
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-            >
-              {loading ? "Saving..." : "Save branch settings"}
-            </button>
-          ) : (
-            <p className="text-sm text-slate-500">
-              You can view this branch configuration, but only branch and oversight admins can edit it.
+          <div>
+            <p className="text-[13px] font-medium text-[#111111]">Notifications</p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+              Which branch operations should raise alerts and digest reminders.
             </p>
-          )}
+            <div className="mt-3 divide-y divide-black/[0.05] rounded-2xl border border-black/[0.06]">
+              <CheckRow
+                name="notifyOnMissingAttendance"
+                defaultChecked={overview.settings.notifyOnMissingAttendance}
+                disabled={!overview.canEdit}
+              >
+                Alert this branch when attendance submissions are missing.
+              </CheckRow>
+              <CheckRow
+                name="notifyOnFollowUpBacklog"
+                defaultChecked={overview.settings.notifyOnFollowUpBacklog}
+                disabled={!overview.canEdit}
+              >
+                Alert this branch when follow-up backlog is building.
+              </CheckRow>
+              <CheckRow
+                name="notifyOnFinanceApprovals"
+                defaultChecked={overview.settings.notifyOnFinanceApprovals}
+                disabled={!overview.canEdit}
+              >
+                Alert this branch when finance approvals need attention.
+              </CheckRow>
+              <CheckRow
+                name="dailySummaryEnabled"
+                defaultChecked={overview.settings.dailySummaryEnabled}
+                disabled={!overview.canEdit}
+              >
+                Enable daily branch summary reminders.
+              </CheckRow>
+              <CheckRow
+                name="weeklyLeadershipDigestEnabled"
+                defaultChecked={overview.settings.weeklyLeadershipDigestEnabled}
+                disabled={!overview.canEdit}
+              >
+                Enable weekly leadership digest reminders.
+              </CheckRow>
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t border-black/[0.06] pt-5">
+            {overview.canEdit ? (
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save branch settings"}
+              </Button>
+            ) : (
+              <p className="text-[13px] text-[#6b6b6b]">
+                You can view this branch configuration, but only branch and oversight admins can edit it.
+              </p>
+            )}
+          </div>
         </form>
       ) : (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">
-          No branch settings are available in your current scope yet.
+        <div className="mt-6">
+          <EmptyState icon="branches" title="No branch settings">
+            No branch settings are available in your current scope yet.
+          </EmptyState>
         </div>
       )}
-    </section>
+    </Card>
+  );
+}
+
+function CheckRow({
+  name,
+  defaultChecked,
+  disabled,
+  children,
+}: {
+  name: string;
+  defaultChecked?: boolean;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label className="flex items-start gap-3 px-4 py-3.5 text-[14px] leading-[1.5] text-[#55534e] transition-colors first:rounded-t-2xl last:rounded-b-2xl hover:bg-[#faf9f6]">
+      <input
+        type="checkbox"
+        name={name}
+        defaultChecked={defaultChecked}
+        disabled={disabled}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-[#111111]"
+      />
+      {children}
+    </label>
   );
 }

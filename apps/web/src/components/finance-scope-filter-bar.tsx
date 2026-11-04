@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "@/components/app/icons";
+import { Button } from "@/components/ui/ui";
 import type {
   BranchSummary,
   DistrictOption,
@@ -147,218 +149,190 @@ export function FinanceScopeFilterBar({
     });
   };
 
+  const submitSearchAndDates = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    pushFilters({
+      search: searchDraft,
+      dateFrom: fromDraft,
+      dateTo: toDraft,
+    });
+  };
+
   return (
-    <section className="surface rounded-[24px] p-5">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
-            Finance filters
-          </span>
-          <span className="text-sm text-slate-500">
-            Move from network view into the right branch, offering, account, and service date window.
-          </span>
-          {isPending ? (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">
-              Updating
-            </span>
-          ) : null}
-        </div>
+    <section
+      className="app-rise flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-white p-3"
+      style={{ animationDelay: "60ms" }}
+    >
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <label className="block">
+          <span className="sr-only">National area</span>
+          <select
+            value={selectedRegion}
+            disabled={!canChooseRegion || isPending}
+            onChange={(event) => {
+              const nextRegion = event.target.value;
+              setSelectedRegion(nextRegion);
+              setSelectedDistrict("");
+              setSelectedBranchId("");
+              setSelectedAccountId("");
+              pushFilters({
+                oversightRegion: nextRegion,
+                district: "",
+                branchId: "",
+                accountId: "",
+              });
+            }}
+            className="ui-input"
+          >
+            <option value="">All national areas</option>
+            {oversightRegions.map((region) => (
+              <option key={region._id} value={region.name}>
+                {region.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <div className="grid gap-4 xl:grid-cols-[1fr_1fr_1fr_1fr_1fr_1.2fr]">
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              National area
-            </span>
-            <select
-              value={selectedRegion}
-              disabled={!canChooseRegion || isPending}
-              onChange={(event) => {
-                const nextRegion = event.target.value;
-                setSelectedRegion(nextRegion);
-                setSelectedDistrict("");
-                setSelectedBranchId("");
-                setSelectedAccountId("");
-                pushFilters({
-                  oversightRegion: nextRegion,
-                  district: "",
-                  branchId: "",
-                  accountId: "",
-                });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All national areas</option>
-              {oversightRegions.map((region) => (
-                <option key={region._id} value={region.name}>
-                  {region.name}
-                </option>
-              ))}
-            </select>
+        <label className="block">
+          <span className="sr-only">District</span>
+          <select
+            value={selectedDistrict}
+            disabled={!canChooseDistrict || isPending}
+            onChange={(event) => {
+              const nextDistrict = event.target.value;
+              setSelectedDistrict(nextDistrict);
+              setSelectedBranchId("");
+              setSelectedAccountId("");
+              pushFilters({
+                district: nextDistrict,
+                branchId: "",
+                accountId: "",
+              });
+            }}
+            className="ui-input"
+          >
+            <option value="">All districts</option>
+            {filteredDistricts.map((item) => (
+              <option key={item._id} value={item.name}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="sr-only">Branch</span>
+          <select
+            value={selectedBranchId}
+            disabled={!canChooseBranch || isPending}
+            onChange={(event) => {
+              const nextBranchId = event.target.value;
+              setSelectedBranchId(nextBranchId);
+              pushFilters({ branchId: nextBranchId });
+            }}
+            className="ui-input"
+          >
+            <option value="">All branches</option>
+            {filteredBranches.map((item) => (
+              <option key={item._id} value={item._id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="sr-only">Account</span>
+          <select
+            value={selectedAccountId}
+            disabled={isPending}
+            onChange={(event) => {
+              const nextAccountId = event.target.value;
+              setSelectedAccountId(nextAccountId);
+              pushFilters({ accountId: nextAccountId });
+            }}
+            className="ui-input"
+          >
+            <option value="">All accounts</option>
+            {accounts.map((item) => (
+              <option key={item._id} value={item._id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="sr-only">Offering type</span>
+          <select
+            value={selectedOfferingTypeId}
+            disabled={isPending}
+            onChange={(event) => {
+              const nextOfferingTypeId = event.target.value;
+              setSelectedOfferingTypeId(nextOfferingTypeId);
+              pushFilters({ offeringTypeId: nextOfferingTypeId });
+            }}
+            className="ui-input"
+          >
+            <option value="">All offering types</option>
+            {offeringTypes.map((item) => (
+              <option key={item._id} value={item._id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+        <form onSubmit={submitSearchAndDates} className="flex min-w-0 flex-1 gap-2">
+          <label className="relative block min-w-0 flex-1">
+            <span className="sr-only">Search</span>
+            <Icon
+              name="search"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8780]"
+            />
+            <input
+              value={searchDraft}
+              onChange={(event) => setSearchDraft(event.target.value)}
+              placeholder="Search service, note or type"
+              className="ui-input !pl-9"
+            />
           </label>
+          <Button type="submit" variant="secondary">
+            Search
+          </Button>
+        </form>
 
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              District
-            </span>
-            <select
-              value={selectedDistrict}
-              disabled={!canChooseDistrict || isPending}
-              onChange={(event) => {
-                const nextDistrict = event.target.value;
-                setSelectedDistrict(nextDistrict);
-                setSelectedBranchId("");
-                setSelectedAccountId("");
-                pushFilters({
-                  district: nextDistrict,
-                  branchId: "",
-                  accountId: "",
-                });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All districts</option>
-              {filteredDistricts.map((item) => (
-                <option key={item._id} value={item.name}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Branch
-            </span>
-            <select
-              value={selectedBranchId}
-              disabled={!canChooseBranch || isPending}
-              onChange={(event) => {
-                const nextBranchId = event.target.value;
-                setSelectedBranchId(nextBranchId);
-                pushFilters({ branchId: nextBranchId });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All branches</option>
-              {filteredBranches.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Account
-            </span>
-            <select
-              value={selectedAccountId}
-              disabled={isPending}
-              onChange={(event) => {
-                const nextAccountId = event.target.value;
-                setSelectedAccountId(nextAccountId);
-                pushFilters({ accountId: nextAccountId });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All accounts</option>
-              {accounts.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Offering type
-            </span>
-            <select
-              value={selectedOfferingTypeId}
-              disabled={isPending}
-              onChange={(event) => {
-                const nextOfferingTypeId = event.target.value;
-                setSelectedOfferingTypeId(nextOfferingTypeId);
-                pushFilters({ offeringTypeId: nextOfferingTypeId });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All offering types</option>
-              {offeringTypes.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Search
-            </span>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                pushFilters({
-                  search: searchDraft,
-                  dateFrom: fromDraft,
-                  dateTo: toDraft,
-                });
-              }}
-              className="flex gap-2"
-            >
-              <input
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
-                placeholder="Service, note, or type"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-              />
-              <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                Go
-              </button>
-            </form>
-          </label>
-        </div>
-
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            pushFilters({
-              search: searchDraft,
-              dateFrom: fromDraft,
-              dateTo: toDraft,
-            });
-          }}
-          className="grid gap-4 md:grid-cols-[1fr_1fr_auto]"
-        >
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              From
-            </span>
+        <form onSubmit={submitSearchAndDates} className="flex flex-wrap items-center gap-2">
+          <label className="block w-full sm:w-[160px]">
+            <span className="sr-only">From</span>
             <input
               type="date"
               value={fromDraft}
               onChange={(event) => setFromDraft(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+              className="ui-input"
             />
           </label>
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              To
-            </span>
+          <span className="text-[13px] text-[#8a8780]">to</span>
+          <label className="block w-full sm:w-[160px]">
+            <span className="sr-only">To</span>
             <input
               type="date"
               value={toDraft}
               onChange={(event) => setToDraft(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+              className="ui-input"
             />
           </label>
-          <button className="mt-auto rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-            Apply date range
-          </button>
+          <Button type="submit">Apply dates</Button>
         </form>
+
+        {isPending ? (
+          <span className="flex h-8 items-center gap-2 px-2 text-[13px] text-[#8a8780]" role="status">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#e4e3df] border-t-[#ea580c]" />
+            Updating
+          </span>
+        ) : null}
       </div>
     </section>
   );

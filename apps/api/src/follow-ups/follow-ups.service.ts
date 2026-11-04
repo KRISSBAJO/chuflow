@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -6,13 +11,17 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { CreateFollowUpDto, UpdateFollowUpDto } from './dto/create-follow-up.dto';
+import {
+  CreateFollowUpDto,
+  UpdateFollowUpDto,
+} from './dto/create-follow-up.dto';
 import { FollowUp, FollowUpDocument } from './schemas/follow-up.schema';
 
 @Injectable()
 export class FollowUpsService {
   constructor(
-    @InjectModel(FollowUp.name) private readonly followUpModel: Model<FollowUpDocument>,
+    @InjectModel(FollowUp.name)
+    private readonly followUpModel: Model<FollowUpDocument>,
     @InjectModel(Guest.name) private readonly guestModel: Model<GuestDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly accessScopeService: AccessScopeService,
@@ -97,8 +106,15 @@ export class FollowUpsService {
     return guest;
   }
 
-  private async ensureAssignableUser(assignedTo: string, guestBranchId: string, currentUser: AuthUser) {
-    const user = await this.userModel.findById(assignedTo).select('-password -passwordResetToken').lean();
+  private async ensureAssignableUser(
+    assignedTo: string,
+    guestBranchId: string,
+    currentUser: AuthUser,
+  ) {
+    const user = await this.userModel
+      .findById(assignedTo)
+      .select('-password -passwordResetToken')
+      .lean();
 
     if (!user) {
       throw new BadRequestException('Assigned user was not found');
@@ -108,7 +124,14 @@ export class FollowUpsService {
       throw new BadRequestException('Assigned user is inactive');
     }
 
-    if (!['branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up'].includes(user.role)) {
+    if (
+      ![
+        'branch_admin',
+        'resident_pastor',
+        'associate_pastor',
+        'follow_up',
+      ].includes(user.role)
+    ) {
       throw new BadRequestException(
         'Only branch admins, resident pastors, associate pastors, and follow-up users can own follow-up tasks',
       );
@@ -116,15 +139,25 @@ export class FollowUpsService {
 
     const assigneeBranchId = this.extractBranchId(user.branchId);
     if (!assigneeBranchId || assigneeBranchId !== guestBranchId) {
-      throw new BadRequestException('Assigned user must belong to the same branch as the guest');
+      throw new BadRequestException(
+        'Assigned user must belong to the same branch as the guest',
+      );
     }
 
-    if (currentUser.role === 'follow_up' && String(user._id) !== currentUser.sub) {
-      throw new ForbiddenException('Follow-up team members can only assign tasks to themselves');
+    if (
+      currentUser.role === 'follow_up' &&
+      String(user._id) !== currentUser.sub
+    ) {
+      throw new ForbiddenException(
+        'Follow-up team members can only assign tasks to themselves',
+      );
     }
   }
 
-  private normalizeStatus(status: string | undefined, assignedTo?: string | null) {
+  private normalizeStatus(
+    status: string | undefined,
+    assignedTo?: string | null,
+  ) {
     const normalizedStatus = (status || 'new').trim();
 
     if (assignedTo && normalizedStatus === 'new') {
@@ -142,7 +175,9 @@ export class FollowUpsService {
     const assignedTo = dto.assignedTo ?? undefined;
 
     if (!currentUser && assignedTo) {
-      throw new BadRequestException('Public registration cannot assign a follow-up worker');
+      throw new BadRequestException(
+        'Public registration cannot assign a follow-up worker',
+      );
     }
 
     let guestBranchId = '';
@@ -161,7 +196,9 @@ export class FollowUpsService {
       assignedTo,
       ...(assignedTo ? { assignedTo: new Types.ObjectId(assignedTo) } : {}),
       status: this.normalizeStatus(dto.status, assignedTo),
-      nextActionDate: dto.nextActionDate ? new Date(dto.nextActionDate) : undefined,
+      nextActionDate: dto.nextActionDate
+        ? new Date(dto.nextActionDate)
+        : undefined,
     });
 
     await this.auditLogsService.record({
@@ -205,17 +242,27 @@ export class FollowUpsService {
     );
 
     if (currentUser.role === 'follow_up') {
-      baseClauses.push({ assignedTo: { $in: this.buildReferenceValues([currentUser.sub]) } });
+      baseClauses.push({
+        assignedTo: { $in: this.buildReferenceValues([currentUser.sub]) },
+      });
     } else if (filters.assignedTo) {
-      baseClauses.push({ assignedTo: { $in: this.buildReferenceValues([filters.assignedTo]) } });
+      baseClauses.push({
+        assignedTo: { $in: this.buildReferenceValues([filters.assignedTo]) },
+      });
     }
 
     if (filters.guestId) {
       await this.getScopedGuest(filters.guestId, currentUser);
-      baseClauses.push({ guestId: { $in: this.buildReferenceValues([filters.guestId]) } });
+      baseClauses.push({
+        guestId: { $in: this.buildReferenceValues([filters.guestId]) },
+      });
     } else {
-      const scopedGuestIds = await this.guestModel.find(guestScopeQuery).distinct('_id');
-      baseClauses.push({ guestId: { $in: this.buildReferenceValues(scopedGuestIds) } });
+      const scopedGuestIds = await this.guestModel
+        .find(guestScopeQuery)
+        .distinct('_id');
+      baseClauses.push({
+        guestId: { $in: this.buildReferenceValues(scopedGuestIds) },
+      });
     }
 
     if (searchConditions) {
@@ -228,7 +275,12 @@ export class FollowUpsService {
 
       baseClauses.push({
         $or: [
-          { note: { $regex: this.normalizeSearch(filters.search), $options: 'i' } },
+          {
+            note: {
+              $regex: this.normalizeSearch(filters.search),
+              $options: 'i',
+            },
+          },
           { guestId: { $in: this.buildReferenceValues(matchingGuestIds) } },
         ],
       });
@@ -350,8 +402,13 @@ export class FollowUpsService {
       String((followUp.guestId as { branchId?: unknown })?.branchId ?? ''),
     );
 
-    if (currentUser.role === 'follow_up' && String(followUp.assignedTo?._id ?? '') !== currentUser.sub) {
-      throw new ForbiddenException('You can only access follow-up tasks assigned to you');
+    if (
+      currentUser.role === 'follow_up' &&
+      String(followUp.assignedTo?._id ?? '') !== currentUser.sub
+    ) {
+      throw new ForbiddenException(
+        'You can only access follow-up tasks assigned to you',
+      );
     }
 
     return followUp;
@@ -359,10 +416,15 @@ export class FollowUpsService {
 
   async update(id: string, dto: UpdateFollowUpDto, currentUser: AuthUser) {
     const existing = await this.findOne(id, currentUser);
-    let guestBranchId = this.extractBranchId((existing.guestId as { branchId?: unknown })?.branchId);
-    const hasAssignedToField = Object.prototype.hasOwnProperty.call(dto, 'assignedTo');
+    let guestBranchId = this.extractBranchId(
+      (existing.guestId as { branchId?: unknown })?.branchId,
+    );
+    const hasAssignedToField = Object.prototype.hasOwnProperty.call(
+      dto,
+      'assignedTo',
+    );
     const assignedTo = hasAssignedToField
-      ? dto.assignedTo ?? undefined
+      ? (dto.assignedTo ?? undefined)
       : existing.assignedTo?._id
         ? String(existing.assignedTo._id)
         : undefined;
@@ -382,8 +444,13 @@ export class FollowUpsService {
         {
           ...dto,
           assignedTo,
-          status: this.normalizeStatus(dto.status ?? existing.status, assignedTo),
-          nextActionDate: dto.nextActionDate ? new Date(dto.nextActionDate) : undefined,
+          status: this.normalizeStatus(
+            dto.status ?? existing.status,
+            assignedTo,
+          ),
+          nextActionDate: dto.nextActionDate
+            ? new Date(dto.nextActionDate)
+            : undefined,
         },
         { new: true },
       )
@@ -400,7 +467,9 @@ export class FollowUpsService {
       actor: currentUser,
       branchId: guestBranchId || undefined,
       metadata: {
-        guestId: dto.guestId ?? String((existing.guestId as { _id?: unknown })?._id ?? ''),
+        guestId:
+          dto.guestId ??
+          String((existing.guestId as { _id?: unknown })?._id ?? ''),
         assignedTo,
         contactMethod: dto.contactMethod ?? existing.contactMethod,
         status: this.normalizeStatus(dto.status ?? existing.status, assignedTo),

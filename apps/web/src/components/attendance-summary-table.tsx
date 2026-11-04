@@ -3,12 +3,15 @@
 import { useMemo, useState } from "react";
 import { AttendanceCreateForm } from "@/components/attendance-create-form";
 import { ModalShell } from "@/components/modal-shell";
+import { Badge, Button, EmptyState, TableWrap } from "@/components/ui/ui";
 import type {
   AttendanceItem,
   BranchSummary,
   ServiceScheduleSummary,
   ServiceTypeSummary,
 } from "@/lib/types";
+
+const NUMBER_COLUMNS = ["Men", "Women", "Children", "Adults", "First timers", "New converts", "Holy Spirit"];
 
 function getBranchId(value: AttendanceItem["branchId"]) {
   return typeof value === "string" ? value : value?._id;
@@ -98,8 +101,8 @@ export function AttendanceSummaryTable({
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
+      <div className="space-y-5">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
           <input
             value={search}
             onChange={(event) => {
@@ -107,7 +110,8 @@ export function AttendanceSummaryTable({
               setPage(1);
             }}
             placeholder="Search service name or type"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+            aria-label="Search service summaries"
+            className="ui-input sm:col-span-2 lg:col-span-1"
           />
           <select
             value={branchFilter}
@@ -115,7 +119,8 @@ export function AttendanceSummaryTable({
               setBranchFilter(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+            aria-label="Branch"
+            className="ui-input"
           >
             <option value="">All branches</option>
             {branches.map((branch) => (
@@ -130,7 +135,8 @@ export function AttendanceSummaryTable({
               setServiceTypeFilter(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+            aria-label="Service type"
+            className="ui-input"
           >
             <option value="">All service types</option>
             {serviceTypes.map((serviceType) => (
@@ -146,7 +152,8 @@ export function AttendanceSummaryTable({
               setDateFrom(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+            aria-label="From date"
+            className="ui-input"
           />
           <input
             type="date"
@@ -155,107 +162,103 @@ export function AttendanceSummaryTable({
               setDateTo(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+            aria-label="To date"
+            className="ui-input"
           />
         </div>
 
         {filteredRecords.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">
+          <EmptyState icon="attendance" title="No summaries found">
             No service summaries match the current filters.
-          </div>
+          </EmptyState>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1180px] text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500">
+          <TableWrap>
+            <table className="ui-table min-w-[1120px]">
+              <thead>
                 <tr>
-                  {[
-                    "Date",
-                    "Branch",
-                    "Service",
-                    "Type",
-                    "Men",
-                    "Women",
-                    "Children",
-                    "Adults",
-                    "First timers",
-                    "New converts",
-                    "Holy Spirit",
-                    ...(canEdit ? ["Action"] : []),
-                  ].map((column) => (
-                    <th key={column} className="px-4 py-3 font-semibold">
+                  <th>Date</th>
+                  <th>Branch</th>
+                  <th>Service</th>
+                  <th>Type</th>
+                  {NUMBER_COLUMNS.map((column) => (
+                    <th key={column} className="text-right">
                       {column}
                     </th>
                   ))}
+                  {canEdit ? (
+                    <th className="text-right">
+                      <span className="sr-only">Action</span>
+                    </th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
                 {visibleRecords.map((record) => (
-                  <tr key={record._id} className="border-t border-slate-100">
-                    <td className="px-4 py-4 text-slate-600">
+                  <tr key={record._id}>
+                    <td className="whitespace-nowrap text-[#55534e]">
                       {new Date(record.serviceDate).toLocaleString()}
                     </td>
-                    <td className="px-4 py-4 text-slate-600">
-                      {getBranchName(record.branchId, branches)}
+                    <td className="text-[#55534e]">{getBranchName(record.branchId, branches)}</td>
+                    <td className="font-medium">{record.serviceName || "Not named"}</td>
+                    <td>
+                      <Badge>{record.serviceTypeLabel || record.serviceType}</Badge>
                     </td>
-                    <td className="px-4 py-4 font-semibold text-slate-900">
-                      {record.serviceName || "Not named"}
-                    </td>
-                    <td className="px-4 py-4 text-slate-600">
-                      {record.serviceTypeLabel || record.serviceType}
-                    </td>
-                    <td className="px-4 py-4 text-slate-600">{record.menCount ?? 0}</td>
-                    <td className="px-4 py-4 text-slate-600">{record.womenCount ?? 0}</td>
-                    <td className="px-4 py-4 text-slate-600">{record.childrenCount ?? 0}</td>
-                    <td className="px-4 py-4 text-slate-600">{record.adultsCount ?? 0}</td>
-                    <td className="px-4 py-4 text-slate-600">{record.firstTimersCount ?? 0}</td>
-                    <td className="px-4 py-4 text-slate-600">{record.newConvertsCount ?? 0}</td>
-                    <td className="px-4 py-4 text-slate-600">
-                      {record.holySpiritBaptismCount ?? 0}
-                    </td>
+                    <td className="text-right tabular-nums">{record.menCount ?? 0}</td>
+                    <td className="text-right tabular-nums">{record.womenCount ?? 0}</td>
+                    <td className="text-right tabular-nums">{record.childrenCount ?? 0}</td>
+                    <td className="text-right tabular-nums">{record.adultsCount ?? 0}</td>
+                    <td className="text-right tabular-nums">{record.firstTimersCount ?? 0}</td>
+                    <td className="text-right tabular-nums">{record.newConvertsCount ?? 0}</td>
+                    <td className="text-right tabular-nums">{record.holySpiritBaptismCount ?? 0}</td>
                     {canEdit ? (
-                      <td className="px-4 py-4">
-                        <button
-                          type="button"
-                          onClick={() => setEditingRecord(record)}
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700"
-                        >
+                      <td className="text-right">
+                        <Button size="sm" variant="secondary" onClick={() => setEditingRecord(record)}>
                           Edit
-                        </button>
+                        </Button>
                       </td>
                     ) : null}
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-            {filteredRecords.length > 0
-              ? `Showing ${(safePage - 1) * pageSize + 1}-${Math.min(safePage * pageSize, filteredRecords.length)} of ${filteredRecords.length}`
-              : "No summaries found"}
+          <p className="text-[13px] text-[#8a8780]">
+            {filteredRecords.length > 0 ? (
+              <>
+                Showing{" "}
+                <span className="font-medium tabular-nums text-[#111111]">
+                  {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredRecords.length)}
+                </span>{" "}
+                of <span className="tabular-nums">{filteredRecords.length}</span>
+              </>
+            ) : (
+              "No summaries found"
+            )}
           </p>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               disabled={safePage === 1}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
             >
               Previous
-            </button>
-            <span className="text-sm text-slate-500">
-              Page {safePage} of {totalPages}
+            </Button>
+            <span className="text-[13px] text-[#8a8780]">
+              Page <span className="font-medium tabular-nums text-[#111111]">{safePage}</span> of{" "}
+              <span className="tabular-nums">{totalPages}</span>
             </span>
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               disabled={safePage === totalPages}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -266,7 +269,7 @@ export function AttendanceSummaryTable({
           onClose={() => setEditingRecord(null)}
           eyebrow="Attendance"
           title="Edit service summary"
-          description="Adjust the recorded totals, service type, or service metadata for this summary."
+          description="Adjust the recorded totals, service type or service details for this summary."
         >
           {editingRecord ? (
             <AttendanceCreateForm

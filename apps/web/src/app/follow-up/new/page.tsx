@@ -2,6 +2,8 @@ import Link from "next/link";
 import { FollowUpCreateForm } from "@/components/follow-up-create-form";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Icon } from "@/components/app/icons";
+import { buttonClass } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   canFilterAcrossBranches,
@@ -119,26 +121,27 @@ export default async function NewFollowUpPage({
 
   return (
     <Shell>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Link
           href={returnHref}
           aria-label="Return to follow-up queue"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-semibold text-slate-700 shadow-sm hover:border-slate-300"
+          className={buttonClass("ghost", "sm", "-ml-2")}
         >
-          &lt;
+          <Icon name="arrowRight" className="h-4 w-4 rotate-180" />
+          Back to follow-up queue
         </Link>
         <PageHeader
-          eyebrow="Follow-Up"
+          eyebrow="Follow-up"
           title="Add follow-up"
           description={
             selectedBranch
               ? `Create a care task for ${selectedBranch.name}.`
-              : "Choose a branch from the follow-up queue before creating a branch-local care task."
+              : "Choose a branch from the follow-up queue before creating a care task for it."
           }
         />
       </div>
 
-      <section className="mx-auto max-w-4xl rounded-[32px] border border-slate-200 bg-white p-2 shadow-sm">
+      <section className="mx-auto w-full max-w-4xl">
         <FollowUpCreateForm
           guests={guestOptions.items}
           users={users}

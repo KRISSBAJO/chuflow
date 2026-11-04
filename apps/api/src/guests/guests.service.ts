@@ -1,11 +1,25 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
-import { Attendance, AttendanceDocument } from '../attendance/schemas/attendance.schema';
-import { Communication, CommunicationDocument } from '../communications/schemas/communication.schema';
+import {
+  Attendance,
+  AttendanceDocument,
+} from '../attendance/schemas/attendance.schema';
+import {
+  Communication,
+  CommunicationDocument,
+} from '../communications/schemas/communication.schema';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
-import { FollowUp, FollowUpDocument } from '../follow-ups/schemas/follow-up.schema';
+import {
+  FollowUp,
+  FollowUpDocument,
+} from '../follow-ups/schemas/follow-up.schema';
 import { FollowUpsService } from '../follow-ups/follow-ups.service';
 import { Member, MemberDocument } from '../members/schemas/member.schema';
 import { VisitsService } from '../visits/visits.service';
@@ -18,16 +32,23 @@ export class GuestsService {
   constructor(
     @InjectModel(Guest.name) private readonly guestModel: Model<GuestDocument>,
     @InjectModel(Visit.name) private readonly visitModel: Model<VisitDocument>,
-    @InjectModel(FollowUp.name) private readonly followUpModel: Model<FollowUpDocument>,
-    @InjectModel(Attendance.name) private readonly attendanceModel: Model<AttendanceDocument>,
-    @InjectModel(Communication.name) private readonly communicationModel: Model<CommunicationDocument>,
-    @InjectModel(Member.name) private readonly memberModel: Model<MemberDocument>,
+    @InjectModel(FollowUp.name)
+    private readonly followUpModel: Model<FollowUpDocument>,
+    @InjectModel(Attendance.name)
+    private readonly attendanceModel: Model<AttendanceDocument>,
+    @InjectModel(Communication.name)
+    private readonly communicationModel: Model<CommunicationDocument>,
+    @InjectModel(Member.name)
+    private readonly memberModel: Model<MemberDocument>,
     private readonly visitsService: VisitsService,
     private readonly followUpsService: FollowUpsService,
     private readonly accessScopeService: AccessScopeService,
   ) {}
 
-  private async ensureGuestScope(guest: { branchId?: unknown }, currentUser?: AuthUser) {
+  private async ensureGuestScope(
+    guest: { branchId?: unknown },
+    currentUser?: AuthUser,
+  ) {
     if (!currentUser) {
       return;
     }
@@ -35,7 +56,9 @@ export class GuestsService {
     const branchValue =
       typeof guest.branchId === 'string'
         ? guest.branchId
-        : typeof guest.branchId === 'object' && guest.branchId !== null && '_id' in guest.branchId
+        : typeof guest.branchId === 'object' &&
+            guest.branchId !== null &&
+            '_id' in guest.branchId
           ? String((guest.branchId as { _id?: unknown })._id)
           : guest.branchId
             ? String(guest.branchId)
@@ -72,7 +95,9 @@ export class GuestsService {
     target: GuestDocument | (Guest & { _id?: unknown; children?: string[] }),
     source: GuestDocument | (Guest & { _id?: unknown; children?: string[] }),
   ) {
-    const nextChildren = Array.from(new Set([...(target.children ?? []), ...(source.children ?? [])]));
+    const nextChildren = Array.from(
+      new Set([...(target.children ?? []), ...(source.children ?? [])]),
+    );
 
     return {
       title: target.title || source.title,
@@ -89,7 +114,10 @@ export class GuestsService {
       maritalStatus: target.maritalStatus || source.maritalStatus,
       spouseDetails: target.spouseDetails || source.spouseDetails,
       children: nextChildren,
-      visitStatus: target.visitStatus === 'member' || source.visitStatus === 'member' ? 'member' : target.visitStatus || source.visitStatus,
+      visitStatus:
+        target.visitStatus === 'member' || source.visitStatus === 'member'
+          ? 'member'
+          : target.visitStatus || source.visitStatus,
       invitedBy: target.invitedBy || source.invitedBy,
       heardAboutChurch: target.heardAboutChurch || source.heardAboutChurch,
       prayerRequest: target.prayerRequest || source.prayerRequest,
@@ -100,13 +128,18 @@ export class GuestsService {
   }
 
   async create(dto: CreateGuestDto, currentUser?: AuthUser) {
-    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
+    const branchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      dto.branchId,
+    );
     const duplicate = await this.guestModel.findOne({
       $or: [{ phone: dto.phone }, ...(dto.email ? [{ email: dto.email }] : [])],
     });
 
     if (duplicate) {
-      throw new BadRequestException('Guest with this phone or email already exists');
+      throw new BadRequestException(
+        'Guest with this phone or email already exists',
+      );
     }
 
     const guest = await this.guestModel.create({
@@ -115,21 +148,27 @@ export class GuestsService {
       visitStatus: dto.visitStatus ?? 'first_time',
     });
 
-    await this.visitsService.create({
-      branchId: branchId!,
-      guestId: guest.id,
-      visitDate: dto.visitDate ?? new Date().toISOString(),
-      serviceType: dto.serviceType ?? 'Sunday service',
-      notes: 'Auto-created from guest registration',
-    }, currentUser);
+    await this.visitsService.create(
+      {
+        branchId: branchId!,
+        guestId: guest.id,
+        visitDate: dto.visitDate ?? new Date().toISOString(),
+        serviceType: dto.serviceType ?? 'Sunday service',
+        notes: 'Auto-created from guest registration',
+      },
+      currentUser,
+    );
 
-    await this.followUpsService.create({
-      guestId: guest.id,
-      assignedTo: dto.assignedFollowUpUserId,
-      status: dto.assignedFollowUpUserId ? 'assigned' : 'new',
-      contactMethod: 'registration',
-      note: 'Guest registered and follow-up record created.',
-    }, currentUser);
+    await this.followUpsService.create(
+      {
+        guestId: guest.id,
+        assignedTo: dto.assignedFollowUpUserId,
+        status: dto.assignedFollowUpUserId ? 'assigned' : 'new',
+        contactMethod: 'registration',
+        note: 'Guest registered and follow-up record created.',
+      },
+      currentUser,
+    );
 
     return this.findOne(guest.id, currentUser);
   }
@@ -145,7 +184,10 @@ export class GuestsService {
     const requestedPage = Math.max(page || 1, 1);
     const searchConditions = this.buildGuestSearchConditions(search);
     const documentQuery: Record<string, unknown> = {
-      ...(await this.accessScopeService.buildBranchFilter(currentUser, branchId)),
+      ...(await this.accessScopeService.buildBranchFilter(
+        currentUser,
+        branchId,
+      )),
     };
     const aggregateQuery: Record<string, unknown> = {
       ...documentQuery,
@@ -176,7 +218,12 @@ export class GuestsService {
     const skip = (safePage - 1) * safeLimit;
 
     const branchLookupMatch = (
-      documentQuery as { branchId?: Types.ObjectId | string | { $in: Array<Types.ObjectId | string> } }
+      documentQuery as {
+        branchId?:
+          | Types.ObjectId
+          | string
+          | { $in: Array<Types.ObjectId | string> };
+      }
     ).branchId;
     const guestLookupMatches: Record<string, unknown>[] = [];
 
@@ -209,7 +256,12 @@ export class GuestsService {
                   $expr: {
                     $or: [
                       { $eq: ['$_id', '$$branchRef'] },
-                      { $eq: [{ $toString: '$_id' }, { $toString: '$$branchRef' }] },
+                      {
+                        $eq: [
+                          { $toString: '$_id' },
+                          { $toString: '$$branchRef' },
+                        ],
+                      },
                       { $eq: ['$name', '$$branchRef'] },
                     ],
                   },
@@ -277,7 +329,9 @@ export class GuestsService {
           },
         },
         { $unwind: '$guest' },
-        ...(guestLookupMatches.length ? [{ $match: { $and: guestLookupMatches } }] : []),
+        ...(guestLookupMatches.length
+          ? [{ $match: { $and: guestLookupMatches } }]
+          : []),
         {
           $match: {
             assignedTo: { $ne: null },
@@ -297,14 +351,19 @@ export class GuestsService {
       },
       summary: {
         todayCount,
-        completionRate: total ? Math.round((completedCardsCount / total) * 100) : 0,
+        completionRate: total
+          ? Math.round((completedCardsCount / total) * 100)
+          : 0,
         assignedFollowUpCount: assignedFollowUpCountRaw[0]?.total ?? 0,
       },
     };
   }
 
   async findOne(id: string, currentUser?: AuthUser) {
-    const guest = await this.guestModel.findById(id).populate('branchId').lean();
+    const guest = await this.guestModel
+      .findById(id)
+      .populate('branchId')
+      .lean();
     if (!guest) {
       throw new NotFoundException('Guest not found');
     }
@@ -314,7 +373,10 @@ export class GuestsService {
 
   async update(id: string, dto: UpdateGuestDto, currentUser: AuthUser) {
     await this.findOne(id, currentUser);
-    const scopedBranchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
+    const scopedBranchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      dto.branchId,
+    );
     const guest = await this.guestModel
       .findByIdAndUpdate(
         id,
@@ -334,7 +396,9 @@ export class GuestsService {
 
   async findDuplicates(currentUser: AuthUser, branchId?: string) {
     const guests = await this.guestModel
-      .find(await this.accessScopeService.buildBranchFilter(currentUser, branchId))
+      .find(
+        await this.accessScopeService.buildBranchFilter(currentUser, branchId),
+      )
       .populate('branchId')
       .sort({ createdAt: -1 })
       .lean();
@@ -344,7 +408,10 @@ export class GuestsService {
     for (const guest of guests) {
       const emailKey = guest.email?.trim().toLowerCase();
       const phoneKey = this.getNormalizedPhone(guest.phone);
-      const keys = [emailKey ? `email:${emailKey}` : '', phoneKey ? `phone:${phoneKey}` : ''].filter(Boolean);
+      const keys = [
+        emailKey ? `email:${emailKey}` : '',
+        phoneKey ? `phone:${phoneKey}` : '',
+      ].filter(Boolean);
 
       for (const key of keys) {
         const existing = groups.get(key) ?? [];
@@ -356,7 +423,9 @@ export class GuestsService {
     return Array.from(groups.entries())
       .filter(([, items]) => items.length > 1)
       .map(([key, items]) => {
-        const uniqueItems = Array.from(new Map(items.map((item) => [String(item._id), item])).values());
+        const uniqueItems = Array.from(
+          new Map(items.map((item) => [String(item._id), item])).values(),
+        );
         return {
           key,
           type: key.startsWith('email:') ? 'email' : 'phone',
@@ -367,7 +436,11 @@ export class GuestsService {
       .sort((a, b) => b.guests.length - a.guests.length);
   }
 
-  async mergeGuests(targetGuestId: string, sourceGuestId: string, currentUser: AuthUser) {
+  async mergeGuests(
+    targetGuestId: string,
+    sourceGuestId: string,
+    currentUser: AuthUser,
+  ) {
     if (targetGuestId === sourceGuestId) {
       throw new BadRequestException('Select two different guests to merge');
     }
@@ -385,17 +458,34 @@ export class GuestsService {
     await this.ensureGuestScope(source.toObject(), currentUser);
 
     if (String(target.branchId) !== String(source.branchId)) {
-      throw new BadRequestException('Guests must belong to the same branch to merge');
+      throw new BadRequestException(
+        'Guests must belong to the same branch to merge',
+      );
     }
 
     const mergedPayload = this.mergeGuestPayload(target, source);
 
     await Promise.all([
-      this.visitModel.updateMany({ guestId: source._id }, { guestId: target._id, branchId: target.branchId }),
-      this.followUpModel.updateMany({ guestId: source._id }, { guestId: target._id }),
-      this.attendanceModel.updateMany({ guestId: source._id }, { guestId: target._id, branchId: target.branchId }),
-      this.communicationModel.updateMany({ guestId: source._id }, { guestId: target._id }),
-      this.memberModel.updateMany({ guestId: source._id }, { guestId: target._id, branchId: target.branchId }),
+      this.visitModel.updateMany(
+        { guestId: source._id },
+        { guestId: target._id, branchId: target.branchId },
+      ),
+      this.followUpModel.updateMany(
+        { guestId: source._id },
+        { guestId: target._id },
+      ),
+      this.attendanceModel.updateMany(
+        { guestId: source._id },
+        { guestId: target._id, branchId: target.branchId },
+      ),
+      this.communicationModel.updateMany(
+        { guestId: source._id },
+        { guestId: target._id },
+      ),
+      this.memberModel.updateMany(
+        { guestId: source._id },
+        { guestId: target._id, branchId: target.branchId },
+      ),
     ]);
 
     await this.guestModel.findByIdAndUpdate(target._id, mergedPayload);

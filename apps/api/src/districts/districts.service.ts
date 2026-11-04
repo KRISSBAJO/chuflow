@@ -16,7 +16,10 @@ import {
 } from '../common/constants/roles.constants';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { OversightRegionsService } from '../oversight-regions/oversight-regions.service';
-import { CreateDistrictDto, UpdateDistrictDto } from './dto/manage-district.dto';
+import {
+  CreateDistrictDto,
+  UpdateDistrictDto,
+} from './dto/manage-district.dto';
 import { District, DistrictDocument } from './schemas/district.schema';
 
 export type DistrictSummary = {
@@ -90,7 +93,9 @@ export class DistrictsService implements OnModuleInit {
 
     if (isNationalRole(currentUser.role)) {
       if (district.oversightRegion !== scopedRegion) {
-        throw new ForbiddenException('You cannot access districts outside your oversight region');
+        throw new ForbiddenException(
+          'You cannot access districts outside your oversight region',
+        );
       }
 
       return district;
@@ -100,7 +105,9 @@ export class DistrictsService implements OnModuleInit {
       district.oversightRegion !== scopedRegion ||
       district.name !== scopedDistrict
     ) {
-      throw new ForbiddenException('You cannot access districts outside your scope');
+      throw new ForbiddenException(
+        'You cannot access districts outside your scope',
+      );
     }
 
     return district;
@@ -127,14 +134,16 @@ export class DistrictsService implements OnModuleInit {
 
     return new Map(
       counts
-        .map((item: {
-          _id: { oversightRegion: unknown; district: unknown };
-          total: number;
-        }) => ({
-          oversightRegion: this.normalizeName(item._id.oversightRegion),
-          district: this.normalizeName(item._id.district),
-          total: item.total,
-        }))
+        .map(
+          (item: {
+            _id: { oversightRegion: unknown; district: unknown };
+            total: number;
+          }) => ({
+            oversightRegion: this.normalizeName(item._id.oversightRegion),
+            district: this.normalizeName(item._id.district),
+            total: item.total,
+          }),
+        )
         .filter((item) => item.oversightRegion && item.district)
         .map((item) => [
           this.buildKey(item.oversightRegion, item.district),
@@ -244,7 +253,9 @@ export class DistrictsService implements OnModuleInit {
       : this.normalizeName(currentUser.oversightRegion || '');
 
     if (!oversightRegion) {
-      throw new BadRequestException('An oversight region is required to create a district');
+      throw new BadRequestException(
+        'An oversight region is required to create a district',
+      );
     }
 
     const district = await this.ensureExists(oversightRegion, dto.name);
@@ -264,18 +275,22 @@ export class DistrictsService implements OnModuleInit {
     oversightRegion?: string,
   ): Promise<DistrictSummary[]> {
     const requestedRegion = this.normalizeName(oversightRegion || '');
-    let query: Record<string, unknown> = {};
+    const query: Record<string, unknown> = {};
 
     if (isGlobalRole(currentUser.role)) {
       if (requestedRegion) {
         query.oversightRegionNormalized = this.toKey(requestedRegion);
       }
     } else if (isNationalRole(currentUser.role)) {
-      const scopedRegion = this.normalizeName(currentUser.oversightRegion || '');
+      const scopedRegion = this.normalizeName(
+        currentUser.oversightRegion || '',
+      );
       await this.oversightRegionsService.ensureExists(scopedRegion);
       query.oversightRegionNormalized = this.toKey(scopedRegion);
     } else if (isDistrictRole(currentUser.role) || currentUser.district) {
-      const scopedRegion = this.normalizeName(currentUser.oversightRegion || '');
+      const scopedRegion = this.normalizeName(
+        currentUser.oversightRegion || '',
+      );
       const scopedDistrict = this.normalizeName(currentUser.district || '');
 
       if (scopedRegion && scopedDistrict) {
@@ -323,7 +338,9 @@ export class DistrictsService implements OnModuleInit {
       requestedRegion &&
       requestedRegion !== scopedRegion
     ) {
-      throw new ForbiddenException('You cannot move a district outside your oversight region');
+      throw new ForbiddenException(
+        'You cannot move a district outside your oversight region',
+      );
     }
 
     const nextRegion = isGlobalRole(currentUser.role)
@@ -333,7 +350,9 @@ export class DistrictsService implements OnModuleInit {
       dto.name !== undefined ? this.normalizeName(dto.name) : district.name;
 
     if (!nextRegion) {
-      throw new BadRequestException('An oversight region is required for this district');
+      throw new BadRequestException(
+        'An oversight region is required for this district',
+      );
     }
 
     if (!nextName) {
@@ -349,7 +368,9 @@ export class DistrictsService implements OnModuleInit {
       });
 
       if (existingDistrict) {
-        throw new BadRequestException('A district with that name already exists in the selected national area');
+        throw new BadRequestException(
+          'A district with that name already exists in the selected national area',
+        );
       }
     }
 

@@ -10,10 +10,22 @@ import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
-import { ServiceType, ServiceTypeDocument } from '../service-types/schemas/service-type.schema';
-import { CreateServiceScheduleDto, UpdateServiceScheduleDto } from './dto/create-service-schedule.dto';
-import { ServiceInstance, ServiceInstanceDocument } from './schemas/service-instance.schema';
-import { ServiceSchedule, ServiceScheduleDocument } from './schemas/service-schedule.schema';
+import {
+  ServiceType,
+  ServiceTypeDocument,
+} from '../service-types/schemas/service-type.schema';
+import {
+  CreateServiceScheduleDto,
+  UpdateServiceScheduleDto,
+} from './dto/create-service-schedule.dto';
+import {
+  ServiceInstance,
+  ServiceInstanceDocument,
+} from './schemas/service-instance.schema';
+import {
+  ServiceSchedule,
+  ServiceScheduleDocument,
+} from './schemas/service-schedule.schema';
 
 type BranchShape = Branch & { _id: Types.ObjectId };
 type ServiceTypeShape = ServiceType & { _id: Types.ObjectId };
@@ -106,8 +118,14 @@ export class ServiceSchedulesService {
     return date;
   }
 
-  private async resolveBranch(currentUser: AuthUser, requestedBranchId?: string) {
-    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, requestedBranchId);
+  private async resolveBranch(
+    currentUser: AuthUser,
+    requestedBranchId?: string,
+  ) {
+    const branchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      requestedBranchId,
+    );
 
     if (!branchId) {
       throw new BadRequestException('A branch is required');
@@ -126,14 +144,18 @@ export class ServiceSchedulesService {
   }
 
   private async resolveServiceType(branchId: string, serviceTypeId: string) {
-    const serviceType = await this.serviceTypeModel.findById(serviceTypeId).lean();
+    const serviceType = await this.serviceTypeModel
+      .findById(serviceTypeId)
+      .lean();
 
     if (!serviceType) {
       throw new NotFoundException('Service type not found');
     }
 
     if (String(serviceType.branchId) !== String(branchId)) {
-      throw new ForbiddenException('Service type must belong to the same branch');
+      throw new ForbiddenException(
+        'Service type must belong to the same branch',
+      );
     }
 
     return serviceType as ServiceTypeShape;
@@ -151,12 +173,19 @@ export class ServiceSchedulesService {
       dayOfWeek,
       startTime,
       ...(currentId ? { _id: { $ne: currentId } } : {}),
-      name: { $regex: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      name: {
+        $regex: new RegExp(
+          `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+          'i',
+        ),
+      },
       isActive: true,
     });
 
     if (existing) {
-      throw new BadRequestException('This branch already has an active schedule with the same name, day, and time');
+      throw new BadRequestException(
+        'This branch already has an active schedule with the same name, day, and time',
+      );
     }
   }
 
@@ -175,7 +204,9 @@ export class ServiceSchedulesService {
     }
 
     const branchId =
-      typeof schedule.branchId === 'object' && schedule.branchId !== null && '_id' in schedule.branchId
+      typeof schedule.branchId === 'object' &&
+      schedule.branchId !== null &&
+      '_id' in schedule.branchId
         ? String((schedule.branchId as { _id?: unknown })._id ?? '')
         : String(schedule.branchId ?? '');
 
@@ -189,14 +220,19 @@ export class ServiceSchedulesService {
           ? {
               _id: String((schedule.branchId as { _id?: unknown })._id ?? ''),
               name: (schedule.branchId as { name?: string }).name,
-              oversightRegion: (schedule.branchId as { oversightRegion?: string }).oversightRegion,
+              oversightRegion: (
+                schedule.branchId as { oversightRegion?: string }
+              ).oversightRegion,
               district: (schedule.branchId as { district?: string }).district,
             }
           : schedule.branchId,
       serviceTypeId:
-        typeof schedule.serviceTypeId === 'object' && schedule.serviceTypeId !== null
+        typeof schedule.serviceTypeId === 'object' &&
+        schedule.serviceTypeId !== null
           ? {
-              _id: String((schedule.serviceTypeId as { _id?: unknown })._id ?? ''),
+              _id: String(
+                (schedule.serviceTypeId as { _id?: unknown })._id ?? '',
+              ),
               name: (schedule.serviceTypeId as { name?: string }).name,
               key: (schedule.serviceTypeId as { key?: string }).key,
             }
@@ -220,7 +256,9 @@ export class ServiceSchedulesService {
     }
 
     const branchId =
-      typeof instance.branchId === 'object' && instance.branchId !== null && '_id' in instance.branchId
+      typeof instance.branchId === 'object' &&
+      instance.branchId !== null &&
+      '_id' in instance.branchId
         ? String((instance.branchId as { _id?: unknown })._id ?? '')
         : String(instance.branchId ?? '');
 
@@ -234,26 +272,37 @@ export class ServiceSchedulesService {
           ? {
               _id: String((instance.branchId as { _id?: unknown })._id ?? ''),
               name: (instance.branchId as { name?: string }).name,
-              oversightRegion: (instance.branchId as { oversightRegion?: string }).oversightRegion,
+              oversightRegion: (
+                instance.branchId as { oversightRegion?: string }
+              ).oversightRegion,
               district: (instance.branchId as { district?: string }).district,
             }
           : instance.branchId,
       serviceTypeId:
-        typeof instance.serviceTypeId === 'object' && instance.serviceTypeId !== null
+        typeof instance.serviceTypeId === 'object' &&
+        instance.serviceTypeId !== null
           ? {
-              _id: String((instance.serviceTypeId as { _id?: unknown })._id ?? ''),
+              _id: String(
+                (instance.serviceTypeId as { _id?: unknown })._id ?? '',
+              ),
               name: (instance.serviceTypeId as { name?: string }).name,
               key: (instance.serviceTypeId as { key?: string }).key,
             }
           : instance.serviceTypeId,
       serviceScheduleId:
-        typeof instance.serviceScheduleId === 'object' && instance.serviceScheduleId !== null
+        typeof instance.serviceScheduleId === 'object' &&
+        instance.serviceScheduleId !== null
           ? {
-              _id: String((instance.serviceScheduleId as { _id?: unknown })._id ?? ''),
+              _id: String(
+                (instance.serviceScheduleId as { _id?: unknown })._id ?? '',
+              ),
               name: (instance.serviceScheduleId as { name?: string }).name,
-              dayOfWeek: (instance.serviceScheduleId as { dayOfWeek?: string }).dayOfWeek,
-              startTime: (instance.serviceScheduleId as { startTime?: string }).startTime,
-              timezone: (instance.serviceScheduleId as { timezone?: string }).timezone,
+              dayOfWeek: (instance.serviceScheduleId as { dayOfWeek?: string })
+                .dayOfWeek,
+              startTime: (instance.serviceScheduleId as { startTime?: string })
+                .startTime,
+              timezone: (instance.serviceScheduleId as { timezone?: string })
+                .timezone,
             }
           : instance.serviceScheduleId,
     };
@@ -264,13 +313,23 @@ export class ServiceSchedulesService {
     currentUser: AuthUser,
   ): Promise<Record<string, unknown>> {
     const branch = await this.resolveBranch(currentUser, dto.branchId);
-    const serviceType = await this.resolveServiceType(String(branch._id), dto.serviceTypeId);
+    const serviceType = await this.resolveServiceType(
+      String(branch._id),
+      dto.serviceTypeId,
+    );
     const name = this.normalizeName(dto.name);
     const dayOfWeek = this.normalizeDayOfWeek(dto.dayOfWeek);
     const startTime = this.normalizeTime(dto.startTime, 'Start time');
-    const endTime = dto.endTime ? this.normalizeTime(dto.endTime, 'End time') : undefined;
+    const endTime = dto.endTime
+      ? this.normalizeTime(dto.endTime, 'End time')
+      : undefined;
 
-    await this.ensureUniqueSchedule(String(branch._id), name, dayOfWeek, startTime);
+    await this.ensureUniqueSchedule(
+      String(branch._id),
+      name,
+      dayOfWeek,
+      startTime,
+    );
 
     const schedule = await this.serviceScheduleModel.create({
       branchId: branch._id,
@@ -311,7 +370,10 @@ export class ServiceSchedulesService {
     currentUser: AuthUser,
     branchId?: string,
   ): Promise<Record<string, unknown>[]> {
-    const query = await this.accessScopeService.buildBranchFilter(currentUser, branchId);
+    const query = await this.accessScopeService.buildBranchFilter(
+      currentUser,
+      branchId,
+    );
 
     const schedules = await this.serviceScheduleModel
       .find(query)
@@ -321,7 +383,9 @@ export class ServiceSchedulesService {
       .lean();
 
     return Promise.all(
-      schedules.map((schedule) => this.buildScheduleResponse(String(schedule._id), currentUser)),
+      schedules.map((schedule) =>
+        this.buildScheduleResponse(String(schedule._id), currentUser),
+      ),
     );
   }
 
@@ -336,7 +400,10 @@ export class ServiceSchedulesService {
       throw new NotFoundException('Service schedule not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
 
     const branch = await this.resolveBranch(
       currentUser,
@@ -360,7 +427,13 @@ export class ServiceSchedulesService {
           : undefined
         : existing.endTime;
 
-    await this.ensureUniqueSchedule(String(branch._id), name, dayOfWeek, startTime, id);
+    await this.ensureUniqueSchedule(
+      String(branch._id),
+      name,
+      dayOfWeek,
+      startTime,
+      id,
+    );
 
     await this.serviceScheduleModel.findByIdAndUpdate(id, {
       branchId: branch._id,
@@ -375,10 +448,13 @@ export class ServiceSchedulesService {
       endTime,
       timezone: dto.timezone?.trim() || existing.timezone || 'America/Chicago',
       locationNotes:
-        dto.locationNotes !== undefined ? dto.locationNotes?.trim() || undefined : existing.locationNotes,
+        dto.locationNotes !== undefined
+          ? dto.locationNotes?.trim() || undefined
+          : existing.locationNotes,
       attendanceEntryEnabled:
         dto.attendanceEntryEnabled ?? existing.attendanceEntryEnabled ?? true,
-      financeEntryEnabled: dto.financeEntryEnabled ?? existing.financeEntryEnabled ?? true,
+      financeEntryEnabled:
+        dto.financeEntryEnabled ?? existing.financeEntryEnabled ?? true,
       isActive: dto.isActive ?? existing.isActive ?? true,
     });
 
@@ -407,13 +483,18 @@ export class ServiceSchedulesService {
     serviceInstanceId?: string;
   }) {
     if (params.serviceInstanceId) {
-      const existingInstance = await this.serviceInstanceModel.findById(params.serviceInstanceId).lean();
+      const existingInstance = await this.serviceInstanceModel
+        .findById(params.serviceInstanceId)
+        .lean();
 
       if (!existingInstance) {
         throw new NotFoundException('Service instance not found');
       }
 
-      await this.accessScopeService.ensureBranchAccess(params.currentUser, String(existingInstance.branchId));
+      await this.accessScopeService.ensureBranchAccess(
+        params.currentUser,
+        String(existingInstance.branchId),
+      );
 
       return existingInstance;
     }
@@ -422,26 +503,35 @@ export class ServiceSchedulesService {
       return null;
     }
 
-    const schedule = await this.serviceScheduleModel.findById(params.serviceScheduleId).lean();
+    const schedule = await this.serviceScheduleModel
+      .findById(params.serviceScheduleId)
+      .lean();
 
     if (!schedule) {
       throw new NotFoundException('Service schedule not found');
     }
 
     if (String(schedule.branchId) !== String(params.branchId)) {
-      throw new ForbiddenException('Service schedule must belong to the same branch');
+      throw new ForbiddenException(
+        'Service schedule must belong to the same branch',
+      );
     }
 
-    await this.accessScopeService.ensureBranchAccess(params.currentUser, String(schedule.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      params.currentUser,
+      String(schedule.branchId),
+    );
 
     const serviceDate = this.validateServiceDate(params.serviceDate);
     const serviceDateKey = this.formatDateKey(serviceDate);
 
-    const existingInstance = await this.serviceInstanceModel.findOne({
-      branchId: schedule.branchId,
-      serviceScheduleId: schedule._id,
-      serviceDateKey,
-    }).lean();
+    const existingInstance = await this.serviceInstanceModel
+      .findOne({
+        branchId: schedule.branchId,
+        serviceScheduleId: schedule._id,
+        serviceDateKey,
+      })
+      .lean();
 
     if (existingInstance) {
       return existingInstance;
@@ -469,7 +559,10 @@ export class ServiceSchedulesService {
     return created.toObject();
   }
 
-  async touchServiceInstance(instanceId: string, kind: 'attendance' | 'finance') {
+  async touchServiceInstance(
+    instanceId: string,
+    kind: 'attendance' | 'finance',
+  ) {
     if (!instanceId) {
       return;
     }
@@ -494,10 +587,11 @@ export class ServiceSchedulesService {
       status?: string;
     } = {},
   ): Promise<Record<string, unknown>[]> {
-    const query: Record<string, unknown> = await this.accessScopeService.buildBranchFilter(
-      currentUser,
-      filters.branchId,
-    );
+    const query: Record<string, unknown> =
+      await this.accessScopeService.buildBranchFilter(
+        currentUser,
+        filters.branchId,
+      );
 
     if (filters.serviceScheduleId) {
       query.serviceScheduleId = new Types.ObjectId(filters.serviceScheduleId);
@@ -536,7 +630,9 @@ export class ServiceSchedulesService {
       .lean();
 
     return Promise.all(
-      instances.map((instance) => this.buildInstanceResponse(String(instance._id), currentUser)),
+      instances.map((instance) =>
+        this.buildInstanceResponse(String(instance._id), currentUser),
+      ),
     );
   }
 }

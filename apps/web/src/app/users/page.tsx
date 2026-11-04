@@ -1,11 +1,13 @@
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Badge, Button, ButtonLink, Card, CardHeader, Field, Pagination } from "@/components/ui/ui";
 import { UserCreateModalButton } from "@/components/user-create-modal-button";
 import { UserManagementList } from "@/components/user-management-list";
 import { requireServerRole } from "@/lib/auth";
 import {
   canFilterAcrossBranches,
+  formatRoleLabel,
   getVisibleUserRoleOptions,
   isNationalRole,
 } from "@/lib/permissions";
@@ -157,6 +159,14 @@ export default async function UsersPage({
     totalUsers,
   );
 
+  const scopeLabel = selectedBranchId
+    ? "Branch scope"
+    : district
+      ? "District scope"
+      : oversightRegion
+        ? "National scope"
+        : "Network scope";
+
   function buildPageHref(page: number) {
     const query = buildUsersQuery({
       selectedBranchId,
@@ -193,140 +203,7 @@ export default async function UsersPage({
         }
       />
 
-      <section className="surface rounded-[24px] p-4 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="eyebrow">Directory Filters</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-950">
-              Refine the staff directory
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Review people by scope, role, and status.
-            </p>
-          </div>
-          <div className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {selectedBranchId
-              ? "Branch scope"
-              : district
-                ? "District scope"
-                : oversightRegion
-                  ? "National scope"
-                  : "Network scope"}
-          </div>
-        </div>
-
-        <form className="mt-4 grid gap-3 rounded-[22px] border border-slate-200 bg-white p-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <input
-              name="search"
-              defaultValue={search}
-              placeholder="Search by name or email"
-              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 xl:col-span-2"
-            />
-
-            <select
-              name="role"
-              defaultValue={role}
-              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-            >
-              <option value="">All roles</option>
-              {visibleRoleOptions.map((roleOption) => (
-                <option key={roleOption} value={roleOption}>
-                  {roleOption.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
-
-            <select
-              name="status"
-              defaultValue={status}
-              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-            >
-              <option value="">All statuses</option>
-              <option value="active">Active only</option>
-              <option value="inactive">Inactive only</option>
-            </select>
-
-            {isSuperAdmin ? (
-              <select
-                name="oversightRegion"
-                defaultValue={oversightRegion}
-                className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-              >
-                <option value="">All oversight regions</option>
-                {oversightRegionNames.map((regionName) => (
-                  <option key={regionName} value={regionName}>
-                    {regionName}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-
-            {canChooseDistrict ? (
-              <select
-                name="district"
-                defaultValue={district}
-                className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-              >
-                <option value="">All districts</option>
-                {districtNames.map((districtName) => (
-                  <option key={districtName} value={districtName}>
-                    {districtName}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-
-            {canFilterBranches ? (
-              <select
-                name="branchId"
-                defaultValue={selectedBranchId}
-                className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-              >
-                <option value="">All branches</option>
-                {branches.map((branch) => (
-                  <option key={branch._id} value={branch._id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-
-            <select
-              name="limit"
-              defaultValue={String(pageSize)}
-              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-            >
-              <option value="10">10 per page</option>
-              <option value="20">20 per page</option>
-              <option value="50">50 per page</option>
-            </select>
-          </div>
-
-          <input type="hidden" name="page" value="1" />
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-              {totalUsers > 0
-                ? `Showing ${startItem}-${endItem} of ${totalUsers} users`
-                : "No users found in this scope"}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <a
-                href="/users"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-              >
-                Reset
-              </a>
-              <button className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Apply filters
-              </button>
-            </div>
-          </div>
-        </form>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Total users"
           value={String(totalUsers)}
@@ -353,77 +230,153 @@ export default async function UsersPage({
         />
       </section>
 
-      <section className="surface rounded-[28px] border border-slate-200/70 p-5 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                User directory
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Staff accounts in the current scope.
-              </p>
-            </div>
+      <Card className="app-rise p-6 sm:p-7">
+        <CardHeader
+          label="Filters"
+          title="Refine the staff directory"
+          description="Review people by scope, role, and status."
+          action={<Badge tone="info">{scopeLabel}</Badge>}
+        />
 
-            <div className="inline-flex w-fit rounded-xl bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {selectedBranchId ? "Filtered scope" : "Current scope"}
-            </div>
+        <form className="mt-6">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Field label="Search" className="xl:col-span-2">
+              <input
+                name="search"
+                defaultValue={search}
+                placeholder="Search by name or email"
+                className="ui-input"
+              />
+            </Field>
+
+            <Field label="Role">
+              <select name="role" defaultValue={role} className="ui-input">
+                <option value="">All roles</option>
+                {visibleRoleOptions.map((roleOption) => (
+                  <option key={roleOption} value={roleOption}>
+                    {formatRoleLabel(roleOption)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Status">
+              <select name="status" defaultValue={status} className="ui-input">
+                <option value="">All statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+              </select>
+            </Field>
+
+            {isSuperAdmin ? (
+              <Field label="Oversight region">
+                <select name="oversightRegion" defaultValue={oversightRegion} className="ui-input">
+                  <option value="">All oversight regions</option>
+                  {oversightRegionNames.map((regionName) => (
+                    <option key={regionName} value={regionName}>
+                      {regionName}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
+
+            {canChooseDistrict ? (
+              <Field label="District">
+                <select name="district" defaultValue={district} className="ui-input">
+                  <option value="">All districts</option>
+                  {districtNames.map((districtName) => (
+                    <option key={districtName} value={districtName}>
+                      {districtName}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
+
+            {canFilterBranches ? (
+              <Field label="Branch">
+                <select name="branchId" defaultValue={selectedBranchId} className="ui-input">
+                  <option value="">All branches</option>
+                  {branches.map((branch) => (
+                    <option key={branch._id} value={branch._id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
+
+            <Field label="Page size">
+              <select name="limit" defaultValue={String(pageSize)} className="ui-input">
+                <option value="10">10 per page</option>
+                <option value="20">20 per page</option>
+                <option value="50">50 per page</option>
+              </select>
+            </Field>
           </div>
 
-          <div className="mt-5">
-            <UserManagementList
-              users={users}
-              branches={branches}
-              currentUserRole={currentUser.role}
-              currentUserId={currentUser.id || currentUser._id}
-              defaultBranchId={currentUser.branchId}
-              defaultOversightRegion={currentUser.oversightRegion}
-              defaultDistrict={currentUser.district}
-              oversightRegions={oversightRegions}
-              districts={districts}
-            />
-          </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-              {totalUsers > 0
-                ? `Showing ${startItem}-${endItem} of ${totalUsers}`
-                : "No users found"}
+          <input type="hidden" name="page" value="1" />
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-5">
+            <p className="text-[13px] text-[#6b6b6b]">
+              {totalUsers > 0 ? (
+                <>
+                  Showing <span className="font-medium tabular-nums text-[#111111]">{startItem}–{endItem}</span> of{" "}
+                  <span className="tabular-nums">{totalUsers}</span> users
+                </>
+              ) : (
+                "No users found in this scope"
+              )}
             </p>
-            <div className="flex items-center gap-2">
-              <a
-                href={buildPageHref(Math.max(1, userDirectory.pagination.page - 1))}
-                aria-disabled={userDirectory.pagination.page === 1}
-                className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
-                  userDirectory.pagination.page === 1
-                    ? "pointer-events-none border-slate-200 text-slate-300"
-                    : "border-slate-200 text-slate-700"
-                }`}
-              >
-                Previous
-              </a>
-              <span className="text-sm text-slate-500">
-                Page {userDirectory.pagination.page} of {userDirectory.pagination.totalPages}
-              </span>
-              <a
-                href={buildPageHref(
-                  Math.min(
-                    userDirectory.pagination.totalPages,
-                    userDirectory.pagination.page + 1,
-                  ),
-                )}
-                aria-disabled={
-                  userDirectory.pagination.page === userDirectory.pagination.totalPages
-                }
-                className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
-                  userDirectory.pagination.page === userDirectory.pagination.totalPages
-                    ? "pointer-events-none border-slate-200 text-slate-300"
-                    : "border-slate-200 text-slate-700"
-                }`}
-              >
-                Next
-              </a>
+            <div className="flex flex-wrap items-center gap-2">
+              <ButtonLink href="/users" variant="ghost">
+                Reset
+              </ButtonLink>
+              <Button type="submit" icon="search">
+                Apply filters
+              </Button>
             </div>
           </div>
-      </section>
+        </form>
+      </Card>
+
+      <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+        <CardHeader
+          label="Directory"
+          title="Staff accounts"
+          description="Open an account to update its details, role, scope, or sign-in access."
+          action={<Badge>{selectedBranchId ? "Filtered scope" : "Current scope"}</Badge>}
+        />
+
+        <div className="mt-6">
+          <UserManagementList
+            users={users}
+            branches={branches}
+            currentUserRole={currentUser.role}
+            currentUserId={currentUser.id || currentUser._id}
+            defaultBranchId={currentUser.branchId}
+            defaultOversightRegion={currentUser.oversightRegion}
+            defaultDistrict={currentUser.district}
+            oversightRegions={oversightRegions}
+            districts={districts}
+          />
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-4">
+          <p className="text-[13px] text-[#8a8780]">
+            {totalUsers > 0 ? `Showing ${startItem}–${endItem} of ${totalUsers}` : "No users found"}
+          </p>
+          <Pagination
+            page={userDirectory.pagination.page}
+            totalPages={userDirectory.pagination.totalPages}
+            prevHref={buildPageHref(Math.max(1, userDirectory.pagination.page - 1))}
+            nextHref={buildPageHref(
+              Math.min(userDirectory.pagination.totalPages, userDirectory.pagination.page + 1),
+            )}
+          />
+        </div>
+      </Card>
     </Shell>
   );
 }

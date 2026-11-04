@@ -45,7 +45,8 @@ type UserDirectoryFilters = {
 export class UsersService implements OnModuleInit {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(Branch.name) private readonly branchModel: Model<BranchDocument>,
+    @InjectModel(Branch.name)
+    private readonly branchModel: Model<BranchDocument>,
     private readonly configService: ConfigService,
     private readonly accessScopeService: AccessScopeService,
     private readonly oversightRegionsService: OversightRegionsService,
@@ -126,7 +127,13 @@ export class UsersService implements OnModuleInit {
     }
 
     if (isBranchLeadershipRole(currentUserRole)) {
-      return ['branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher'];
+      return [
+        'branch_admin',
+        'resident_pastor',
+        'associate_pastor',
+        'follow_up',
+        'usher',
+      ];
     }
 
     return [currentUserRole];
@@ -164,7 +171,13 @@ export class UsersService implements OnModuleInit {
     }
 
     if (currentUserRole === 'branch_admin') {
-      return ['branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher'];
+      return [
+        'branch_admin',
+        'resident_pastor',
+        'associate_pastor',
+        'follow_up',
+        'usher',
+      ];
     }
 
     return [];
@@ -408,8 +421,15 @@ export class UsersService implements OnModuleInit {
     }
 
     if (filters.branchId) {
-      await this.accessScopeService.ensureBranchAccess(currentUser, filters.branchId);
-      query.branchId = filters.branchId;
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        filters.branchId,
+      );
+      query.branchId = {
+        $in: this.accessScopeService.buildBranchReferenceValues([
+          filters.branchId,
+        ]),
+      };
 
       if (filters.role) {
         if (!isBranchScopedRole(filters.role)) {
@@ -425,7 +445,11 @@ export class UsersService implements OnModuleInit {
     }
 
     if (isBranchScopedRole(currentUser.role)) {
-      query.branchId = currentUser.branchId;
+      query.branchId = {
+        $in: this.accessScopeService.buildBranchReferenceValues(
+          currentUser.branchId ? [currentUser.branchId] : [],
+        ),
+      };
       return query;
     }
 
@@ -663,7 +687,9 @@ export class UsersService implements OnModuleInit {
     const nextRole = dto.role ?? target.role;
     const scope = await this.resolveScopeForRole(currentUser, nextRole, {
       branchId:
-        dto.branchId !== undefined ? dto.branchId : String(target.branchId ?? ''),
+        dto.branchId !== undefined
+          ? dto.branchId
+          : String(target.branchId ?? ''),
       oversightRegion:
         dto.oversightRegion !== undefined
           ? dto.oversightRegion
@@ -722,7 +748,9 @@ export class UsersService implements OnModuleInit {
         userId,
         {
           ...(Object.keys(setPayload).length > 0 ? { $set: setPayload } : {}),
-          ...(Object.keys(unsetPayload).length > 0 ? { $unset: unsetPayload } : {}),
+          ...(Object.keys(unsetPayload).length > 0
+            ? { $unset: unsetPayload }
+            : {}),
         },
         { new: true },
       )
@@ -774,7 +802,11 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
-  async setPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date) {
+  async setPasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ) {
     return this.userModel.findByIdAndUpdate(
       userId,
       {

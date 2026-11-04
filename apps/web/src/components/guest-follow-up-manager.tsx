@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Badge, Button, EmptyState, Field, formatStatus, statusTone } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import {
   FOLLOW_UP_CONTACT_METHOD_OPTIONS,
@@ -107,125 +108,140 @@ export function GuestFollowUpManager({
   }
 
   return (
-    <section className="surface rounded-[32px] p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="eyebrow">Follow-Up Actions</p>
-          <h2 className="mt-3 text-2xl font-semibold text-slate-950">Assign and update care tasks</h2>
-        </div>
-        <div className="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-900">
-          {followUps.length} active records
-        </div>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[14px] text-[#6b6b6b]">Assign care workers and update each care task as it moves forward.</p>
+        <Badge tone={followUps.length > 0 ? "flame" : "neutral"}>{followUps.length} active records</Badge>
       </div>
 
-      <div className="mt-6 space-y-4">
-        {followUps.map((followUp) => (
-          <form
-            key={followUp._id}
-            action={(formData) => updateFollowUp(followUp._id, formData)}
-            className="rounded-[28px] border border-slate-200 bg-white p-5"
-          >
-            <div className="grid gap-3 md:grid-cols-2">
-              <select
-                name={`status-${followUp._id}`}
-                defaultValue={followUp.status}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              >
-                {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                name={`assignedTo-${followUp._id}`}
-                defaultValue={followUp.assignedTo?._id || ""}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              >
-                <option value="">Unassigned</option>
-                {assignableUsers.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {user.firstName} {user.lastName}
-                  </option>
-                ))}
-              </select>
-              <select
-                name={`contactMethod-${followUp._id}`}
-                defaultValue={followUp.contactMethod}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              >
-                {FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                name={`nextActionDate-${followUp._id}`}
-                type="datetime-local"
-                defaultValue={followUp.nextActionDate ? new Date(followUp.nextActionDate).toISOString().slice(0, 16) : ""}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              />
-              <textarea
-                name={`note-${followUp._id}`}
-                defaultValue={followUp.note}
-                className="min-h-24 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none md:col-span-2"
-              />
-              <p className="text-xs text-slate-500 md:col-span-2">
-                Current stage: {formatFollowUpValue(followUp.status)}. Reassigning a worker can move
-                this record back to Assigned when needed.
-              </p>
-            </div>
-            <button
-              type="submit"
-              disabled={loadingId === followUp._id}
-              className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+      {followUps.length === 0 ? (
+        <EmptyState icon="care" title="No follow-up yet">
+          No care actions have been recorded for this guest. Add the first one below.
+        </EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {followUps.map((followUp) => (
+            <form
+              key={followUp._id}
+              action={(formData) => updateFollowUp(followUp._id, formData)}
+              className="rounded-2xl border border-black/[0.06] p-5"
             >
-              {loadingId === followUp._id ? "Saving..." : "Update follow-up"}
-            </button>
-          </form>
-        ))}
-      </div>
-
-      <form action={createFollowUp} className="mt-6 rounded-[28px] bg-slate-950 p-5 text-white">
-        <p className="text-lg font-semibold">Add another care action</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <select name="create-status" defaultValue="new" className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 outline-none">
-            {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="text-slate-950">
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <select name="create-assignedTo" className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 outline-none">
-            <option value="" className="text-slate-950">Unassigned</option>
-            {assignableUsers.map((user) => (
-              <option key={user._id} value={user._id} className="text-slate-950">
-                {user.firstName} {user.lastName}
-              </option>
-            ))}
-          </select>
-          <select
-            name="create-contactMethod"
-            defaultValue="phone_call"
-            className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 outline-none"
-          >
-            {FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="text-slate-950">
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input name="create-nextActionDate" type="datetime-local" className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 outline-none" />
-          <textarea name="create-note" required placeholder="What should happen next?" className="min-h-24 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 outline-none md:col-span-2" />
-          <p className="text-xs text-slate-300 md:col-span-2">
-            If you assign a care worker and leave the status as New, this record will move into Assigned automatically.
-          </p>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <Badge tone={statusTone(followUp.status)} dot>
+                  {formatStatus(followUp.status)}
+                </Badge>
+                {followUp.assignedTo ? (
+                  <span className="text-[13px] text-[#6b6b6b]">
+                    Owned by {followUp.assignedTo.firstName} {followUp.assignedTo.lastName}
+                  </span>
+                ) : (
+                  <span className="text-[13px] text-[#8a8780]">Unassigned</span>
+                )}
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Stage">
+                  <select name={`status-${followUp._id}`} defaultValue={followUp.status} className="ui-input">
+                    {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Care worker">
+                  <select name={`assignedTo-${followUp._id}`} defaultValue={followUp.assignedTo?._id || ""} className="ui-input">
+                    <option value="">Unassigned</option>
+                    {assignableUsers.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.firstName} {user.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Contact method">
+                  <select name={`contactMethod-${followUp._id}`} defaultValue={followUp.contactMethod} className="ui-input">
+                    {FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Next action">
+                  <input
+                    name={`nextActionDate-${followUp._id}`}
+                    type="datetime-local"
+                    defaultValue={followUp.nextActionDate ? new Date(followUp.nextActionDate).toISOString().slice(0, 16) : ""}
+                    className="ui-input"
+                  />
+                </Field>
+                <Field
+                  label="Note"
+                  className="md:col-span-2"
+                  hint={`Current stage: ${formatFollowUpValue(followUp.status)}. Reassigning a worker can move this record back to Assigned when needed.`}
+                >
+                  <textarea name={`note-${followUp._id}`} defaultValue={followUp.note} className="ui-input" />
+                </Field>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Button type="submit" variant="secondary" disabled={loadingId === followUp._id}>
+                  {loadingId === followUp._id ? "Saving..." : "Update follow-up"}
+                </Button>
+              </div>
+            </form>
+          ))}
         </div>
-        <button type="submit" disabled={loadingId === "create"} className="mt-4 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white">
-          {loadingId === "create" ? "Saving..." : "Create follow-up"}
-        </button>
+      )}
+
+      <form action={createFollowUp} className="rounded-2xl bg-[#f6f5f1] p-5">
+        <p className="lp-heading text-[17px]">Add another care action</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label="Stage">
+            <select name="create-status" defaultValue="new" className="ui-input">
+              {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Care worker">
+            <select name="create-assignedTo" className="ui-input">
+              <option value="">Unassigned</option>
+              {assignableUsers.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.firstName} {user.lastName}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Contact method">
+            <select name="create-contactMethod" defaultValue="phone_call" className="ui-input">
+              {FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Next action">
+            <input name="create-nextActionDate" type="datetime-local" className="ui-input" />
+          </Field>
+          <Field
+            label="Note"
+            required
+            className="md:col-span-2"
+            hint="If you assign a care worker and leave the stage as New, the record moves to Assigned automatically."
+          >
+            <textarea name="create-note" required placeholder="What should happen next?" className="ui-input" />
+          </Field>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button type="submit" disabled={loadingId === "create"}>
+            {loadingId === "create" ? "Saving..." : "Create follow-up"}
+          </Button>
+        </div>
       </form>
-    </section>
+    </div>
   );
 }

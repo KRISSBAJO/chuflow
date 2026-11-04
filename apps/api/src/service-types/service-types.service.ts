@@ -1,15 +1,27 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { ServiceType, ServiceTypeDocument } from './schemas/service-type.schema';
-import { CreateServiceTypeDto, UpdateServiceTypeDto } from './dto/create-service-type.dto';
+import {
+  ServiceType,
+  ServiceTypeDocument,
+} from './schemas/service-type.schema';
+import {
+  CreateServiceTypeDto,
+  UpdateServiceTypeDto,
+} from './dto/create-service-type.dto';
 
 @Injectable()
 export class ServiceTypesService {
   constructor(
-    @InjectModel(ServiceType.name) private readonly serviceTypeModel: Model<ServiceTypeDocument>,
+    @InjectModel(ServiceType.name)
+    private readonly serviceTypeModel: Model<ServiceTypeDocument>,
     private readonly accessScopeService: AccessScopeService,
   ) {}
 
@@ -41,7 +53,9 @@ export class ServiceTypesService {
     });
 
     if (existing) {
-      throw new BadRequestException('A service type with this name or key already exists in the branch');
+      throw new BadRequestException(
+        'A service type with this name or key already exists in the branch',
+      );
     }
   }
 
@@ -49,7 +63,10 @@ export class ServiceTypesService {
     serviceTypeId: string,
     currentUser: AuthUser,
   ): Promise<Record<string, unknown>> {
-    const serviceType = await this.serviceTypeModel.findById(serviceTypeId).populate('branchId').lean();
+    const serviceType = await this.serviceTypeModel
+      .findById(serviceTypeId)
+      .populate('branchId')
+      .lean();
 
     if (!serviceType) {
       throw new NotFoundException('Service type not found');
@@ -71,10 +88,15 @@ export class ServiceTypesService {
     dto: CreateServiceTypeDto,
     currentUser: AuthUser,
   ): Promise<Record<string, unknown>> {
-    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
+    const branchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      dto.branchId,
+    );
 
     if (!branchId) {
-      throw new BadRequestException('A branch is required to create a service type');
+      throw new BadRequestException(
+        'A branch is required to create a service type',
+      );
     }
 
     const name = dto.name.trim();
@@ -98,7 +120,9 @@ export class ServiceTypesService {
     branchId?: string,
   ): Promise<Record<string, unknown>[]> {
     const serviceTypes = await this.serviceTypeModel
-      .find(await this.accessScopeService.buildBranchFilter(currentUser, branchId))
+      .find(
+        await this.accessScopeService.buildBranchFilter(currentUser, branchId),
+      )
       .populate('branchId')
       .sort({ name: 1 })
       .lean();
@@ -124,7 +148,10 @@ export class ServiceTypesService {
       throw new NotFoundException('Service type not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
 
     const branchId = await this.accessScopeService.resolveScopedBranchId(
       currentUser,
@@ -132,7 +159,9 @@ export class ServiceTypesService {
     );
 
     if (!branchId) {
-      throw new BadRequestException('A branch is required to update a service type');
+      throw new BadRequestException(
+        'A branch is required to update a service type',
+      );
     }
 
     const name = dto.name?.trim() || existing.name;
@@ -145,14 +174,19 @@ export class ServiceTypesService {
       ...(dto.name !== undefined ? { name } : {}),
       ...(dto.key !== undefined || dto.name !== undefined ? { key } : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-      ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || undefined } : {}),
+      ...(dto.notes !== undefined
+        ? { notes: dto.notes?.trim() || undefined }
+        : {}),
     });
 
     return this.buildResponse(id, currentUser);
   }
 
   async findActiveByBranch(branchId: string) {
-    return this.serviceTypeModel.find({ branchId, isActive: true }).sort({ name: 1 }).lean();
+    return this.serviceTypeModel
+      .find({ branchId, isActive: true })
+      .sort({ name: 1 })
+      .lean();
   }
 
   async findNamesByBranch(branchId: string) {
@@ -166,8 +200,19 @@ export class ServiceTypesService {
     return this.serviceTypeModel.findOne({
       branchId,
       $or: [
-        { key: { $regex: new RegExp(`^${this.escapeRegExp(this.slugify(trimmedValue))}$`, 'i') } },
-        { name: { $regex: new RegExp(`^${this.escapeRegExp(trimmedValue)}$`, 'i') } },
+        {
+          key: {
+            $regex: new RegExp(
+              `^${this.escapeRegExp(this.slugify(trimmedValue))}$`,
+              'i',
+            ),
+          },
+        },
+        {
+          name: {
+            $regex: new RegExp(`^${this.escapeRegExp(trimmedValue)}$`, 'i'),
+          },
+        },
       ],
     });
   }

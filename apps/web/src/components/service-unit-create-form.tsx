@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import { WEEKDAY_OPTIONS } from "@/lib/member-form-options";
 import { isBranchScopedRole } from "@/lib/permissions";
@@ -87,29 +88,27 @@ export function ServiceUnitCreateForm({
     }
   }
 
+  const leadershipRequired = filteredMembers.length > 0;
+
   return (
-    <form action={handleSubmit} className="rounded-[24px] bg-white p-5">
+    <form action={handleSubmit} className={showHeader ? "rounded-2xl bg-white p-5 sm:p-6" : undefined}>
       {showHeader ? (
-        <div className="flex flex-col gap-2">
-          <h3 className="text-lg font-semibold text-slate-950">
-            Create service unit
-          </h3>
-          <p className="text-sm leading-6 text-slate-500">
-            Build the real ministry structure for a branch, then assign members
-            into it from the member record.
+        <div className="mb-5">
+          <h3 className="lp-heading text-[18px] leading-tight">Create service unit</h3>
+          <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">
+            Set up a ministry team for a branch, then assign members to it from their member record.
           </p>
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {!isBranchScopedRole(currentUserRole) ? (
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Branch</span>
+          <Field label="Branch" required>
             <select
               name="branchId"
               value={selectedBranchId}
               onChange={(event) => setSelectedBranchId(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value="">Select branch</option>
@@ -119,28 +118,17 @@ export function ServiceUnitCreateForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         ) : (
           <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
         )}
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Unit name</span>
-          <input
-            name="name"
-            placeholder="Ushering, Choir, Technical..."
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
+        <Field label="Unit name" required>
+          <input name="name" placeholder="Ushering, choir, technical..." className="ui-input" required />
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Leader</span>
-          <select
-            name="leaderMemberId"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required={filteredMembers.length > 0}
-          >
+        <Field label="Leader" required={leadershipRequired}>
+          <select name="leaderMemberId" className="ui-input" required={leadershipRequired}>
             <option value="">Select leader</option>
             {filteredMembers.map((member) => (
               <option key={member._id} value={member._id}>
@@ -148,15 +136,10 @@ export function ServiceUnitCreateForm({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Secretary</span>
-          <select
-            name="secretaryMemberId"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required={filteredMembers.length > 0}
-          >
+        <Field label="Secretary" required={leadershipRequired}>
+          <select name="secretaryMemberId" className="ui-input" required={leadershipRequired}>
             <option value="">Select secretary</option>
             {filteredMembers.map((member) => (
               <option key={member._id} value={member._id}>
@@ -164,68 +147,52 @@ export function ServiceUnitCreateForm({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Meeting day</span>
-          <select
-            name="meetingDay"
-            defaultValue="Saturday"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          >
+        <Field label="Meeting day" required>
+          <select name="meetingDay" defaultValue="Saturday" className="ui-input" required>
             {WEEKDAY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Prayer day</span>
-          <select
-            name="prayerDay"
-            defaultValue="Friday"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          >
+        <Field label="Prayer day" required>
+          <select name="prayerDay" defaultValue="Friday" className="ui-input" required>
             {WEEKDAY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
+
+        <Field label="Notes" className="md:col-span-2">
+          <textarea
+            name="notes"
+            placeholder="Meeting venue, reporting rhythm, prayer focus, or other notes"
+            className="ui-input"
+          />
+        </Field>
       </div>
 
-      <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
-        Active service unit
-      </label>
-
-      <label className="mt-4 block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Notes</span>
-        <textarea
-          name="notes"
-          placeholder="Meeting venue, reporting rhythm, prayer focus, or extra structure notes"
-          className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-        />
-      </label>
-
-      <p className="mt-3 text-xs text-slate-500">
-        {filteredMembers.length > 0
-          ? "Leader and secretary lists are scoped to the selected branch."
-          : "Add members into this branch first if you want to assign leader and secretary immediately."}
+      <p className="mt-4 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">
+        {leadershipRequired
+          ? "Leader and secretary lists only show members of the selected branch."
+          : "Add members to this branch first if you want to assign a leader and secretary now."}
       </p>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-      >
-        {loading ? "Creating..." : "Create service unit"}
-      </button>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-5">
+        <label className="flex items-center gap-2.5 text-[14px] text-[#55534e]">
+          <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
+          Active service unit
+        </label>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Creating..." : "Create service unit"}
+        </Button>
+      </div>
     </form>
   );
 }

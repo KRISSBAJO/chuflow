@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 
 export function GuestProfileForm({
@@ -79,184 +80,100 @@ export function GuestProfileForm({
   }
 
   return (
-    <div className="rounded-3xl bg-white/90 p-8 shadow-sm backdrop-blur-xl border border-white/60">
-      {/* Header */}
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.125em] text-amber-600">
-          GUEST PROFILE
-        </p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-          Update Guest Details
-        </h2>
-        <p className="mt-2 text-slate-600">
-          Keep their information accurate and up to date.
-        </p>
-      </div>
+    <form action={handleSubmit} className="space-y-6">
+      <FormGroup title="Basic information">
+        <Field label="Title">
+          <input name="title" defaultValue={guest.title || ""} placeholder="Mr, Mrs, Pastor…" className="ui-input" />
+        </Field>
+        <Field label="Gender">
+          <input name="gender" defaultValue={guest.gender || ""} placeholder="Gender" className="ui-input" />
+        </Field>
+        <Field label="First name" required>
+          <input name="firstName" defaultValue={guest.firstName} required placeholder="First name" className="ui-input" />
+        </Field>
+        <Field label="Last name" required>
+          <input name="lastName" defaultValue={guest.lastName} required placeholder="Last name" className="ui-input" />
+        </Field>
+      </FormGroup>
 
-      {/* Form */}
-      <form action={handleSubmit} className="space-y-8">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Personal Info */}
-          <div className="md:col-span-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Basic Information
-            </p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <input
-                name="title"
-                defaultValue={guest.title || ""}
-                placeholder="Title (e.g. Mr, Mrs, Pastor)"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="gender"
-                defaultValue={guest.gender || ""}
-                placeholder="Gender"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="firstName"
-                defaultValue={guest.firstName}
-                required
-                placeholder="First name"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="lastName"
-                defaultValue={guest.lastName}
-                required
-                placeholder="Last name"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-            </div>
-          </div>
+      <FormGroup title="Contact information">
+        <Field label="Phone number" required>
+          <input name="phone" defaultValue={guest.phone} required placeholder="Phone number" className="ui-input" />
+        </Field>
+        <Field label="Email">
+          <input name="email" defaultValue={guest.email || ""} placeholder="name@example.com" type="email" className="ui-input" />
+        </Field>
+      </FormGroup>
 
-          {/* Contact */}
-          <div className="md:col-span-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Contact Information
-            </p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <input
-                name="phone"
-                defaultValue={guest.phone}
-                required
-                placeholder="Phone number"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="email"
-                defaultValue={guest.email || ""}
-                placeholder="Email address"
-                type="email"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-            </div>
-          </div>
+      <FormGroup title="Additional details">
+        <Field label="Marital status">
+          <input name="maritalStatus" defaultValue={guest.maritalStatus || ""} placeholder="Marital status" className="ui-input" />
+        </Field>
+        <Field label="Visit status">
+          <input name="visitStatus" defaultValue={guest.visitStatus} placeholder="Visit status" className="ui-input" />
+        </Field>
+        <Field label="Invited by">
+          <input name="invitedBy" defaultValue={guest.invitedBy || ""} placeholder="Who invited them?" className="ui-input" />
+        </Field>
+        <Field label="How they heard about us">
+          <input
+            name="heardAboutChurch"
+            defaultValue={guest.heardAboutChurch || ""}
+            placeholder="Friend, social media, walk-in…"
+            className="ui-input"
+          />
+        </Field>
+        <Field label="Street address" className="md:col-span-2">
+          <input name="address" defaultValue={guest.address || ""} placeholder="Street address" className="ui-input" />
+        </Field>
+        <Field label="City">
+          <input name="city" defaultValue={guest.city || ""} placeholder="City" className="ui-input" />
+        </Field>
+        <Field label="State">
+          <input name="state" defaultValue={guest.state || ""} placeholder="State" className="ui-input" />
+        </Field>
+        <Field label="Zip code">
+          <input name="zipCode" defaultValue={guest.zipCode || ""} placeholder="Zip code" className="ui-input" />
+        </Field>
+      </FormGroup>
 
-          {/* Additional Details */}
-          <div className="md:col-span-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Additional Details
-            </p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <input
-                name="maritalStatus"
-                defaultValue={guest.maritalStatus || ""}
-                placeholder="Marital status"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="visitStatus"
-                defaultValue={guest.visitStatus}
-                placeholder="Visit status"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="invitedBy"
-                defaultValue={guest.invitedBy || ""}
-                placeholder="Invited by"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="heardAboutChurch"
-                defaultValue={guest.heardAboutChurch || ""}
-                placeholder="How did they hear about us?"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
+      <FormGroup title="Spiritual information">
+        <Field label="Salvation response" className="md:col-span-2">
+          <input
+            name="salvationResponse"
+            defaultValue={guest.salvationResponse || ""}
+            placeholder="Salvation response"
+            className="ui-input"
+          />
+        </Field>
+        <Field label="Prayer request" className="md:col-span-2">
+          <textarea name="prayerRequest" defaultValue={guest.prayerRequest || ""} placeholder="Prayer request" className="ui-input" />
+        </Field>
+      </FormGroup>
 
-              <input
-                name="address"
-                defaultValue={guest.address || ""}
-                placeholder="Street address"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition md:col-span-2"
-              />
-              <input
-                name="city"
-                defaultValue={guest.city || ""}
-                placeholder="City"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="state"
-                defaultValue={guest.state || ""}
-                placeholder="State"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <input
-                name="zipCode"
-                defaultValue={guest.zipCode || ""}
-                placeholder="Zip code"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-            </div>
-          </div>
-
-          {/* Spiritual Info */}
-          <div className="md:col-span-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Spiritual Information
-            </p>
-            <div className="grid gap-4">
-              <input
-                name="salvationResponse"
-                defaultValue={guest.salvationResponse || ""}
-                placeholder="Salvation response"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition"
-              />
-              <textarea
-                name="prayerRequest"
-                defaultValue={guest.prayerRequest || ""}
-                placeholder="Prayer request..."
-                className="min-h-[110px] rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm outline-none focus:border-slate-400 focus:bg-white transition md:col-span-2 resize-y"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Submit Section */}
-        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-2xl bg-slate-900 px-8 py-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      <div className="flex flex-col-reverse gap-3 border-t border-black/[0.06] pt-5 sm:flex-row sm:items-center sm:justify-end">
+        {status ? (
+          <p
+            className={`text-[13px] sm:mr-auto ${
+              status.includes("success") || status.includes("✓") ? "text-emerald-700" : "text-red-700"
+            }`}
           >
-            {loading ? "Saving changes..." : "Save Guest Profile"}
-          </button>
+            {status}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving changes..." : "Save guest profile"}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
-          {status && (
-            <p
-              className={`text-center text-sm ${
-                status.includes("success") || status.includes("✓")
-                  ? "text-emerald-600"
-                  : "text-red-600"
-              }`}
-            >
-              {status}
-            </p>
-          )}
-        </div>
-      </form>
-    </div>
+function FormGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <fieldset>
+      <legend className="mb-3 text-[13px] font-medium text-[#6b6b6b]">{title}</legend>
+      <div className="grid gap-4 md:grid-cols-2">{children}</div>
+    </fieldset>
   );
 }

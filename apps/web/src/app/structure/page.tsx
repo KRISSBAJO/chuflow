@@ -1,8 +1,10 @@
-import Link from "next/link";
+import type { ReactNode } from "react";
+import { Icon, type IconName } from "@/components/app/icons";
 import { HierarchyCatalogPanel } from "@/components/hierarchy-catalog-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Avatar, Badge, Button, ButtonLink, Card, CardHeader, EmptyState, formatStatus, Stat, statusTone } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { formatRoleLabel, getUserScopeLabel } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
@@ -210,108 +212,123 @@ function TeamPills({
   const visibleUsers = list(users);
 
   if (visibleUsers.length === 0) {
-    return <p className="text-sm text-slate-500">{emptyLabel}</p>;
+    return <p className="text-[13px] text-[#8a8780]">{emptyLabel}</p>;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      {visibleUsers.map((user) => (
-        <span
-          key={user._id}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
-        >
-          {text(user.firstName, "Unknown")} {text(user.lastName, "User")}
-        </span>
-      ))}
+      {visibleUsers.map((user) => {
+        const name = `${text(user.firstName, "Unknown")} ${text(user.lastName, "User")}`;
+        return (
+          <span
+            key={user._id}
+            className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-white py-1 pl-1 pr-3 text-[13px] font-medium text-[#111111]"
+          >
+            <Avatar name={name} className="h-6 w-6 text-[10px]" />
+            {name}
+          </span>
+        );
+      })}
     </div>
   );
 }
 
-function BranchCard({ branch }: { branch: BranchOverview }) {
+function TeamGroup({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+    <div className={`rounded-2xl p-4 ${className ?? "bg-[#f6f5f1]"}`}>
+      <p className="text-[12px] font-medium text-[#6b6b6b]">{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function LevelIcon({ name }: { name: IconName }) {
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[#111111]">
+      <Icon name={name} className="h-[18px] w-[18px]" />
+    </span>
+  );
+}
+
+function CountLine({ items }: { items: [number, string][] }) {
+  return (
+    <p className="mt-1 text-[13px] text-[#6b6b6b]">
+      {items.map(([value, label], index) => (
+        <span key={label}>
+          {index > 0 ? " · " : null}
+          <span className="tabular-nums">{value}</span> {label}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function BranchCard({ branch }: { branch: BranchOverview }) {
+  const status = text(branch.status, "active");
+
+  return (
+    <article className="rounded-2xl border border-black/[0.06] bg-white p-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-lg font-semibold text-slate-950">{text(branch.name, "Unnamed branch")}</h4>
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                text(branch.status, "active") === "active"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {text(branch.status, "active")}
-            </span>
+        <div className="flex min-w-0 items-start gap-3">
+          <LevelIcon name="branches" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-[15px] font-semibold text-[#111111]">{text(branch.name, "Unnamed branch")}</h4>
+              <Badge tone={statusTone(status)} dot>
+                {formatStatus(status)}
+              </Badge>
+            </div>
+            <p className="mt-1 text-[13px] text-[#55534e]">
+              {text(branch.city, "City not set")}, {text(branch.state, "State not set")} · {text(branch.serviceTimes, "Service times not set")}
+            </p>
+            <p className="mt-0.5 text-[13px] text-[#8a8780]">{text(branch.contactInfo, "Contact information not set")}</p>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
-            {text(branch.city, "City not set")}, {text(branch.state, "State not set")} · {text(branch.serviceTimes, "Service times not set")}
-          </p>
-          <p className="mt-1 text-sm text-slate-500">{text(branch.contactInfo, "Contact information not set")}</p>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-orange-50 px-3 py-1.5 font-semibold text-orange-700">
-            {branch.metrics.guestCount} guests
-          </span>
-          <span className="rounded-full bg-cyan-50 px-3 py-1.5 font-semibold text-cyan-700">
-            {branch.metrics.memberCount} members
-          </span>
-          <span className="rounded-full bg-slate-100 px-3 py-1.5 font-semibold text-slate-700">
-            {branch.metrics.activeUserCount} active staff
-          </span>
+        <div className="flex flex-wrap gap-2">
+          <Badge tone="flame">
+            <span className="tabular-nums">{branch.metrics.guestCount}</span> guests
+          </Badge>
+          <Badge>
+            <span className="tabular-nums">{branch.metrics.memberCount}</span> members
+          </Badge>
+          <Badge>
+            <span className="tabular-nums">{branch.metrics.activeUserCount}</span> active staff
+          </Badge>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Branch Admins
-          </p>
-          <div className="mt-3">
-            <TeamPills users={list(branch.admins)} emptyLabel="No branch admin assigned yet." />
-          </div>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Resident Pastors
-          </p>
-          <div className="mt-3">
-            <TeamPills users={list(branch.residentPastors)} emptyLabel="No resident pastor assigned yet." />
-          </div>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Follow-Up Team
-          </p>
-          <div className="mt-3">
-            <TeamPills users={list(branch.followUpTeam)} emptyLabel="No follow-up team assigned." />
-          </div>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Ushers
-          </p>
-          <div className="mt-3">
-            <TeamPills users={list(branch.ushers)} emptyLabel="No usher team assigned." />
-          </div>
-        </div>
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        <TeamGroup label="Branch admins">
+          <TeamPills users={list(branch.admins)} emptyLabel="No branch admin assigned yet." />
+        </TeamGroup>
+        <TeamGroup label="Resident pastors">
+          <TeamPills users={list(branch.residentPastors)} emptyLabel="No resident pastor assigned yet." />
+        </TeamGroup>
+        <TeamGroup label="Follow-up team">
+          <TeamPills users={list(branch.followUpTeam)} emptyLabel="No follow-up team assigned." />
+        </TeamGroup>
+        <TeamGroup label="Ushers">
+          <TeamPills users={list(branch.ushers)} emptyLabel="No usher team assigned." />
+        </TeamGroup>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href={`/branches`}
-          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
-        >
+        <ButtonLink href="/branches" variant="secondary" size="sm" icon="branches">
           Open branches
-        </Link>
-        <Link
-          href={`/users?branchId=${branch._id}`}
-          className="rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
-        >
+        </ButtonLink>
+        <ButtonLink href={`/users?branchId=${branch._id}`} size="sm" icon="users">
           Open branch staff
-        </Link>
+        </ButtonLink>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -332,52 +349,52 @@ function RegionSection({
   return (
     <details
       open={districts.length <= 2 || !!selectedDistrict}
-      className="rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-sm"
+      className="app-card group/region app-rise p-6 sm:p-7"
     >
-      <summary className="cursor-pointer list-none">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-600">
-              Oversight Region
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{text(region.name, "Unnamed region")}</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {region.branchCount} branches · {region.districtCount} districts ·{" "}
-              {region.guestCount} guests · {region.memberCount} members
-            </p>
-            <div className="mt-3">
+      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="lp-flame-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white">
+              <Icon name="structure" className="h-[18px] w-[18px]" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-[#6b6b6b]">National area</p>
+              <h2 className="lp-heading mt-0.5 flex items-center gap-2 text-[22px] leading-tight">
+                {text(region.name, "Unnamed region")}
+                <Icon
+                  name="chevronDown"
+                  className="h-4 w-4 text-[#8a8780] transition-transform group-open/region:rotate-180"
+                />
+              </h2>
+              <CountLine
+                items={[
+                  [region.branchCount, "branches"],
+                  [region.districtCount, "districts"],
+                  [region.guestCount, "guests"],
+                  [region.memberCount, "members"],
+                ]}
+              />
               {regionId ? (
-                <Link
-                  href={`/structure/national/${regionId}`}
-                  className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-                >
-                  Open national detail
-                </Link>
+                <div className="mt-3">
+                  <ButtonLink href={`/structure/national/${regionId}`} variant="secondary" size="sm">
+                    Open national detail
+                  </ButtonLink>
+                </div>
               ) : null}
             </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl bg-orange-50 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-500">
-                National Admins
-              </p>
-              <div className="mt-3">
-                <TeamPills users={list(region.nationalAdmins)} emptyLabel="No national admin assigned." />
-              </div>
-            </div>
-            <div className="rounded-2xl bg-cyan-50 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-600">
-                National Pastors
-              </p>
-              <div className="mt-3">
-                <TeamPills users={list(region.nationalPastors)} emptyLabel="No national pastor assigned." />
-              </div>
-            </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:min-w-[420px] xl:max-w-[520px]">
+            <TeamGroup label="National admins">
+              <TeamPills users={list(region.nationalAdmins)} emptyLabel="No national admin assigned." />
+            </TeamGroup>
+            <TeamGroup label="National pastors">
+              <TeamPills users={list(region.nationalPastors)} emptyLabel="No national pastor assigned." />
+            </TeamGroup>
           </div>
         </div>
       </summary>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-6 space-y-4 border-l-2 border-black/[0.06] pl-4 sm:pl-5">
         {districts.map((district) => {
           const districtId = districtIdByKey.get(`${region.name}::${district.name}`);
           const branches = list(district.branches);
@@ -386,52 +403,51 @@ function RegionSection({
             <details
               key={`${region.name}-${district.name}`}
               open={branches.length <= 2 || district.name === selectedDistrict}
-              className="rounded-[24px] border border-slate-200 bg-slate-50 p-5"
+              className="group/district rounded-2xl bg-[#f6f5f1] p-4 sm:p-5"
             >
-              <summary className="cursor-pointer list-none">
+              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      District
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold text-slate-950">{text(district.name, "Unnamed district")}</h3>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {district.branchCount} branches · {district.guestCount} guests ·{" "}
-                      {district.memberCount} members
-                    </p>
-                    <div className="mt-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#111111] shadow-[0_1px_2px_rgba(17,17,17,0.06)]">
+                      <Icon name="pin" className="h-[18px] w-[18px]" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-medium text-[#8a8780]">District</p>
+                      <h3 className="lp-heading mt-0.5 flex items-center gap-2 text-[18px] leading-tight">
+                        {text(district.name, "Unnamed district")}
+                        <Icon
+                          name="chevronDown"
+                          className="h-4 w-4 text-[#8a8780] transition-transform group-open/district:rotate-180"
+                        />
+                      </h3>
+                      <CountLine
+                        items={[
+                          [district.branchCount, "branches"],
+                          [district.guestCount, "guests"],
+                          [district.memberCount, "members"],
+                        ]}
+                      />
                       {districtId ? (
-                        <Link
-                          href={`/structure/district/${districtId}`}
-                          className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-                        >
-                          Open district detail
-                        </Link>
+                        <div className="mt-3">
+                          <ButtonLink href={`/structure/district/${districtId}`} variant="secondary" size="sm">
+                            Open district detail
+                          </ButtonLink>
+                        </div>
                       ) : null}
                     </div>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl bg-white p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        District Admins
-                      </p>
-                      <div className="mt-3">
-                        <TeamPills users={list(district.districtAdmins)} emptyLabel="No district admin assigned." />
-                      </div>
-                    </div>
-                    <div className="rounded-2xl bg-white p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        District Pastors
-                      </p>
-                      <div className="mt-3">
-                        <TeamPills users={list(district.districtPastors)} emptyLabel="No district pastor assigned." />
-                      </div>
-                    </div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:min-w-[400px] xl:max-w-[500px]">
+                    <TeamGroup label="District admins" className="bg-white">
+                      <TeamPills users={list(district.districtAdmins)} emptyLabel="No district admin assigned." />
+                    </TeamGroup>
+                    <TeamGroup label="District pastors" className="bg-white">
+                      <TeamPills users={list(district.districtPastors)} emptyLabel="No district pastor assigned." />
+                    </TeamGroup>
                   </div>
                 </div>
               </summary>
 
-              <div className="mt-5 grid gap-4">
+              <div className="mt-5 grid gap-3">
                 {branches.map((branch) => (
                   <BranchCard key={branch._id} branch={branch} />
                 ))}
@@ -499,59 +515,62 @@ export default async function StructurePage({
       <PageHeader
         eyebrow="Structure"
         title="National to district to branch structure"
-        description="Browse the live church hierarchy in one place so leadership can see who is carrying oversight, where branches sit, and how staffing and branch load are distributed."
-        action={
-          <form className="flex flex-wrap items-center gap-2">
-            <input
-              name="search"
-              defaultValue={search || ""}
-              placeholder="Search branch, district, leader"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-            />
-            {regionOptions.length > 1 ? (
-              <select
-                name="oversightRegion"
-                defaultValue={selectedRegion || ""}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-              >
-                <option value="">All regions</option>
-                {regionOptions.map((region) => (
-                  <option key={region} value={region}>
-                    {region}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            {districtOptions.length > 1 ? (
-              <select
-                name="district"
-                defaultValue={selectedDistrict || ""}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
-              >
-                <option value="">All districts</option>
-                {districtOptions.map((district) => (
-                  <option key={district} value={district}>
-                    {district}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            <button className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">
-              Filter
-            </button>
-            {selectedRegion || selectedDistrict || search ? (
-              <Link
-                href="/structure"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
-              >
-                Clear
-              </Link>
-            ) : null}
-          </form>
-        }
+        description="See the live church hierarchy in one place: who carries oversight, where branches sit, and how staffing and branch load are spread."
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <Card className="app-rise p-4 sm:p-5">
+        <form className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+          <input
+            name="search"
+            defaultValue={search || ""}
+            placeholder="Search branch, district or leader"
+            aria-label="Search structure"
+            className="ui-input lg:min-w-[260px] lg:flex-1"
+          />
+          {regionOptions.length > 1 ? (
+            <select
+              name="oversightRegion"
+              defaultValue={selectedRegion || ""}
+              aria-label="National area"
+              className="ui-input lg:w-auto lg:min-w-[200px]"
+            >
+              <option value="">All regions</option>
+              {regionOptions.map((region) => (
+                <option key={region} value={region}>
+                  {region}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          {districtOptions.length > 1 ? (
+            <select
+              name="district"
+              defaultValue={selectedDistrict || ""}
+              aria-label="District"
+              className="ui-input lg:w-auto lg:min-w-[200px]"
+            >
+              <option value="">All districts</option>
+              {districtOptions.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary" icon="search">
+              Filter
+            </Button>
+            {selectedRegion || selectedDistrict || search ? (
+              <ButtonLink href="/structure" variant="ghost">
+                Clear
+              </ButtonLink>
+            ) : null}
+          </div>
+        </form>
+      </Card>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Overall heads"
           value={filteredStructure.summary.overallHeadCount}
@@ -577,7 +596,7 @@ export default async function StructurePage({
           tone="cool"
         />
         <MetricCard
-          label="Leaders + support"
+          label="Leaders and support"
           value={
             filteredStructure.summary.nationalLeaderCount +
             filteredStructure.summary.districtLeaderCount +
@@ -596,83 +615,36 @@ export default async function StructurePage({
         districts={districts}
       />
 
-      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-        <section className="surface rounded-[28px] p-6">
-          <p className="eyebrow">Oversight summary</p>
-          <div className="mt-4 space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Current scope
-              </p>
-              <p className="mt-2 text-lg font-semibold text-slate-950">
-                {scopeLabel || formatRoleLabel(user.role)}
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                This hierarchy view is automatically limited to the branches, districts, and regions this account can see.
-              </p>
-            </div>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <Card className="app-rise self-start p-6 sm:p-7">
+          <CardHeader label="Oversight summary" title={scopeLabel || formatRoleLabel(user.role)} description="This view is limited to the branches, districts and regions your account can see." />
+          <div className="mt-6 space-y-4">
+            <TeamGroup label="Overall oversight admin">
+              <TeamPills
+                users={filteredStructure.overallHeads}
+                emptyLabel="No overall oversight admin found in the current scope."
+              />
+            </TeamGroup>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Overall oversight admin
-              </p>
-              <div className="mt-3">
-                <TeamPills
-                  users={filteredStructure.overallHeads}
-                  emptyLabel="No overall oversight admin found in the current scope."
-                />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Leadership distribution
-              </p>
+            <div>
+              <p className="text-[13px] font-medium text-[#6b6b6b]">Leadership distribution</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-orange-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-600">
-                    National
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {filteredStructure.summary.nationalLeaderCount}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-cyan-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-600">
-                    District
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {filteredStructure.summary.districtLeaderCount}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-slate-100 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Branch leaders
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {filteredStructure.summary.branchLeaderCount}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-emerald-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-600">
-                    Support staff
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {filteredStructure.summary.supportStaffCount}
-                  </p>
-                </div>
+                <Stat label="National" value={filteredStructure.summary.nationalLeaderCount} />
+                <Stat label="District" value={filteredStructure.summary.districtLeaderCount} />
+                <Stat label="Branch leaders" value={filteredStructure.summary.branchLeaderCount} />
+                <Stat label="Support staff" value={filteredStructure.summary.supportStaffCount} />
               </div>
             </div>
           </div>
-        </section>
+        </Card>
 
-        <section className="space-y-4">
+        <div className="space-y-4">
           {filteredStructure.oversightRegions.length === 0 ? (
-            <section className="surface rounded-[28px] p-8">
-              <p className="text-sm text-slate-500">
+            <Card className="app-rise p-6 sm:p-7">
+              <EmptyState icon="structure" title="Nothing matched">
                 No structure matched the current filters.
-              </p>
-            </section>
+              </EmptyState>
+            </Card>
           ) : (
             filteredStructure.oversightRegions.map((region) => (
               <RegionSection
@@ -684,7 +656,7 @@ export default async function StructurePage({
               />
             ))
           )}
-        </section>
+        </div>
       </section>
     </Shell>
   );

@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -7,17 +12,26 @@ import { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
 import { Member, MemberDocument } from '../members/schemas/member.schema';
 import { ServiceSchedulesService } from '../service-schedules/service-schedules.service';
-import { ServiceType, ServiceTypeDocument } from '../service-types/schemas/service-type.schema';
-import { CreateAttendanceDto, UpdateAttendanceDto } from './dto/create-attendance.dto';
+import {
+  ServiceType,
+  ServiceTypeDocument,
+} from '../service-types/schemas/service-type.schema';
+import {
+  CreateAttendanceDto,
+  UpdateAttendanceDto,
+} from './dto/create-attendance.dto';
 import { Attendance, AttendanceDocument } from './schemas/attendance.schema';
 
 @Injectable()
 export class AttendanceService {
   constructor(
-    @InjectModel(Attendance.name) private readonly attendanceModel: Model<AttendanceDocument>,
+    @InjectModel(Attendance.name)
+    private readonly attendanceModel: Model<AttendanceDocument>,
     @InjectModel(Guest.name) private readonly guestModel: Model<GuestDocument>,
-    @InjectModel(Member.name) private readonly memberModel: Model<MemberDocument>,
-    @InjectModel(ServiceType.name) private readonly serviceTypeModel: Model<ServiceTypeDocument>,
+    @InjectModel(Member.name)
+    private readonly memberModel: Model<MemberDocument>,
+    @InjectModel(ServiceType.name)
+    private readonly serviceTypeModel: Model<ServiceTypeDocument>,
     private readonly accessScopeService: AccessScopeService,
     private readonly serviceSchedulesService: ServiceSchedulesService,
     private readonly auditLogsService: AuditLogsService,
@@ -68,7 +82,9 @@ export class AttendanceService {
       dto.adultsCount !== undefined &&
       dto.firstTimersCount > dto.adultsCount
     ) {
-      throw new BadRequestException('First timers cannot be greater than total adults');
+      throw new BadRequestException(
+        'First timers cannot be greater than total adults',
+      );
     }
 
     if (
@@ -76,20 +92,29 @@ export class AttendanceService {
       dto.adultsCount !== undefined &&
       dto.newConvertsCount > dto.adultsCount
     ) {
-      throw new BadRequestException('New converts cannot be greater than total adults');
+      throw new BadRequestException(
+        'New converts cannot be greater than total adults',
+      );
     }
   }
 
   private async resolveServiceTypeAssignment(
     branchId: string | undefined,
-    dto: Pick<CreateAttendanceDto, 'serviceTypeId' | 'serviceType' | 'serviceTypeLabel'>,
+    dto: Pick<
+      CreateAttendanceDto,
+      'serviceTypeId' | 'serviceType' | 'serviceTypeLabel'
+    >,
   ) {
     const serviceTypeId =
-      typeof dto.serviceTypeId === 'string' ? dto.serviceTypeId.trim() : undefined;
+      typeof dto.serviceTypeId === 'string'
+        ? dto.serviceTypeId.trim()
+        : undefined;
     const serviceTypeValue =
       typeof dto.serviceType === 'string' ? dto.serviceType.trim() : undefined;
     const serviceTypeLabel =
-      typeof dto.serviceTypeLabel === 'string' ? dto.serviceTypeLabel.trim() : undefined;
+      typeof dto.serviceTypeLabel === 'string'
+        ? dto.serviceTypeLabel.trim()
+        : undefined;
 
     if (!branchId) {
       if (!serviceTypeValue && !serviceTypeLabel) {
@@ -97,21 +122,27 @@ export class AttendanceService {
       }
 
       return {
-        serviceType: this.slugify(serviceTypeValue || serviceTypeLabel || 'service'),
+        serviceType: this.slugify(
+          serviceTypeValue || serviceTypeLabel || 'service',
+        ),
         serviceTypeLabel: serviceTypeLabel || serviceTypeValue,
         serviceTypeId: undefined,
       };
     }
 
     if (serviceTypeId) {
-      const serviceType = await this.serviceTypeModel.findById(serviceTypeId).lean();
+      const serviceType = await this.serviceTypeModel
+        .findById(serviceTypeId)
+        .lean();
 
       if (!serviceType) {
         throw new NotFoundException('Service type not found');
       }
 
       if (String(serviceType.branchId) !== String(branchId)) {
-        throw new ForbiddenException('Attendance service type must belong to the same branch');
+        throw new ForbiddenException(
+          'Attendance service type must belong to the same branch',
+        );
       }
 
       return {
@@ -129,13 +160,26 @@ export class AttendanceService {
 
     const normalizedValue = searchValue.trim();
 
-    const serviceType = await this.serviceTypeModel.findOne({
-      branchId,
-      $or: [
-        { key: { $regex: new RegExp(`^${this.slugify(normalizedValue)}$`, 'i') } },
-        { name: { $regex: new RegExp(`^${normalizedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
-      ],
-    }).lean();
+    const serviceType = await this.serviceTypeModel
+      .findOne({
+        branchId,
+        $or: [
+          {
+            key: {
+              $regex: new RegExp(`^${this.slugify(normalizedValue)}$`, 'i'),
+            },
+          },
+          {
+            name: {
+              $regex: new RegExp(
+                `^${normalizedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+                'i',
+              ),
+            },
+          },
+        ],
+      })
+      .lean();
 
     if (serviceType) {
       return {
@@ -173,13 +217,14 @@ export class AttendanceService {
       };
     }
 
-    const serviceInstance = await this.serviceSchedulesService.resolveServiceInstanceForEntry({
-      currentUser,
-      branchId,
-      serviceDate: dto.serviceDate,
-      serviceScheduleId: dto.serviceScheduleId,
-      serviceInstanceId: dto.serviceInstanceId,
-    });
+    const serviceInstance =
+      await this.serviceSchedulesService.resolveServiceInstanceForEntry({
+        currentUser,
+        branchId,
+        serviceDate: dto.serviceDate,
+        serviceScheduleId: dto.serviceScheduleId,
+        serviceInstanceId: dto.serviceInstanceId,
+      });
 
     if (!serviceInstance) {
       return {
@@ -198,7 +243,9 @@ export class AttendanceService {
       typeof serviceInstance.serviceScheduleId === 'object' &&
       serviceInstance.serviceScheduleId !== null &&
       '_id' in serviceInstance.serviceScheduleId
-        ? String((serviceInstance.serviceScheduleId as { _id?: unknown })._id ?? '')
+        ? String(
+            (serviceInstance.serviceScheduleId as { _id?: unknown })._id ?? '',
+          )
         : serviceInstance.serviceScheduleId
           ? String(serviceInstance.serviceScheduleId)
           : undefined;
@@ -227,7 +274,9 @@ export class AttendanceService {
         throw new NotFoundException('Guest not found');
       }
       if (String(guest.branchId) !== String(branchId)) {
-        throw new ForbiddenException('Attendance guest must belong to the same branch');
+        throw new ForbiddenException(
+          'Attendance guest must belong to the same branch',
+        );
       }
     }
 
@@ -237,19 +286,26 @@ export class AttendanceService {
         throw new NotFoundException('Member not found');
       }
       if (String(member.branchId) !== String(branchId)) {
-        throw new ForbiddenException('Attendance member must belong to the same branch');
+        throw new ForbiddenException(
+          'Attendance member must belong to the same branch',
+        );
       }
     }
   }
 
   private attendanceSummaryTotal(record: Partial<Attendance>) {
-    const adultsAndChildren = (record.adultsCount ?? 0) + (record.childrenCount ?? 0);
+    const adultsAndChildren =
+      (record.adultsCount ?? 0) + (record.childrenCount ?? 0);
 
     if (adultsAndChildren > 0) {
       return adultsAndChildren;
     }
 
-    return (record.menCount ?? 0) + (record.womenCount ?? 0) + (record.childrenCount ?? 0);
+    return (
+      (record.menCount ?? 0) +
+      (record.womenCount ?? 0) +
+      (record.childrenCount ?? 0)
+    );
   }
 
   async branchSummaryDefaults(branchId: string) {
@@ -268,7 +324,10 @@ export class AttendanceService {
     const recentTotals = totals.slice(0, 4);
     const averageLastPeriod =
       recentTotals.length > 0
-        ? Math.round(recentTotals.reduce((sum, total) => sum + total, 0) / recentTotals.length)
+        ? Math.round(
+            recentTotals.reduce((sum, total) => sum + total, 0) /
+              recentTotals.length,
+          )
         : undefined;
     const lastYearDate = new Date();
     lastYearDate.setFullYear(lastYearDate.getFullYear() - 1);
@@ -292,7 +351,10 @@ export class AttendanceService {
       .filter((total) => total > 0);
     const averageLastYear =
       lastYearTotals.length > 0
-        ? Math.round(lastYearTotals.reduce((sum, total) => sum + total, 0) / lastYearTotals.length)
+        ? Math.round(
+            lastYearTotals.reduce((sum, total) => sum + total, 0) /
+              lastYearTotals.length,
+          )
         : undefined;
 
     return {
@@ -303,10 +365,17 @@ export class AttendanceService {
   }
 
   async create(dto: CreateAttendanceDto, currentUser?: AuthUser) {
-    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
+    const branchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      dto.branchId,
+    );
     const entryMode = dto.entryMode ?? 'individual';
     const serviceDate = this.validatePastOrTodayServiceDate(dto.serviceDate);
-    const serviceContext = await this.resolveServiceContext(currentUser, branchId, dto);
+    const serviceContext = await this.resolveServiceContext(
+      currentUser,
+      branchId,
+      dto,
+    );
 
     if (entryMode === 'individual') {
       await this.validatePersonScope(currentUser, branchId, dto);
@@ -334,7 +403,9 @@ export class AttendanceService {
       entityId: String(attendance._id),
       action: 'created',
       summary: `${entryMode === 'summary' ? 'Attendance summary' : 'Attendance record'} created for ${
-        serviceContext.serviceName || serviceContext.serviceTypeLabel || serviceContext.serviceType
+        serviceContext.serviceName ||
+        serviceContext.serviceTypeLabel ||
+        serviceContext.serviceType
       }`,
       actor: currentUser,
       actorRole: currentUser?.role ?? 'public_submission',
@@ -366,13 +437,16 @@ export class AttendanceService {
   ) {
     const buildQuery = async () => {
       const query: Record<string, unknown> = Object.fromEntries(
-      Object.entries({
-        ...(await this.accessScopeService.buildBranchFilter(currentUser, filters.branchId)),
-        ...(filters.serviceType ? { serviceType: filters.serviceType } : {}),
-        ...(filters.personType ? { personType: filters.personType } : {}),
-        ...(filters.entryMode ? { entryMode: filters.entryMode } : {}),
-      }).filter(([, value]) => value),
-    );
+        Object.entries({
+          ...(await this.accessScopeService.buildBranchFilter(
+            currentUser,
+            filters.branchId,
+          )),
+          ...(filters.serviceType ? { serviceType: filters.serviceType } : {}),
+          ...(filters.personType ? { personType: filters.personType } : {}),
+          ...(filters.entryMode ? { entryMode: filters.entryMode } : {}),
+        }).filter(([, value]) => value),
+      );
 
       if (filters.serviceName) {
         query.serviceName = { $regex: filters.serviceName, $options: 'i' };
@@ -411,7 +485,10 @@ export class AttendanceService {
   }
 
   async summary(currentUser: AuthUser, branchId?: string) {
-    const matchStage = await this.accessScopeService.buildBranchFilter(currentUser, branchId);
+    const matchStage = await this.accessScopeService.buildBranchFilter(
+      currentUser,
+      branchId,
+    );
     const result = await this.attendanceModel.aggregate([
       { $match: { ...matchStage, entryMode: 'individual' } },
       {
@@ -444,10 +521,16 @@ export class AttendanceService {
     );
     const entryMode = dto.entryMode ?? existing.entryMode;
     const personType = dto.personType ?? existing.personType;
-    const existingGuestId = existing.guestId ? String(existing.guestId) : undefined;
-    const existingMemberId = existing.memberId ? String(existing.memberId) : undefined;
-    const guestId = personType === 'guest' ? (dto.guestId ?? existingGuestId) : undefined;
-    const memberId = personType === 'member' ? (dto.memberId ?? existingMemberId) : undefined;
+    const existingGuestId = existing.guestId
+      ? String(existing.guestId)
+      : undefined;
+    const existingMemberId = existing.memberId
+      ? String(existing.memberId)
+      : undefined;
+    const guestId =
+      personType === 'guest' ? (dto.guestId ?? existingGuestId) : undefined;
+    const memberId =
+      personType === 'member' ? (dto.memberId ?? existingMemberId) : undefined;
     const existingServiceTypeId = existing.serviceTypeId
       ? String(existing.serviceTypeId)
       : undefined;
@@ -459,7 +542,11 @@ export class AttendanceService {
       : undefined;
 
     if (entryMode === 'individual') {
-      await this.validatePersonScope(currentUser, branchId, { personType, guestId, memberId });
+      await this.validatePersonScope(currentUser, branchId, {
+        personType,
+        guestId,
+        memberId,
+      });
     } else {
       this.validateSummaryCounts({
         menCount: dto.menCount ?? existing.menCount,
@@ -489,7 +576,9 @@ export class AttendanceService {
     const serviceContext = shouldResolveServiceContext
       ? await this.resolveServiceContext(currentUser, branchId, {
           serviceDate:
-            serviceDate instanceof Date ? serviceDate.toISOString() : serviceDate,
+            serviceDate instanceof Date
+              ? serviceDate.toISOString()
+              : serviceDate,
           serviceTypeId: dto.serviceTypeId ?? existingServiceTypeId,
           serviceType: dto.serviceType ?? existing.serviceType,
           serviceTypeLabel: dto.serviceTypeLabel ?? existing.serviceTypeLabel,
@@ -523,7 +612,8 @@ export class AttendanceService {
           adultsCount: dto.adultsCount ?? existing.adultsCount,
           firstTimersCount: dto.firstTimersCount ?? existing.firstTimersCount,
           newConvertsCount: dto.newConvertsCount ?? existing.newConvertsCount,
-          holySpiritBaptismCount: dto.holySpiritBaptismCount ?? existing.holySpiritBaptismCount,
+          holySpiritBaptismCount:
+            dto.holySpiritBaptismCount ?? existing.holySpiritBaptismCount,
         },
         { new: true },
       )
@@ -551,7 +641,9 @@ export class AttendanceService {
       entityId: String(record._id),
       action: 'updated',
       summary: `${entryMode === 'summary' ? 'Attendance summary' : 'Attendance record'} updated for ${
-        serviceContext.serviceName || serviceContext.serviceTypeLabel || serviceContext.serviceType
+        serviceContext.serviceName ||
+        serviceContext.serviceTypeLabel ||
+        serviceContext.serviceType
       }`,
       actor: currentUser,
       branchId,

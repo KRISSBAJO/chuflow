@@ -54,4 +54,6 @@ export class CreateServiceScheduleDto {
   isActive?: boolean;
 }
 
-export class UpdateServiceScheduleDto extends PartialType(CreateServiceScheduleDto) {}
+export class UpdateServiceScheduleDto extends PartialType(
+  CreateServiceScheduleDto,
+) {}
