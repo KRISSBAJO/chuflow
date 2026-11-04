@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
@@ -80,7 +80,7 @@ export function AttendanceCreateForm({
   const [selectedBranchId, setSelectedBranchId] = useState(
     initialBranchId,
   );
-  const [selectedScheduleId, setSelectedScheduleId] = useState(
+  const [scheduleChoice, setScheduleChoice] = useState(
     record?.serviceScheduleId?._id || "",
   );
   const defaultBranchName = branches.find((branch) => branch._id === initialBranchId)?.name;
@@ -107,17 +107,10 @@ export function AttendanceCreateForm({
       }),
     [selectedBranchId, serviceSchedules],
   );
+  // A schedule chosen under another branch is simply ignored once the branch changes.
   const selectedSchedule =
-    filteredServiceSchedules.find((schedule) => schedule._id === selectedScheduleId) || null;
-
-  useEffect(() => {
-    if (
-      selectedScheduleId &&
-      !filteredServiceSchedules.some((schedule) => schedule._id === selectedScheduleId)
-    ) {
-      setSelectedScheduleId("");
-    }
-  }, [filteredServiceSchedules, selectedScheduleId]);
+    filteredServiceSchedules.find((schedule) => schedule._id === scheduleChoice) || null;
+  const selectedScheduleId = selectedSchedule?._id ?? "";
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -222,7 +215,7 @@ export function AttendanceCreateForm({
         <Field label="Service schedule" hint="Choose a branch service when this summary belongs to a scheduled gathering.">
           <select
             value={selectedScheduleId}
-            onChange={(event) => setSelectedScheduleId(event.target.value)}
+            onChange={(event) => setScheduleChoice(event.target.value)}
             className="ui-input"
           >
             <option value="">No saved schedule</option>

@@ -70,11 +70,10 @@ export function GuestCommunicationPanel({
     };
   }, []);
 
-  const activeTemplate =
-    useMemo(
-      () => templates.find((template) => template.id === templateId) ?? templates[0],
-      [templateId, templates],
-    ) ?? templates[0];
+  const activeTemplate = useMemo(
+    () => templates.find((template) => template.id === templateId) ?? templates[0],
+    [templateId, templates],
+  );
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
