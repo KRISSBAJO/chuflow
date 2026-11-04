@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { Icon } from "@/components/app/icons";
+import { Badge, Button, EmptyState, Field, formatStatus } from "@/components/ui/ui";
 import type {
   AttendanceItem,
   GuestListItem,
@@ -69,47 +71,53 @@ export function AttendanceManagementTable({
     }
   }
 
+  if (records.length === 0) {
+    return (
+      <EmptyState icon="attendance" title="No records found">
+        No attendance records match the current filters.
+      </EmptyState>
+    );
+  }
+
   return (
-    <div className="space-y-3">
-      {records.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">
-          No attendance records match the current filters.
-        </div>
-      ) : (
-        records.slice(0, 18).map((record) => (
-          <details key={record._id} className="rounded-[20px] border border-slate-200 bg-white">
-            <summary className="cursor-pointer list-none px-4 py-3">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {record.personType === "guest"
-                      ? `${record.guestId?.firstName ?? ""} ${record.guestId?.lastName ?? ""}`.trim() || "Guest record"
-                      : `${record.memberId?.firstName ?? ""} ${record.memberId?.lastName ?? ""}`.trim() || "Member record"}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500">{new Date(record.serviceDate).toLocaleString()}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
-                    {record.serviceTypeLabel || record.serviceType}
-                  </span>
-                  <span className="rounded-full bg-orange-50 px-2.5 py-1 font-semibold text-orange-700">{record.personType}</span>
-                </div>
-              </div>
-            </summary>
-            <div className="border-t border-slate-200 px-4 py-4">
-              <form action={(formData) => updateRecord(record._id, formData)} className="grid gap-2.5 md:grid-cols-2">
+    <div className="space-y-2">
+      {records.slice(0, 18).map((record) => (
+        <details
+          key={record._id}
+          className="group rounded-2xl border border-black/[0.06] bg-white transition-colors open:border-black/[0.12] hover:border-black/[0.12]"
+        >
+          <summary className="flex cursor-pointer list-none flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:justify-between [&::-webkit-details-marker]:hidden">
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-medium text-[#111111]">
+                {record.personType === "guest"
+                  ? `${record.guestId?.firstName ?? ""} ${record.guestId?.lastName ?? ""}`.trim() || "Guest record"
+                  : `${record.memberId?.firstName ?? ""} ${record.memberId?.lastName ?? ""}`.trim() || "Member record"}
+              </p>
+              <p className="mt-0.5 text-[12px] text-[#8a8780]">{new Date(record.serviceDate).toLocaleString()}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge>{record.serviceTypeLabel || record.serviceType}</Badge>
+              <Badge tone={record.personType === "guest" ? "flame" : "info"}>{formatStatus(record.personType)}</Badge>
+              <Icon name="chevronDown" className="ml-1 h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180" />
+            </div>
+          </summary>
+          <div className="border-t border-black/[0.06] px-4 py-4">
+            <form action={(formData) => updateRecord(record._id, formData)} className="grid gap-4 md:grid-cols-2">
+              <Field label="Service date">
                 <input
                   name={`serviceDate-${record._id}`}
                   type="datetime-local"
                   defaultValue={new Date(record.serviceDate).toISOString().slice(0, 16)}
                   disabled={!canEdit}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                  className="ui-input"
                 />
+              </Field>
+              <Field label="Service type">
                 <select
                   name={`serviceTypeId-${record._id}`}
                   defaultValue={record.serviceTypeId?._id || ""}
                   disabled={!canEdit}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                  className="ui-input"
                 >
                   <option value="">
                     {record.serviceTypeLabel || record.serviceType} (keep current)
@@ -120,20 +128,24 @@ export function AttendanceManagementTable({
                     </option>
                   ))}
                 </select>
+              </Field>
+              <Field label="Person type">
                 <select
                   name={`personType-${record._id}`}
                   defaultValue={record.personType}
                   disabled={!canEdit}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                  className="ui-input"
                 >
                   <option value="guest">Guest</option>
                   <option value="member">Member</option>
                 </select>
+              </Field>
+              <Field label="Guest">
                 <select
                   name={`guestId-${record._id}`}
                   defaultValue={record.guestId?._id || ""}
                   disabled={!canEdit}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                  className="ui-input"
                 >
                   <option value="">Guest</option>
                   {guests.map((guest) => (
@@ -142,11 +154,13 @@ export function AttendanceManagementTable({
                     </option>
                   ))}
                 </select>
+              </Field>
+              <Field label="Member">
                 <select
                   name={`memberId-${record._id}`}
                   defaultValue={record.memberId?._id || ""}
                   disabled={!canEdit}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                  className="ui-input"
                 >
                   <option value="">Member</option>
                   {members.map((member) => (
@@ -155,24 +169,22 @@ export function AttendanceManagementTable({
                     </option>
                   ))}
                 </select>
-                {canEdit ? (
-                  <button
-                    type="submit"
-                    disabled={loadingId === record._id || pending}
-                    className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-                  >
+              </Field>
+              {canEdit ? (
+                <div className="flex items-end">
+                  <Button type="submit" size="sm" disabled={loadingId === record._id || pending}>
                     {loadingId === record._id ? "Saving..." : "Update record"}
-                  </button>
-                ) : (
-                  <p className="text-xs text-slate-500 md:col-span-2">
-                    This role can review these legacy records but cannot edit them here.
-                  </p>
-                )}
-              </form>
-            </div>
-          </details>
-        ))
-      )}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-[13px] text-[#8a8780] md:col-span-2">
+                  Your role can review these older records but cannot edit them here.
+                </p>
+              )}
+            </form>
+          </div>
+        </details>
+      ))}
     </div>
   );
 }

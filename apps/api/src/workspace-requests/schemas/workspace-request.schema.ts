@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type WorkspaceRequestDocument = HydratedDocument<WorkspaceRequest>;
 
@@ -41,7 +41,7 @@ export class WorkspaceRequest {
   @Prop()
   adminNotifiedAt?: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   reviewedBy?: Types.ObjectId;
 
   @Prop()

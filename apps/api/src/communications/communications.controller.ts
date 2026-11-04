@@ -23,7 +23,17 @@ import { CreateCommunicationDto } from './dto/create-communication.dto';
 @ApiTags('Communications')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up')
+@Roles(
+  'super_admin',
+  'national_admin',
+  'national_pastor',
+  'district_admin',
+  'district_pastor',
+  'branch_admin',
+  'resident_pastor',
+  'associate_pastor',
+  'follow_up',
+)
 @Controller('communications')
 export class CommunicationsController {
   constructor(private readonly communicationsService: CommunicationsService) {}

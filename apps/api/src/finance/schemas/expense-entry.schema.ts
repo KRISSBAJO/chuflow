@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type ExpenseEntryDocument = HydratedDocument<ExpenseEntry>;
 
 @Schema({ timestamps: true })
 export class ExpenseEntry {
-  @Prop({ type: Types.ObjectId, ref: 'Branch', required: true, index: true })
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'Branch',
+    required: true,
+    index: true,
+  })
   branchId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -17,7 +22,7 @@ export class ExpenseEntry {
   @Prop({ required: true })
   expenseDate!: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'FinanceAccount', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'FinanceAccount', required: true })
   accountId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -26,7 +31,7 @@ export class ExpenseEntry {
   @Prop({ required: true })
   accountLabel!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'ExpenseCategory', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ExpenseCategory', required: true })
   expenseCategoryId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -35,10 +40,10 @@ export class ExpenseEntry {
   @Prop({ required: true })
   expenseCategoryLabel!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceSchedule' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceSchedule' })
   serviceScheduleId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'ServiceInstance' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceInstance' })
   serviceInstanceId?: Types.ObjectId;
 
   @Prop()
@@ -62,16 +67,20 @@ export class ExpenseEntry {
   @Prop()
   notes?: string;
 
-  @Prop({ required: true, enum: ['submitted', 'approved', 'rejected', 'locked'], default: 'submitted' })
+  @Prop({
+    required: true,
+    enum: ['submitted', 'approved', 'rejected', 'locked'],
+    default: 'submitted',
+  })
   status!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
   createdBy!: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   updatedBy?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   approvedBy?: Types.ObjectId;
 
   @Prop()

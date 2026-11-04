@@ -4,6 +4,8 @@ import { BranchDetailPanel } from "@/components/branch-detail-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Icon } from "@/components/app/icons";
+import { ButtonLink } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type {
@@ -64,30 +66,27 @@ export default async function BranchDetailPage({
 
   return (
     <Shell>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Link
           href="/branches"
-          aria-label="Return to branches"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-semibold text-slate-700 shadow-sm hover:border-slate-300"
+          className="group inline-flex items-center gap-1.5 rounded-lg px-2 py-1 -ml-2 text-[13px] font-medium text-[#6b6b6b] transition-colors hover:bg-white hover:text-[#111111]"
         >
-          &lt;
+          <Icon name="arrowRight" className="h-3.5 w-3.5 rotate-180 transition-transform group-hover:-translate-x-0.5" />
+          Back to branches
         </Link>
         <PageHeader
-          eyebrow="Branch Detail"
+          eyebrow="Branch detail"
           title={branch.name}
           description={`${branch.city}, ${branch.state} · ${branch.district} · ${branch.oversightRegion}`}
           action={
-            <a
-              href={`/users?branchId=${branch._id}`}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-            >
+            <ButtonLink href={`/users?branchId=${branch._id}`} icon="users">
               Branch staff
-            </a>
+            </ButtonLink>
           }
         />
       </div>
 
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Guests" value={String(branch.metrics.guestCount)} delta="Current guest records" tone="warm" />
         <MetricCard label="Members" value={String(branch.metrics.memberCount)} delta="Current member records" tone="cool" />
         <MetricCard label="Admins" value={String(branch.metrics.branchAdminCount)} delta="Branch admin coverage" tone="cool" />

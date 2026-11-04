@@ -8,6 +8,8 @@ import { requireServerRole } from "@/lib/auth";
 import { canConfigureAppSettings, canFilterAcrossBranches } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
 import { UserPreferencesForm } from "@/components/user-preferences-form";
+import { Divider } from "@/components/ui/ui";
+import type { ReactNode } from "react";
 import type { BranchSettingsOverview, BranchSummary, SettingsOverview } from "@/lib/types";
 
 export default async function SettingsPage({
@@ -42,53 +44,84 @@ export default async function SettingsPage({
         ).catch(() => null)
       : null;
 
+  const branchForm = (
+    <BranchSettingsForm
+      branches={branches}
+      selectedBranchId={selectedBranchId}
+      overview={branchSettings}
+      canSelectBranch={canFilterAcrossBranches(user.role)}
+    />
+  );
+
   return (
     <Shell>
       <PageHeader
         eyebrow="Settings"
-        title={isAdmin ? "System setup and operating defaults" : "Account security"}
+        title={isAdmin ? "System setup and defaults" : "Account and preferences"}
         description={
           isAdmin
-            ? "Security, comms, and branch-ready configuration should be transparent so the team knows what is wired already and what comes next."
-            : "Manage your password and session access from one place."
+            ? "See what is configured for the organisation, your own workspace and each branch, and change it in one place."
+            : "Manage your password, working defaults and branch access from one place."
         }
         action={<LogoutButton />}
       />
-      {isAdmin ? (
-        <section className="grid gap-6 xl:grid-cols-3">
-          <section className="surface rounded-[32px] p-2">
-            <AppSettingsForm app={overview.app} />
-          </section>
-          <section className="surface rounded-[32px] p-2">
-            <UserPreferencesForm preferences={overview.preferences} />
-          </section>
-          <section className="surface rounded-[32px] p-2 xl:col-span-3">
-            <BranchSettingsForm
-              branches={branches}
-              selectedBranchId={selectedBranchId}
-              overview={branchSettings}
-              canSelectBranch={canFilterAcrossBranches(user.role)}
-            />
-          </section>
-        </section>
-      ) : (
-        <section className="grid gap-6 xl:grid-cols-2">
-          <section className="surface rounded-[32px] p-2">
-            <UserPreferencesForm preferences={overview.preferences} />
-          </section>
-          <section className="surface rounded-[32px] p-2">
-            <BranchSettingsForm
-              branches={branches}
-              selectedBranchId={selectedBranchId}
-              overview={branchSettings}
-              canSelectBranch={canFilterAcrossBranches(user.role)}
-            />
-          </section>
-        </section>
-      )}
-      <section className="surface rounded-[32px] p-8">
-        <ChangePasswordForm />
-      </section>
+
+      <div className="app-rise flex flex-col gap-8">
+        {isAdmin ? (
+          <>
+            <SettingsSection
+              title="Organisation"
+              description="Global defaults for public connect and reporting across the whole platform."
+            >
+              <AppSettingsForm app={overview.app} />
+            </SettingsSection>
+            <Divider />
+          </>
+        ) : null}
+
+        <SettingsSection
+          title="Your preferences"
+          description="Change how the app feels for you without changing any ministry data."
+        >
+          <UserPreferencesForm preferences={overview.preferences} />
+        </SettingsSection>
+        <Divider />
+
+        <SettingsSection
+          title="Branch defaults"
+          description="Timezone, currency, approvals, public links and alerts for a single branch."
+        >
+          {branchForm}
+        </SettingsSection>
+        <Divider />
+
+        <SettingsSection
+          title="Password"
+          description="Update your password without leaving the application."
+        >
+          <ChangePasswordForm />
+        </SettingsSection>
+      </div>
     </Shell>
+  );
+}
+
+function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-10">
+      <div className="lg:pt-2">
+        <h2 className="lp-heading text-[18px] leading-tight">{title}</h2>
+        <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">{description}</p>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
   );
 }

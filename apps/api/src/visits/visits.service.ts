@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -37,7 +41,11 @@ export class VisitsService {
         ...(guestId ? { guestId } : {}),
       }).filter(([, value]) => value),
     );
-    return this.visitModel.find(query).populate('guestId').sort({ visitDate: -1 }).lean();
+    return this.visitModel
+      .find(query)
+      .populate('guestId')
+      .sort({ visitDate: -1 })
+      .lean();
   }
 
   async findOne(id: string, currentUser: AuthUser) {
@@ -45,7 +53,10 @@ export class VisitsService {
     if (!visit) {
       throw new NotFoundException('Visit not found');
     }
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(visit.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(visit.branchId),
+    );
     return visit;
   }
 }

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { isBranchScopedRole } from "@/lib/permissions";
 import type { BranchSummary, ServiceTypeSummary } from "@/lib/types";
+import { Button, Field } from "@/components/ui/ui";
 
 const weekdayOptions = [
   "sunday",
@@ -99,23 +100,22 @@ export function ServiceScheduleCreateForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[24px] bg-white p-5">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-lg font-semibold text-slate-950">Create service schedule</h3>
-        <p className="text-sm leading-6 text-slate-500">
-          Define recurring branch services so attendance and finance stop relying on loose names.
+    <form action={handleSubmit}>
+      <div>
+        <h3 className="lp-heading text-[18px]">Create service schedule</h3>
+        <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">
+          Define recurring branch services so attendance and finance attach to a real service, not a loose name.
         </p>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
         {!isBranchScopedRole(currentUserRole) ? (
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Branch</span>
+          <Field label="Branch" required>
             <select
               name="branchId"
               value={selectedBranchId}
               onChange={(event) => setSelectedBranchId(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value="">Select branch</option>
@@ -125,18 +125,13 @@ export function ServiceScheduleCreateForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         ) : (
           <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
         )}
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service type</span>
-          <select
-            name="serviceTypeId"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          >
+        <Field label="Service type" required>
+          <select name="serviceTypeId" className="ui-input" required>
             <option value="">Select service type</option>
             {filteredServiceTypes.map((serviceType) => (
               <option key={serviceType._id} value={serviceType._id}>
@@ -144,95 +139,62 @@ export function ServiceScheduleCreateForm({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Schedule name</span>
+        <Field label="Schedule name" required>
           <input
             name="name"
             placeholder="First service, Sunday worship, Midweek recharge..."
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            className="ui-input"
             required
           />
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Day of week</span>
-          <select
-            name="dayOfWeek"
-            defaultValue="sunday"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          >
+        <Field label="Day of week" required>
+          <select name="dayOfWeek" defaultValue="sunday" className="ui-input" required>
             {weekdayOptions.map((day) => (
               <option key={day} value={day}>
                 {day.charAt(0).toUpperCase() + day.slice(1)}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Start time</span>
-          <input
-            name="startTime"
-            type="time"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
+        <Field label="Start time" required>
+          <input name="startTime" type="time" className="ui-input" required />
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">End time</span>
-          <input
-            name="endTime"
-            type="time"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          />
-        </label>
+        <Field label="End time">
+          <input name="endTime" type="time" className="ui-input" />
+        </Field>
 
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-slate-700">Timezone</span>
-          <input
-            name="timezone"
-            defaultValue="America/Chicago"
-            placeholder="America/Chicago"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          />
-        </label>
+        <Field label="Timezone" className="md:col-span-2">
+          <input name="timezone" defaultValue="America/Chicago" placeholder="America/Chicago" className="ui-input" />
+        </Field>
       </div>
 
-      <label className="mt-4 block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Location notes</span>
-        <textarea
-          name="locationNotes"
-          placeholder="Optional room, campus, or service notes"
-          className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-        />
-      </label>
+      <Field label="Location notes" className="mt-4">
+        <textarea name="locationNotes" placeholder="Optional room, campus or service notes" className="ui-input" />
+      </Field>
 
-      <div className="mt-4 grid gap-2 md:grid-cols-3">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="attendanceEntryEnabled" defaultChecked className="h-4 w-4" />
+      <div className="mt-4 grid gap-2 rounded-2xl bg-[#f6f5f1] p-4 md:grid-cols-3">
+        <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
+          <input type="checkbox" name="attendanceEntryEnabled" defaultChecked className="h-4 w-4 accent-[#111111]" />
           Use for attendance
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="financeEntryEnabled" defaultChecked className="h-4 w-4" />
+        <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
+          <input type="checkbox" name="financeEntryEnabled" defaultChecked className="h-4 w-4 accent-[#111111]" />
           Use for finance
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
+        <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
+          <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4 accent-[#111111]" />
           Active schedule
         </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-      >
+      <Button type="submit" disabled={loading} className="mt-5">
         {loading ? "Creating..." : "Create service schedule"}
-      </button>
+      </Button>
     </form>
   );
 }

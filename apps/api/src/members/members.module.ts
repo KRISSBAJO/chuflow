@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
 import { GuestsModule } from '../guests/guests.module';
 import { Guest, GuestSchema } from '../guests/schemas/guest.schema';
-import { ServiceUnit, ServiceUnitSchema } from '../service-units/schemas/service-unit.schema';
+import {
+  ServiceUnit,
+  ServiceUnitSchema,
+} from '../service-units/schemas/service-unit.schema';
 import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
 import { Member, MemberSchema } from './schemas/member.schema';

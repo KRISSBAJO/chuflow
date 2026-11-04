@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, buttonClass } from "@/components/ui/ui";
 
 export function ShareLinkCard({
   title,
@@ -24,31 +25,22 @@ export function ShareLinkCard({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4">
+    <section className="rounded-2xl border border-black/[0.06] bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-950">{title}</p>
+          <p className="text-[14px] font-semibold text-[#111111]">{title}</p>
           {description ? (
-            <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+            <p className="mt-1 text-[13px] leading-[1.5] text-[#6b6b6b]">{description}</p>
           ) : null}
-          <p className="mt-3 break-all rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <p className="mt-3 break-all rounded-xl bg-[#f6f5f1] px-3 py-2 font-mono text-[12px] text-[#55534e]">
             {url}
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700"
-          >
+          <Button size="sm" variant="secondary" onClick={handleCopy}>
             {copied ? "Copied" : "Copy link"}
-          </button>
-          <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white"
-          >
+          </Button>
+          <a href={url} target="_blank" rel="noreferrer" className={buttonClass("primary", "sm")}>
             Open form
           </a>
         </div>

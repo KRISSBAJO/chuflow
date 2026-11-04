@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { StatusShell } from "@/components/auth/auth-shell";
 import { PublicConnectChooser } from "@/components/public-connect-chooser";
 import { publicServerGet } from "@/lib/server-api";
 import type { IntakeTemplate, PublicConnectOption, SettingsOverview } from "@/lib/types";
@@ -58,38 +58,35 @@ export default async function ConnectPage() {
 
   if (state.kind === "disabled") {
     return (
-      <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12">
-        <div className="w-full rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-700">Public Connect</p>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">Public connect is turned off right now</h1>
-          <p className="mt-3 text-sm leading-7 text-slate-600">
-            {state.organizationName} is not accepting public guest intake from this route at the moment.
-          </p>
-        </div>
-      </div>
+      <StatusShell
+        label="Connect"
+        title="Guest registration is paused."
+        body={`${state.organizationName} isn't accepting guest registrations online right now. Please speak to a member of the welcome team.`}
+        actions={[{ label: "Back to home", href: "/", primary: true }]}
+      />
     );
   }
 
-  const isBackendOffline = state.kind === "offline";
+  if (state.kind === "offline") {
+    return (
+      <StatusShell
+        label="Connect"
+        title="We'll be right back."
+        body="Guest registration is temporarily unavailable. Please try again in a few minutes."
+        actions={[{ label: "Back to home", href: "/", primary: true }]}
+      />
+    );
+  }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12">
-      <div className="w-full rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-700">Public Connect</p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-950">
-          {isBackendOffline
-            ? "Public connect is temporarily unavailable"
-            : "No active first timer template is live yet"}
-        </h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">
-          {isBackendOffline
-            ? "The public intake service is unavailable right now. Please try again shortly."
-            : "Open the template manager, activate a guest intake template, and this public connect route will immediately start using it."}
-        </p>
-        <Link href="/login" className="mt-5 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">
-          Back to login
-        </Link>
-      </div>
-    </div>
+    <StatusShell
+      label="Connect"
+      title="Guest registration isn't open yet."
+      body="There is no active guest form at the moment. If you manage this church, activate a guest intake template in ChuFlow."
+      actions={[
+        { label: "Sign in", href: "/login", primary: true },
+        { label: "Back to home", href: "/" },
+      ]}
+    />
   );
 }

@@ -4,6 +4,8 @@ import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { BranchCreateForm } from "@/components/branch-create-form";
 import { UserCreateForm } from "@/components/user-create-form";
+import { Icon } from "@/components/app/icons";
+import { Badge, buttonClass, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   canManageBranchStructure,
@@ -69,56 +71,64 @@ export default async function BranchesPage() {
     0,
   );
 
+  const scopeLabel =
+    user.role === "super_admin"
+      ? "Global oversight"
+      : isNationalRole(user.role)
+        ? user.oversightRegion || "National scope"
+        : isDistrictRole(user.role)
+          ? user.district || "District scope"
+          : "Current branch";
+
   return (
     <Shell>
       <PageHeader
         eyebrow="Branches"
         title="Branch oversight and operating health"
-        description="Keep branch structure, staffing, and operating load visible in one place so leadership can scale ministry without losing clarity."
+        description="Keep branch structure, staffing and operating load visible in one place so leadership can grow ministry without losing clarity."
         action={
           canManageBranches ? (
-            <a href="#branch-create" className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">
+            <a href="#branch-create" className={buttonClass("primary", "md")}>
+              <Icon name="plus" className="h-4 w-4" />
               Create branch
             </a>
           ) : (
-            <a href="/users" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700">
+            <a href="/users" className={buttonClass("secondary", "md")}>
+              <Icon name="users" className="h-4 w-4" />
               Open team roster
             </a>
           )
         }
       />
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Branches" value={String(totalBranches)} delta="Visible in the current scope" tone="cool" />
         <MetricCard label="Active branches" value={String(activeBranches)} delta={`${Math.max(totalBranches - activeBranches, 0)} not active`} tone="warm" />
-        <MetricCard label="Branch admins" value={String(branchAdmins)} delta="Leadership operators across branches" tone="cool" />
-        <MetricCard label="Follow-up + ushers" value={String(activeOperators)} delta="Operational team members" tone="warm" />
+        <MetricCard label="Branch admins" value={String(branchAdmins)} delta="Leadership across branches" tone="cool" />
+        <MetricCard label="Follow-up and ushers" value={String(activeOperators)} delta="Operational team members" tone="warm" />
       </section>
-      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-        <section className="surface rounded-[24px] p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Branch directory</h2>
-              <p className="mt-1 text-xs text-slate-500">Live staffing, guest load, and member load for every branch in scope.</p>
-            </div>
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              {user.role === "super_admin"
-                ? "Global oversight"
-                : isNationalRole(user.role)
-                  ? user.oversightRegion || "National scope"
-                  : isDistrictRole(user.role)
-                    ? user.district || "District scope"
-                    : "Current branch"}
-            </div>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
+        <Card className="app-rise self-start p-6 sm:p-7">
+          <CardHeader
+            label="Branch directory"
+            title="All branches in scope"
+            description="Live staffing, guest load and member load for every branch you oversee."
+            action={<Badge tone="neutral">{scopeLabel}</Badge>}
+          />
+          <div className="mt-6">
+            {branches.length > 0 ? (
+              <BranchManagementList
+                branches={branches}
+              />
+            ) : (
+              <EmptyState icon="branches" title="No branches yet">
+                No branches are visible in your current scope.
+              </EmptyState>
+            )}
           </div>
-          <div className="mt-4">
-            <BranchManagementList
-              branches={branches}
-            />
-          </div>
-        </section>
-        <section className="space-y-4">
+        </Card>
+        <div className="space-y-4">
           {canManageBranches ? (
-            <section id="branch-create" className="surface rounded-[24px] p-1.5">
+            <Card id="branch-create" className="app-rise scroll-mt-24 p-1.5" style={{ animationDelay: "60ms" }}>
               <BranchCreateForm
                 currentUserRole={user.role}
                 defaultOversightRegion={user.oversightRegion}
@@ -126,10 +136,10 @@ export default async function BranchesPage() {
                 oversightRegions={oversightRegions}
                 districts={districts}
               />
-            </section>
+            </Card>
           ) : null}
           {canCreateBranchLeadership ? (
-            <section className="surface rounded-[24px] p-1.5">
+            <Card className="app-rise p-1.5" style={{ animationDelay: "120ms" }}>
               <UserCreateForm
                 branches={branches}
                 currentUserRole={user.role}
@@ -140,26 +150,27 @@ export default async function BranchesPage() {
                 districts={districts}
                 allowedRoles={branchScopedCreateRoles}
                 title="Add branch leadership and support"
-                description="Create branch admins, resident pastors, associate pastors, follow-up staff, and ushers without leaving branch operations."
+                description="Create branch admins, resident pastors, associate pastors, follow-up staff and ushers without leaving branch operations."
                 submitLabel="Add branch staff"
               />
-            </section>
+            </Card>
           ) : null}
-          <section className="surface rounded-[24px] p-5">
-            <p className="eyebrow">Branch operations</p>
-            <div className="mt-3 space-y-2.5 text-sm text-slate-600">
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                Keep branch-admin and follow-up staffing current so assignment options stay trustworthy.
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                Use the branch staff link inside each branch row to jump straight into scoped user management.
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                Review guest and member load together so care coverage grows with attendance, not after it.
-              </div>
-            </div>
-          </section>
-        </section>
+          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "180ms" }}>
+            <CardHeader label="Branch operations" title="Good habits" />
+            <ul className="mt-5 space-y-2.5">
+              {[
+                "Keep branch admin and follow-up staffing current so assignment options stay trustworthy.",
+                "Open a branch to jump straight into its staff and scoped user management.",
+                "Review guest and member load together so care coverage grows with attendance, not after it.",
+              ].map((tip) => (
+                <li key={tip} className="flex gap-3 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">
+                  <span className="lp-flame-bg mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full" />
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
       </section>
     </Shell>
   );

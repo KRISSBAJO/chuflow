@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import type { AttendanceSubmissionItem } from "@/lib/types";
+import { Badge, Button, EmptyState, statusTone } from "@/components/ui/ui";
 
 function formatStatus(status: string) {
   switch (status) {
@@ -14,17 +15,6 @@ function formatStatus(status: string) {
       return "Rejected";
     default:
       return "Pending";
-  }
-}
-
-function getStatusTone(status: string) {
-  switch (status) {
-    case "approved":
-      return "bg-emerald-50 text-emerald-700";
-    case "rejected":
-      return "bg-rose-50 text-rose-700";
-    default:
-      return "bg-amber-50 text-amber-700";
   }
 }
 
@@ -89,158 +79,133 @@ export function AttendanceSubmissionQueue({
     }
   }
 
+  if (items.length === 0) {
+    return (
+      <EmptyState icon="attendance" title="Nothing waiting">
+        No attendance submissions are waiting in the current scope.
+      </EmptyState>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">
-          No attendance submissions are waiting in the current scope.
-        </div>
-      ) : (
-        items.map((item) => {
-          const totalPeople =
-            (item.adultsCount ?? 0) + (item.childrenCount ?? 0);
-          const isWeeklyReport = item.templateKind === "weekly_report";
-          const isMaagReport = item.templateKind === "maag_report";
+      {items.map((item) => {
+        const totalPeople =
+          (item.adultsCount ?? 0) + (item.childrenCount ?? 0);
+        const isWeeklyReport = item.templateKind === "weekly_report";
+        const isMaagReport = item.templateKind === "maag_report";
+        const busy = pending || loadingId === item._id || item.status !== "pending";
 
-          return (
-            <article
-              key={item._id}
-              className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm"
-            >
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-semibold text-slate-950">
-                      {item.serviceName || item.serviceType || item.templateName}
-                    </h3>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusTone(
-                        item.status,
-                      )}`}
-                    >
-                      {formatStatus(item.status)}
-                    </span>
-                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-700">
-                      {formatKind(item.templateKind)}
-                    </span>
-                    {item.branchId?.name ? (
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                        {item.branchId.name}
-                      </span>
-                    ) : null}
-                  </div>
+        return (
+          <article
+            key={item._id}
+            className="rounded-2xl border border-black/[0.06] p-5 transition-colors hover:border-black/[0.12]"
+          >
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+              <div className="min-w-0 flex-1 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="lp-heading text-[18px]">
+                    {item.serviceName || item.serviceType || item.templateName}
+                  </h3>
+                  <Badge tone={statusTone(item.status)} dot>
+                    {formatStatus(item.status)}
+                  </Badge>
+                  <Badge tone="flame">{formatKind(item.templateKind)}</Badge>
+                  {item.branchId?.name ? <Badge>{item.branchId.name}</Badge> : null}
+                </div>
 
-                  <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                      {item.serviceDate
-                        ? new Date(item.serviceDate).toLocaleString()
-                        : "No date"}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-[#6b6b6b]">
+                  <span>
+                    {item.serviceDate
+                      ? new Date(item.serviceDate).toLocaleString()
+                      : "No date"}
+                  </span>
+                  {isMaagReport ? (
+                    <span>MAAG monthly report</span>
+                  ) : isWeeklyReport ? (
+                    <span>
+                      <span className="font-medium tabular-nums text-[#111111]">{item.currentAttendance ?? 0}</span> current attendance
                     </span>
-                    {isMaagReport ? (
-                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
-                        MAAG monthly report
-                      </span>
-                    ) : isWeeklyReport ? (
-                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
-                        {item.currentAttendance ?? 0} current attendance
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
-                        {totalPeople} total people
-                      </span>
-                    )}
-                    <span className="rounded-full bg-orange-50 px-2.5 py-1 text-orange-700">
-                      {item.firstTimersCount ?? 0} first timers
+                  ) : (
+                    <span>
+                      <span className="font-medium tabular-nums text-[#111111]">{totalPeople}</span> total people
                     </span>
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                      {item.newConvertsCount ?? 0} new converts
-                    </span>
-                    {item.duplicateSummaryCount > 0 ? (
-                      <span className="rounded-full bg-rose-50 px-2.5 py-1 text-rose-700">
-                        {item.duplicateSummaryCount} possible duplicate
-                        {item.duplicateSummaryCount === 1 ? "" : "s"}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-                    {(isMaagReport
-                      ? [
-                          ["Report", "Monthly"],
-                          ["Status", item.status],
-                          ["Branch", item.branchId?.name || "Branch"],
-                          ["Review", item.approvedAt ? "Reviewed" : "Pending"],
-                          ["Created", item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""],
-                          ["Type", "MAAG"],
-                        ]
-                      : isWeeklyReport
-                      ? [
-                          ["Previous", item.previousAttendance ?? 0],
-                          ["Growth", item.growth ?? 0],
-                          ["Growth %", item.growthPercent !== undefined ? `${item.growthPercent}%` : "0%"],
-                          ["BFC", item.believersFoundationClassCount ?? 0],
-                          ["Cells", item.cellCount ?? 0],
-                          ["WOFBI", item.wofbiAttendance ?? 0],
-                        ]
-                      : [
-                          ["Men", item.menCount ?? 0],
-                          ["Women", item.womenCount ?? 0],
-                          ["Children", item.childrenCount ?? 0],
-                          ["Adults", item.adultsCount ?? 0],
-                          ["First timers", item.firstTimersCount ?? 0],
-                          ["Holy Spirit", item.holySpiritBaptismCount ?? 0],
-                        ]).map(([label, value]) => (
-                      <div
-                        key={label}
-                        className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600"
-                      >
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                          {label}
-                        </p>
-                        <p className="mt-1 font-semibold text-slate-900">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {isWeeklyReport && item.remarks ? (
-                    <p className="max-w-3xl rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                      {item.remarks}
-                    </p>
+                  )}
+                  <span>
+                    <span className="font-medium tabular-nums text-[#111111]">{item.firstTimersCount ?? 0}</span> first timers
+                  </span>
+                  <span>
+                    <span className="font-medium tabular-nums text-[#111111]">{item.newConvertsCount ?? 0}</span> new converts
+                  </span>
+                  {item.duplicateSummaryCount > 0 ? (
+                    <Badge tone="danger">
+                      {item.duplicateSummaryCount} possible duplicate
+                      {item.duplicateSummaryCount === 1 ? "" : "s"}
+                    </Badge>
                   ) : null}
                 </div>
 
-                {canApprove ? (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleAction(item._id, "reject")}
-                      disabled={
-                        pending ||
-                        loadingId === item._id ||
-                        item.status !== "pending"
-                      }
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-50"
-                    >
-                      {loadingId === item._id ? "Working..." : "Reject"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAction(item._id, "approve")}
-                      disabled={
-                        pending ||
-                        loadingId === item._id ||
-                        item.status !== "pending"
-                      }
-                      className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                    >
-                      {loadingId === item._id ? "Working..." : "Approve"}
-                    </button>
+                <dl className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+                  {(isMaagReport
+                    ? [
+                        ["Report", "Monthly"],
+                        ["Status", formatStatus(item.status)],
+                        ["Branch", item.branchId?.name || "Branch"],
+                        ["Review", item.approvedAt ? "Reviewed" : "Pending"],
+                        ["Created", item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""],
+                        ["Type", "MAAG"],
+                      ]
+                    : isWeeklyReport
+                    ? [
+                        ["Previous", item.previousAttendance ?? 0],
+                        ["Growth", item.growth ?? 0],
+                        ["Growth %", item.growthPercent !== undefined ? `${item.growthPercent}%` : "0%"],
+                        ["BFC", item.believersFoundationClassCount ?? 0],
+                        ["Cells", item.cellCount ?? 0],
+                        ["WOFBI", item.wofbiAttendance ?? 0],
+                      ]
+                    : [
+                        ["Men", item.menCount ?? 0],
+                        ["Women", item.womenCount ?? 0],
+                        ["Children", item.childrenCount ?? 0],
+                        ["Adults", item.adultsCount ?? 0],
+                        ["First timers", item.firstTimersCount ?? 0],
+                        ["Holy Spirit", item.holySpiritBaptismCount ?? 0],
+                      ]).map(([label, value]) => (
+                    <div key={label} className="rounded-xl bg-[#f6f5f1] px-3 py-2.5">
+                      <dt className="text-[12px] text-[#6b6b6b]">{label}</dt>
+                      <dd className="mt-0.5 truncate text-[15px] font-semibold tabular-nums text-[#111111]">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {isWeeklyReport && item.remarks ? (
+                  <div className="max-w-3xl rounded-xl border border-black/[0.06] px-4 py-3 text-[14px] text-[#55534e]">
+                    <p className="text-[12px] text-[#8a8780]">Remarks</p>
+                    <p className="mt-1 leading-[1.6]">{item.remarks}</p>
                   </div>
                 ) : null}
               </div>
-            </article>
-          );
-        })
-      )}
+
+              {canApprove ? (
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                    onClick={() => handleAction(item._id, "reject")}
+                    disabled={busy}
+                  >
+                    {loadingId === item._id ? "Working..." : "Reject"}
+                  </Button>
+                  <Button size="sm" onClick={() => handleAction(item._id, "approve")} disabled={busy}>
+                    {loadingId === item._id ? "Working..." : "Approve"}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

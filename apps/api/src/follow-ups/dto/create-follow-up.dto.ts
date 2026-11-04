@@ -1,7 +1,17 @@
 import { Transform } from 'class-transformer';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsIn, IsMongoId, IsOptional, IsString, ValidateIf } from 'class-validator';
-import { FOLLOW_UP_CONTACT_METHOD_VALUES, FOLLOW_UP_STATUS_VALUES } from '../follow-up.constants';
+import {
+  IsDateString,
+  IsIn,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
+import {
+  FOLLOW_UP_CONTACT_METHOD_VALUES,
+  FOLLOW_UP_STATUS_VALUES,
+} from '../follow-up.constants';
 
 export class CreateFollowUpDto {
   @ApiProperty()

@@ -1,15 +1,41 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { CreateExpenseCategoryDto, UpdateExpenseCategoryDto } from './dto/create-expense-category.dto';
-import { CreateExpenseEntryDto, ReviewExpenseEntryDto, UpdateExpenseEntryDto } from './dto/create-expense-entry.dto';
-import { CreateFinanceAccountDto, UpdateFinanceAccountDto } from './dto/create-finance-account.dto';
+import {
+  CreateExpenseCategoryDto,
+  UpdateExpenseCategoryDto,
+} from './dto/create-expense-category.dto';
+import {
+  CreateExpenseEntryDto,
+  ReviewExpenseEntryDto,
+  UpdateExpenseEntryDto,
+} from './dto/create-expense-entry.dto';
+import {
+  CreateFinanceAccountDto,
+  UpdateFinanceAccountDto,
+} from './dto/create-finance-account.dto';
 import { CreateFinanceLockDto } from './dto/create-finance-lock.dto';
-import { CreateOfferingEntryDto, UpdateOfferingEntryDto } from './dto/create-offering-entry.dto';
-import { CreateOfferingTypeDto, UpdateOfferingTypeDto } from './dto/create-offering-type.dto';
+import {
+  CreateOfferingEntryDto,
+  UpdateOfferingEntryDto,
+} from './dto/create-offering-entry.dto';
+import {
+  CreateOfferingTypeDto,
+  UpdateOfferingTypeDto,
+} from './dto/create-offering-type.dto';
 import { FinanceService } from './finance.service';
 
 @ApiTags('Finance')
@@ -37,7 +63,10 @@ export class FinanceController {
 
   @Post('accounts')
   @Roles('super_admin')
-  createAccount(@CurrentUser() user: AuthUser, @Body() dto: CreateFinanceAccountDto) {
+  createAccount(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateFinanceAccountDto,
+  ) {
     return this.financeService.createFinanceAccount(dto, user);
   }
 
@@ -69,7 +98,10 @@ export class FinanceController {
 
   @Post('expense-categories')
   @Roles('super_admin')
-  createExpenseCategory(@CurrentUser() user: AuthUser, @Body() dto: CreateExpenseCategoryDto) {
+  createExpenseCategory(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateExpenseCategoryDto,
+  ) {
     return this.financeService.createExpenseCategory(dto, user);
   }
 
@@ -227,7 +259,10 @@ export class FinanceController {
     'resident_pastor',
     'associate_pastor',
   )
-  createExpense(@CurrentUser() user: AuthUser, @Body() dto: CreateExpenseEntryDto) {
+  createExpense(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateExpenseEntryDto,
+  ) {
     return this.financeService.createExpenseEntry(dto, user);
   }
 
@@ -346,7 +381,11 @@ export class FinanceController {
     @Query('oversightRegion') oversightRegion?: string,
     @Query('district') district?: string,
   ) {
-    return this.financeService.listFinanceLocks(user, { branchId, oversightRegion, district });
+    return this.financeService.listFinanceLocks(user, {
+      branchId,
+      oversightRegion,
+      district,
+    });
   }
 
   @Post('locks')
@@ -393,7 +432,10 @@ export class FinanceController {
 
   @Post('offerings')
   @Roles('resident_pastor', 'associate_pastor', 'usher')
-  createOffering(@CurrentUser() user: AuthUser, @Body() dto: CreateOfferingEntryDto) {
+  createOffering(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateOfferingEntryDto,
+  ) {
     return this.financeService.createOfferingEntry(dto, user);
   }
 

@@ -39,10 +39,13 @@ export class MailService {
     html?: string;
   }) {
     const transporter = this.getTransporter();
-    const from = this.configService.get<string>('mailFrom') ?? 'no-reply@church.local';
+    const from =
+      this.configService.get<string>('mailFrom') ?? 'no-reply@church.local';
 
     if (!transporter) {
-      this.logger.warn(`SMTP not configured. Email to ${to} was not sent. Subject: ${subject}`);
+      this.logger.warn(
+        `SMTP not configured. Email to ${to} was not sent. Subject: ${subject}`,
+      );
 
       return {
         delivered: false,
@@ -66,7 +69,11 @@ export class MailService {
     };
   }
 
-  async sendPasswordResetEmail(email: string, resetUrl: string, expiresAt: string) {
+  async sendPasswordResetEmail(
+    email: string,
+    resetUrl: string,
+    expiresAt: string,
+  ) {
     const appName = this.configService.get<string>('appName') ?? 'ChuFlow';
     const result = await this.sendAppEmail({
       to: email,

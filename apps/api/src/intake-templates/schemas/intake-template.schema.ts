@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type IntakeTemplateDocument = HydratedDocument<IntakeTemplate>;
 
@@ -23,7 +23,10 @@ const TemplateThemeSchema = raw({
 
 @Schema({ timestamps: true })
 export class IntakeTemplate {
-  @Prop({ required: true, enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'] })
+  @Prop({
+    required: true,
+    enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'],
+  })
   kind!: string;
 
   @Prop({ required: true })
@@ -32,7 +35,7 @@ export class IntakeTemplate {
   @Prop({ required: true, unique: true, index: true })
   slug!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Branch' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
   @Prop()
@@ -41,7 +44,7 @@ export class IntakeTemplate {
   @Prop()
   district?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'IntakeTemplate' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'IntakeTemplate' })
   baseTemplateId?: Types.ObjectId;
 
   @Prop({ default: false })
@@ -107,4 +110,5 @@ export class IntakeTemplate {
   }>;
 }
 
-export const IntakeTemplateSchema = SchemaFactory.createForClass(IntakeTemplate);
+export const IntakeTemplateSchema =
+  SchemaFactory.createForClass(IntakeTemplate);

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type AuditLogDocument = HydratedDocument<AuditLog>;
 
@@ -17,7 +17,7 @@ export class AuditLog {
   @Prop({ required: true })
   summary!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
   actorId?: Types.ObjectId;
 
   @Prop()
@@ -35,7 +35,7 @@ export class AuditLog {
   @Prop()
   district?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Branch' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
   @Prop({ type: Object })

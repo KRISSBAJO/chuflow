@@ -73,7 +73,9 @@ class IntakeTemplateThemeDto {
 }
 
 export class CreateIntakeTemplateDto {
-  @ApiProperty({ enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'] })
+  @ApiProperty({
+    enum: ['guest', 'member', 'attendance', 'weekly_report', 'maag_report'],
+  })
   @IsIn(['guest', 'member', 'attendance', 'weekly_report', 'maag_report'])
   kind!: string;
 
@@ -167,7 +169,9 @@ export class CreateIntakeTemplateDto {
   fields!: IntakeTemplateFieldDto[];
 }
 
-export class UpdateIntakeTemplateDto extends PartialType(CreateIntakeTemplateDto) {}
+export class UpdateIntakeTemplateDto extends PartialType(
+  CreateIntakeTemplateDto,
+) {}
 
 export class CreateBranchOverrideDto {
   @ApiProperty({ required: false })

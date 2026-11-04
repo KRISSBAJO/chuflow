@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope } from "next/font/google";
 import { Toaster } from "sonner";
+import { landingFont } from "@/components/landing/landing-font";
 import "./globals.css";
 
 const headingFont = Fraunces({
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${headingFont.variable} ${bodyFont.variable} h-full antialiased`}
+      className={`${headingFont.variable} ${bodyFont.variable} ${landingFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

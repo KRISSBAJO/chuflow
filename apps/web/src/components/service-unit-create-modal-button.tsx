@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ModalShell } from "@/components/modal-shell";
+import { Button } from "@/components/ui/ui";
 import { ServiceUnitCreateForm } from "@/components/service-unit-create-form";
 import type { BranchSummary, MemberListItem } from "@/lib/types";
 
@@ -20,13 +21,9 @@ export function ServiceUnitCreateModalButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-      >
+      <Button icon="plus" onClick={() => setOpen(true)}>
         Create service unit
-      </button>
+      </Button>
       <ModalShell
         open={open}
         onClose={() => setOpen(false)}

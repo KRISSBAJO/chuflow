@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { GuestListItem } from "@/lib/types";
 
@@ -34,10 +35,9 @@ export function ConvertGuestForm({ guests }: { guests: GuestListItem[] }) {
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[28px] bg-white p-6">
-      <h3 className="text-xl font-semibold text-slate-950">Convert guest to member</h3>
-      <div className="mt-5">
-        <select name="guestId" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none" required>
+    <form action={handleSubmit}>
+      <Field label="Guest" required>
+        <select name="guestId" className="ui-input" required>
           <option value="">Select guest</option>
           {guests.map((guest) => (
             <option key={guest._id} value={guest._id}>
@@ -45,11 +45,13 @@ export function ConvertGuestForm({ guests }: { guests: GuestListItem[] }) {
             </option>
           ))}
         </select>
+      </Field>
+      <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+        {status ? <p className="text-[13px] text-[#55534e] sm:mr-auto">{status}</p> : null}
+        <Button type="submit" variant="flame" disabled={loading}>
+          {loading ? "Converting..." : "Convert guest"}
+        </Button>
       </div>
-      <button type="submit" disabled={loading} className="mt-5 rounded-2xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white">
-        {loading ? "Converting..." : "Convert guest"}
-      </button>
-      {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
     </form>
   );
 }

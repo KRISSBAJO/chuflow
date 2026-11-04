@@ -19,7 +19,18 @@ export class SettingsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+    'follow_up',
+    'usher',
+  )
   @Get('overview')
   getOverview(@CurrentUser() user: AuthUser) {
     return this.settingsService.getOverview(user);
@@ -35,15 +46,40 @@ export class SettingsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+    'follow_up',
+    'usher',
+  )
   @Patch('preferences')
-  updatePreferences(@CurrentUser() user: AuthUser, @Body() dto: UpdateUserPreferencesDto) {
+  updatePreferences(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateUserPreferencesDto,
+  ) {
     return this.settingsService.updateUserPreferences(user, dto);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+    'follow_up',
+    'usher',
+  )
   @Get('branches/:branchId')
   getBranchSettings(
     @CurrentUser() user: AuthUser,

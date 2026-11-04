@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Icon } from "@/components/app/icons";
 import { CommunicationPanel } from "@/components/communication-panel";
 import { ConvertGuestButton } from "@/components/convert-guest-button";
 import { GuestFollowUpManager } from "@/components/guest-follow-up-manager";
@@ -6,6 +7,7 @@ import { GuestProfileForm } from "@/components/guest-profile-form";
 import { GuestReturnVisitForm } from "@/components/guest-return-visit-form";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
+import { Badge, EmptyState, formatStatus, Stat, statusTone, TableWrap } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { canConvertGuests } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
@@ -31,24 +33,30 @@ function formatValue(value?: string) {
 
 function WorkSection({
   title,
+  description,
   count,
   children,
   defaultOpen = false,
 }: {
   title: string;
+  description?: string;
   count?: number;
   children: ReactNode;
   defaultOpen?: boolean;
 }) {
   return (
-    <details className="rounded-[24px] border border-slate-200 bg-white shadow-sm" open={defaultOpen}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
-        <span className="font-semibold text-slate-950">{title}</span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-          {typeof count === "number" ? count : "Open"}
+    <details className="app-card group overflow-hidden" open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 transition-colors hover:bg-[#faf9f6] sm:px-7 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0">
+          <span className="lp-heading block text-[18px] leading-tight">{title}</span>
+          {description ? <span className="mt-1 block text-[13px] text-[#6b6b6b]">{description}</span> : null}
+        </span>
+        <span className="flex shrink-0 items-center gap-3">
+          {typeof count === "number" ? <Badge>{count}</Badge> : null}
+          <Icon name="chevronDown" className="h-4 w-4 text-[#8a8780] transition-transform group-open:rotate-180" />
         </span>
       </summary>
-      <div className="border-t border-slate-200 bg-slate-50/60 p-4">{children}</div>
+      <div className="border-t border-black/[0.06] p-6 sm:p-7">{children}</div>
     </details>
   );
 }
@@ -140,87 +148,73 @@ export default async function GuestDetailPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Guest Detail"
+        eyebrow="Guest"
         title={`${guest.firstName} ${guest.lastName}`}
-        description="A focused guest record for profile details, care work, return visits, communication history, and conversion."
+        description="Profile details, care work, return visits, communication history and conversion for this guest."
       />
 
-      <section className="rounded-[24px] border border-slate-200 bg-white shadow-sm">
-        <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="border-b border-slate-200 p-5 lg:border-b-0 lg:border-r">
+      <section className="app-card app-rise overflow-hidden">
+        <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+          <div className="border-b border-black/[0.06] p-6 sm:p-7 lg:border-b-0 lg:border-r">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
-                {formatValue(guest.visitStatus)}
-              </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                {branchName || "Unassigned branch"}
-              </span>
+              <Badge tone={statusTone(guest.visitStatus)} dot>
+                {formatStatus(guest.visitStatus) || "Not recorded"}
+              </Badge>
+              <Badge>{branchName || "Unassigned branch"}</Badge>
             </div>
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <tbody className="divide-y divide-slate-100">
-                  {facts.map(([label, value]) => (
-                    <tr key={label}>
-                      <th className="w-36 py-3 pr-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                        {label}
-                      </th>
-                      <td className="py-3 font-medium text-slate-700">{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <dl className="mt-5 divide-y divide-black/[0.05]">
+              {facts.map(([label, value]) => (
+                <div key={label} className="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+                  <dt className="text-[13px] text-[#8a8780]">{label}</dt>
+                  <dd className="break-words text-[14px] font-medium text-[#111111]">{value}</dd>
+                </div>
+              ))}
+            </dl>
             {guest.prayerRequest ? (
-              <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm text-orange-950">
-                <p className="font-semibold">Prayer request</p>
-                <p className="mt-2">{guest.prayerRequest}</p>
+              <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3.5 text-[14px] text-orange-950">
+                <p className="text-[12px] font-medium text-orange-800">Prayer request</p>
+                <p className="mt-1 leading-[1.6]">{guest.prayerRequest}</p>
               </div>
             ) : null}
           </div>
 
-          <div className="p-5">
+          <div className="flex flex-col gap-4 p-6 sm:p-7">
             <div className="grid grid-cols-3 gap-3">
-              {[
-                ["Visits", visits.length],
-                ["Follow-up", followUps.length],
-                ["Messages", communications.length],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-slate-50 px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-950">{value}</p>
-                </div>
-              ))}
+              <Stat label="Visits" value={visits.length} />
+              <Stat label="Follow-ups" value={followUps.length} />
+              <Stat label="Messages" value={communications.length} />
             </div>
-            <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Guest ID</p>
-              <p className="mt-1 break-all text-sm font-medium text-slate-700">{id}</p>
+            <div className="rounded-2xl border border-black/[0.06] px-4 py-3">
+              <p className="text-[12px] text-[#8a8780]">Guest ID</p>
+              <p className="mt-0.5 break-all font-mono text-[13px] text-[#55534e]">{id}</p>
             </div>
-            {!guest.convertedToMember && canConvertGuests(user.role) ? (
-              <div className="mt-4">
-                <ConvertGuestButton guestId={id} />
-              </div>
-            ) : null}
+            {!guest.convertedToMember && canConvertGuests(user.role) ? <ConvertGuestButton guestId={id} /> : null}
           </div>
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
         {canManageFollowUp ? (
-          <WorkSection title="Care and follow-up" count={followUps.length} defaultOpen>
+          <WorkSection
+            title="Care and follow-up"
+            description="Assign care workers and keep each follow-up record current."
+            count={followUps.length}
+            defaultOpen
+          >
             <GuestFollowUpManager guestId={id} followUps={followUps} users={users} />
           </WorkSection>
         ) : null}
 
-        <WorkSection title="Profile fields">
+        <WorkSection title="Profile details" description="Keep the guest's contact and background details accurate.">
           <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />
         </WorkSection>
 
-        <WorkSection title="Return visit">
+        <WorkSection title="Return visit" description="Record attendance and mark the guest as returned.">
           <GuestReturnVisitForm guestId={id} branchId={branchId} followUpId={latestFollowUp?._id} />
         </WorkSection>
 
         {canCommunicate ? (
-          <WorkSection title="Communications" count={communications.length}>
+          <WorkSection title="Communications" description="Send a message and review outreach history." count={communications.length}>
             <CommunicationPanel
               recipientType="guest"
               recipientId={id}
@@ -231,38 +225,35 @@ export default async function GuestDetailPage({
           </WorkSection>
         ) : null}
 
-        <WorkSection title="Timeline" count={timeline.length}>
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">When</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {timeline.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-3 text-slate-600">{formatDateTime(item.when)}</td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                        {item.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{item.text}</td>
-                  </tr>
-                ))}
-                {timeline.length === 0 ? (
+        <WorkSection title="Timeline" description="Visits, follow-ups and messages, newest first." count={timeline.length}>
+          {timeline.length > 0 ? (
+            <TableWrap>
+              <table className="ui-table">
+                <thead>
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">
-                      No activity has been recorded for this guest yet.
-                    </td>
+                    <th>When</th>
+                    <th>Type</th>
+                    <th>Details</th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {timeline.map((item) => (
+                    <tr key={item.id}>
+                      <td className="whitespace-nowrap tabular-nums text-[#55534e]">{formatDateTime(item.when)}</td>
+                      <td>
+                        <Badge>{formatStatus(item.type)}</Badge>
+                      </td>
+                      <td className="text-[#55534e]">{item.text}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableWrap>
+          ) : (
+            <EmptyState icon="clock" title="No activity yet">
+              No activity has been recorded for this guest yet.
+            </EmptyState>
+          )}
         </WorkSection>
       </section>
     </Shell>

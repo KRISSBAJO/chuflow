@@ -13,18 +13,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request & { cookies?: Record<string, string> }) => {
-          const cookieName = configService.get<string>('cookieName') ?? 'cms_access_token';
+          const cookieName =
+            configService.get<string>('cookieName') ?? 'cms_access_token';
           return request?.cookies?.[cookieName] ?? null;
         },
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('jwtSecret') ?? 'super-secret-change-me',
+      secretOrKey:
+        configService.get<string>('jwtSecret') ?? 'super-secret-change-me',
     });
   }
 
   async validate(payload: { sub: string }) {
-    const user = await this.usersService.findById(payload.sub).catch(() => null);
+    const user = await this.usersService
+      .findById(payload.sub)
+      .catch(() => null);
 
     if (!user || user.isActive === false) {
       throw new UnauthorizedException('Authentication failed');

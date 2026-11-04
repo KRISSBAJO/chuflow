@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { UNITED_STATES_PROFILE, type GeoCountryProfile } from "@/lib/geo";
 
 function getInitialLocale() {
@@ -24,14 +24,14 @@ function getRegionCode(locale: string) {
   return localeParts[1]?.toUpperCase() || UNITED_STATES_PROFILE.code;
 }
 
-export function useGeo() {
-  const [locale, setLocale] = useState("en-US");
-  const [timeZone, setTimeZone] = useState("America/Chicago");
+// The browser locale/time zone never change while the page is open, so there is nothing to subscribe to.
+const subscribe = () => () => {};
+const getServerLocale = () => "en-US";
+const getServerTimeZone = () => "America/Chicago";
 
-  useEffect(() => {
-    setLocale(getInitialLocale());
-    setTimeZone(getInitialTimeZone());
-  }, []);
+export function useGeo() {
+  const locale = useSyncExternalStore(subscribe, getInitialLocale, getServerLocale);
+  const timeZone = useSyncExternalStore(subscribe, getInitialTimeZone, getServerTimeZone);
 
   return useMemo(
     () => ({

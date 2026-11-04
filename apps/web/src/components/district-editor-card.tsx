@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Badge, Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { DistrictOption, OversightRegionOption } from "@/lib/types";
 
@@ -52,34 +53,31 @@ export function DistrictEditorCard({
   }
 
   return (
-    <section className="surface rounded-[28px] p-6">
-      <p className="eyebrow">District</p>
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-950">{district.name}</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {district.oversightRegion} · {district.branchCount} branches
-            </p>
-          </div>
-          <span
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
-              district.isActive
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {district.isActive ? "active" : "inactive"}
-          </span>
-        </div>
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="District"
+        title={district.name}
+        description={
+          <>
+            {district.oversightRegion} ·{" "}
+            <span className="tabular-nums">{district.branchCount}</span> branches
+          </>
+        }
+        action={
+          <Badge tone={district.isActive ? "success" : "neutral"} dot>
+            {district.isActive ? "Active" : "Inactive"}
+          </Badge>
+        }
+      />
 
-        {canEdit ? (
-          <form action={handleSubmit} className="mt-5 grid gap-3 md:grid-cols-2">
-            {canChangeOversightRegion ? (
+      {canEdit ? (
+        <form action={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
+          {canChangeOversightRegion ? (
+            <Field label="National area">
               <select
                 name="oversightRegion"
                 defaultValue={district.oversightRegion}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+                className="ui-input"
               >
                 {oversightRegions.map((region) => (
                   <option key={region._id} value={region.name}>
@@ -87,50 +85,56 @@ export function DistrictEditorCard({
                   </option>
                 ))}
               </select>
-            ) : (
-              <>
-                <input
-                  type="hidden"
-                  name="oversightRegion"
-                  value={district.oversightRegion}
-                />
-                <input
-                  value={district.oversightRegion}
-                  readOnly
-                  className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500 outline-none"
-                />
-              </>
-            )}
+            </Field>
+          ) : (
+            <Field label="National area">
+              <input
+                type="hidden"
+                name="oversightRegion"
+                value={district.oversightRegion}
+              />
+              <input
+                value={district.oversightRegion}
+                readOnly
+                className="ui-input bg-[#f6f5f1] text-[#6b6b6b]"
+              />
+            </Field>
+          )}
+          <Field label="District name" required>
             <input
               name="name"
               defaultValue={district.name}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+              className="ui-input"
               required
             />
+          </Field>
+          <Field label="Status">
             <select
               name="isActive"
               defaultValue={district.isActive ? "active" : "inactive"}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+              className="ui-input"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-            >
+          </Field>
+          <div className="flex items-end">
+            <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save district"}
-            </button>
-          </form>
-        ) : (
-          <p className="mt-4 text-sm text-slate-500">
-            You can view this district, but only district admin, national admin, or overall oversight admin can edit it.
-          </p>
-        )}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <p className="mt-6 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">
+          You can view this district, but only a district admin, national admin or overall oversight admin can edit it.
+        </p>
+      )}
 
-        {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
-      </div>
-    </section>
+      {status ? (
+        <p role="status" className="mt-4 text-[14px] text-[#55534e]">
+          {status}
+        </p>
+      ) : null}
+    </Card>
   );
 }

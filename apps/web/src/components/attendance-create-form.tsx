@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { Button, Field } from "@/components/ui/ui";
 import type {
   AttendanceItem,
   BranchSummary,
@@ -79,7 +80,7 @@ export function AttendanceCreateForm({
   const [selectedBranchId, setSelectedBranchId] = useState(
     initialBranchId,
   );
-  const [selectedScheduleId, setSelectedScheduleId] = useState(
+  const [scheduleChoice, setScheduleChoice] = useState(
     record?.serviceScheduleId?._id || "",
   );
   const defaultBranchName = branches.find((branch) => branch._id === initialBranchId)?.name;
@@ -106,17 +107,10 @@ export function AttendanceCreateForm({
       }),
     [selectedBranchId, serviceSchedules],
   );
+  // A schedule chosen under another branch is simply ignored once the branch changes.
   const selectedSchedule =
-    filteredServiceSchedules.find((schedule) => schedule._id === selectedScheduleId) || null;
-
-  useEffect(() => {
-    if (
-      selectedScheduleId &&
-      !filteredServiceSchedules.some((schedule) => schedule._id === selectedScheduleId)
-    ) {
-      setSelectedScheduleId("");
-    }
-  }, [filteredServiceSchedules, selectedScheduleId]);
+    filteredServiceSchedules.find((schedule) => schedule._id === scheduleChoice) || null;
+  const selectedScheduleId = selectedSchedule?._id ?? "";
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -171,27 +165,26 @@ export function AttendanceCreateForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[28px] bg-white p-6">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xl font-semibold text-slate-950">
+    <form action={handleSubmit}>
+      <div>
+        <h3 className="lp-heading text-[18px]">
           {mode === "edit" ? "Edit service attendance summary" : "Record service attendance summary"}
         </h3>
-        <p className="text-sm leading-6 text-slate-500">
+        <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">
           {mode === "edit"
-            ? "Update the branch, service metadata, and attendance totals for this summary."
-            : "Use service totals here: men, women, children, adults, first timers, and new converts."}
+            ? "Update the branch, service details and attendance totals for this summary."
+            : "Enter service totals: men, women, children, adults, first timers and new converts."}
         </p>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
         {branches.length > 0 ? (
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Branch</span>
+          <Field label="Branch" required>
             <select
               name="branchId"
               value={selectedBranchId}
               onChange={(event) => setSelectedBranchId(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
               required
             >
               <option value={initialBranchId || ""}>{defaultBranchName || "Select branch"}</option>
@@ -201,35 +194,29 @@ export function AttendanceCreateForm({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         ) : (
-          <>
+          <Field label="Branch">
             <input type="hidden" name="branchId" value={initialBranchId ?? ""} />
-            <input
-              value="Current branch scope"
-              readOnly
-              className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-500 outline-none"
-            />
-          </>
+            <input value="Current branch scope" readOnly disabled className="ui-input" />
+          </Field>
         )}
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Day of service</span>
+        <Field label="Day of service" required>
           <input
             name="serviceDate"
             type="datetime-local"
             defaultValue={toDateTimeLocal(record?.serviceDate)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            className="ui-input"
             required
           />
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service schedule</span>
+        <Field label="Service schedule" hint="Choose a branch service when this summary belongs to a scheduled gathering.">
           <select
             value={selectedScheduleId}
-            onChange={(event) => setSelectedScheduleId(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            onChange={(event) => setScheduleChoice(event.target.value)}
+            className="ui-input"
           >
             <option value="">No saved schedule</option>
             {filteredServiceSchedules.map((schedule) => (
@@ -238,13 +225,17 @@ export function AttendanceCreateForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500">
-            Choose a real branch service when this summary belongs to a scheduled gathering.
-          </p>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service type</span>
+        <Field
+          label="Service type"
+          required={!selectedSchedule}
+          hint={
+            selectedSchedule
+              ? "The service type comes from the selected schedule."
+              : "Pick a managed service type so reports group services consistently."
+          }
+        >
           <select
             name="serviceTypeId"
             defaultValue={
@@ -253,7 +244,7 @@ export function AttendanceCreateForm({
               ""
             }
             disabled={!!selectedSchedule}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            className="ui-input"
             required={!selectedSchedule}
           >
             <option value="">Select service type</option>
@@ -263,116 +254,106 @@ export function AttendanceCreateForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500">
-            {selectedSchedule
-              ? "This service type now comes from the selected branch schedule."
-              : "Managed service types replace free-text entries like `sunday_service`."}
-          </p>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service name</span>
+        <Field
+          label="Service name"
+          className="md:col-span-2"
+          hint={
+            selectedSchedule
+              ? `Schedule: ${selectedSchedule.name} · ${selectedSchedule.startTime} · ${selectedSchedule.timezone}`
+              : undefined
+          }
+        >
           <input
             name="serviceName"
             placeholder="Sunday worship, Miracle service, Midweek communion..."
             defaultValue={record?.serviceName || selectedSchedule?.name || ""}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            className="ui-input"
           />
-          {selectedSchedule ? (
-            <p className="text-xs text-slate-500">
-              Schedule: {selectedSchedule.name} · {selectedSchedule.startTime} ·{" "}
-              {selectedSchedule.timezone}
-            </p>
-          ) : null}
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Total men</span>
-          <input
-            name="menCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.menCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Total women</span>
-          <input
-            name="womenCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.womenCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Total children</span>
-          <input
-            name="childrenCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.childrenCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Total adults</span>
-          <input
-            name="adultsCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.adultsCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">First timers</span>
-          <input
-            name="firstTimersCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.firstTimersCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">New converts</span>
-          <input
-            name="newConvertsCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.newConvertsCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-slate-700">
-            Baptism of the Holy Spirit
-          </span>
-          <input
-            name="holySpiritBaptismCount"
-            type="number"
-            min="0"
-            defaultValue={String(record?.holySpiritBaptismCount ?? 0)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          />
-        </label>
+        </Field>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-      >
-        {loading ? "Saving..." : mode === "edit" ? "Update attendance summary" : "Save attendance summary"}
-      </button>
+      <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
+        <p className="text-[13px] font-medium text-[#6b6b6b]">Attendance totals</p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Total men" required>
+            <input
+              name="menCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.menCount ?? 0)}
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+          <Field label="Total women" required>
+            <input
+              name="womenCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.womenCount ?? 0)}
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+          <Field label="Total children" required>
+            <input
+              name="childrenCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.childrenCount ?? 0)}
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+          <Field label="Total adults" required>
+            <input
+              name="adultsCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.adultsCount ?? 0)}
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+          <Field label="First timers" required>
+            <input
+              name="firstTimersCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.firstTimersCount ?? 0)}
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+          <Field label="New converts" required>
+            <input
+              name="newConvertsCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.newConvertsCount ?? 0)}
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+          <Field label="Baptism of the Holy Spirit">
+            <input
+              name="holySpiritBaptismCount"
+              type="number"
+              min="0"
+              defaultValue={String(record?.holySpiritBaptismCount ?? 0)}
+              className="ui-input tabular-nums"
+            />
+          </Field>
+        </div>
+      </div>
+
+      <div className="mt-5 flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : mode === "edit" ? "Update attendance summary" : "Save attendance summary"}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -27,4 +27,5 @@ export class ExpenseCategory {
   sortOrder!: number;
 }
 
-export const ExpenseCategorySchema = SchemaFactory.createForClass(ExpenseCategory);
+export const ExpenseCategorySchema =
+  SchemaFactory.createForClass(ExpenseCategory);

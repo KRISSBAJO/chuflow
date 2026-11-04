@@ -45,7 +45,9 @@ export class WorkspaceRequestsService {
       .join('\n');
   }
 
-  async create(dto: CreateWorkspaceRequestDto): Promise<Record<string, unknown>> {
+  async create(
+    dto: CreateWorkspaceRequestDto,
+  ): Promise<Record<string, unknown>> {
     const payload = {
       organizationName: dto.organizationName.trim(),
       contactName: dto.contactName.trim(),
@@ -129,12 +131,14 @@ export class WorkspaceRequestsService {
     };
   }
 
-  async findAll(filters: {
-    status?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  } = {}): Promise<Record<string, unknown>> {
+  async findAll(
+    filters: {
+      status?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<Record<string, unknown>> {
     const safeLimit = Math.min(Math.max(filters.limit || 12, 1), 100);
     const requestedPage = Math.max(filters.page || 1, 1);
     const query: Record<string, unknown> = {};
@@ -183,9 +187,15 @@ export class WorkspaceRequestsService {
             _id: null,
             total: { $sum: 1 },
             newCount: { $sum: { $cond: [{ $eq: ['$status', 'new'] }, 1, 0] } },
-            inReviewCount: { $sum: { $cond: [{ $eq: ['$status', 'in_review'] }, 1, 0] } },
-            approvedCount: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] } },
-            rejectedCount: { $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] } },
+            inReviewCount: {
+              $sum: { $cond: [{ $eq: ['$status', 'in_review'] }, 1, 0] },
+            },
+            approvedCount: {
+              $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] },
+            },
+            rejectedCount: {
+              $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] },
+            },
             provisionedCount: {
               $sum: { $cond: [{ $eq: ['$status', 'provisioned'] }, 1, 0] },
             },
@@ -211,7 +221,8 @@ export class WorkspaceRequestsService {
           typeof item.reviewedBy === 'object' && item.reviewedBy !== null
             ? {
                 _id: String((item.reviewedBy as { _id?: unknown })._id ?? ''),
-                firstName: (item.reviewedBy as { firstName?: string }).firstName,
+                firstName: (item.reviewedBy as { firstName?: string })
+                  .firstName,
                 lastName: (item.reviewedBy as { lastName?: string }).lastName,
                 email: (item.reviewedBy as { email?: string }).email,
                 role: (item.reviewedBy as { role?: string }).role,
@@ -284,7 +295,8 @@ export class WorkspaceRequestsService {
         typeof updated.reviewedBy === 'object' && updated.reviewedBy !== null
           ? {
               _id: String((updated.reviewedBy as { _id?: unknown })._id ?? ''),
-              firstName: (updated.reviewedBy as { firstName?: string }).firstName,
+              firstName: (updated.reviewedBy as { firstName?: string })
+                .firstName,
               lastName: (updated.reviewedBy as { lastName?: string }).lastName,
               email: (updated.reviewedBy as { email?: string }).email,
               role: (updated.reviewedBy as { role?: string }).role,

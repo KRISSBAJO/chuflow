@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -128,9 +132,11 @@ type LeanUserShape = {
 @Injectable()
 export class BranchesService {
   constructor(
-    @InjectModel(Branch.name) private readonly branchModel: Model<BranchDocument>,
+    @InjectModel(Branch.name)
+    private readonly branchModel: Model<BranchDocument>,
     @InjectModel(Guest.name) private readonly guestModel: Model<GuestDocument>,
-    @InjectModel(Member.name) private readonly memberModel: Model<MemberDocument>,
+    @InjectModel(Member.name)
+    private readonly memberModel: Model<MemberDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly accessScopeService: AccessScopeService,
     private readonly oversightRegionsService: OversightRegionsService,
@@ -153,7 +159,9 @@ export class BranchesService {
       };
     }
 
-    throw new ForbiddenException('You cannot manage branch structure from your role');
+    throw new ForbiddenException(
+      'You cannot manage branch structure from your role',
+    );
   }
 
   private async ensureHierarchyCatalogEntries(
@@ -164,7 +172,9 @@ export class BranchesService {
     const district = payload.district?.trim();
 
     if (!oversightRegion) {
-      throw new ForbiddenException('An oversight region is required for this branch');
+      throw new ForbiddenException(
+        'An oversight region is required for this branch',
+      );
     }
 
     await this.oversightRegionsService.ensureExists(oversightRegion);
@@ -175,12 +185,19 @@ export class BranchesService {
 
     await this.districtsService.ensureExists(oversightRegion, district);
 
-    if (isNationalRole(currentUser.role) && currentUser.oversightRegion !== oversightRegion) {
-      throw new ForbiddenException('You cannot place a branch outside your oversight region');
+    if (
+      isNationalRole(currentUser.role) &&
+      currentUser.oversightRegion !== oversightRegion
+    ) {
+      throw new ForbiddenException(
+        'You cannot place a branch outside your oversight region',
+      );
     }
 
     if (isDistrictRole(currentUser.role) && currentUser.district !== district) {
-      throw new ForbiddenException('You cannot place a branch outside your district');
+      throw new ForbiddenException(
+        'You cannot place a branch outside your district',
+      );
     }
   }
 
@@ -216,15 +233,23 @@ export class BranchesService {
       return normalized || undefined;
     }
 
+    // An ObjectId exposes itself as its own `_id`, so it must be handled before the
+    // populated-document case below or the recursion never ends.
+    if (branchRef instanceof Types.ObjectId) {
+      return branchRef.toHexString();
+    }
+
     if (typeof branchRef === 'object' && branchRef !== null) {
       const nestedId = (branchRef as { _id?: unknown })._id;
-      if (nestedId) {
+      if (nestedId && nestedId !== branchRef) {
         return this.normalizeBranchRef(nestedId);
       }
     }
 
     const normalized = String(branchRef).trim();
-    return normalized && normalized !== '[object Object]' ? normalized : undefined;
+    return normalized && normalized !== '[object Object]'
+      ? normalized
+      : undefined;
   }
 
   private buildBranchReferenceValues(branchIds: unknown[]) {
@@ -319,7 +344,9 @@ export class BranchesService {
       'Unassigned National Area',
     );
     const district = this.normalizeText(branch.district, 'Unassigned District');
-    const admins = branchUsers.filter((user) => user.role === 'branch_admin').map((user) => this.toTeamSummary(user));
+    const admins = branchUsers
+      .filter((user) => user.role === 'branch_admin')
+      .map((user) => this.toTeamSummary(user));
     const residentPastors = branchUsers
       .filter((user) => user.role === 'resident_pastor')
       .map((user) => this.toTeamSummary(user));
@@ -399,7 +426,11 @@ export class BranchesService {
     ]);
 
     return branches.map((branch) =>
-      this.buildBranchOverview(branch as Branch, users as LeanUserShape[], counts),
+      this.buildBranchOverview(
+        branch as Branch,
+        users as LeanUserShape[],
+        counts,
+      ),
     );
   }
 
@@ -410,8 +441,13 @@ export class BranchesService {
       .lean();
     const branchIds = branches.map((branch) => branch._id);
     const branchRefs = this.buildBranchReferenceValues(branchIds);
-    const [counts, branchUsers, oversightUsers, oversightRegionCatalogs, districtCatalogs] =
-      await Promise.all([
+    const [
+      counts,
+      branchUsers,
+      oversightUsers,
+      oversightRegionCatalogs,
+      districtCatalogs,
+    ] = await Promise.all([
       this.getBranchCounts(branchIds),
       this.userModel
         .find({
@@ -433,9 +469,16 @@ export class BranchesService {
       this.districtsService.findAll(currentUser),
     ]);
 
-    const typedUsers = [...(oversightUsers as LeanUserShape[]), ...(branchUsers as LeanUserShape[])];
+    const typedUsers = [
+      ...(oversightUsers as LeanUserShape[]),
+      ...(branchUsers as LeanUserShape[]),
+    ];
     const branchOverviews = branches.map((branch) =>
-      this.buildBranchOverview(branch as Branch, branchUsers as LeanUserShape[], counts),
+      this.buildBranchOverview(
+        branch as Branch,
+        branchUsers as LeanUserShape[],
+        counts,
+      ),
     );
 
     const overallHeads = typedUsers
@@ -454,88 +497,94 @@ export class BranchesService {
       ),
     ].sort((left, right) => left.localeCompare(right));
 
-    const oversightRegions: OversightRegionStructureSummary[] = regionNames.map((regionName) => {
-      const regionBranches = branchOverviews.filter(
-        (branch) => branch.oversightRegion === regionName,
-      );
-      const districtNames = [
-        ...new Set(
-          [
-            ...regionBranches.map((branch) => branch.district),
-            ...districtCatalogs
-              .filter((district) => district.oversightRegion === regionName)
-              .map((district) => district.name),
-            ...typedUsers
-              .filter((user) => user.oversightRegion === regionName)
-              .map((user) => user.district)
-              .filter((value): value is string => !!value?.trim()),
-          ].filter(Boolean),
-        ),
-      ].sort((left, right) => left.localeCompare(right));
+    const oversightRegions: OversightRegionStructureSummary[] = regionNames.map(
+      (regionName) => {
+        const regionBranches = branchOverviews.filter(
+          (branch) => branch.oversightRegion === regionName,
+        );
+        const districtNames = [
+          ...new Set(
+            [
+              ...regionBranches.map((branch) => branch.district),
+              ...districtCatalogs
+                .filter((district) => district.oversightRegion === regionName)
+                .map((district) => district.name),
+              ...typedUsers
+                .filter((user) => user.oversightRegion === regionName)
+                .map((user) => user.district)
+                .filter((value): value is string => !!value?.trim()),
+            ].filter(Boolean),
+          ),
+        ].sort((left, right) => left.localeCompare(right));
 
-      const districts: DistrictStructureSummary[] = districtNames.map((districtName) => {
-        const districtBranches = regionBranches.filter(
-          (branch) => branch.district === districtName,
+        const districts: DistrictStructureSummary[] = districtNames.map(
+          (districtName) => {
+            const districtBranches = regionBranches.filter(
+              (branch) => branch.district === districtName,
+            );
+
+            return {
+              name: districtName,
+              branchCount: districtBranches.length,
+              guestCount: districtBranches.reduce(
+                (total, branch) => total + branch.metrics.guestCount,
+                0,
+              ),
+              memberCount: districtBranches.reduce(
+                (total, branch) => total + branch.metrics.memberCount,
+                0,
+              ),
+              districtAdmins: typedUsers
+                .filter(
+                  (user) =>
+                    user.role === 'district_admin' &&
+                    user.oversightRegion === regionName &&
+                    user.district === districtName,
+                )
+                .map((user) => this.toTeamSummary(user)),
+              districtPastors: typedUsers
+                .filter(
+                  (user) =>
+                    user.role === 'district_pastor' &&
+                    user.oversightRegion === regionName &&
+                    user.district === districtName,
+                )
+                .map((user) => this.toTeamSummary(user)),
+              branches: districtBranches,
+            };
+          },
         );
 
         return {
-          name: districtName,
-          branchCount: districtBranches.length,
-          guestCount: districtBranches.reduce(
+          name: regionName,
+          districtCount: districts.length,
+          branchCount: regionBranches.length,
+          guestCount: regionBranches.reduce(
             (total, branch) => total + branch.metrics.guestCount,
             0,
           ),
-          memberCount: districtBranches.reduce(
+          memberCount: regionBranches.reduce(
             (total, branch) => total + branch.metrics.memberCount,
             0,
           ),
-          districtAdmins: typedUsers
+          nationalAdmins: typedUsers
             .filter(
               (user) =>
-                user.role === 'district_admin' &&
-                user.oversightRegion === regionName &&
-                user.district === districtName,
+                user.role === 'national_admin' &&
+                user.oversightRegion === regionName,
             )
             .map((user) => this.toTeamSummary(user)),
-          districtPastors: typedUsers
+          nationalPastors: typedUsers
             .filter(
               (user) =>
-                user.role === 'district_pastor' &&
-                user.oversightRegion === regionName &&
-                user.district === districtName,
+                user.role === 'national_pastor' &&
+                user.oversightRegion === regionName,
             )
             .map((user) => this.toTeamSummary(user)),
-          branches: districtBranches,
+          districts,
         };
-      });
-
-      return {
-        name: regionName,
-        districtCount: districts.length,
-        branchCount: regionBranches.length,
-        guestCount: regionBranches.reduce(
-          (total, branch) => total + branch.metrics.guestCount,
-          0,
-        ),
-        memberCount: regionBranches.reduce(
-          (total, branch) => total + branch.metrics.memberCount,
-          0,
-        ),
-        nationalAdmins: typedUsers
-          .filter(
-            (user) =>
-              user.role === 'national_admin' && user.oversightRegion === regionName,
-          )
-          .map((user) => this.toTeamSummary(user)),
-        nationalPastors: typedUsers
-          .filter(
-            (user) =>
-              user.role === 'national_pastor' && user.oversightRegion === regionName,
-          )
-          .map((user) => this.toTeamSummary(user)),
-        districts,
-      };
-    });
+      },
+    );
 
     return {
       scope: {
@@ -561,13 +610,19 @@ export class BranchesService {
           0,
         ),
         nationalLeaderCount: typedUsers.filter((user) =>
-          ['national_admin', 'national_pastor'].includes(this.normalizeText(user.role)),
+          ['national_admin', 'national_pastor'].includes(
+            this.normalizeText(user.role),
+          ),
         ).length,
         districtLeaderCount: typedUsers.filter((user) =>
-          ['district_admin', 'district_pastor'].includes(this.normalizeText(user.role)),
+          ['district_admin', 'district_pastor'].includes(
+            this.normalizeText(user.role),
+          ),
         ).length,
         branchLeaderCount: typedUsers.filter((user) =>
-          ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(this.normalizeText(user.role)),
+          ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(
+            this.normalizeText(user.role),
+          ),
         ).length,
         supportStaffCount: typedUsers.filter((user) =>
           ['follow_up', 'usher'].includes(this.normalizeText(user.role)),

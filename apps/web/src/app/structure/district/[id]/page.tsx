@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import { BranchCard, TeamPills } from "@/components/structure-cards";
 import { UserCreateForm } from "@/components/user-create-form";
+import { Icon } from "@/components/app/icons";
+import { Badge, ButtonLink, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   getManageableUserRoleOptions,
@@ -75,29 +77,35 @@ export default async function DistrictStructureDetailPage({
 
   return (
     <Shell>
-      <PageHeader
-        eyebrow="District Detail"
-        title={district.name}
-        description="Open a district and see its branches, district leadership, and branch support teams in one scoped drill-down."
-        action={
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={nationalAreaHref}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
-            >
-              Back to national area
-            </Link>
-            <Link
-              href={`/users?oversightRegion=${encodeURIComponent(district.oversightRegion)}&district=${encodeURIComponent(district.name)}`}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Open district staff
-            </Link>
-          </div>
-        }
-      />
+      <div className="space-y-3">
+        <HierarchyTrail
+          items={[
+            { label: "Structure", href: "/structure" },
+            { label: district.oversightRegion, href: nationalAreaHref },
+            { label: district.name },
+          ]}
+        />
+        <PageHeader
+          eyebrow="District detail"
+          title={district.name}
+          description="See this district's branches, district leadership and branch support teams in one place."
+          action={
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href={nationalAreaHref} variant="secondary">
+                Back to national area
+              </ButtonLink>
+              <ButtonLink
+                href={`/users?oversightRegion=${encodeURIComponent(district.oversightRegion)}&district=${encodeURIComponent(district.name)}`}
+                icon="users"
+              >
+                Open district staff
+              </ButtonLink>
+            </div>
+          }
+        />
+      </div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Branches"
           value={districtStructure.branchCount}
@@ -107,24 +115,24 @@ export default async function DistrictStructureDetailPage({
         <MetricCard
           label="Guests"
           value={districtStructure.guestCount}
-          delta="Visible guest records across district branches"
+          delta="Guest records across district branches"
           tone="cool"
         />
         <MetricCard
           label="Members"
           value={districtStructure.memberCount}
-          delta="Visible member records across district branches"
+          delta="Member records across district branches"
           tone="warm"
         />
         <MetricCard
-          label="Leaders + Support"
+          label="Leaders and support"
           value={districtLeaderCount + supportStaffCount}
           delta={`${districtLeaderCount} district leaders · ${supportStaffCount} support staff`}
           tone="cool"
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <div className="space-y-4">
           <DistrictEditorCard
             district={district}
@@ -134,7 +142,7 @@ export default async function DistrictStructureDetailPage({
           />
 
           {canCreateDistrictLeadership ? (
-            <section className="surface rounded-[28px] p-1.5">
+            <Card className="app-rise p-1.5" style={{ animationDelay: "60ms" }}>
               <UserCreateForm
                 branches={[]}
                 currentUserRole={user.role}
@@ -146,19 +154,17 @@ export default async function DistrictStructureDetailPage({
                 districts={[district]}
                 allowedRoles={["district_admin", "district_pastor"]}
                 title="Add district leadership"
-                description="Create district admins and district pastors right inside this district so leadership stays attached to the correct district scope."
+                description="Create district admins and district pastors inside this district so their access stays scoped to it."
                 submitLabel="Add district leader"
               />
-            </section>
+            </Card>
           ) : null}
 
-          <section className="surface rounded-[28px] p-6">
-            <p className="eyebrow">District Leadership</p>
-            <div className="mt-4 grid gap-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  District Admins
-                </p>
+          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
+            <CardHeader label="District leadership" title="Who leads this district" />
+            <div className="mt-5 grid gap-4">
+              <div className="rounded-2xl bg-[#f6f5f1] p-4">
+                <p className="text-[12px] font-medium text-[#6b6b6b]">District admins</p>
                 <div className="mt-3">
                   <TeamPills
                     users={districtStructure.districtAdmins}
@@ -166,10 +172,8 @@ export default async function DistrictStructureDetailPage({
                   />
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  District Pastors
-                </p>
+              <div className="rounded-2xl bg-[#f6f5f1] p-4">
+                <p className="text-[12px] font-medium text-[#6b6b6b]">District pastors</p>
                 <div className="mt-3">
                   <TeamPills
                     users={districtStructure.districtPastors}
@@ -177,38 +181,71 @@ export default async function DistrictStructureDetailPage({
                   />
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  National Area
-                </p>
-                <div className="mt-3">
-                  <Link
-                    href={nationalAreaHref}
-                    className="inline-flex rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
-                  >
-                    {district.oversightRegion}
-                  </Link>
-                </div>
-              </div>
+              <Link
+                href={nationalAreaHref}
+                className="group flex items-center gap-3 rounded-2xl border border-black/[0.06] p-4 transition-colors hover:border-black/[0.12] hover:bg-[#fbfaf8]"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[#111111]">
+                  <Icon name="structure" className="h-[18px] w-[18px]" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12px] text-[#8a8780]">National area</span>
+                  <span className="block text-[14px] font-medium text-[#111111]">{district.oversightRegion}</span>
+                </span>
+                <Icon
+                  name="arrowRight"
+                  className="h-4 w-4 text-[#8a8780] transition-transform group-hover:translate-x-0.5 group-hover:text-[#111111]"
+                />
+              </Link>
             </div>
-          </section>
+          </Card>
         </div>
 
-        <section className="surface rounded-[28px] p-6">
-          <p className="eyebrow">Branches In District</p>
-          <div className="mt-4 grid gap-4">
+        <Card className="app-rise self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+          <CardHeader
+            label="Branches in district"
+            title="Branches"
+            description="Each branch with its status, load and leadership coverage."
+            action={
+              <Badge>
+                <span className="tabular-nums">{districtStructure.branches.length}</span> branches
+              </Badge>
+            }
+          />
+          <div className="mt-6 grid gap-4">
             {districtStructure.branches.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+              <EmptyState icon="branches" title="No branches yet">
                 No branches are currently attached to this district.
-              </div>
+              </EmptyState>
             ) : (
               districtStructure.branches.map((branch) => (
                 <BranchCard key={branch._id} branch={branch} />
               ))
             )}
           </div>
-        </section>
+        </Card>
       </section>
     </Shell>
+  );
+}
+
+function HierarchyTrail({ items }: { items: { label: string; href?: string }[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#8a8780]">
+      {items.map((item, index) => (
+        <span key={`${item.label}-${index}`} className="inline-flex items-center gap-1.5">
+          {index > 0 ? <span aria-hidden>/</span> : null}
+          {item.href ? (
+            <Link href={item.href} className="rounded-md px-1 py-0.5 font-medium text-[#6b6b6b] transition-colors hover:bg-white hover:text-[#111111]">
+              {item.label}
+            </Link>
+          ) : (
+            <span aria-current="page" className="px-1 font-medium text-[#111111]">
+              {item.label}
+            </span>
+          )}
+        </span>
+      ))}
+    </nav>
   );
 }

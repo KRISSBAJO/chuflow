@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { isBranchScopedRole } from "@/lib/permissions";
 import type { BranchSummary, ServiceTypeSummary } from "@/lib/types";
+import { Icon } from "@/components/app/icons";
+import { Badge, Button, EmptyState, Field } from "@/components/ui/ui";
 
 function getBranchId(value: ServiceTypeSummary["branchId"]) {
   return typeof value === "string" ? value : value?._id;
@@ -66,51 +68,42 @@ export function ServiceTypeManagementList({
 
   if (serviceTypes.length === 0) {
     return (
-      <div className="rounded-[24px] border border-dashed border-slate-300 bg-white px-5 py-8 text-sm text-slate-500">
-        No service types exist yet. Create your first one so attendance can use a clean dropdown.
-      </div>
+      <EmptyState icon="attendance" title="No service types yet">
+        Create your first one so attendance can use a consistent dropdown.
+      </EmptyState>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {serviceTypes.map((serviceType) => {
         const branchId = getBranchId(serviceType.branchId) || "";
 
         return (
-          <details key={serviceType._id} className="rounded-[22px] border border-slate-200 bg-white">
-            <summary className="cursor-pointer list-none px-4 py-3">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{serviceType.name}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {serviceType.key} · {getBranchName(serviceType.branchId) || "Branch scope"}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    serviceType.isActive
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {serviceType.isActive ? "active" : "inactive"}
-                </span>
+          <details
+            key={serviceType._id}
+            className="group rounded-2xl border border-black/[0.06] bg-white transition-colors hover:border-black/[0.12] open:border-black/[0.12]"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-medium text-[#111111]">{serviceType.name}</p>
+                <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
+                  {serviceType.key} · {getBranchName(serviceType.branchId) || "Branch scope"}
+                </p>
               </div>
+              <Badge tone={serviceType.isActive ? "success" : "neutral"} dot>
+                {serviceType.isActive ? "Active" : "Inactive"}
+              </Badge>
+              <Icon name="chevronDown" className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180" />
             </summary>
-            <div className="border-t border-slate-200 px-4 py-4">
+            <div className="border-t border-black/[0.06] px-4 py-4">
               <form
                 action={(formData) => handleSubmit(serviceType._id, formData)}
-                className="grid gap-3 md:grid-cols-2"
+                className="grid gap-4 md:grid-cols-2"
               >
                 {!isBranchScopedRole(currentUserRole) ? (
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-700">Branch</span>
-                    <select
-                      name={`branchId-${serviceType._id}`}
-                      defaultValue={branchId}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                    >
+                  <Field label="Branch">
+                    <select name={`branchId-${serviceType._id}`} defaultValue={branchId} className="ui-input">
                       <option value="">Select branch</option>
                       {branches.map((branch) => (
                         <option key={branch._id} value={branch._id}>
@@ -118,7 +111,7 @@ export function ServiceTypeManagementList({
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </Field>
                 ) : (
                   <input
                     type="hidden"
@@ -127,50 +120,33 @@ export function ServiceTypeManagementList({
                   />
                 )}
 
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Display name</span>
-                  <input
-                    name={`name-${serviceType._id}`}
-                    defaultValue={serviceType.name}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                </label>
+                <Field label="Display name">
+                  <input name={`name-${serviceType._id}`} defaultValue={serviceType.name} className="ui-input" />
+                </Field>
 
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Key</span>
-                  <input
-                    name={`key-${serviceType._id}`}
-                    defaultValue={serviceType.key}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                </label>
+                <Field label="Key">
+                  <input name={`key-${serviceType._id}`} defaultValue={serviceType.key} className="ui-input" />
+                </Field>
 
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Notes</span>
-                  <textarea
-                    name={`notes-${serviceType._id}`}
-                    defaultValue={serviceType.notes || ""}
-                    className="min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                </label>
+                <Field label="Notes" className="md:col-span-2">
+                  <textarea name={`notes-${serviceType._id}`} defaultValue={serviceType.notes || ""} className="ui-input" />
+                </Field>
 
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    name={`isActive-${serviceType._id}`}
-                    defaultChecked={serviceType.isActive}
-                    className="h-4 w-4"
-                  />
-                  Active service type
-                </label>
+                <div className="flex flex-wrap items-center justify-between gap-3 md:col-span-2">
+                  <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
+                    <input
+                      type="checkbox"
+                      name={`isActive-${serviceType._id}`}
+                      defaultChecked={serviceType.isActive}
+                      className="h-4 w-4 accent-[#111111]"
+                    />
+                    Active service type
+                  </label>
 
-                <button
-                  type="submit"
-                  disabled={loadingId === serviceType._id}
-                  className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-                >
-                  {loadingId === serviceType._id ? "Saving..." : "Update service type"}
-                </button>
+                  <Button type="submit" size="sm" disabled={loadingId === serviceType._id}>
+                    {loadingId === serviceType._id ? "Saving..." : "Update service type"}
+                  </Button>
+                </div>
               </form>
             </div>
           </details>

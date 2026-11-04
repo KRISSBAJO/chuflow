@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
+import { Alert, Spinner } from "@/components/auth/auth-ui";
+import { Wordmark } from "@/components/brand/wordmark";
 import { API_URL } from "@/lib/api";
 import type { IntakeTemplate, PublicBranchOption } from "@/lib/types";
 
@@ -468,7 +470,6 @@ export function PublicIntakeForm({
   const steps = buildTemplateSteps(template);
   const currentStep = steps[stepIndex];
   const accentColor = template.theme?.accentColor || "#dc2626";
-  const darkColor = template.theme?.darkColor || "#111827";
   const softColor = template.theme?.softColor || "#fff7ed";
   const submissionBranchId = template.branchId || branchId || selectedBranchId;
   const weeklyGrowthPreview =
@@ -646,80 +647,100 @@ export function PublicIntakeForm({
     }
   }
 
+  const progress = success ? 100 : ((stepIndex + 1) / steps.length) * 100;
+  const fieldLabel = (field: IntakeTemplate["fields"][number]) => (
+    <span className="mb-2 block text-[14px] font-medium text-[var(--lp-ink)]">
+      {field.label}
+      {field.required ? <span style={{ color: accentColor }}> *</span> : null}
+    </span>
+  );
+  const fieldHelp = (field: IntakeTemplate["fields"][number]) =>
+    field.helpText ? <span className="-mt-1 mb-2 block text-[13px] text-[var(--lp-muted)]">{field.helpText}</span> : null;
+  const optionClass =
+    "flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#e4e3df] bg-white px-4 py-3 text-[15px] text-[var(--lp-ink)] transition-colors hover:border-[#cfcdc8] has-[:checked]:border-[var(--accent)] has-[:checked]:bg-[var(--accent-soft)]";
+
   return (
     <div
-      className="min-h-screen"
-      style={{
-        background: `radial-gradient(circle at top left, ${softColor}, white 45%, #f8fafc 100%)`,
-      }}
+      className="lp-root lp-intake min-h-screen w-full bg-white"
+      style={{ "--accent": accentColor, "--accent-soft": softColor } as CSSProperties}
     >
-      <div className="mx-auto grid min-h-screen max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-start lg:px-6 lg:py-10">
-        <section
-          className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]"
-          style={{ borderTop: `8px solid ${accentColor}` }}
-        >
-          <div className="border-b border-slate-200 px-5 py-5 sm:px-7">
-            <div className="flex items-center gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-[20px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                <Image
-                  src={template.logoPath || "/logo.png"}
-                  alt={template.title}
-                  width={64}
-                  height={64}
-                  className="h-16 w-auto object-contain"
-                />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: accentColor }}>
-                  {template.badge || `${template.kind} intake`}
-                </p>
-                <h1 className="mt-2 text-3xl font-semibold leading-tight text-slate-950">{template.title}</h1>
-                {template.subtitle ? <p className="mt-1.5 text-sm text-slate-500">{template.subtitle}</p> : null}
-              </div>
+      <header className="flex h-20 items-center justify-between gap-4 px-5 sm:px-10">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--lp-panel)]">
+            <Image
+              src={template.logoPath || "/logo.png"}
+              alt=""
+              width={36}
+              height={36}
+              className="h-8 w-8 object-contain"
+            />
+          </span>
+          <span className="truncate text-[15px] font-medium text-[var(--lp-ink)]">{template.name}</span>
+        </div>
+        <span className="flex shrink-0 items-center gap-2 text-[12px] text-[var(--lp-muted)]">
+          <span className="hidden sm:inline">Powered by</span>
+          <Wordmark size={15} />
+        </span>
+      </header>
+
+      <div className="mx-auto grid max-w-[1180px] gap-10 px-5 pb-20 pt-6 sm:px-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 lg:pt-12">
+        <section className="lp-rise lg:sticky lg:top-10 lg:self-start">
+          <p className="inline-flex items-center gap-2 rounded-full bg-[var(--lp-panel)] px-3.5 py-1.5 text-[13px] font-medium text-[var(--lp-ink)]">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accentColor }} />
+            {template.badge || "Welcome"}
+          </p>
+          <h1 className="lp-heading mt-6 text-[2.5rem] leading-[1.04] sm:text-[3.25rem]">{template.title}</h1>
+          {template.subtitle ? (
+            <p className="mt-4 text-[17px] leading-[1.6] text-[var(--lp-muted)]">{template.subtitle}</p>
+          ) : null}
+
+          {template.introTitle || template.introBody || template.closingText ? (
+            <div className="mt-8 rounded-[24px] bg-[var(--lp-panel)] p-6 text-[15px] leading-[1.7] text-[var(--lp-ink)]">
+              {template.introTitle ? <p className="text-[16px] font-semibold">{template.introTitle}</p> : null}
+              {template.introBody ? (
+                <p className="mt-2 whitespace-pre-line text-[var(--lp-muted)]">{template.introBody}</p>
+              ) : null}
+              {template.closingText ? <p className="mt-4 font-medium">{template.closingText}</p> : null}
             </div>
-          </div>
-          <div className="px-5 py-6 sm:px-7">
-            <div className="rounded-[22px] px-4 py-4 text-sm leading-7 text-slate-700" style={{ backgroundColor: softColor }}>
-              {template.introTitle ? <p className="text-base font-semibold text-slate-950">{template.introTitle}</p> : null}
-              {template.introBody ? <p className="mt-2 whitespace-pre-line">{template.introBody}</p> : null}
-              {template.closingText ? <p className="mt-4 font-semibold">{template.closingText}</p> : null}
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {["Step-by-step flow", "Secure submission", "Follow-up ready"].map((item) => (
-                <div key={item} className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
+          ) : null}
+
+          <ul className="mt-8 hidden space-y-3 lg:block">
+            {["A few short steps", "Your details stay private", "Ready for a warm follow-up"].map((item) => (
+              <li key={item} className="flex items-center gap-3 text-[14px] text-[var(--lp-muted)]">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ backgroundColor: accentColor }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} className="h-3 w-3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
         </section>
 
-        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <div className="border-b border-slate-200 px-5 py-5 sm:px-7">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.16em]" style={{ color: accentColor }}>
-                  {template.name}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Complete the intake one short step at a time.
-                </p>
-              </div>
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                Step {stepIndex + 1} of {steps.length}
-              </div>
-            </div>
+        <section
+          className="lp-rise overflow-hidden rounded-[32px] border border-black/[0.06] bg-white shadow-[0_40px_90px_-50px_rgba(17,17,17,0.35)]"
+          style={{ animationDelay: "120ms" }}
+        >
+          <div className="h-1 bg-[var(--lp-panel)]">
+            <div
+              className="h-full rounded-r-full transition-[width] duration-700 ease-out"
+              style={{ width: `${progress}%`, backgroundColor: accentColor }}
+            />
           </div>
 
           {success ? (
-            <div className="px-5 py-10 sm:px-7">
-              <div
-                className="rounded-[24px] px-5 py-6 text-white"
-                style={{ background: `linear-gradient(135deg, ${darkColor}, ${accentColor})` }}
+            <div className="lp-rise px-6 py-20 text-center sm:px-12">
+              <span
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full text-white"
+                style={{ backgroundColor: accentColor, boxShadow: `0 20px 40px -18px ${accentColor}` }}
               >
-                <p className="text-2xl font-semibold">{success.title}</p>
-                <p className="mt-3 max-w-xl text-sm leading-7 text-white/85">{success.message}</p>
-              </div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-7 w-7">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <h2 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">{success.title}</h2>
+              <p className="mx-auto mt-4 max-w-[440px] text-[16px] leading-[1.7] text-[var(--lp-muted)]">{success.message}</p>
             </div>
           ) : (
             <form
@@ -728,280 +749,258 @@ export function PublicIntakeForm({
                 event.preventDefault();
               }}
               noValidate
-              className="px-5 py-6 sm:px-7"
+              className="px-6 py-8 sm:px-10 sm:py-10"
             >
-              <div className="mb-6 flex flex-wrap gap-2">
-                {steps.map((step, index) => {
-                  const isCurrent = index === stepIndex;
-                  const isComplete = index < stepIndex;
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-[13px] font-medium text-[var(--lp-muted)]">
+                  Step {stepIndex + 1} of {steps.length}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  {steps.map((step, index) => {
+                    const isCurrent = index === stepIndex;
+                    const isComplete = index < stepIndex;
 
-                  return (
-                    <button
-                      key={step.key}
-                      type="button"
-                      onClick={() => goToStep(index)}
-                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                        isCurrent
-                          ? "border-slate-950 bg-slate-950 text-white"
-                          : isComplete
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                            : "border-slate-200 bg-slate-50 text-slate-500"
-                      }`}
-                    >
-                      {index + 1}. {step.title}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={step.key}
+                        type="button"
+                        onClick={() => goToStep(index)}
+                        aria-label={`Go to step ${index + 1}: ${step.title}`}
+                        aria-current={isCurrent ? "step" : undefined}
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: isCurrent ? 28 : 8,
+                          backgroundColor: isCurrent ? "var(--lp-ink)" : isComplete ? accentColor : "#e4e3df",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
 
-              {needsBranchSelection ? (
-                <div className="mb-6 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-950">Report scope</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Choose the district and branch this report belongs to before submitting.
-                  </p>
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <label className="space-y-2">
-                      <span className="text-sm font-semibold text-slate-900">National area</span>
-                      <select
-                        value={selectedOversightRegion}
-                        onChange={(event) => {
-                          setSelectedOversightRegion(event.target.value);
-                          setSelectedDistrict("");
-                          setSelectedBranchId("");
-                        }}
-                        disabled={!!defaultOversightRegion}
-                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500"
-                      >
-                        <option value="">Select area</option>
-                        {oversightRegions.map((area) => (
-                          <option key={area} value={area}>
-                            {area}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-sm font-semibold text-slate-900">District</span>
-                      <select
-                        value={selectedDistrict}
-                        onChange={(event) => {
-                          setSelectedDistrict(event.target.value);
-                          setSelectedBranchId("");
-                        }}
-                        disabled={!!defaultDistrict}
-                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500"
-                      >
-                        <option value="">Select district</option>
-                        {districtOptions.map((district) => (
-                          <option key={district} value={district}>
-                            {district}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-sm font-semibold text-slate-900">Branch</span>
-                      <select
-                        value={selectedBranchId}
-                        onChange={(event) => setSelectedBranchId(event.target.value)}
-                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-                      >
-                        <option value="">Select branch</option>
-                        {visibleBranchOptions.map((branch) => (
-                          <option key={branch._id} value={branch._id}>
-                            {branch.name}
-                            {branch.city || branch.state ? ` · ${[branch.city, branch.state].filter(Boolean).join(", ")}` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  {branchOptions.length === 0 ? (
-                    <p className="mt-3 text-xs text-rose-600">
-                      No active branches are available for this report link.
-                    </p>
+              <div key={stepIndex} className="lp-rise">
+                <div className="mb-8 mt-6">
+                  <h2 className="lp-heading text-[1.85rem] leading-[1.1]">{currentStep.title}</h2>
+                  {currentStep.description ? (
+                    <p className="mt-2 text-[15px] leading-[1.6] text-[var(--lp-muted)]">{currentStep.description}</p>
                   ) : null}
                 </div>
-              ) : null}
 
-              <div className="mb-5">
-                <p className="text-lg font-semibold text-slate-950">{currentStep.title}</p>
-                <p className="mt-1 text-sm text-slate-500">{currentStep.description}</p>
-              </div>
+                {needsBranchSelection ? (
+                  <div className="mb-8 rounded-[24px] bg-[var(--lp-panel)] p-5">
+                    <p className="text-[15px] font-medium text-[var(--lp-ink)]">Report scope</p>
+                    <p className="mt-1 text-[13px] text-[var(--lp-muted)]">
+                      Choose the district and branch this report belongs to before submitting.
+                    </p>
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      <label className="block">
+                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">National area</span>
+                        <select
+                          value={selectedOversightRegion}
+                          onChange={(event) => {
+                            setSelectedOversightRegion(event.target.value);
+                            setSelectedDistrict("");
+                            setSelectedBranchId("");
+                          }}
+                          disabled={!!defaultOversightRegion}
+                          className="lp-input disabled:bg-[#efeee9] disabled:text-[var(--lp-muted)]"
+                        >
+                          <option value="">Select area</option>
+                          {oversightRegions.map((area) => (
+                            <option key={area} value={area}>
+                              {area}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">District</span>
+                        <select
+                          value={selectedDistrict}
+                          onChange={(event) => {
+                            setSelectedDistrict(event.target.value);
+                            setSelectedBranchId("");
+                          }}
+                          disabled={!!defaultDistrict}
+                          className="lp-input disabled:bg-[#efeee9] disabled:text-[var(--lp-muted)]"
+                        >
+                          <option value="">Select district</option>
+                          {districtOptions.map((district) => (
+                            <option key={district} value={district}>
+                              {district}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">Branch</span>
+                        <select
+                          value={selectedBranchId}
+                          onChange={(event) => setSelectedBranchId(event.target.value)}
+                          className="lp-input"
+                        >
+                          <option value="">Select branch</option>
+                          {visibleBranchOptions.map((branch) => (
+                            <option key={branch._id} value={branch._id}>
+                              {branch.name}
+                              {branch.city || branch.state ? ` · ${[branch.city, branch.state].filter(Boolean).join(", ")}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    {branchOptions.length === 0 ? (
+                      <p className="mt-3 text-[13px] text-red-700">No active branches are available for this report link.</p>
+                    ) : null}
+                  </div>
+                ) : null}
 
-              {currentStep.fields.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {currentStep.fields.map((field) => {
-                    const colSpan = field.width === "full" ? "md:col-span-2" : "";
+                {currentStep.fields.length > 0 ? (
+                  <div className="grid gap-x-4 gap-y-6 md:grid-cols-2">
+                    {currentStep.fields.map((field) => {
+                      const colSpan = field.width === "full" ? "md:col-span-2" : "";
 
-                    if (field.type === "textarea") {
+                      if (field.type === "textarea") {
+                        return (
+                          <label key={field.key} className={`block ${colSpan}`}>
+                            {fieldLabel(field)}
+                            {fieldHelp(field)}
+                            <textarea
+                              name={field.key}
+                              value={getStringValue(answers[field.key])}
+                              onChange={(event) => updateAnswer(field.key, event.target.value)}
+                              required={field.required}
+                              placeholder={field.placeholder}
+                              className="lp-input"
+                            />
+                          </label>
+                        );
+                      }
+
+                      if (field.type === "radio" || field.type === "checkbox") {
+                        const isRadio = field.type === "radio";
+                        return (
+                          <fieldset key={field.key} className={colSpan}>
+                            <legend className="contents">{fieldLabel(field)}</legend>
+                            {fieldHelp(field)}
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {(field.options || []).map((option) => (
+                                <label key={option} className={optionClass}>
+                                  <input
+                                    type={field.type}
+                                    name={field.key}
+                                    value={option}
+                                    checked={
+                                      isRadio
+                                        ? getStringValue(answers[field.key]) === option
+                                        : getArrayValue(answers[field.key]).includes(option)
+                                    }
+                                    onChange={(event) =>
+                                      isRadio
+                                        ? updateAnswer(field.key, event.target.value)
+                                        : toggleCheckbox(field.key, option, event.target.checked)
+                                    }
+                                    required={isRadio ? field.required : undefined}
+                                    className="h-4 w-4 shrink-0"
+                                    style={{ accentColor }}
+                                  />
+                                  {option}
+                                </label>
+                              ))}
+                            </div>
+                          </fieldset>
+                        );
+                      }
+
+                      if (field.type === "select") {
+                        return (
+                          <label key={field.key} className={`block ${colSpan}`}>
+                            {fieldLabel(field)}
+                            {fieldHelp(field)}
+                            <select
+                              name={field.key}
+                              value={getStringValue(answers[field.key])}
+                              onChange={(event) => updateAnswer(field.key, event.target.value)}
+                              required={field.required}
+                              className="lp-input"
+                            >
+                              <option value="">{field.placeholder || "Select an option"}</option>
+                              {(field.options || []).map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        );
+                      }
+
                       return (
-                        <label key={field.key} className={`space-y-2 ${colSpan}`}>
-                          <span className="text-sm font-semibold text-slate-900">
-                            {field.label}
-                            {field.required ? " *" : ""}
-                          </span>
-                          {field.helpText ? <span className="block text-xs text-slate-500">{field.helpText}</span> : null}
-                          <textarea
+                        <label key={field.key} className={`block ${colSpan}`}>
+                          {fieldLabel(field)}
+                          {fieldHelp(field)}
+                          <input
                             name={field.key}
+                            type={getInputType(field.type)}
                             value={getStringValue(answers[field.key])}
                             onChange={(event) => updateAnswer(field.key, event.target.value)}
                             required={field.required}
                             placeholder={field.placeholder}
-                            className="min-h-28 w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+                            max={field.type === "date" ? getTodayDateString() : undefined}
+                            min={field.type === "number" ? "0" : undefined}
+                            step={field.type === "number" ? "1" : undefined}
+                            className="lp-input"
                           />
                         </label>
                       );
-                    }
-
-                    if (field.type === "radio") {
-                      return (
-                        <fieldset key={field.key} className={`space-y-2 ${colSpan}`}>
-                          <legend className="text-sm font-semibold text-slate-900">
-                            {field.label}
-                            {field.required ? " *" : ""}
-                          </legend>
-                          {field.helpText ? <p className="text-xs text-slate-500">{field.helpText}</p> : null}
-                          <div className="space-y-2 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-                            {(field.options || []).map((option) => (
-                              <label key={option} className="flex items-center gap-2 text-sm text-slate-700">
-                                <input
-                                  type="radio"
-                                  name={field.key}
-                                  value={option}
-                                  checked={getStringValue(answers[field.key]) === option}
-                                  onChange={(event) => updateAnswer(field.key, event.target.value)}
-                                  required={field.required}
-                                />
-                                {option}
-                              </label>
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {steps
+                      .filter((step) => step.fields.length > 0)
+                      .map((step) => (
+                        <div key={step.key} className="rounded-[24px] bg-[var(--lp-panel)] p-5">
+                          <p className="text-[15px] font-medium text-[var(--lp-ink)]">{step.title}</p>
+                          <dl className="mt-3 grid gap-x-6 gap-y-3 md:grid-cols-2">
+                            {step.fields.map((field) => (
+                              <div key={field.key}>
+                                <dt className="text-[12px] text-[var(--lp-muted)]">{field.label}</dt>
+                                <dd className="mt-0.5 text-[15px] text-[var(--lp-ink)]">
+                                  {formatAnswerForReview(field, answers[field.key])}
+                                </dd>
+                              </div>
                             ))}
-                          </div>
-                        </fieldset>
-                      );
-                    }
-
-                    if (field.type === "checkbox") {
-                      return (
-                        <fieldset key={field.key} className={`space-y-2 ${colSpan}`}>
-                          <legend className="text-sm font-semibold text-slate-900">
-                            {field.label}
-                            {field.required ? " *" : ""}
-                          </legend>
-                          {field.helpText ? <p className="text-xs text-slate-500">{field.helpText}</p> : null}
-                          <div className="space-y-2 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-                            {(field.options || []).map((option) => (
-                              <label key={option} className="flex items-center gap-2 text-sm text-slate-700">
-                                <input
-                                  type="checkbox"
-                                  name={field.key}
-                                  value={option}
-                                  checked={getArrayValue(answers[field.key]).includes(option)}
-                                  onChange={(event) => toggleCheckbox(field.key, option, event.target.checked)}
-                                />
-                                {option}
-                              </label>
-                            ))}
-                          </div>
-                        </fieldset>
-                      );
-                    }
-
-                    if (field.type === "select") {
-                      return (
-                        <label key={field.key} className={`space-y-2 ${colSpan}`}>
-                          <span className="text-sm font-semibold text-slate-900">
-                            {field.label}
-                            {field.required ? " *" : ""}
-                          </span>
-                          <select
-                            name={field.key}
-                            value={getStringValue(answers[field.key])}
-                            onChange={(event) => updateAnswer(field.key, event.target.value)}
-                            required={field.required}
-                            className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-                          >
-                            <option value="">{field.placeholder || "Select an option"}</option>
-                            {(field.options || []).map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      );
-                    }
-
-                    return (
-                      <label key={field.key} className={`space-y-2 ${colSpan}`}>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {field.label}
-                          {field.required ? " *" : ""}
-                        </span>
-                        {field.helpText ? <span className="block text-xs text-slate-500">{field.helpText}</span> : null}
-                        <input
-                          name={field.key}
-                          type={getInputType(field.type)}
-                          value={getStringValue(answers[field.key])}
-                          onChange={(event) => updateAnswer(field.key, event.target.value)}
-                          required={field.required}
-                          placeholder={field.placeholder}
-                          max={field.type === "date" ? getTodayDateString() : undefined}
-                          min={field.type === "number" ? "0" : undefined}
-                          step={field.type === "number" ? "1" : undefined}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {steps
-                    .filter((step) => step.fields.length > 0)
-                    .map((step) => (
-                      <div key={step.key} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-sm font-semibold text-slate-950">{step.title}</p>
-                        <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          {step.fields.map((field) => (
-                            <div key={field.key} className="rounded-[18px] border border-slate-200 bg-white px-4 py-3">
-                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                                {field.label}
-                              </p>
-                              <p className="mt-2 text-sm text-slate-700">
-                                {formatAnswerForReview(field, answers[field.key])}
-                              </p>
-                            </div>
-                          ))}
+                          </dl>
                         </div>
+                      ))}
+                  </div>
+                )}
+
+                {weeklyGrowthPreview ? (
+                  <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      ["Current", weeklyGrowthPreview.currentAttendance],
+                      ["Previous", weeklyGrowthPreview.previousAttendance],
+                      ["Growth", weeklyGrowthPreview.growth],
+                      ["Growth %", `${weeklyGrowthPreview.growthPercent > 0 ? "+" : ""}${weeklyGrowthPreview.growthPercent}%`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[18px] bg-[var(--lp-panel)] px-4 py-3">
+                        <p className="text-[12px] text-[var(--lp-muted)]">{label}</p>
+                        <p className="lp-heading mt-1 text-[22px]">{value}</p>
                       </div>
                     ))}
-                </div>
-              )}
+                  </div>
+                ) : null}
+              </div>
 
-              {weeklyGrowthPreview ? (
-                <div className="mt-5 grid gap-3 rounded-[22px] border border-slate-200 bg-slate-50 p-4 sm:grid-cols-4">
-                  {[
-                    ["Current", weeklyGrowthPreview.currentAttendance],
-                    ["Previous", weeklyGrowthPreview.previousAttendance],
-                    ["Growth", weeklyGrowthPreview.growth],
-                    ["Growth %", `${weeklyGrowthPreview.growthPercent > 0 ? "+" : ""}${weeklyGrowthPreview.growthPercent}%`],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-[18px] bg-white px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                        {label}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold text-slate-950">{value}</p>
-                    </div>
-                  ))}
+              {stepError || status ? (
+                <div className="mt-6">
+                  <Alert tone="error">{stepError || status}</Alert>
                 </div>
               ) : null}
 
-              {stepError ? <p className="mt-4 text-sm text-rose-600">{stepError}</p> : null}
-              {status ? <p className="mt-4 text-sm text-rose-600">{status}</p> : null}
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-10 flex items-center justify-between gap-3 border-t border-black/[0.06] pt-6">
                 {stepIndex > 0 ? (
                   <button
                     type="button"
@@ -1009,21 +1008,25 @@ export function PublicIntakeForm({
                       setStepError(null);
                       setStepIndex((current) => Math.max(current - 1, 0));
                     }}
-                    className="rounded-[18px] border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700"
+                    className="inline-flex h-12 items-center rounded-full bg-[var(--lp-panel)] px-6 text-[15px] font-medium text-[var(--lp-ink)] transition-colors hover:bg-[#ecebe7]"
                   >
                     Back
                   </button>
-                ) : null}
+                ) : (
+                  <span />
+                )}
 
                 {stepIndex < steps.length - 1 ? (
                   <button
                     key={`continue-${stepIndex}`}
                     type="button"
                     onClick={handleNextStep}
-                    className="rounded-[18px] px-5 py-3 text-sm font-semibold text-white"
-                    style={{ backgroundColor: accentColor }}
+                    className="lp-pill-dark group inline-flex h-12 items-center gap-2 rounded-full pl-6 pr-5 text-[15px] font-medium"
                   >
                     Continue
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
                   </button>
                 ) : (
                   <button
@@ -1033,10 +1036,17 @@ export function PublicIntakeForm({
                       void submitIntake();
                     }}
                     disabled={loading}
-                    className="rounded-[18px] px-5 py-3 text-sm font-semibold text-white"
+                    className="inline-flex h-12 items-center gap-2 rounded-full px-7 text-[15px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                     style={{ backgroundColor: accentColor }}
                   >
-                    {loading ? "Submitting..." : template.submitLabel || "Submit form"}
+                    {loading ? (
+                      <>
+                        <Spinner />
+                        Submitting...
+                      </>
+                    ) : (
+                      template.submitLabel || "Submit form"
+                    )}
                   </button>
                 )}
               </div>

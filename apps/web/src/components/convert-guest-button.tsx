@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 
 export function ConvertGuestButton({ guestId }: { guestId: string }) {
@@ -34,16 +35,16 @@ export function ConvertGuestButton({ guestId }: { guestId: string }) {
   }
 
   return (
-    <section className="surface rounded-[32px] p-6">
-      <p className="eyebrow">Conversion</p>
-      <h2 className="mt-3 text-2xl font-semibold text-slate-950">Promote this guest into membership</h2>
-      <p className="mt-4 text-sm leading-7 text-slate-600">
-        Use this when the guest has returned and is ready to move into the member record flow.
+    <section className="rounded-2xl bg-[#f6f5f1] p-5">
+      <p className="text-[13px] font-medium text-[#6b6b6b]">Conversion</p>
+      <h2 className="lp-heading mt-1 text-[18px] leading-tight">Welcome this guest into membership</h2>
+      <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">
+        Use this when the guest has returned and is ready to become a member.
       </p>
-      <button onClick={handleConvert} disabled={loading} className="mt-5 rounded-2xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white">
+      <Button variant="flame" onClick={handleConvert} disabled={loading} className="mt-4">
         {loading ? "Converting..." : "Convert guest to member"}
-      </button>
-      {status ? <p className="mt-3 text-sm text-slate-600">{status}</p> : null}
+      </Button>
+      {status ? <p className="mt-3 text-[13px] text-[#55534e]">{status}</p> : null}
     </section>
   );
 }

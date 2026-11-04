@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
-import { Attendance, AttendanceSchema } from '../attendance/schemas/attendance.schema';
-import { Communication, CommunicationSchema } from '../communications/schemas/communication.schema';
-import { FollowUp, FollowUpSchema } from '../follow-ups/schemas/follow-up.schema';
+import {
+  Attendance,
+  AttendanceSchema,
+} from '../attendance/schemas/attendance.schema';
+import {
+  Communication,
+  CommunicationSchema,
+} from '../communications/schemas/communication.schema';
+import {
+  FollowUp,
+  FollowUpSchema,
+} from '../follow-ups/schemas/follow-up.schema';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
 import { Visit, VisitSchema } from '../visits/schemas/visit.schema';
 import { FollowUpsModule } from '../follow-ups/follow-ups.module';

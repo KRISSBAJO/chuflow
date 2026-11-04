@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
-import { Attendance, AttendanceDocument } from '../attendance/schemas/attendance.schema';
+import {
+  Attendance,
+  AttendanceDocument,
+} from '../attendance/schemas/attendance.schema';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import {
   isBranchScopedRole,
@@ -11,7 +14,10 @@ import {
   isNationalRole,
 } from '../common/constants/roles.constants';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
-import { FollowUp, FollowUpDocument } from '../follow-ups/schemas/follow-up.schema';
+import {
+  FollowUp,
+  FollowUpDocument,
+} from '../follow-ups/schemas/follow-up.schema';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
 import { Member, MemberDocument } from '../members/schemas/member.schema';
 
@@ -54,10 +60,14 @@ type ResolvedDashboardScope = {
 export class ReportsService {
   constructor(
     @InjectModel(Guest.name) private readonly guestModel: Model<GuestDocument>,
-    @InjectModel(FollowUp.name) private readonly followUpModel: Model<FollowUpDocument>,
-    @InjectModel(Member.name) private readonly memberModel: Model<MemberDocument>,
-    @InjectModel(Attendance.name) private readonly attendanceModel: Model<AttendanceDocument>,
-    @InjectModel(Branch.name) private readonly branchModel: Model<BranchDocument>,
+    @InjectModel(FollowUp.name)
+    private readonly followUpModel: Model<FollowUpDocument>,
+    @InjectModel(Member.name)
+    private readonly memberModel: Model<MemberDocument>,
+    @InjectModel(Attendance.name)
+    private readonly attendanceModel: Model<AttendanceDocument>,
+    @InjectModel(Branch.name)
+    private readonly branchModel: Model<BranchDocument>,
     private readonly accessScopeService: AccessScopeService,
   ) {}
 
@@ -79,7 +89,10 @@ export class ReportsService {
       $cond: [
         { $eq: ['$entryMode', 'summary'] },
         {
-          $add: [{ $ifNull: ['$adultsCount', 0] }, { $ifNull: ['$childrenCount', 0] }],
+          $add: [
+            { $ifNull: ['$adultsCount', 0] },
+            { $ifNull: ['$childrenCount', 0] },
+          ],
         },
         1,
       ],
@@ -113,7 +126,9 @@ export class ReportsService {
     return 'All network';
   }
 
-  private buildGuestLookupMatch(branchLookupMatch?: Types.ObjectId | { $in: Types.ObjectId[] }) {
+  private buildGuestLookupMatch(
+    branchLookupMatch?: Types.ObjectId | { $in: Types.ObjectId[] },
+  ) {
     if (!branchLookupMatch) {
       return [];
     }
@@ -140,7 +155,9 @@ export class ReportsService {
       { $count: 'total' },
     ];
 
-    const result = await this.followUpModel.aggregate<{ total: number }>(pipeline);
+    const result = await this.followUpModel.aggregate<{ total: number }>(
+      pipeline,
+    );
     return result[0]?.total ?? 0;
   }
 
@@ -149,14 +166,20 @@ export class ReportsService {
     filters: DashboardScopeFilters,
   ): Promise<ResolvedDashboardScope> {
     const requestedBranchId = this.normalizeFilterValue(filters.branchId);
-    const requestedOversightRegion = this.normalizeFilterValue(filters.oversightRegion);
+    const requestedOversightRegion = this.normalizeFilterValue(
+      filters.oversightRegion,
+    );
     const requestedDistrict = this.normalizeFilterValue(filters.district);
 
-    const baseBranchQuery = await this.accessScopeService.getBranchDocumentQuery(currentUser);
+    const baseBranchQuery =
+      await this.accessScopeService.getBranchDocumentQuery(currentUser);
     const scopedBranchQuery: Record<string, unknown> = { ...baseBranchQuery };
 
     if (requestedBranchId) {
-      await this.accessScopeService.ensureBranchAccess(currentUser, requestedBranchId);
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        requestedBranchId,
+      );
       scopedBranchQuery._id = new Types.ObjectId(requestedBranchId);
     } else {
       if (requestedOversightRegion) {
@@ -174,7 +197,9 @@ export class ReportsService {
       .sort({ name: 1 })
       .lean<ScopedBranch[]>();
 
-    const branchObjectIds = branches.map((branch) => new Types.ObjectId(String(branch._id)));
+    const branchObjectIds = branches.map(
+      (branch) => new Types.ObjectId(String(branch._id)),
+    );
     const branchLookupMatch =
       branchObjectIds.length === 0
         ? undefined
@@ -183,7 +208,9 @@ export class ReportsService {
           : { $in: branchObjectIds };
 
     const selectedBranch =
-      requestedBranchId || isBranchScopedRole(currentUser.role) ? branches[0] : undefined;
+      requestedBranchId || isBranchScopedRole(currentUser.role)
+        ? branches[0]
+        : undefined;
 
     const effectiveOversightRegion =
       selectedBranch?.oversightRegion ||
@@ -229,7 +256,9 @@ export class ReportsService {
     const days = this.normalizeDays(filters.days);
     const scopeResult = await this.resolveDashboardScope(currentUser, filters);
     const { branches, branchObjectIds, branchLookupMatch, scope } = scopeResult;
-    const branchMap = new Map(branches.map((branch) => [String(branch._id), branch]));
+    const branchMap = new Map(
+      branches.map((branch) => [String(branch._id), branch]),
+    );
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - Math.max(days - 1, 0));
@@ -319,7 +348,10 @@ export class ReportsService {
           },
         },
       ]),
-      this.followUpModel.aggregate<{ _id: Types.ObjectId; pendingFollowUp: number }>([
+      this.followUpModel.aggregate<{
+        _id: Types.ObjectId;
+        pendingFollowUp: number;
+      }>([
         {
           $lookup: {
             from: 'guests',
@@ -344,7 +376,10 @@ export class ReportsService {
         { $sort: { pendingFollowUp: -1 } },
         { $limit: 6 },
       ]),
-      this.guestModel.aggregate<{ _id: Types.ObjectId; guestsCaptured: number }>([
+      this.guestModel.aggregate<{
+        _id: Types.ObjectId;
+        guestsCaptured: number;
+      }>([
         {
           $match: {
             ...branchObjectIdFilter,
@@ -358,21 +393,26 @@ export class ReportsService {
           },
         },
       ]),
-      this.memberModel.aggregate<{ _id: Types.ObjectId; membersAdded: number }>([
-        {
-          $match: {
-            ...branchObjectIdFilter,
-            createdAt: { $gte: startDate, $lte: endDate },
+      this.memberModel.aggregate<{ _id: Types.ObjectId; membersAdded: number }>(
+        [
+          {
+            $match: {
+              ...branchObjectIdFilter,
+              createdAt: { $gte: startDate, $lte: endDate },
+            },
           },
-        },
-        {
-          $group: {
-            _id: '$branchId',
-            membersAdded: { $sum: 1 },
+          {
+            $group: {
+              _id: '$branchId',
+              membersAdded: { $sum: 1 },
+            },
           },
-        },
-      ]),
-      this.attendanceModel.aggregate<{ _id: Types.ObjectId; newConverts: number }>([
+        ],
+      ),
+      this.attendanceModel.aggregate<{
+        _id: Types.ObjectId;
+        newConverts: number;
+      }>([
         {
           $match: {
             ...branchObjectIdFilter,
@@ -392,7 +432,10 @@ export class ReportsService {
       recentAttendanceByBranchRaw.map((item) => [String(item._id), item]),
     );
     const backlogMap = new Map(
-      followUpBacklogRaw.map((item) => [String(item._id), item.pendingFollowUp]),
+      followUpBacklogRaw.map((item) => [
+        String(item._id),
+        item.pendingFollowUp,
+      ]),
     );
     const guestsGrowthMap = new Map(
       growthGuestsRaw.map((item) => [String(item._id), item.guestsCaptured]),
@@ -424,10 +467,18 @@ export class ReportsService {
     });
 
     const topGrowthBranches = [...growthSnapshots]
-      .sort((left, right) => right.growthScore - left.growthScore || left.name.localeCompare(right.name))
+      .sort(
+        (left, right) =>
+          right.growthScore - left.growthScore ||
+          left.name.localeCompare(right.name),
+      )
       .slice(0, 5);
     const bottomGrowthBranches = [...growthSnapshots]
-      .sort((left, right) => left.growthScore - right.growthScore || left.name.localeCompare(right.name))
+      .sort(
+        (left, right) =>
+          left.growthScore - right.growthScore ||
+          left.name.localeCompare(right.name),
+      )
       .slice(0, 5);
 
     const branchesWithoutRecentAttendance = branches
@@ -464,123 +515,128 @@ export class ReportsService {
     } | null = null;
 
     if (scope.showOperationalDetails) {
-      const [recentGuests, newestMembers, attendanceMix, followUpPipelineRaw] = await Promise.all([
-        this.guestModel.aggregate([
-          { $match: branchObjectIdFilter },
-          { $sort: { createdAt: -1 } },
-          { $limit: 6 },
-          {
-            $lookup: {
-              from: 'branches',
-              localField: 'branchId',
-              foreignField: '_id',
-              as: 'branch',
-            },
-          },
-          {
-            $unwind: {
-              path: '$branch',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $project: {
-              firstName: 1,
-              lastName: 1,
-              phone: 1,
-              email: 1,
-              visitStatus: 1,
-              createdAt: 1,
-              branchId: {
-                _id: '$branch._id',
-                name: '$branch.name',
+      const [recentGuests, newestMembers, attendanceMix, followUpPipelineRaw] =
+        await Promise.all([
+          this.guestModel.aggregate([
+            { $match: branchObjectIdFilter },
+            { $sort: { createdAt: -1 } },
+            { $limit: 6 },
+            {
+              $lookup: {
+                from: 'branches',
+                localField: 'branchId',
+                foreignField: '_id',
+                as: 'branch',
               },
             },
-          },
-        ]),
-        this.memberModel.aggregate([
-          { $match: branchObjectIdFilter },
-          { $sort: { createdAt: -1 } },
-          { $limit: 6 },
-          {
-            $lookup: {
-              from: 'branches',
-              localField: 'branchId',
-              foreignField: '_id',
-              as: 'branch',
-            },
-          },
-          {
-            $unwind: {
-              path: '$branch',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $project: {
-              title: 1,
-              firstName: 1,
-              lastName: 1,
-              membershipStatus: 1,
-              serviceUnitInterest: 1,
-              createdAt: 1,
-              branchId: {
-                _id: '$branch._id',
-                name: '$branch.name',
+            {
+              $unwind: {
+                path: '$branch',
+                preserveNullAndEmptyArrays: true,
               },
             },
-          },
-        ]),
-        this.attendanceModel.aggregate([
-          {
-            $match: {
-              ...branchObjectIdFilter,
-              serviceDate: { $gte: startDate, $lte: endDate },
-            },
-          },
-          {
-            $group: {
-              _id: { $ifNull: ['$serviceTypeLabel', '$serviceType'] },
-              totalPeople: { $sum: this.attendanceTotalExpression() },
-              firstTimers: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
-              newConverts: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
-              summarySubmissions: {
-                $sum: { $cond: [{ $eq: ['$entryMode', 'summary'] }, 1, 0] },
+            {
+              $project: {
+                firstName: 1,
+                lastName: 1,
+                phone: 1,
+                email: 1,
+                visitStatus: 1,
+                createdAt: 1,
+                branchId: {
+                  _id: '$branch._id',
+                  name: '$branch.name',
+                },
               },
             },
-          },
-          { $sort: { totalPeople: -1 } },
-          { $limit: 6 },
-        ]),
-        this.followUpModel.aggregate<{ _id: string; total: number }>([
-          {
-            $lookup: {
-              from: 'guests',
-              localField: 'guestId',
-              foreignField: '_id',
-              as: 'guest',
+          ]),
+          this.memberModel.aggregate([
+            { $match: branchObjectIdFilter },
+            { $sort: { createdAt: -1 } },
+            { $limit: 6 },
+            {
+              $lookup: {
+                from: 'branches',
+                localField: 'branchId',
+                foreignField: '_id',
+                as: 'branch',
+              },
             },
-          },
-          { $unwind: '$guest' },
-          ...this.buildGuestLookupMatch(branchLookupMatch),
-          {
-            $group: {
-              _id: '$status',
-              total: { $sum: 1 },
+            {
+              $unwind: {
+                path: '$branch',
+                preserveNullAndEmptyArrays: true,
+              },
             },
-          },
-        ]),
-      ]);
+            {
+              $project: {
+                title: 1,
+                firstName: 1,
+                lastName: 1,
+                membershipStatus: 1,
+                serviceUnitInterest: 1,
+                createdAt: 1,
+                branchId: {
+                  _id: '$branch._id',
+                  name: '$branch.name',
+                },
+              },
+            },
+          ]),
+          this.attendanceModel.aggregate([
+            {
+              $match: {
+                ...branchObjectIdFilter,
+                serviceDate: { $gte: startDate, $lte: endDate },
+              },
+            },
+            {
+              $group: {
+                _id: { $ifNull: ['$serviceTypeLabel', '$serviceType'] },
+                totalPeople: { $sum: this.attendanceTotalExpression() },
+                firstTimers: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
+                newConverts: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
+                summarySubmissions: {
+                  $sum: { $cond: [{ $eq: ['$entryMode', 'summary'] }, 1, 0] },
+                },
+              },
+            },
+            { $sort: { totalPeople: -1 } },
+            { $limit: 6 },
+          ]),
+          this.followUpModel.aggregate<{ _id: string; total: number }>([
+            {
+              $lookup: {
+                from: 'guests',
+                localField: 'guestId',
+                foreignField: '_id',
+                as: 'guest',
+              },
+            },
+            { $unwind: '$guest' },
+            ...this.buildGuestLookupMatch(branchLookupMatch),
+            {
+              $group: {
+                _id: '$status',
+                total: { $sum: 1 },
+              },
+            },
+          ]),
+        ]);
 
-      const pipelineMap = new Map(followUpPipelineRaw.map((item) => [item._id, item.total]));
+      const pipelineMap = new Map(
+        followUpPipelineRaw.map((item) => [item._id, item.total]),
+      );
       operational = {
         recentGuests,
         newestMembers,
         attendanceMix,
-        followUpPipeline: ['new', 'assigned', 'contacted', 'returned'].map((status) => ({
-          status,
-          total: pipelineMap.get(status) ?? 0,
-        })),
+        followUpPipeline: ['new', 'assigned', 'contacted', 'returned'].map(
+          (status) => ({
+            status,
+            total: pipelineMap.get(status) ?? 0,
+          }),
+        ),
       };
     }
 
@@ -608,11 +664,15 @@ export class ReportsService {
   }
 
   async summary(currentUser: AuthUser, branchId?: string, days = 30) {
-    const branchObjectIdFilter = await this.accessScopeService.buildBranchObjectIdFilter(
+    const branchObjectIdFilter =
+      await this.accessScopeService.buildBranchObjectIdFilter(
+        currentUser,
+        branchId,
+      );
+    const query = await this.accessScopeService.buildBranchFilter(
       currentUser,
       branchId,
     );
-    const query = await this.accessScopeService.buildBranchFilter(currentUser, branchId);
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - Math.max(days - 1, 0));
@@ -624,33 +684,125 @@ export class ReportsService {
       return date.toISOString().slice(0, 10);
     });
 
-    const [guestsByDayRaw, attendanceByDayRaw, followUpBreakdown, serviceMix, branchTotals] =
-      await Promise.all([
-        this.guestModel.aggregate<{ _id: string; total: number }>([
-          {
-            $match: {
-              ...branchObjectIdFilter,
-              createdAt: { $gte: startDate, $lte: endDate },
-            },
+    const [
+      guestsByDayRaw,
+      attendanceByDayRaw,
+      followUpBreakdown,
+      serviceMix,
+      branchTotals,
+    ] = await Promise.all([
+      this.guestModel.aggregate<{ _id: string; total: number }>([
+        {
+          $match: {
+            ...branchObjectIdFilter,
+            createdAt: { $gte: startDate, $lte: endDate },
           },
-          {
-            $group: {
-              _id: {
-                $dateToString: {
-                  format: '%Y-%m-%d',
-                  date: '$createdAt',
-                },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$createdAt',
               },
-              total: { $sum: 1 },
+            },
+            total: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      this.attendanceModel.aggregate<{
+        _id: string;
+        total: number;
+        firstTimers: number;
+        newConverts: number;
+      }>([
+        {
+          $match: {
+            ...branchObjectIdFilter,
+            serviceDate: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$serviceDate',
+              },
+            },
+            total: { $sum: this.attendanceTotalExpression() },
+            firstTimers: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
+            newConverts: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      this.followUpModel.aggregate<{ _id: string; total: number }>([
+        {
+          $lookup: {
+            from: 'guests',
+            localField: 'guestId',
+            foreignField: '_id',
+            as: 'guest',
+          },
+        },
+        { $unwind: '$guest' },
+        ...this.buildGuestLookupMatch(
+          (
+            branchObjectIdFilter as {
+              branchId?: Types.ObjectId | { $in: Types.ObjectId[] };
+            }
+          ).branchId,
+        ),
+        {
+          $group: {
+            _id: '$status',
+            total: { $sum: 1 },
+          },
+        },
+        { $sort: { total: -1 } },
+      ]),
+      this.attendanceModel.aggregate<{
+        _id: string;
+        totalPeople: number;
+        firstTimers: number;
+        newConverts: number;
+        summarySubmissions: number;
+        individualCheckins: number;
+      }>([
+        {
+          $match: {
+            ...branchObjectIdFilter,
+            serviceDate: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: { $ifNull: ['$serviceTypeLabel', '$serviceType'] },
+            totalPeople: { $sum: this.attendanceTotalExpression() },
+            firstTimers: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
+            newConverts: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
+            summarySubmissions: {
+              $sum: { $cond: [{ $eq: ['$entryMode', 'summary'] }, 1, 0] },
+            },
+            individualCheckins: {
+              $sum: { $cond: [{ $eq: ['$entryMode', 'individual'] }, 1, 0] },
             },
           },
-          { $sort: { _id: 1 } },
-        ]),
+        },
+        { $sort: { totalPeople: -1 } },
+      ]),
+      Promise.all([
+        this.guestModel.countDocuments(query),
+        this.memberModel.countDocuments(query),
         this.attendanceModel.aggregate<{
-          _id: string;
-          total: number;
-          firstTimers: number;
-          newConverts: number;
+          attendanceTotal: number;
+          firstTimersTotal: number;
+          newConvertsTotal: number;
+          summarySubmissionTotal: number;
+          adultsTotal: number;
+          childrenTotal: number;
         }>([
           {
             $match: {
@@ -660,106 +812,27 @@ export class ReportsService {
           },
           {
             $group: {
-              _id: {
-                $dateToString: {
-                  format: '%Y-%m-%d',
-                  date: '$serviceDate',
-                },
-              },
-              total: { $sum: this.attendanceTotalExpression() },
-              firstTimers: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
-              newConverts: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
-            },
-          },
-          { $sort: { _id: 1 } },
-        ]),
-        this.followUpModel.aggregate<{ _id: string; total: number }>([
-          {
-            $lookup: {
-              from: 'guests',
-              localField: 'guestId',
-              foreignField: '_id',
-              as: 'guest',
-            },
-          },
-          { $unwind: '$guest' },
-          ...this.buildGuestLookupMatch(
-            (branchObjectIdFilter as { branchId?: Types.ObjectId | { $in: Types.ObjectId[] } }).branchId,
-          ),
-          {
-            $group: {
-              _id: '$status',
-              total: { $sum: 1 },
-            },
-          },
-          { $sort: { total: -1 } },
-        ]),
-        this.attendanceModel.aggregate<{
-          _id: string;
-          totalPeople: number;
-          firstTimers: number;
-          newConverts: number;
-          summarySubmissions: number;
-          individualCheckins: number;
-        }>([
-          {
-            $match: {
-              ...branchObjectIdFilter,
-              serviceDate: { $gte: startDate, $lte: endDate },
-            },
-          },
-          {
-            $group: {
-              _id: { $ifNull: ['$serviceTypeLabel', '$serviceType'] },
-              totalPeople: { $sum: this.attendanceTotalExpression() },
-              firstTimers: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
-              newConverts: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
-              summarySubmissions: {
+              _id: null,
+              attendanceTotal: { $sum: this.attendanceTotalExpression() },
+              firstTimersTotal: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
+              newConvertsTotal: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
+              summarySubmissionTotal: {
                 $sum: { $cond: [{ $eq: ['$entryMode', 'summary'] }, 1, 0] },
               },
-              individualCheckins: {
-                $sum: { $cond: [{ $eq: ['$entryMode', 'individual'] }, 1, 0] },
-              },
+              adultsTotal: { $sum: { $ifNull: ['$adultsCount', 0] } },
+              childrenTotal: { $sum: { $ifNull: ['$childrenCount', 0] } },
             },
           },
-          { $sort: { totalPeople: -1 } },
         ]),
-        Promise.all([
-          this.guestModel.countDocuments(query),
-          this.memberModel.countDocuments(query),
-          this.attendanceModel.aggregate<{
-            attendanceTotal: number;
-            firstTimersTotal: number;
-            newConvertsTotal: number;
-            summarySubmissionTotal: number;
-            adultsTotal: number;
-            childrenTotal: number;
-          }>([
-            {
-              $match: {
-                ...branchObjectIdFilter,
-                serviceDate: { $gte: startDate, $lte: endDate },
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                attendanceTotal: { $sum: this.attendanceTotalExpression() },
-                firstTimersTotal: { $sum: { $ifNull: ['$firstTimersCount', 0] } },
-                newConvertsTotal: { $sum: { $ifNull: ['$newConvertsCount', 0] } },
-                summarySubmissionTotal: {
-                  $sum: { $cond: [{ $eq: ['$entryMode', 'summary'] }, 1, 0] },
-                },
-                adultsTotal: { $sum: { $ifNull: ['$adultsCount', 0] } },
-                childrenTotal: { $sum: { $ifNull: ['$childrenCount', 0] } },
-              },
-            },
-          ]),
-        ]),
-      ]);
+      ]),
+    ]);
 
-    const guestMap = new Map(guestsByDayRaw.map((entry) => [entry._id, entry.total]));
-    const attendanceMap = new Map(attendanceByDayRaw.map((entry) => [entry._id, entry]));
+    const guestMap = new Map(
+      guestsByDayRaw.map((entry) => [entry._id, entry.total]),
+    );
+    const attendanceMap = new Map(
+      attendanceByDayRaw.map((entry) => [entry._id, entry]),
+    );
 
     const trends = dateKeys.map((date) => ({
       date,
@@ -778,9 +851,16 @@ export class ReportsService {
       adultsTotal: 0,
       childrenTotal: 0,
     };
-    const returnedGuests = followUpBreakdown.find((item) => item._id === 'returned')?.total ?? 0;
-    const conversionRate = guestTotal > 0 ? Number(((memberTotal / guestTotal) * 100).toFixed(1)) : 0;
-    const returnRate = guestTotal > 0 ? Number(((returnedGuests / guestTotal) * 100).toFixed(1)) : 0;
+    const returnedGuests =
+      followUpBreakdown.find((item) => item._id === 'returned')?.total ?? 0;
+    const conversionRate =
+      guestTotal > 0
+        ? Number(((memberTotal / guestTotal) * 100).toFixed(1))
+        : 0;
+    const returnRate =
+      guestTotal > 0
+        ? Number(((returnedGuests / guestTotal) * 100).toFixed(1))
+        : 0;
 
     return {
       range: {
@@ -839,12 +919,22 @@ export class ReportsService {
     const followUpRows = [
       [],
       ['followUpStatus', 'total'],
-      ...summary.followUpBreakdown.map((item) => [item._id, String(item.total)]),
+      ...summary.followUpBreakdown.map((item) => [
+        item._id,
+        String(item.total),
+      ]),
     ];
 
     const serviceRows = [
       [],
-      ['serviceType', 'totalPeople', 'firstTimers', 'newConverts', 'summarySubmissions', 'individualCheckins'],
+      [
+        'serviceType',
+        'totalPeople',
+        'firstTimers',
+        'newConverts',
+        'summarySubmissions',
+        'individualCheckins',
+      ],
       ...summary.serviceMix.map((item) => [
         item._id,
         String(item.totalPeople),
@@ -856,7 +946,9 @@ export class ReportsService {
     ];
 
     return [...totalsRows, ...trendRows, ...followUpRows, ...serviceRows]
-      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .map((row) =>
+        row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','),
+      )
       .join('\n');
   }
 }

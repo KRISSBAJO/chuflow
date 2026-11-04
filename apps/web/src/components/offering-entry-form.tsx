@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Icon } from "@/components/app/icons";
+import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type {
   BranchSummary,
@@ -114,36 +116,35 @@ export function OfferingEntryForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[24px] bg-white p-5">
-      <div className="flex flex-col gap-2">
-        <p className="eyebrow">Record offering</p>
-        <h3 className="text-lg font-semibold text-slate-950">Branch finance entry</h3>
-        <p className="text-sm leading-6 text-slate-500">
-          Ushers and pastoral branch leads can enter offerings. Direct-entry edits stay open for 24 hours.
-        </p>
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="Record offering"
+        title="New offering entry"
+        description="Ushers and branch pastors can record offerings. Entries can be edited for 24 hours."
+      />
+
+      <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#f6f5f1] px-4 py-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#8a8780] shadow-[0_1px_2px_rgba(17,17,17,0.06)]">
+          <Icon name="branches" className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[12px] text-[#8a8780]">Branch</p>
+          <p className="truncate text-[14px] font-medium text-[#111111]">
+            {defaultBranchName || "Current branch"}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        Branch: <span className="font-semibold text-slate-900">{defaultBranchName || "Current branch"}</span>
-      </div>
+      <form action={handleSubmit} className="mt-5 grid gap-4">
+        <Field label="Service date" required>
+          <input name="serviceDate" type="datetime-local" className="ui-input" required />
+        </Field>
 
-      <div className="mt-4 grid gap-3">
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service date</span>
-          <input
-            name="serviceDate"
-            type="datetime-local"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service schedule</span>
+        <Field label="Service schedule" hint="Pick a saved schedule to fill in the service type.">
           <select
             value={selectedScheduleId}
             onChange={(event) => setSelectedScheduleId(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            className="ui-input"
           >
             <option value="">No saved schedule</option>
             {availableSchedules.map((schedule) => (
@@ -152,20 +153,15 @@ export function OfferingEntryForm({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Service type</span>
+        <Field label="Service type" required={!selectedSchedule}>
           {selectedSchedule ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-600">
+            <div className="flex min-h-[40px] items-center rounded-xl bg-[#f6f5f1] px-3 text-[14px] text-[#55534e]">
               {selectedSchedule.serviceTypeLabel}
             </div>
           ) : (
-            <select
-              name="serviceTypeId"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              required
-            >
+            <select name="serviceTypeId" className="ui-input" required>
               <option value="">Select service type</option>
               {availableServiceTypes.map((serviceType) => (
                 <option key={serviceType._id} value={serviceType._id}>
@@ -174,30 +170,35 @@ export function OfferingEntryForm({
               ))}
             </select>
           )}
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Offering type</span>
-          <select
-            name="offeringTypeId"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          >
-            <option value="">Select offering type</option>
-            {offeringTypes.filter((type) => type.isActive).map((offeringType) => (
-              <option key={offeringType._id} value={offeringType._id}>
-                {offeringType.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Offering type" required>
+            <select name="offeringTypeId" className="ui-input" required>
+              <option value="">Select offering type</option>
+              {offeringTypes.filter((type) => type.isActive).map((offeringType) => (
+                <option key={offeringType._id} value={offeringType._id}>
+                  {offeringType.name}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Account / fund</span>
-          <select
-            name="accountId"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          >
+          <Field label="Amount (USD)" required>
+            <input
+              name="amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0.00"
+              className="ui-input tabular-nums"
+              required
+            />
+          </Field>
+        </div>
+
+        <Field label="Account or fund">
+          <select name="accountId" className="ui-input">
             <option value="">Use default account from offering type</option>
             {accounts
               .filter((account) => account.isActive)
@@ -207,38 +208,25 @@ export function OfferingEntryForm({
                 </option>
               ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Amount (USD)</span>
-          <input
-            name="amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0.00"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            required
-          />
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Notes</span>
+        <Field label="Notes">
           <textarea
             name="notes"
-            placeholder="Optional note for the service, correction, or special collection"
-            className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            placeholder="Optional note for the service, a correction or a special collection"
+            className="ui-input"
           />
-        </label>
-      </div>
+        </Field>
 
-      <button
-        type="submit"
-        disabled={loading || availableServiceTypes.length === 0}
-        className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-      >
-        {loading ? "Recording..." : "Record offering"}
-      </button>
-    </form>
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <Button type="submit" disabled={loading || availableServiceTypes.length === 0}>
+            {loading ? "Recording..." : "Record offering"}
+          </Button>
+          {availableServiceTypes.length === 0 ? (
+            <p className="text-[13px] text-[#8a8780]">Add an active service type for this branch first.</p>
+          ) : null}
+        </div>
+      </form>
+    </Card>
   );
 }

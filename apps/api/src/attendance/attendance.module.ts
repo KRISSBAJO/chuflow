@@ -6,9 +6,18 @@ import { Guest, GuestSchema } from '../guests/schemas/guest.schema';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
 import { ServiceSchedulesModule } from '../service-schedules/service-schedules.module';
 import { ServiceTypesModule } from '../service-types/service-types.module';
-import { ServiceInstance, ServiceInstanceSchema } from '../service-schedules/schemas/service-instance.schema';
-import { ServiceSchedule, ServiceScheduleSchema } from '../service-schedules/schemas/service-schedule.schema';
-import { ServiceType, ServiceTypeSchema } from '../service-types/schemas/service-type.schema';
+import {
+  ServiceInstance,
+  ServiceInstanceSchema,
+} from '../service-schedules/schemas/service-instance.schema';
+import {
+  ServiceSchedule,
+  ServiceScheduleSchema,
+} from '../service-schedules/schemas/service-schedule.schema';
+import {
+  ServiceType,
+  ServiceTypeSchema,
+} from '../service-types/schemas/service-type.schema';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { Attendance, AttendanceSchema } from './schemas/attendance.schema';

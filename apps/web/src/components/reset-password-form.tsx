@@ -3,22 +3,31 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Alert, AuthHeading, Field, PasswordInput, Spinner, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
+
+function formatExpiry(value: unknown) {
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [status, setStatus] = useState<string | null>(null);
+  const [succeeded, setSucceeded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [valid, setValid] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     async function verifyToken() {
       if (!token) {
-        setStatus("Reset token is missing.");
+        setStatus("This reset link is missing its token. Request a new link to continue.");
         setChecking(false);
         return;
       }
@@ -34,15 +43,15 @@ export function ResetPasswordForm() {
         }
 
         if (!response.ok || result.valid === false) {
-          setStatus(result.message || "Reset token is invalid or has expired.");
+          setStatus(result.message || "This reset link is invalid or has expired.");
           setValid(false);
         } else {
           setValid(true);
-          setStatus(`Token verified. Expires at ${result.expiresAt}.`);
+          setExpiresAt(formatExpiry(result.expiresAt));
         }
       } catch {
         if (mounted) {
-          setStatus("Unable to verify reset token.");
+          setStatus("We couldn't verify this reset link. Please try again.");
           setValid(false);
         }
       } finally {
@@ -67,7 +76,7 @@ export function ResetPasswordForm() {
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
     if (newPassword !== confirmPassword) {
-      setStatus("New password and confirmation do not match.");
+      setStatus("The two passwords don't match.");
       setLoading(false);
       return;
     }
@@ -84,7 +93,8 @@ export function ResetPasswordForm() {
         throw new Error(result.message || "Unable to reset password");
       }
 
-      setStatus("Password reset successful. You can now sign in.");
+      setSucceeded(true);
+      setStatus("Your password has been reset. You can now sign in.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to reset password");
     } finally {
@@ -92,45 +102,58 @@ export function ResetPasswordForm() {
     }
   }
 
-  return (
-    <form action={handleSubmit} className="surface rounded-[32px] bg-white/95 p-7">
-      <p className="eyebrow">Reset Password</p>
-      <h1 className="heading mt-3 text-4xl font-semibold text-slate-950">Create a new password</h1>
-      <p className="mt-3 text-slate-600">
-        Use the reset token from your forgot-password flow to set a new password.
-      </p>
-      <input
-        value={token}
-        readOnly
-        className="mt-6 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-500 outline-none"
-      />
-      <div className="mt-4 space-y-3">
-        <input
-          name="newPassword"
-          type="password"
-          placeholder="New password"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          required
-        />
-        <input
-          name="confirmPassword"
-          type="password"
-          placeholder="Confirm new password"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          required
-        />
+  if (succeeded) {
+    return (
+      <div>
+        <AuthHeading title="You're all set" body="Your password has been reset. Sign in with your new password." />
+        <Link href="/login" className="lp-pill-dark inline-flex h-12 w-full items-center justify-center rounded-full text-[15px] font-medium">
+          Go to sign in
+        </Link>
       </div>
-      <button
-        type="submit"
-        disabled={loading || !token || !valid || checking}
-        className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 font-semibold text-white disabled:opacity-60"
-      >
-        {checking ? "Verifying token..." : loading ? "Resetting..." : "Reset password"}
-      </button>
-      {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
-      <p className="mt-5 text-sm text-slate-500">
-        Back to <Link href="/login" className="font-semibold text-slate-900">login</Link>
+    );
+  }
+
+  return (
+    <div>
+      <AuthHeading title="Choose a new password" body="Pick something you haven't used before for this account." />
+
+      {checking ? (
+        <div className="mb-6 flex items-center gap-2.5 rounded-2xl bg-[var(--lp-panel)] px-4 py-3.5 text-[14px] text-[var(--lp-muted)]">
+          <Spinner />
+          Checking your reset link...
+        </div>
+      ) : valid ? (
+        <div className="mb-6">
+          <Alert tone="success">Reset link verified{expiresAt ? `. It expires ${expiresAt}.` : "."}</Alert>
+        </div>
+      ) : null}
+
+      <form action={handleSubmit} className="space-y-5">
+        <Field label="New password">
+          <PasswordInput name="newPassword" placeholder="New password" autoComplete="new-password" required />
+        </Field>
+        <Field label="Confirm new password">
+          <PasswordInput name="confirmPassword" placeholder="Repeat new password" autoComplete="new-password" required />
+        </Field>
+        <div className="pt-2">
+          <SubmitButton loading={loading} disabled={!token || !valid || checking} loadingLabel="Saving...">
+            Reset password
+          </SubmitButton>
+        </div>
+      </form>
+
+      {status ? (
+        <div className="mt-5">
+          <Alert tone="error">{status}</Alert>
+        </div>
+      ) : null}
+
+      <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
+        Link expired?{" "}
+        <Link href="/forgot-password" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
+          Request a new one
+        </Link>
       </p>
-    </form>
+    </div>
   );
 }

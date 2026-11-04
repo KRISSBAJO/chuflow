@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 
 export function GuestReturnVisitForm({
@@ -94,19 +95,29 @@ export function GuestReturnVisitForm({
   }
 
   return (
-    <form action={handleSubmit} className="surface rounded-[32px] p-6">
-      <p className="eyebrow">Return Visit</p>
-      <h2 className="mt-3 text-2xl font-semibold text-slate-950">Record attendance and mark the guest as returned</h2>
-      <div className="mt-5 grid gap-3">
-        <input name="serviceDate" type="datetime-local" required className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none" />
-        <input name="serviceType" defaultValue="Sunday service" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none" />
-        <textarea name="notes" placeholder="Optional note about the return visit" className="min-h-24 rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none" />
+    <form action={handleSubmit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Service date and time" required>
+          <input name="serviceDate" type="datetime-local" required className="ui-input" />
+        </Field>
+        <Field label="Service type">
+          <input name="serviceType" defaultValue="Sunday service" className="ui-input" />
+        </Field>
+        <Field label="Note" className="md:col-span-2">
+          <textarea name="notes" placeholder="Optional note about the return visit" className="ui-input" />
+        </Field>
       </div>
-      <button type="submit" disabled={loading || !branchId} className="mt-4 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">
-        {loading ? "Saving..." : "Record return visit"}
-      </button>
-      {!branchId ? <p className="mt-3 text-sm text-rose-600">Branch information is required before attendance can be recorded.</p> : null}
-      {status ? <p className="mt-3 text-sm text-slate-600">{status}</p> : null}
+      <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="space-y-1 sm:mr-auto">
+          {!branchId ? (
+            <p className="text-[13px] text-red-700">Branch information is required before attendance can be recorded.</p>
+          ) : null}
+          {status ? <p className="text-[13px] text-[#55534e]">{status}</p> : null}
+        </div>
+        <Button type="submit" disabled={loading || !branchId}>
+          {loading ? "Saving..." : "Record return visit"}
+        </Button>
+      </div>
     </form>
   );
 }

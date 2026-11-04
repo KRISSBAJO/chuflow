@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Badge, Button, Card, CardHeader, EmptyState, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { BranchSummary, FinanceLockSummary } from "@/lib/types";
 
@@ -97,85 +98,87 @@ export function FinanceLockManagementCard({
   }
 
   return (
-    <section className="surface rounded-[24px] p-5">
-      <div className="flex flex-col gap-2">
-        <p className="eyebrow">Period locks</p>
-        <h3 className="text-lg font-semibold text-slate-950">Control month-end editing</h3>
-      </div>
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="Period locks"
+        title="Month-end locks"
+        description="Lock a closed month so its entries can no longer be edited."
+        action={
+          <Badge tone={visibleLocks.length ? "warning" : "neutral"}>{visibleLocks.length} locked</Badge>
+        }
+      />
 
-      <form action={createLock} className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-        {canChooseBranch ? (
-          <select
-            name="branchId"
-            value={selectedBranchId}
-            onChange={(event) => setSelectedBranchId(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-            required
-          >
-            <option value="">Select branch</option>
-            {branches.map((branch) => (
-              <option key={branch._id} value={branch._id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
-        )}
-        <input
-          name="periodKey"
-          type="month"
-          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          required
-        />
-        <textarea
-          name="reason"
-          placeholder="Optional lock reason"
-          className="min-h-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-        >
-          {loading ? "Locking..." : "Lock period"}
-        </button>
+      <form action={createLock} className="mt-6 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
+        <p className="text-[14px] font-semibold text-[#111111]">Lock a period</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {canChooseBranch ? (
+            <Field label="Branch" required>
+              <select
+                name="branchId"
+                value={selectedBranchId}
+                onChange={(event) => setSelectedBranchId(event.target.value)}
+                className="ui-input"
+                required
+              >
+                <option value="">Select branch</option>
+                {branches.map((branch) => (
+                  <option key={branch._id} value={branch._id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
+          )}
+          <Field label="Month" required className={canChooseBranch ? "" : "sm:col-span-2"}>
+            <input name="periodKey" type="month" className="ui-input" required />
+          </Field>
+          <Field label="Reason" className="sm:col-span-2">
+            <textarea name="reason" placeholder="Optional reason for the lock" className="ui-input" />
+          </Field>
+        </div>
+        <div className="mt-4">
+          <Button type="submit" disabled={loading}>
+            {loading ? "Locking..." : "Lock period"}
+          </Button>
+        </div>
       </form>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-5">
         {visibleLocks.length > 0 ? (
-          visibleLocks.map((lock) => (
-            <div
-              key={lock._id}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-4"
-            >
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {typeof lock.branchId === "string" ? lock.branchId : lock.branchId?.name} ·{" "}
-                    {lock.periodKey}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
+          <ul className="divide-y divide-black/[0.05]">
+            {visibleLocks.map((lock) => (
+              <li key={lock._id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-[14px] font-medium text-[#111111]">
+                      {typeof lock.branchId === "string" ? lock.branchId : lock.branchId?.name}
+                    </p>
+                    <Badge tone="warning">{lock.periodKey}</Badge>
+                  </div>
+                  <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                     {lock.reason || "Locked period"}
                   </p>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-700 hover:bg-red-50 hover:text-red-800"
                   onClick={() => removeLock(lock._id)}
                   disabled={loadingId === lock._id}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
                 >
                   {loadingId === lock._id ? "Removing..." : "Remove lock"}
-                </button>
-              </div>
-            </div>
-          ))
+                </Button>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">
+          <EmptyState icon="clock" title="No locked periods">
             No finance periods are locked in the selected scope.
-          </div>
+          </EmptyState>
         )}
       </div>
-    </section>
+    </Card>
   );
 }

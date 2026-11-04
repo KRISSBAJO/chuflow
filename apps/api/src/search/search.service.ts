@@ -10,12 +10,21 @@ import {
 } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
-import { FollowUp, FollowUpDocument } from '../follow-ups/schemas/follow-up.schema';
+import {
+  FollowUp,
+  FollowUpDocument,
+} from '../follow-ups/schemas/follow-up.schema';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
 import { Member, MemberDocument } from '../members/schemas/member.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
-type SearchEntityType = 'all' | 'guests' | 'members' | 'branches' | 'users' | 'followups';
+type SearchEntityType =
+  | 'all'
+  | 'guests'
+  | 'members'
+  | 'branches'
+  | 'users'
+  | 'followups';
 
 @Injectable()
 export class SearchService {
@@ -126,7 +135,7 @@ export class SearchService {
     },
   ) {
     const query = this.normalizeQuery(filters.q);
-    const type = (filters.type || 'all') as SearchEntityType;
+    const type = filters.type || 'all';
     const limit = Math.min(Math.max(filters.limit || 8, 1), 20);
     const regex = this.buildRegex(query);
     const accessibleBranches = await this.branchModel
@@ -134,7 +143,9 @@ export class SearchService {
       .select('name oversightRegion district city state address')
       .sort({ oversightRegion: 1, district: 1, name: 1 })
       .lean();
-    const accessibleBranchIds = accessibleBranches.map((branch) => String(branch._id));
+    const accessibleBranchIds = accessibleBranches.map((branch) =>
+      String(branch._id),
+    );
     const accessibleBranchObjectIds = accessibleBranchIds
       .filter((branchId) => Types.ObjectId.isValid(branchId))
       .map((branchId) => new Types.ObjectId(branchId));
@@ -287,7 +298,10 @@ export class SearchService {
             .find(followUpSearchQuery)
             .populate({
               path: 'guestId',
-              populate: { path: 'branchId', select: 'name oversightRegion district' },
+              populate: {
+                path: 'branchId',
+                select: 'name oversightRegion district',
+              },
             })
             .populate('assignedTo', 'firstName lastName')
             .sort({ updatedAt: -1 })
@@ -319,7 +333,9 @@ export class SearchService {
           `${guest.firstName} ${guest.lastName}`,
           guest.email || guest.phone,
           `/guests/${String(guest._id)}`,
-          typeof guest.branchId === 'object' && guest.branchId && 'name' in guest.branchId
+          typeof guest.branchId === 'object' &&
+            guest.branchId &&
+            'name' in guest.branchId
             ? String(guest.branchId.name ?? '')
             : undefined,
         ),
@@ -331,7 +347,9 @@ export class SearchService {
           `${member.firstName} ${member.lastName}`,
           member.email || member.phone || member.membershipStatus,
           `/members/${String(member._id)}`,
-          typeof member.branchId === 'object' && member.branchId && 'name' in member.branchId
+          typeof member.branchId === 'object' &&
+            member.branchId &&
+            'name' in member.branchId
             ? String(member.branchId.name ?? '')
             : undefined,
         ),
@@ -359,7 +377,11 @@ export class SearchService {
       followUps: followUpDocs.map((followUp) => {
         const guest =
           followUp.guestId && typeof followUp.guestId === 'object'
-            ? (followUp.guestId as { _id?: unknown; firstName?: string; lastName?: string })
+            ? (followUp.guestId as {
+                _id?: unknown;
+                firstName?: string;
+                lastName?: string;
+              })
             : undefined;
         const guestName =
           guest?.firstName || guest?.lastName

@@ -2,6 +2,7 @@ import { CommunicationPanel } from "@/components/communication-panel";
 import { MemberProfileForm } from "@/components/member-profile-form";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
+import { Avatar, Badge, Card, CardHeader, statusTone } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { formatMembershipStatus, formatYesNoStatus } from "@/lib/member-form-options";
 import { serverGet } from "@/lib/server-api";
@@ -60,35 +61,51 @@ export default async function MemberDetailPage({
     },
   ];
 
+
   return (
     <Shell>
       <PageHeader
-        eyebrow="Member Profile"
+        eyebrow="Member"
         title={`${member.firstName} ${member.lastName}`}
-        description="This profile should be the place where membership status, class progress, baptism state, and service-unit interest all meet."
+        description="Membership status, class progress, baptism and service-unit placement in one place."
       />
-      <section className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
-        <div className="space-y-6">
-          <section className="surface rounded-[32px] p-8">
-            <p className="text-sm uppercase tracking-[0.16em] text-slate-500">Member ID</p>
-            <p className="mt-3 text-2xl font-bold text-slate-950">{id}</p>
-            <div className="mt-6 space-y-4">
+      <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card className="app-rise p-6 sm:p-7">
+            <div className="flex items-center gap-4">
+              <Avatar name={`${member.firstName} ${member.lastName}`} className="h-12 w-12 text-[14px]" />
+              <div className="min-w-0">
+                <p className="lp-heading truncate text-[20px] leading-tight">
+                  {member.firstName} {member.lastName}
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <Badge tone={statusTone(member.membershipStatus)} dot>
+                    {formatMembershipStatus(member.membershipStatus)}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <dl className="mt-5 divide-y divide-black/[0.05]">
               {[
                 ["Email", member.email || "Not provided"],
                 ["Phone", member.phone || "Not provided"],
                 ["Branch", member.branchId?.name || "Unassigned"],
                 ["Origin guest", member.guestId ? `${member.guestId.firstName} ${member.guestId.lastName}` : "Direct member record"],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-white px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
-                  <p className="mt-2 font-medium text-slate-700">{value}</p>
+                <div key={label} className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                  <dt className="text-[13px] text-[#8a8780]">{label}</dt>
+                  <dd className="break-words text-[14px] font-medium text-[#111111]">{value}</dd>
                 </div>
               ))}
+            </dl>
+            <div className="mt-4 rounded-2xl border border-black/[0.06] px-4 py-3">
+              <p className="text-[12px] text-[#8a8780]">Member ID</p>
+              <p className="mt-0.5 break-all font-mono text-[13px] text-[#55534e]">{id}</p>
             </div>
-          </section>
-          <section className="surface rounded-[32px] p-8">
-            <p className="eyebrow">Formation Snapshot</p>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
+          </Card>
+          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+            <CardHeader label="Formation" title="Formation snapshot" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {[
                 ["Date joined", member.dateJoinedChurch || "Not recorded"],
                 ["Membership status", formatMembershipStatus(member.membershipStatus)],
@@ -96,49 +113,54 @@ export default async function MemberDetailPage({
                 ["Water baptism", formatYesNoStatus(member.waterBaptismStatus)],
                 ["Service unit", serviceUnitName],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-white px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
-                  <p className="mt-2 font-medium text-slate-700">{value}</p>
+                <div key={label} className="rounded-2xl bg-[#f6f5f1] px-4 py-3">
+                  <p className="text-[12px] text-[#6b6b6b]">{label}</p>
+                  <p className="mt-0.5 text-[14px] font-medium text-[#111111]">{value}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">Classes</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {courseCards.map((course) => (
-                <div key={course.label} className="rounded-2xl bg-white px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                    {course.label}
-                  </p>
-                  <p className="mt-2 font-medium text-slate-700">
-                    {course.status}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Date: {course.date}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Location: {course.location}
-                  </p>
+                <div key={course.label} className="rounded-2xl border border-black/[0.06] p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[14px] font-medium text-[#111111]">{course.label}</p>
+                    <Badge tone={course.status === "Yes" ? "success" : "neutral"}>{course.status}</Badge>
+                  </div>
+                  <dl className="mt-2 space-y-0.5 text-[13px] text-[#6b6b6b]">
+                    <div className="flex gap-1.5">
+                      <dt className="text-[#8a8780]">Date:</dt>
+                      <dd>{course.date}</dd>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <dt className="text-[#8a8780]">Location:</dt>
+                      <dd>{course.location}</dd>
+                    </div>
+                  </dl>
                 </div>
               ))}
             </div>
-            <div className="mt-6 rounded-2xl bg-white px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Family details</p>
-              <p className="mt-2 font-medium text-slate-700">{member.familyDetails || "No family details recorded yet."}</p>
+            <div className="mt-4 rounded-2xl bg-[#f6f5f1] px-4 py-3">
+              <p className="text-[12px] text-[#6b6b6b]">Family details</p>
+              <p className="mt-0.5 text-[14px] leading-[1.6] text-[#111111]">{member.familyDetails || "No family details recorded yet."}</p>
             </div>
-          </section>
+          </Card>
         </div>
-        <div className="space-y-6">
+        <div className="flex min-w-0 flex-col gap-4">
           <MemberProfileForm
             member={member}
             defaultBranchId={user.branchId}
             serviceUnits={serviceUnits}
           />
-          <CommunicationPanel
-            recipientType="member"
-            recipientId={id}
-            recipient={member.email || member.phone || ""}
-            communications={communications}
-            title="Member care and communication history"
-          />
+          <Card className="p-6 sm:p-7">
+            <CommunicationPanel
+              recipientType="member"
+              recipientId={id}
+              recipient={member.email || member.phone || ""}
+              communications={communications}
+              title="Member care and communication history"
+            />
+          </Card>
         </div>
       </section>
     </Shell>

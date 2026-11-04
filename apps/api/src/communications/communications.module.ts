@@ -5,7 +5,10 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { Guest, GuestSchema } from '../guests/schemas/guest.schema';
 import { MailModule } from '../mail/mail.module';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
-import { Communication, CommunicationSchema } from './schemas/communication.schema';
+import {
+  Communication,
+  CommunicationSchema,
+} from './schemas/communication.schema';
 import {
   CommunicationTemplate,
   CommunicationTemplateSchema,

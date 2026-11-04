@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Wordmark } from "@/components/brand/wordmark";
 import type { PublicConnectOption } from "@/lib/types";
 
 function normalize(value: string) {
@@ -75,107 +76,93 @@ export function PublicConnectChooser({
       .map((entry) => entry.option);
   }, [options, query]);
 
+  const visibleOptions = sortedOptions.length > 0 ? sortedOptions : options;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white px-4 py-10">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-[32px] border border-white/70 bg-white/90 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-700">
-            Public Connect
-          </p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950">
-            Find the right Winners Chapel branch before you start your first-timer form
-          </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-            Type your city, state, or branch name and we will bring the best branch options
-            forward. If you are in Tennessee and there are multiple branches, the Tennessee
-            branches will rise to the top first.
+    <div className="lp-root min-h-screen w-full bg-white">
+      <header className="flex h-20 items-center px-6 sm:px-10">
+        <Wordmark size={22} />
+      </header>
+
+      <main className="mx-auto max-w-[1100px] px-5 pb-24 pt-8 sm:px-8 sm:pt-14">
+        <div className="lp-rise mx-auto max-w-[680px] text-center">
+          <p className="lp-label">Connect</p>
+          <h1 className="lp-heading mt-5 text-[2.6rem] leading-[1.04] sm:text-[3.75rem]">Find your branch.</h1>
+          <p className="mx-auto mt-5 max-w-[480px] text-[17px] leading-[1.6] text-[var(--lp-muted)]">
+            Search by city, state or branch name, then open the welcome form for the branch you visited.
           </p>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">
-                Search by city, state, branch, or address
-              </span>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Nashville, Tennessee, Atlanta, Antioch..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-              />
-            </label>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-              <p className="text-sm font-semibold text-slate-900">Suggestion logic</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                We currently suggest branches from the branch name, address, city, and state.
-                This keeps public connect branch-aware now, and gives us a clean base for deeper
-                geolocation later.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-4 lg:grid-cols-2">
-          {(sortedOptions.length > 0 ? sortedOptions : options).map((option) => (
-            <article
-              key={option._id}
-              className="rounded-[28px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-700">
-                  {option.badge || "First Timer Intake"}
-                </span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-                  {option.branch?.state || "Branch"}
-                </span>
-              </div>
-
-              <h2 className="mt-4 text-2xl font-semibold text-slate-950">
-                {option.branch?.name || option.title}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {option.branch?.address
-                  ? `${option.branch.address}, ${option.branch.city}, ${option.branch.state}`
-                  : option.subtitle || "Public first-timer intake"}
-              </p>
-
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                    Service times
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-slate-700">
-                    {option.branch?.serviceTimes || "See branch information"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                    Contact
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-slate-700">
-                    {option.branch?.contactInfo || "Branch contact available after selection"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link
-                  href={`/intake/${option.slug}`}
-                  className="inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-                >
-                  Open first-timer form
-                </Link>
-              </div>
-            </article>
-          ))}
-        </section>
+          <label className="relative mx-auto mt-9 block max-w-[560px]">
+            <span className="sr-only">Search branches</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="pointer-events-none absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[var(--lp-muted)]">
+              <circle cx="11" cy="11" r="7" />
+              <path strokeLinecap="round" d="M20 20l-3.5-3.5" />
+            </svg>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="City, state or branch name"
+              className="lp-input !h-14 !rounded-full !pl-12 text-[16px]"
+            />
+          </label>
+        </div>
 
         {query.trim() && sortedOptions.length === 0 ? (
-          <div className="mt-6 rounded-[24px] border border-dashed border-slate-300 bg-white px-5 py-6 text-sm text-slate-500">
-            No branch matched that search yet. Try a city, state abbreviation, or the nearest branch
-            name instead.
-          </div>
+          <p className="mx-auto mt-8 max-w-[560px] rounded-2xl bg-[var(--lp-panel)] px-5 py-4 text-center text-[14px] text-[var(--lp-muted)]">
+            No branch matched &ldquo;{query.trim()}&rdquo;. Try a nearby city or the branch name. All branches are listed below.
+          </p>
         ) : null}
-      </div>
+
+        <section className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {visibleOptions.map((option) => (
+            <Link
+              key={option._id}
+              href={`/intake/${option.slug}`}
+              className="lp-card group flex flex-col p-7"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white px-3 py-1 text-[12px] font-medium text-[var(--lp-ink)]">
+                  {option.badge || "First-timer form"}
+                </span>
+                {option.branch?.state ? (
+                  <span className="rounded-full bg-white px-3 py-1 text-[12px] font-medium text-[var(--lp-muted)]">
+                    {option.branch.state}
+                  </span>
+                ) : null}
+              </div>
+
+              <h2 className="lp-heading mt-8 text-[24px] leading-[1.15]">{option.branch?.name || option.title}</h2>
+              <p className="mt-2 text-[14px] leading-[1.6] text-[var(--lp-muted)]">
+                {option.branch?.address
+                  ? `${option.branch.address}, ${option.branch.city}, ${option.branch.state}`
+                  : option.subtitle || "Public first-timer form"}
+              </p>
+
+              <dl className="mt-6 space-y-2 text-[14px]">
+                {option.branch?.serviceTimes ? (
+                  <div className="flex gap-2">
+                    <dt className="text-[var(--lp-muted)]">Services</dt>
+                    <dd className="text-[var(--lp-ink)]">{option.branch.serviceTimes}</dd>
+                  </div>
+                ) : null}
+                {option.branch?.contactInfo ? (
+                  <div className="flex gap-2">
+                    <dt className="text-[var(--lp-muted)]">Contact</dt>
+                    <dd className="text-[var(--lp-ink)]">{option.branch.contactInfo}</dd>
+                  </div>
+                ) : null}
+              </dl>
+
+              <span className="mt-auto inline-flex items-center gap-2 pt-8 text-[15px] font-medium text-[var(--lp-ink)]">
+                Open welcome form
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 transition-transform group-hover:translate-x-1">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </Link>
+          ))}
+        </section>
+      </main>
     </div>
   );
 }

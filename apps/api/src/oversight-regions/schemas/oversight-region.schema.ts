@@ -15,4 +15,5 @@ export class OversightRegion {
   isActive!: boolean;
 }
 
-export const OversightRegionSchema = SchemaFactory.createForClass(OversightRegion);
+export const OversightRegionSchema =
+  SchemaFactory.createForClass(OversightRegion);

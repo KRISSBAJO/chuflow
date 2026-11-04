@@ -1,7 +1,20 @@
-import Link from "next/link";
 import { CommunicationTemplateManagementCard } from "@/components/communication-template-management-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import {
+  Badge,
+  type BadgeTone,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  EmptyState,
+  formatStatus,
+  Pagination,
+  Stat,
+  statusTone,
+  TableWrap,
+} from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   canFilterAcrossBranches,
@@ -81,6 +94,26 @@ function formatDeliveryMode(mode?: string) {
   }
 }
 
+function formatChannel(channel?: string) {
+  switch (channel) {
+    case "email":
+      return "Email";
+    case "sms":
+      return "SMS";
+    case "phone_call":
+      return "Phone call";
+    default:
+      return formatStatus(channel);
+  }
+}
+
+function communicationTone(status?: string): BadgeTone {
+  if (status === "sent") return "success";
+  if (status === "preview") return "warning";
+  if (status === "queued") return "info";
+  return statusTone(status);
+}
+
 export default async function CommunicationsPage({
   searchParams,
 }: {
@@ -146,271 +179,219 @@ export default async function CommunicationsPage({
     })),
   ]);
 
+
+  const canFilterBranches = canFilterAcrossBranches(user.role);
+  const startItem =
+    history.pagination.total === 0
+      ? 0
+      : (history.pagination.page - 1) * history.pagination.pageSize + 1;
+  const endItem = Math.min(
+    history.pagination.page * history.pagination.pageSize,
+    history.pagination.total,
+  );
+
   return (
     <Shell>
       <PageHeader
         eyebrow="Communications"
-        title="Template control and message history"
-        description="Keep shared message templates tidy and review outreach across the scope you can supervise."
+        title="Templates and message history"
+        description="Keep shared message templates tidy and review outreach across the scope you supervise."
       />
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="surface rounded-[32px] p-8">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="eyebrow">History</p>
-                <h2 className="mt-2 text-3xl font-semibold text-slate-950">
-                  Outreach timeline
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Search, filter, and review messages without jumping across guest and member records.
-                </p>
-              </div>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)]">
+        <Card className="app-rise min-w-0 p-6 sm:p-7">
+          <CardHeader
+            label="History"
+            title="Outreach timeline"
+            description="Search, filter and review messages without jumping between guest and member records."
+          />
 
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Total
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {history.summary.total}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Email / SMS
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {history.summary.email} / {history.summary.sms}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Sent / Preview / Failed
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {history.summary.sent} / {history.summary.preview} / {history.summary.failed}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    System / Manual
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {history.summary.systemEmail} / {history.summary.manualSms + history.summary.manualCall}
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat label="Total" value={history.summary.total} />
+            <Stat
+              label="Email / SMS"
+              value={`${history.summary.email} / ${history.summary.sms}`}
+            />
+            <Stat
+              label="Sent / preview / failed"
+              value={`${history.summary.sent} / ${history.summary.preview} / ${history.summary.failed}`}
+            />
+            <Stat
+              label="System / manual"
+              value={`${history.summary.systemEmail} / ${history.summary.manualSms + history.summary.manualCall}`}
+            />
+          </div>
 
-            <form
-              className="grid gap-3 rounded-[28px] border border-slate-200 bg-white p-5 md:grid-cols-2 xl:grid-cols-6"
-              method="GET"
-            >
-              <input
-                name="search"
-                defaultValue={search || ""}
-                placeholder="Search recipient, subject, or message"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none xl:col-span-2"
-              />
+          <form
+            className="mt-6 grid gap-2 rounded-2xl bg-[#f6f5f1] p-3 sm:grid-cols-2 xl:grid-cols-3"
+            method="GET"
+          >
+            <input
+              name="search"
+              defaultValue={search || ""}
+              placeholder="Search recipient, subject or message"
+              aria-label="Search communications"
+              className="ui-input sm:col-span-2 xl:col-span-3"
+            />
 
-              {canFilterAcrossBranches(user.role) ? (
-                <select
-                  name="branchId"
-                  defaultValue={branchId || ""}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-                >
-                  <option value="">All branches</option>
-                  {branches.map((branch) => (
-                    <option key={branch._id} value={branch._id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-
+            {canFilterBranches ? (
               <select
-                name="channel"
-                defaultValue={channel || ""}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+                name="branchId"
+                defaultValue={branchId || ""}
+                aria-label="Branch"
+                className="ui-input"
               >
-                <option value="">All channels</option>
-                <option value="email">Email</option>
-                <option value="sms">SMS</option>
-                <option value="phone_call">Phone call</option>
-              </select>
-
-              <select
-                name="status"
-                defaultValue={status || ""}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-              >
-                <option value="">All statuses</option>
-                <option value="sent">Sent</option>
-                <option value="preview">Preview</option>
-                <option value="queued">Queued</option>
-                <option value="failed">Failed</option>
-              </select>
-
-              <select
-                name="deliveryMode"
-                defaultValue={deliveryMode || ""}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-              >
-                <option value="">All delivery modes</option>
-                <option value="system_email">System email</option>
-                <option value="preview_email">Preview email</option>
-                <option value="manual_sms">Manual SMS</option>
-                <option value="manual_call">Manual call</option>
-              </select>
-
-              <select
-                name="templateName"
-                defaultValue={templateName || ""}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-              >
-                <option value="">All templates</option>
-                {templates.map((template) => (
-                  <option key={template._id} value={template.key}>
-                    {template.name}
+                <option value="">All branches</option>
+                {branches.map((branch) => (
+                  <option key={branch._id} value={branch._id}>
+                    {branch.name}
                   </option>
                 ))}
               </select>
+            ) : null}
 
-              <div className="flex items-center justify-end gap-3 xl:col-span-6">
-                <Link
-                  href="/communications"
-                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600"
-                >
-                  Reset
-                </Link>
-                <button
-                  type="submit"
-                  className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-                >
-                  Apply filters
-                </button>
-              </div>
-            </form>
+            <select name="channel" defaultValue={channel || ""} aria-label="Channel" className="ui-input">
+              <option value="">All channels</option>
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="phone_call">Phone call</option>
+            </select>
 
-            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white">
-              <div className="grid grid-cols-[1.1fr_1fr_1fr_0.9fr_0.9fr] gap-4 border-b border-slate-200 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                <span>Recipient</span>
-                <span>Template + sender</span>
-                <span>Branch</span>
-                <span>Tracking</span>
-                <span>When</span>
-              </div>
+            <select name="status" defaultValue={status || ""} aria-label="Status" className="ui-input">
+              <option value="">All statuses</option>
+              <option value="sent">Sent</option>
+              <option value="preview">Preview</option>
+              <option value="queued">Queued</option>
+              <option value="failed">Failed</option>
+            </select>
 
-              {history.items.length === 0 ? (
-                <div className="px-5 py-10 text-sm text-slate-500">
-                  No communications match the current filters.
-                </div>
-              ) : (
-                history.items.map((item) => (
-                  <div
-                    key={item._id}
-                    className="grid grid-cols-[1.1fr_1fr_1fr_0.9fr_0.9fr] gap-4 border-b border-slate-100 px-5 py-4 text-sm text-slate-700 last:border-b-0"
-                  >
-                    <div>
-                      <p className="font-semibold text-slate-950">{item.recipient}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {item.subject || item.message.slice(0, 80)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{item.templateName}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {item.channel} · {getCommunicationSender(item)}
-                      </p>
-                    </div>
-                    <div className="text-slate-600">{getCommunicationBranch(item)}</div>
-                    <div>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        {item.status}
-                      </span>
-                      <p className="mt-2 text-xs text-slate-500">
-                        {formatDeliveryMode(item.deliveryMode)}
-                      </p>
-                      {item.errorMessage ? (
-                        <p className="mt-1 text-xs text-rose-600">{item.errorMessage}</p>
-                      ) : item.previewUrl ? (
-                        <p className="mt-1 text-xs text-amber-600">Preview mode</p>
-                      ) : null}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {item.deliveredAt
-                        ? new Date(item.deliveredAt).toLocaleString()
-                        : item.createdAt
-                          ? new Date(item.createdAt).toLocaleString()
-                          : "No timestamp"}
-                      {item.externalMessageId ? (
-                        <p className="mt-1 text-[11px] text-slate-400">
-                          Ref: {item.externalMessageId}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                ))
-              )}
+            <select
+              name="deliveryMode"
+              defaultValue={deliveryMode || ""}
+              aria-label="Delivery mode"
+              className="ui-input"
+            >
+              <option value="">All delivery modes</option>
+              <option value="system_email">System email</option>
+              <option value="preview_email">Preview email</option>
+              <option value="manual_sms">Manual SMS</option>
+              <option value="manual_call">Manual call</option>
+            </select>
+
+            <select
+              name="templateName"
+              defaultValue={templateName || ""}
+              aria-label="Template"
+              className="ui-input"
+            >
+              <option value="">All templates</option>
+              {templates.map((template) => (
+                <option key={template._id} value={template.key}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex items-center justify-end gap-2 sm:col-span-2 xl:col-span-3">
+              <ButtonLink href="/communications" variant="ghost">
+                Reset
+              </ButtonLink>
+              <Button type="submit" icon="search">
+                Apply filters
+              </Button>
             </div>
+          </form>
 
-            <div className="flex items-center justify-between gap-4 text-sm text-slate-500">
-              <p>
-                Showing{" "}
-                {history.pagination.total === 0
-                  ? 0
-                  : (history.pagination.page - 1) * history.pagination.pageSize + 1}
-                -
-                {Math.min(
-                  history.pagination.page * history.pagination.pageSize,
-                  history.pagination.total,
-                )}{" "}
-                of {history.pagination.total}
-              </p>
-              <div className="flex items-center gap-3">
-                <Link
-                  href={`/communications${buildQueryString(resolvedSearchParams, {
-                    page: Math.max(history.pagination.page - 1, 1),
-                  })}`}
-                  className={`rounded-2xl border px-4 py-2 text-sm font-semibold ${
-                    history.pagination.page <= 1
-                      ? "pointer-events-none border-slate-100 text-slate-300"
-                      : "border-slate-200 text-slate-700"
-                  }`}
-                >
-                  Previous
-                </Link>
-                <span>
-                  Page {history.pagination.page} of {history.pagination.totalPages}
-                </span>
-                <Link
-                  href={`/communications${buildQueryString(resolvedSearchParams, {
-                    page: Math.min(
-                      history.pagination.page + 1,
-                      history.pagination.totalPages,
-                    ),
-                  })}`}
-                  className={`rounded-2xl border px-4 py-2 text-sm font-semibold ${
-                    history.pagination.page >= history.pagination.totalPages
-                      ? "pointer-events-none border-slate-100 text-slate-300"
-                      : "border-slate-200 text-slate-700"
-                  }`}
-                >
-                  Next
-                </Link>
-              </div>
-            </div>
+          <div className="mt-6">
+            {history.items.length === 0 ? (
+              <EmptyState icon="message" title="No messages found">
+                No communications match the current filters.
+              </EmptyState>
+            ) : (
+              <TableWrap>
+                <table className="ui-table">
+                  <thead>
+                    <tr>
+                      <th>Recipient</th>
+                      <th>Template and sender</th>
+                      <th>Branch</th>
+                      <th>Tracking</th>
+                      <th>When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.items.map((item) => (
+                      <tr key={item._id} className="align-top">
+                        <td className="min-w-[180px]">
+                          <p className="font-medium text-[#111111]">{item.recipient}</p>
+                          <p className="mt-0.5 text-[12px] leading-[1.5] text-[#8a8780]">
+                            {item.subject || item.message.slice(0, 80)}
+                          </p>
+                        </td>
+                        <td className="min-w-[160px]">
+                          <p className="text-[#111111]">{item.templateName}</p>
+                          <p className="mt-0.5 text-[12px] text-[#8a8780]">
+                            {formatChannel(item.channel)} · {getCommunicationSender(item)}
+                          </p>
+                        </td>
+                        <td className="!text-[#55534e]">{getCommunicationBranch(item)}</td>
+                        <td>
+                          <Badge tone={communicationTone(item.status)} dot>
+                            {formatStatus(item.status)}
+                          </Badge>
+                          <p className="mt-1.5 text-[12px] text-[#8a8780]">
+                            {formatDeliveryMode(item.deliveryMode)}
+                          </p>
+                          {item.errorMessage ? (
+                            <p className="mt-1 text-[12px] text-red-700">{item.errorMessage}</p>
+                          ) : item.previewUrl ? (
+                            <p className="mt-1 text-[12px] text-amber-700">Preview mode</p>
+                          ) : null}
+                        </td>
+                        <td className="whitespace-nowrap text-[13px] !text-[#55534e]">
+                          {item.deliveredAt
+                            ? new Date(item.deliveredAt).toLocaleString()
+                            : item.createdAt
+                              ? new Date(item.createdAt).toLocaleString()
+                              : "No timestamp"}
+                          {item.externalMessageId ? (
+                            <p className="mt-0.5 text-[11px] text-[#8a8780]">
+                              Ref: {item.externalMessageId}
+                            </p>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+            )}
           </div>
-        </section>
 
-        <div className="surface rounded-[32px] p-2">
+          <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[13px] text-[#8a8780]">
+              Showing <span className="tabular-nums text-[#111111]">{startItem}–{endItem}</span> of{" "}
+              <span className="tabular-nums">{history.pagination.total}</span>
+            </p>
+            <Pagination
+              page={history.pagination.page}
+              totalPages={history.pagination.totalPages}
+              prevHref={`/communications${buildQueryString(resolvedSearchParams, {
+                page: Math.max(history.pagination.page - 1, 1),
+              })}`}
+              nextHref={`/communications${buildQueryString(resolvedSearchParams, {
+                page: Math.min(history.pagination.page + 1, history.pagination.totalPages),
+              })}`}
+            />
+          </div>
+        </Card>
+
+        <Card className="app-rise min-w-0 self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
           <CommunicationTemplateManagementCard
             templates={templates}
             canManage={canManageCommunicationTemplates(user.role)}
           />
-        </div>
+        </Card>
       </section>
     </Shell>
   );

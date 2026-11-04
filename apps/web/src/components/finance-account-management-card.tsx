@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Icon } from "@/components/app/icons";
+import { Badge, Button, Card, CardHeader, EmptyState, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { FinanceAccountSummary } from "@/lib/types";
 
@@ -86,118 +88,113 @@ export function FinanceAccountManagementCard({
   }
 
   return (
-    <section className="surface rounded-[24px] p-5">
-      <div className="flex flex-col gap-2">
-        <p className="eyebrow">Accounts / funds</p>
-        <h3 className="text-lg font-semibold text-slate-950">Shared finance accounts</h3>
-      </div>
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="Accounts and funds"
+        title="Finance accounts"
+        description="Shared accounts that offerings and expenses are posted to."
+        action={<Badge>{accounts.length} accounts</Badge>}
+      />
 
-      <form action={createAccount} className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-        <input
-          name="name"
-          placeholder="Account name"
-          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-          required
-        />
-        <input
-          name="key"
-          placeholder="Optional key"
-          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-        />
-        <input
-          name="sortOrder"
-          type="number"
-          defaultValue={0}
-          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-        />
-        <textarea
-          name="description"
-          placeholder="Optional description"
-          className="min-h-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-        />
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
-          Active immediately
-        </label>
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-        >
-          {loading ? "Creating..." : "Create account"}
-        </button>
+      <form action={createAccount} className="mt-6 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
+        <p className="text-[14px] font-semibold text-[#111111]">Add an account</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_120px]">
+          <Field label="Account name" required>
+            <input name="name" placeholder="e.g. Building fund" className="ui-input" required />
+          </Field>
+          <Field label="Key">
+            <input name="key" placeholder="Optional" className="ui-input" />
+          </Field>
+          <Field label="Sort order">
+            <input name="sortOrder" type="number" defaultValue={0} className="ui-input tabular-nums" />
+          </Field>
+          <Field label="Description" className="sm:col-span-3">
+            <textarea name="description" placeholder="Optional description" className="ui-input" />
+          </Field>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
+            <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4 accent-[#111111]" />
+            Active immediately
+          </label>
+          <Button type="submit" icon="plus" disabled={loading}>
+            {loading ? "Creating..." : "Create account"}
+          </Button>
+        </div>
       </form>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-5 space-y-3">
+        {accounts.length === 0 ? (
+          <EmptyState icon="finance" title="No accounts yet">
+            Create the first account above.
+          </EmptyState>
+        ) : null}
         {accounts.map((account) => (
-          <details key={account._id} className="rounded-[20px] border border-slate-200 bg-white">
-            <summary className="cursor-pointer list-none px-4 py-3">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{account.name}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {account.key}
-                    {account.isSeeded ? " · seeded default" : ""}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    account.isActive
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {account.isActive ? "active" : "inactive"}
-                </span>
+          <details
+            key={account._id}
+            className="group rounded-2xl border border-black/[0.06] transition-colors hover:border-black/[0.12] open:border-black/[0.12]"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-medium text-[#111111]">{account.name}</p>
+                <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
+                  {account.key}
+                  {account.isSeeded ? " · Default" : ""}
+                </p>
               </div>
+              <Badge tone={account.isActive ? "success" : "neutral"} dot>
+                {account.isActive ? "Active" : "Inactive"}
+              </Badge>
+              <Icon
+                name="chevronDown"
+                className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180"
+              />
             </summary>
-            <div className="border-t border-slate-200 px-4 py-4">
+            <div className="border-t border-black/[0.06] px-4 py-5">
               <form
                 action={(formData) => updateAccount(account._id, formData)}
-                className="grid gap-3"
+                className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_120px]"
               >
-                <input
-                  name={`name-${account._id}`}
-                  defaultValue={account.name}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                />
-                <input
-                  name={`key-${account._id}`}
-                  defaultValue={account.key}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                />
-                <input
-                  name={`sortOrder-${account._id}`}
-                  type="number"
-                  defaultValue={account.sortOrder}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                />
-                <textarea
-                  name={`description-${account._id}`}
-                  defaultValue={account.description || ""}
-                  className="min-h-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                />
-                <label className="flex items-center gap-2 text-sm text-slate-700">
+                <Field label="Account name">
+                  <input name={`name-${account._id}`} defaultValue={account.name} className="ui-input" />
+                </Field>
+                <Field label="Key">
+                  <input name={`key-${account._id}`} defaultValue={account.key} className="ui-input" />
+                </Field>
+                <Field label="Sort order">
                   <input
-                    type="checkbox"
-                    name={`isActive-${account._id}`}
-                    defaultChecked={account.isActive}
-                    className="h-4 w-4"
+                    name={`sortOrder-${account._id}`}
+                    type="number"
+                    defaultValue={account.sortOrder}
+                    className="ui-input tabular-nums"
                   />
-                  Active account
-                </label>
-                <button
-                  type="submit"
-                  disabled={loadingId === account._id}
-                  className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-                >
-                  {loadingId === account._id ? "Saving..." : "Update account"}
-                </button>
+                </Field>
+                <Field label="Description" className="sm:col-span-3">
+                  <textarea
+                    name={`description-${account._id}`}
+                    defaultValue={account.description || ""}
+                    className="ui-input"
+                  />
+                </Field>
+                <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-3">
+                  <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
+                    <input
+                      type="checkbox"
+                      name={`isActive-${account._id}`}
+                      defaultChecked={account.isActive}
+                      className="h-4 w-4 accent-[#111111]"
+                    />
+                    Active account
+                  </label>
+                  <Button type="submit" size="sm" disabled={loadingId === account._id}>
+                    {loadingId === account._id ? "Saving..." : "Update account"}
+                  </Button>
+                </div>
               </form>
             </div>
           </details>
         ))}
       </div>
-    </section>
+    </Card>
   );
 }

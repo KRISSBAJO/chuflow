@@ -1,5 +1,12 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsMongoId, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateOfferingEntryDto {
   @ApiProperty()
@@ -45,4 +52,6 @@ export class CreateOfferingEntryDto {
   notes?: string;
 }
 
-export class UpdateOfferingEntryDto extends PartialType(CreateOfferingEntryDto) {}
+export class UpdateOfferingEntryDto extends PartialType(
+  CreateOfferingEntryDto,
+) {}

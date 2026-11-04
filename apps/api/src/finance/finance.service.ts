@@ -17,49 +17,195 @@ import {
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import { ServiceSchedulesService } from '../service-schedules/service-schedules.service';
-import { ServiceType, ServiceTypeDocument } from '../service-types/schemas/service-type.schema';
+import {
+  ServiceType,
+  ServiceTypeDocument,
+} from '../service-types/schemas/service-type.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { CreateExpenseCategoryDto, UpdateExpenseCategoryDto } from './dto/create-expense-category.dto';
-import { CreateExpenseEntryDto, ReviewExpenseEntryDto, UpdateExpenseEntryDto } from './dto/create-expense-entry.dto';
-import { CreateFinanceAccountDto, UpdateFinanceAccountDto } from './dto/create-finance-account.dto';
+import {
+  CreateExpenseCategoryDto,
+  UpdateExpenseCategoryDto,
+} from './dto/create-expense-category.dto';
+import {
+  CreateExpenseEntryDto,
+  ReviewExpenseEntryDto,
+  UpdateExpenseEntryDto,
+} from './dto/create-expense-entry.dto';
+import {
+  CreateFinanceAccountDto,
+  UpdateFinanceAccountDto,
+} from './dto/create-finance-account.dto';
 import { CreateFinanceLockDto } from './dto/create-finance-lock.dto';
-import { CreateOfferingEntryDto, UpdateOfferingEntryDto } from './dto/create-offering-entry.dto';
-import { CreateOfferingTypeDto, UpdateOfferingTypeDto } from './dto/create-offering-type.dto';
-import { ExpenseCategory, ExpenseCategoryDocument } from './schemas/expense-category.schema';
-import { ExpenseEntry, ExpenseEntryDocument } from './schemas/expense-entry.schema';
-import { FinanceAccount, FinanceAccountDocument } from './schemas/finance-account.schema';
-import { FinanceLedgerEntry, FinanceLedgerEntryDocument } from './schemas/finance-ledger-entry.schema';
-import { FinanceLock, FinanceLockDocument } from './schemas/finance-lock.schema';
-import { OfferingEntry, OfferingEntryDocument } from './schemas/offering-entry.schema';
-import { OfferingType, OfferingTypeDocument } from './schemas/offering-type.schema';
+import {
+  CreateOfferingEntryDto,
+  UpdateOfferingEntryDto,
+} from './dto/create-offering-entry.dto';
+import {
+  CreateOfferingTypeDto,
+  UpdateOfferingTypeDto,
+} from './dto/create-offering-type.dto';
+import {
+  ExpenseCategory,
+  ExpenseCategoryDocument,
+} from './schemas/expense-category.schema';
+import {
+  ExpenseEntry,
+  ExpenseEntryDocument,
+} from './schemas/expense-entry.schema';
+import {
+  FinanceAccount,
+  FinanceAccountDocument,
+} from './schemas/finance-account.schema';
+import {
+  FinanceLedgerEntry,
+  FinanceLedgerEntryDocument,
+} from './schemas/finance-ledger-entry.schema';
+import {
+  FinanceLock,
+  FinanceLockDocument,
+} from './schemas/finance-lock.schema';
+import {
+  OfferingEntry,
+  OfferingEntryDocument,
+} from './schemas/offering-entry.schema';
+import {
+  OfferingType,
+  OfferingTypeDocument,
+} from './schemas/offering-type.schema';
 
 const DEFAULT_OFFERING_TYPES = [
-  { name: 'Tithe', key: 'tithe', description: 'Regular tithe giving', sortOrder: 10 },
-  { name: 'Sunday Offering', key: 'sunday_offering', description: 'General service offering', sortOrder: 20 },
-  { name: 'Thanksgiving', key: 'thanksgiving', description: 'Thanksgiving and gratitude offerings', sortOrder: 30 },
-  { name: 'Building Fund', key: 'building_fund', description: 'Facility and project support', sortOrder: 40 },
-  { name: 'Welfare', key: 'welfare', description: 'Care and benevolence support', sortOrder: 50 },
-  { name: 'Mission Offering', key: 'mission_offering', description: 'Mission and outreach support', sortOrder: 60 },
-  { name: 'Children Offering', key: 'children_offering', description: 'Children church giving', sortOrder: 70 },
-  { name: 'First Fruits', key: 'first_fruits', description: 'First fruits giving', sortOrder: 80 },
+  {
+    name: 'Tithe',
+    key: 'tithe',
+    description: 'Regular tithe giving',
+    sortOrder: 10,
+  },
+  {
+    name: 'Sunday Offering',
+    key: 'sunday_offering',
+    description: 'General service offering',
+    sortOrder: 20,
+  },
+  {
+    name: 'Thanksgiving',
+    key: 'thanksgiving',
+    description: 'Thanksgiving and gratitude offerings',
+    sortOrder: 30,
+  },
+  {
+    name: 'Building Fund',
+    key: 'building_fund',
+    description: 'Facility and project support',
+    sortOrder: 40,
+  },
+  {
+    name: 'Welfare',
+    key: 'welfare',
+    description: 'Care and benevolence support',
+    sortOrder: 50,
+  },
+  {
+    name: 'Mission Offering',
+    key: 'mission_offering',
+    description: 'Mission and outreach support',
+    sortOrder: 60,
+  },
+  {
+    name: 'Children Offering',
+    key: 'children_offering',
+    description: 'Children church giving',
+    sortOrder: 70,
+  },
+  {
+    name: 'First Fruits',
+    key: 'first_fruits',
+    description: 'First fruits giving',
+    sortOrder: 80,
+  },
 ];
 
 const DEFAULT_FINANCE_ACCOUNTS = [
-  { name: 'General Fund', key: 'general_fund', description: 'General branch operating balance', sortOrder: 10 },
-  { name: 'Tithe Fund', key: 'tithe_fund', description: 'Tithe-specific balance and reporting', sortOrder: 20 },
-  { name: 'Building Fund', key: 'building_fund', description: 'Facility and capital project account', sortOrder: 30 },
-  { name: 'Welfare Fund', key: 'welfare_fund', description: 'Care and benevolence balance', sortOrder: 40 },
-  { name: 'Mission Fund', key: 'mission_fund', description: 'Mission and outreach support account', sortOrder: 50 },
-  { name: 'Children Fund', key: 'children_fund', description: 'Children ministry balance', sortOrder: 60 },
+  {
+    name: 'General Fund',
+    key: 'general_fund',
+    description: 'General branch operating balance',
+    sortOrder: 10,
+  },
+  {
+    name: 'Tithe Fund',
+    key: 'tithe_fund',
+    description: 'Tithe-specific balance and reporting',
+    sortOrder: 20,
+  },
+  {
+    name: 'Building Fund',
+    key: 'building_fund',
+    description: 'Facility and capital project account',
+    sortOrder: 30,
+  },
+  {
+    name: 'Welfare Fund',
+    key: 'welfare_fund',
+    description: 'Care and benevolence balance',
+    sortOrder: 40,
+  },
+  {
+    name: 'Mission Fund',
+    key: 'mission_fund',
+    description: 'Mission and outreach support account',
+    sortOrder: 50,
+  },
+  {
+    name: 'Children Fund',
+    key: 'children_fund',
+    description: 'Children ministry balance',
+    sortOrder: 60,
+  },
 ];
 
 const DEFAULT_EXPENSE_CATEGORIES = [
-  { name: 'Utilities', key: 'utilities', description: 'Power, water, internet, and service utilities', defaultAccountKey: 'general_fund', sortOrder: 10 },
-  { name: 'Welfare Support', key: 'welfare_support', description: 'Benevolence and member care support', defaultAccountKey: 'welfare_fund', sortOrder: 20 },
-  { name: 'Facility Maintenance', key: 'facility_maintenance', description: 'Repairs, cleaning, and maintenance', defaultAccountKey: 'building_fund', sortOrder: 30 },
-  { name: 'Ministry Operations', key: 'ministry_operations', description: 'General ministry operations and service supplies', defaultAccountKey: 'general_fund', sortOrder: 40 },
-  { name: 'Missions', key: 'missions', description: 'Mission support and outreach spending', defaultAccountKey: 'mission_fund', sortOrder: 50 },
-  { name: 'Children Ministry', key: 'children_ministry', description: 'Children ministry materials and support', defaultAccountKey: 'children_fund', sortOrder: 60 },
+  {
+    name: 'Utilities',
+    key: 'utilities',
+    description: 'Power, water, internet, and service utilities',
+    defaultAccountKey: 'general_fund',
+    sortOrder: 10,
+  },
+  {
+    name: 'Welfare Support',
+    key: 'welfare_support',
+    description: 'Benevolence and member care support',
+    defaultAccountKey: 'welfare_fund',
+    sortOrder: 20,
+  },
+  {
+    name: 'Facility Maintenance',
+    key: 'facility_maintenance',
+    description: 'Repairs, cleaning, and maintenance',
+    defaultAccountKey: 'building_fund',
+    sortOrder: 30,
+  },
+  {
+    name: 'Ministry Operations',
+    key: 'ministry_operations',
+    description: 'General ministry operations and service supplies',
+    defaultAccountKey: 'general_fund',
+    sortOrder: 40,
+  },
+  {
+    name: 'Missions',
+    key: 'missions',
+    description: 'Mission support and outreach spending',
+    defaultAccountKey: 'mission_fund',
+    sortOrder: 50,
+  },
+  {
+    name: 'Children Ministry',
+    key: 'children_ministry',
+    description: 'Children ministry materials and support',
+    defaultAccountKey: 'children_fund',
+    sortOrder: 60,
+  },
 ];
 
 type ScopedBranch = {
@@ -101,7 +247,9 @@ export class FinanceService implements OnModuleInit {
 
   async onModuleInit() {
     for (const defaultType of DEFAULT_OFFERING_TYPES) {
-      const existing = await this.offeringTypeModel.findOne({ key: defaultType.key }).lean();
+      const existing = await this.offeringTypeModel
+        .findOne({ key: defaultType.key })
+        .lean();
 
       if (!existing) {
         await this.offeringTypeModel.create({
@@ -113,7 +261,9 @@ export class FinanceService implements OnModuleInit {
     }
 
     for (const account of DEFAULT_FINANCE_ACCOUNTS) {
-      const existing = await this.financeAccountModel.findOne({ key: account.key }).lean();
+      const existing = await this.financeAccountModel
+        .findOne({ key: account.key })
+        .lean();
 
       if (!existing) {
         await this.financeAccountModel.create({
@@ -125,7 +275,9 @@ export class FinanceService implements OnModuleInit {
     }
 
     for (const category of DEFAULT_EXPENSE_CATEGORIES) {
-      const existing = await this.expenseCategoryModel.findOne({ key: category.key }).lean();
+      const existing = await this.expenseCategoryModel
+        .findOne({ key: category.key })
+        .lean();
 
       if (!existing) {
         await this.expenseCategoryModel.create({
@@ -204,18 +356,26 @@ export class FinanceService implements OnModuleInit {
     ];
 
     if (!allowed.includes(currentUser.role)) {
-      throw new ForbiddenException('You cannot access finance records from your role');
+      throw new ForbiddenException(
+        'You cannot access finance records from your role',
+      );
     }
   }
 
   private ensureGlobalFinanceManager(currentUser: AuthUser) {
     if (currentUser.role !== 'super_admin') {
-      throw new ForbiddenException('Only overall oversight admin can manage global finance defaults');
+      throw new ForbiddenException(
+        'Only overall oversight admin can manage global finance defaults',
+      );
     }
   }
 
   private ensureOfferingEntryCreator(currentUser: AuthUser) {
-    if (!['usher', 'resident_pastor', 'associate_pastor'].includes(currentUser.role)) {
+    if (
+      !['usher', 'resident_pastor', 'associate_pastor'].includes(
+        currentUser.role,
+      )
+    ) {
       throw new ForbiddenException(
         'Only ushers, resident pastors, and associate pastors can enter offerings',
       );
@@ -286,7 +446,9 @@ export class FinanceService implements OnModuleInit {
     });
 
     if (existing) {
-      throw new BadRequestException('A record with this name or key already exists');
+      throw new BadRequestException(
+        'A record with this name or key already exists',
+      );
     }
   }
 
@@ -299,7 +461,9 @@ export class FinanceService implements OnModuleInit {
     } = {},
   ) {
     const requestedBranchId = this.normalizeFilterValue(filters.branchId);
-    const requestedOversightRegion = this.normalizeFilterValue(filters.oversightRegion);
+    const requestedOversightRegion = this.normalizeFilterValue(
+      filters.oversightRegion,
+    );
     const requestedDistrict = this.normalizeFilterValue(filters.district);
 
     const scopedQuery = {
@@ -307,7 +471,10 @@ export class FinanceService implements OnModuleInit {
     } as Record<string, unknown>;
 
     if (requestedBranchId) {
-      await this.accessScopeService.ensureBranchAccess(currentUser, requestedBranchId);
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        requestedBranchId,
+      );
       scopedQuery._id = new Types.ObjectId(requestedBranchId);
     } else {
       if (requestedOversightRegion) {
@@ -327,7 +494,9 @@ export class FinanceService implements OnModuleInit {
   }
 
   private getBranchObjectIdMatch(branches: ScopedBranch[]) {
-    const branchIds = branches.map((branch) => new Types.ObjectId(String(branch._id)));
+    const branchIds = branches.map(
+      (branch) => new Types.ObjectId(String(branch._id)),
+    );
 
     if (branchIds.length === 0) {
       return undefined;
@@ -336,8 +505,14 @@ export class FinanceService implements OnModuleInit {
     return branchIds.length === 1 ? branchIds[0] : { $in: branchIds };
   }
 
-  private async resolveScopedCreateBranch(currentUser: AuthUser, requestedBranchId?: string) {
-    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, requestedBranchId);
+  private async resolveScopedCreateBranch(
+    currentUser: AuthUser,
+    requestedBranchId?: string,
+  ) {
+    const branchId = await this.accessScopeService.resolveScopedBranchId(
+      currentUser,
+      requestedBranchId,
+    );
 
     if (!branchId) {
       throw new BadRequestException('A branch is required');
@@ -356,7 +531,9 @@ export class FinanceService implements OnModuleInit {
   }
 
   private async resolveOfferingType(offeringTypeId: string) {
-    const offeringType = await this.offeringTypeModel.findById(offeringTypeId).lean();
+    const offeringType = await this.offeringTypeModel
+      .findById(offeringTypeId)
+      .lean();
 
     if (!offeringType) {
       throw new NotFoundException('Offering type not found');
@@ -366,14 +543,18 @@ export class FinanceService implements OnModuleInit {
   }
 
   private async resolveServiceType(branchId: string, serviceTypeId: string) {
-    const serviceType = await this.serviceTypeModel.findById(serviceTypeId).lean();
+    const serviceType = await this.serviceTypeModel
+      .findById(serviceTypeId)
+      .lean();
 
     if (!serviceType) {
       throw new NotFoundException('Service type not found');
     }
 
     if (String(serviceType.branchId) !== String(branchId)) {
-      throw new ForbiddenException('Service type must belong to the same branch');
+      throw new ForbiddenException(
+        'Service type must belong to the same branch',
+      );
     }
 
     return serviceType;
@@ -394,7 +575,9 @@ export class FinanceService implements OnModuleInit {
   }
 
   private async resolveExpenseCategory(expenseCategoryId: string) {
-    const category = await this.expenseCategoryModel.findById(expenseCategoryId).lean();
+    const category = await this.expenseCategoryModel
+      .findById(expenseCategoryId)
+      .lean();
 
     if (!category) {
       throw new NotFoundException('Expense category not found');
@@ -403,20 +586,29 @@ export class FinanceService implements OnModuleInit {
     return category;
   }
 
-  private async resolveOfferingAccount(accountId: string | undefined, offeringTypeKey: string) {
+  private async resolveOfferingAccount(
+    accountId: string | undefined,
+    offeringTypeKey: string,
+  ) {
     if (accountId) {
       return this.resolveFinanceAccount(accountId);
     }
 
-    return this.resolveFinanceAccount(this.getDefaultAccountKeyForOffering(offeringTypeKey));
+    return this.resolveFinanceAccount(
+      this.getDefaultAccountKeyForOffering(offeringTypeKey),
+    );
   }
 
   private async ensurePeriodOpen(branchId: string, entryDate: Date) {
     const periodKey = this.getPeriodKey(entryDate);
-    const existingLock = await this.financeLockModel.findOne({ branchId, periodKey }).lean();
+    const existingLock = await this.financeLockModel
+      .findOne({ branchId, periodKey })
+      .lean();
 
     if (existingLock) {
-      throw new ForbiddenException('This finance period is locked for the selected branch');
+      throw new ForbiddenException(
+        'This finance period is locked for the selected branch',
+      );
     }
   }
 
@@ -436,7 +628,9 @@ export class FinanceService implements OnModuleInit {
     },
   ) {
     const now = new Date();
-    const serviceDate = offering.serviceDate ? new Date(offering.serviceDate) : now;
+    const serviceDate = offering.serviceDate
+      ? new Date(offering.serviceDate)
+      : now;
     const createdAt = offering.createdAt ? new Date(offering.createdAt) : now;
 
     if (
@@ -446,7 +640,8 @@ export class FinanceService implements OnModuleInit {
     ) {
       return {
         canEdit: true,
-        reason: 'Oversight roles can correct finance records across their visible scope.',
+        reason:
+          'Oversight roles can correct finance records across their visible scope.',
       };
     }
 
@@ -454,32 +649,41 @@ export class FinanceService implements OnModuleInit {
       return this.isSameCalendarMonth(serviceDate, now)
         ? {
             canEdit: true,
-            reason: 'Branch admin can update finance records during the active service month.',
+            reason:
+              'Branch admin can update finance records during the active service month.',
           }
         : {
             canEdit: false,
-            reason: 'Branch admins can only edit offering records while the service month is still open.',
+            reason:
+              'Branch admins can only edit offering records while the service month is still open.',
           };
     }
 
-    if (['usher', 'resident_pastor', 'associate_pastor'].includes(currentUser.role)) {
+    if (
+      ['usher', 'resident_pastor', 'associate_pastor'].includes(
+        currentUser.role,
+      )
+    ) {
       if (!this.isSameCalendarMonth(serviceDate, now)) {
         return {
           canEdit: false,
-          reason: 'Branch-level offering entry closes after the service month ends.',
+          reason:
+            'Branch-level offering entry closes after the service month ends.',
         };
       }
 
       if (now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000) {
         return {
           canEdit: false,
-          reason: 'Direct entry roles can only edit offerings during the first 24 hours after entry.',
+          reason:
+            'Direct entry roles can only edit offerings during the first 24 hours after entry.',
         };
       }
 
       return {
         canEdit: true,
-        reason: 'Entry roles can edit an offering during the first 24 hours after entry.',
+        reason:
+          'Entry roles can edit an offering during the first 24 hours after entry.',
       };
     }
 
@@ -498,7 +702,9 @@ export class FinanceService implements OnModuleInit {
     },
   ) {
     const now = new Date();
-    const expenseDate = expense.expenseDate ? new Date(expense.expenseDate) : now;
+    const expenseDate = expense.expenseDate
+      ? new Date(expense.expenseDate)
+      : now;
 
     if (
       isGlobalRole(currentUser.role) ||
@@ -507,26 +713,34 @@ export class FinanceService implements OnModuleInit {
     ) {
       return {
         canEdit: true,
-        reason: 'Oversight roles can correct expense records across their visible scope.',
+        reason:
+          'Oversight roles can correct expense records across their visible scope.',
       };
     }
 
     if (expense.status === 'locked') {
       return {
         canEdit: false,
-        reason: 'Locked expenses must be reopened by finance oversight before editing.',
+        reason:
+          'Locked expenses must be reopened by finance oversight before editing.',
       };
     }
 
-    if (['branch_admin', 'resident_pastor', 'associate_pastor'].includes(currentUser.role)) {
+    if (
+      ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(
+        currentUser.role,
+      )
+    ) {
       return this.isSameCalendarMonth(expenseDate, now)
         ? {
             canEdit: true,
-            reason: 'Branch leadership can edit expenses while the service month is still open.',
+            reason:
+              'Branch leadership can edit expenses while the service month is still open.',
           }
         : {
             canEdit: false,
-            reason: 'Branch leadership can only edit expenses while the service month is still open.',
+            reason:
+              'Branch leadership can only edit expenses while the service month is still open.',
           };
     }
 
@@ -587,15 +801,23 @@ export class FinanceService implements OnModuleInit {
         description: params.description,
         status: params.status,
         createdBy: new Types.ObjectId(params.createdBy),
-        updatedBy: params.updatedBy ? new Types.ObjectId(params.updatedBy) : undefined,
-        approvedBy: params.approvedBy ? new Types.ObjectId(params.approvedBy) : undefined,
+        updatedBy: params.updatedBy
+          ? new Types.ObjectId(params.updatedBy)
+          : undefined,
+        approvedBy: params.approvedBy
+          ? new Types.ObjectId(params.approvedBy)
+          : undefined,
         reviewedAt: params.reviewedAt,
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
   }
 
-  private async applyLockStateToPeriod(branchId: string, periodKey: string, locked: boolean) {
+  private async applyLockStateToPeriod(
+    branchId: string,
+    periodKey: string,
+    locked: boolean,
+  ) {
     const branchObjectId = new Types.ObjectId(branchId);
     const [year, month] = periodKey.split('-').map(Number);
     const periodStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
@@ -612,7 +834,11 @@ export class FinanceService implements OnModuleInit {
             {
               $set: {
                 status: {
-                  $cond: [{ $ifNull: ['$approvedBy', false] }, 'approved', 'submitted'],
+                  $cond: [
+                    { $ifNull: ['$approvedBy', false] },
+                    'approved',
+                    'submitted',
+                  ],
                 },
               },
             },
@@ -630,7 +856,11 @@ export class FinanceService implements OnModuleInit {
             {
               $set: {
                 status: {
-                  $cond: [{ $eq: ['$sourceType', 'expense'] }, 'approved', 'approved'],
+                  $cond: [
+                    { $eq: ['$sourceType', 'expense'] },
+                    'approved',
+                    'approved',
+                  ],
                 },
               },
             },
@@ -638,7 +868,13 @@ export class FinanceService implements OnModuleInit {
     );
   }
 
-  private toFinanceAccountResponse(account: FinanceAccount & { _id?: unknown; createdAt?: Date; updatedAt?: Date }) {
+  private toFinanceAccountResponse(
+    account: FinanceAccount & {
+      _id?: unknown;
+      createdAt?: Date;
+      updatedAt?: Date;
+    },
+  ) {
     return {
       _id: String(account._id),
       name: account.name,
@@ -652,7 +888,13 @@ export class FinanceService implements OnModuleInit {
     };
   }
 
-  private toExpenseCategoryResponse(category: ExpenseCategory & { _id?: unknown; createdAt?: Date; updatedAt?: Date }) {
+  private toExpenseCategoryResponse(
+    category: ExpenseCategory & {
+      _id?: unknown;
+      createdAt?: Date;
+      updatedAt?: Date;
+    },
+  ) {
     return {
       _id: String(category._id),
       name: category.name,
@@ -667,7 +909,13 @@ export class FinanceService implements OnModuleInit {
     };
   }
 
-  private toOfferingTypeResponse(offeringType: OfferingType & { _id?: unknown; createdAt?: Date; updatedAt?: Date }) {
+  private toOfferingTypeResponse(
+    offeringType: OfferingType & {
+      _id?: unknown;
+      createdAt?: Date;
+      updatedAt?: Date;
+    },
+  ) {
     return {
       _id: String(offeringType._id),
       name: offeringType.name,
@@ -681,13 +929,17 @@ export class FinanceService implements OnModuleInit {
     };
   }
 
-  private toOfferingEntryResponse(entry: Record<string, unknown>, currentUser: AuthUser) {
+  private toOfferingEntryResponse(
+    entry: Record<string, unknown>,
+    currentUser: AuthUser,
+  ) {
     const branchValue =
       typeof entry.branchId === 'object' && entry.branchId !== null
         ? {
             _id: String((entry.branchId as { _id?: unknown })._id ?? ''),
             name: (entry.branchId as { name?: string }).name,
-            oversightRegion: (entry.branchId as { oversightRegion?: string }).oversightRegion,
+            oversightRegion: (entry.branchId as { oversightRegion?: string })
+              .oversightRegion,
             district: (entry.branchId as { district?: string }).district,
           }
         : undefined;
@@ -758,22 +1010,35 @@ export class FinanceService implements OnModuleInit {
       serviceTypeKey: String(entry.serviceTypeKey ?? ''),
       serviceTypeLabel: String(entry.serviceTypeLabel ?? ''),
       serviceScheduleId:
-        entry.serviceScheduleId && typeof entry.serviceScheduleId === 'object' && entry.serviceScheduleId !== null
+        entry.serviceScheduleId &&
+        typeof entry.serviceScheduleId === 'object' &&
+        entry.serviceScheduleId !== null
           ? {
-              _id: String((entry.serviceScheduleId as { _id?: unknown })._id ?? ''),
+              _id: String(
+                (entry.serviceScheduleId as { _id?: unknown })._id ?? '',
+              ),
               name: (entry.serviceScheduleId as { name?: string }).name,
-              dayOfWeek: (entry.serviceScheduleId as { dayOfWeek?: string }).dayOfWeek,
-              startTime: (entry.serviceScheduleId as { startTime?: string }).startTime,
+              dayOfWeek: (entry.serviceScheduleId as { dayOfWeek?: string })
+                .dayOfWeek,
+              startTime: (entry.serviceScheduleId as { startTime?: string })
+                .startTime,
             }
           : undefined,
       serviceInstanceId:
-        entry.serviceInstanceId && typeof entry.serviceInstanceId === 'object' && entry.serviceInstanceId !== null
+        entry.serviceInstanceId &&
+        typeof entry.serviceInstanceId === 'object' &&
+        entry.serviceInstanceId !== null
           ? {
-              _id: String((entry.serviceInstanceId as { _id?: unknown })._id ?? ''),
-              serviceDateKey: (entry.serviceInstanceId as { serviceDateKey?: string }).serviceDateKey,
+              _id: String(
+                (entry.serviceInstanceId as { _id?: unknown })._id ?? '',
+              ),
+              serviceDateKey: (
+                entry.serviceInstanceId as { serviceDateKey?: string }
+              ).serviceDateKey,
             }
           : undefined,
-      serviceLabel: typeof entry.serviceLabel === 'string' ? entry.serviceLabel : undefined,
+      serviceLabel:
+        typeof entry.serviceLabel === 'string' ? entry.serviceLabel : undefined,
       offeringTypeId: offeringTypeValue,
       offeringTypeKey: String(entry.offeringTypeKey ?? ''),
       offeringTypeLabel: String(entry.offeringTypeLabel ?? ''),
@@ -783,23 +1048,35 @@ export class FinanceService implements OnModuleInit {
       notes: typeof entry.notes === 'string' ? entry.notes : undefined,
       createdBy: createdByValue,
       updatedBy: updatedByValue,
-      createdAt: entry.createdAt ? new Date(String(entry.createdAt)) : undefined,
-      updatedAt: entry.updatedAt ? new Date(String(entry.updatedAt)) : undefined,
+      createdAt: entry.createdAt
+        ? new Date(String(entry.createdAt))
+        : undefined,
+      updatedAt: entry.updatedAt
+        ? new Date(String(entry.updatedAt))
+        : undefined,
       permissions: this.getOfferingEditPermission(currentUser, {
         branchId: branchValue?._id,
-        serviceDate: entry.serviceDate ? new Date(String(entry.serviceDate)) : undefined,
-        createdAt: entry.createdAt ? new Date(String(entry.createdAt)) : undefined,
+        serviceDate: entry.serviceDate
+          ? new Date(String(entry.serviceDate))
+          : undefined,
+        createdAt: entry.createdAt
+          ? new Date(String(entry.createdAt))
+          : undefined,
       }),
     };
   }
 
-  private toExpenseEntryResponse(entry: Record<string, unknown>, currentUser: AuthUser) {
+  private toExpenseEntryResponse(
+    entry: Record<string, unknown>,
+    currentUser: AuthUser,
+  ) {
     const branchValue =
       typeof entry.branchId === 'object' && entry.branchId !== null
         ? {
             _id: String((entry.branchId as { _id?: unknown })._id ?? ''),
             name: (entry.branchId as { name?: string }).name,
-            oversightRegion: (entry.branchId as { oversightRegion?: string }).oversightRegion,
+            oversightRegion: (entry.branchId as { oversightRegion?: string })
+              .oversightRegion,
             district: (entry.branchId as { district?: string }).district,
           }
         : undefined;
@@ -814,9 +1091,12 @@ export class FinanceService implements OnModuleInit {
         : undefined;
 
     const categoryValue =
-      typeof entry.expenseCategoryId === 'object' && entry.expenseCategoryId !== null
+      typeof entry.expenseCategoryId === 'object' &&
+      entry.expenseCategoryId !== null
         ? {
-            _id: String((entry.expenseCategoryId as { _id?: unknown })._id ?? ''),
+            _id: String(
+              (entry.expenseCategoryId as { _id?: unknown })._id ?? '',
+            ),
             name: (entry.expenseCategoryId as { name?: string }).name,
             key: (entry.expenseCategoryId as { key?: string }).key,
           }
@@ -835,32 +1115,51 @@ export class FinanceService implements OnModuleInit {
       expenseCategoryKey: String(entry.expenseCategoryKey ?? ''),
       expenseCategoryLabel: String(entry.expenseCategoryLabel ?? ''),
       serviceScheduleId:
-        entry.serviceScheduleId && typeof entry.serviceScheduleId === 'object' && entry.serviceScheduleId !== null
+        entry.serviceScheduleId &&
+        typeof entry.serviceScheduleId === 'object' &&
+        entry.serviceScheduleId !== null
           ? {
-              _id: String((entry.serviceScheduleId as { _id?: unknown })._id ?? ''),
+              _id: String(
+                (entry.serviceScheduleId as { _id?: unknown })._id ?? '',
+              ),
               name: (entry.serviceScheduleId as { name?: string }).name,
             }
           : undefined,
       serviceInstanceId:
-        entry.serviceInstanceId && typeof entry.serviceInstanceId === 'object' && entry.serviceInstanceId !== null
+        entry.serviceInstanceId &&
+        typeof entry.serviceInstanceId === 'object' &&
+        entry.serviceInstanceId !== null
           ? {
-              _id: String((entry.serviceInstanceId as { _id?: unknown })._id ?? ''),
-              serviceDateKey: (entry.serviceInstanceId as { serviceDateKey?: string }).serviceDateKey,
+              _id: String(
+                (entry.serviceInstanceId as { _id?: unknown })._id ?? '',
+              ),
+              serviceDateKey: (
+                entry.serviceInstanceId as { serviceDateKey?: string }
+              ).serviceDateKey,
             }
           : undefined,
-      serviceLabel: typeof entry.serviceLabel === 'string' ? entry.serviceLabel : undefined,
+      serviceLabel:
+        typeof entry.serviceLabel === 'string' ? entry.serviceLabel : undefined,
       payee: typeof entry.payee === 'string' ? entry.payee : undefined,
       description: String(entry.description ?? ''),
       amount: Number(entry.amount ?? 0),
       currency: String(entry.currency ?? 'USD'),
-      receiptUrl: typeof entry.receiptUrl === 'string' ? entry.receiptUrl : undefined,
+      receiptUrl:
+        typeof entry.receiptUrl === 'string' ? entry.receiptUrl : undefined,
       notes: typeof entry.notes === 'string' ? entry.notes : undefined,
       status: String(entry.status ?? 'submitted'),
-      reviewedAt: entry.reviewedAt ? new Date(String(entry.reviewedAt)) : undefined,
-      reviewNotes: typeof entry.reviewNotes === 'string' ? entry.reviewNotes : undefined,
+      reviewedAt: entry.reviewedAt
+        ? new Date(String(entry.reviewedAt))
+        : undefined,
+      reviewNotes:
+        typeof entry.reviewNotes === 'string' ? entry.reviewNotes : undefined,
       permissions: this.getExpenseEditPermission(currentUser, {
-        expenseDate: entry.expenseDate ? new Date(String(entry.expenseDate)) : undefined,
-        createdAt: entry.createdAt ? new Date(String(entry.createdAt)) : undefined,
+        expenseDate: entry.expenseDate
+          ? new Date(String(entry.expenseDate))
+          : undefined,
+        createdAt: entry.createdAt
+          ? new Date(String(entry.createdAt))
+          : undefined,
         status: typeof entry.status === 'string' ? entry.status : undefined,
       }),
     };
@@ -874,7 +1173,8 @@ export class FinanceService implements OnModuleInit {
           ? {
               _id: String((entry.branchId as { _id?: unknown })._id ?? ''),
               name: (entry.branchId as { name?: string }).name,
-              oversightRegion: (entry.branchId as { oversightRegion?: string }).oversightRegion,
+              oversightRegion: (entry.branchId as { oversightRegion?: string })
+                .oversightRegion,
               district: (entry.branchId as { district?: string }).district,
             }
           : undefined,
@@ -895,13 +1195,18 @@ export class FinanceService implements OnModuleInit {
       direction: String(entry.direction ?? ''),
       sourceType: String(entry.sourceType ?? ''),
       sourceId: String(entry.sourceId ?? ''),
-      serviceLabel: typeof entry.serviceLabel === 'string' ? entry.serviceLabel : undefined,
+      serviceLabel:
+        typeof entry.serviceLabel === 'string' ? entry.serviceLabel : undefined,
       amount: Number(entry.amount ?? 0),
       currency: String(entry.currency ?? 'USD'),
       description: String(entry.description ?? ''),
       status: String(entry.status ?? ''),
-      reviewedAt: entry.reviewedAt ? new Date(String(entry.reviewedAt)) : undefined,
-      createdAt: entry.createdAt ? new Date(String(entry.createdAt)) : undefined,
+      reviewedAt: entry.reviewedAt
+        ? new Date(String(entry.reviewedAt))
+        : undefined,
+      createdAt: entry.createdAt
+        ? new Date(String(entry.createdAt))
+        : undefined,
     };
   }
 
@@ -911,7 +1216,11 @@ export class FinanceService implements OnModuleInit {
     const name = dto.name.trim();
     const key = this.slugify(dto.key || dto.name);
 
-    await this.ensureUniqueRecord(this.offeringTypeModel as unknown as Model<unknown>, name, key);
+    await this.ensureUniqueRecord(
+      this.offeringTypeModel as unknown as Model<unknown>,
+      name,
+      key,
+    );
 
     const offeringType = await this.offeringTypeModel.create({
       name,
@@ -937,14 +1246,23 @@ export class FinanceService implements OnModuleInit {
   async listOfferingTypes(currentUser: AuthUser) {
     this.ensureFinanceViewRole(currentUser);
 
-    const offeringTypes = await this.offeringTypeModel.find({}).sort({ sortOrder: 1, name: 1 }).lean();
+    const offeringTypes = await this.offeringTypeModel
+      .find({})
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
 
     return offeringTypes.map((item) =>
-      this.toOfferingTypeResponse(item as unknown as OfferingType & { _id?: unknown }),
+      this.toOfferingTypeResponse(
+        item as unknown as OfferingType & { _id?: unknown },
+      ),
     );
   }
 
-  async updateOfferingType(id: string, dto: UpdateOfferingTypeDto, currentUser: AuthUser) {
+  async updateOfferingType(
+    id: string,
+    dto: UpdateOfferingTypeDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureGlobalFinanceManager(currentUser);
 
     const existing = await this.offeringTypeModel.findById(id).lean();
@@ -956,12 +1274,19 @@ export class FinanceService implements OnModuleInit {
     const name = dto.name?.trim() || existing.name;
     const key = this.slugify(dto.key || dto.name || existing.key);
 
-    await this.ensureUniqueRecord(this.offeringTypeModel as unknown as Model<unknown>, name, key, id);
+    await this.ensureUniqueRecord(
+      this.offeringTypeModel as unknown as Model<unknown>,
+      name,
+      key,
+      id,
+    );
 
     await this.offeringTypeModel.findByIdAndUpdate(id, {
       ...(dto.name !== undefined ? { name } : {}),
       ...(dto.key !== undefined || dto.name !== undefined ? { key } : {}),
-      ...(dto.description !== undefined ? { description: dto.description?.trim() || undefined } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description?.trim() || undefined }
+        : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
     });
@@ -978,19 +1303,32 @@ export class FinanceService implements OnModuleInit {
       action: 'updated',
       summary: `Offering type ${updated.name} updated`,
       actor: currentUser,
-      metadata: { name: updated.name, key: updated.key, isActive: updated.isActive },
+      metadata: {
+        name: updated.name,
+        key: updated.key,
+        isActive: updated.isActive,
+      },
     });
 
-    return this.toOfferingTypeResponse(updated as unknown as OfferingType & { _id?: unknown });
+    return this.toOfferingTypeResponse(
+      updated as unknown as OfferingType & { _id?: unknown },
+    );
   }
 
-  async createFinanceAccount(dto: CreateFinanceAccountDto, currentUser: AuthUser) {
+  async createFinanceAccount(
+    dto: CreateFinanceAccountDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureGlobalFinanceManager(currentUser);
 
     const name = dto.name.trim();
     const key = this.slugify(dto.key || dto.name);
 
-    await this.ensureUniqueRecord(this.financeAccountModel as unknown as Model<unknown>, name, key);
+    await this.ensureUniqueRecord(
+      this.financeAccountModel as unknown as Model<unknown>,
+      name,
+      key,
+    );
 
     const account = await this.financeAccountModel.create({
       name,
@@ -1015,13 +1353,22 @@ export class FinanceService implements OnModuleInit {
 
   async listFinanceAccounts(currentUser: AuthUser) {
     this.ensureFinanceViewRole(currentUser);
-    const accounts = await this.financeAccountModel.find({}).sort({ sortOrder: 1, name: 1 }).lean();
+    const accounts = await this.financeAccountModel
+      .find({})
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
     return accounts.map((item) =>
-      this.toFinanceAccountResponse(item as unknown as FinanceAccount & { _id?: unknown }),
+      this.toFinanceAccountResponse(
+        item as unknown as FinanceAccount & { _id?: unknown },
+      ),
     );
   }
 
-  async updateFinanceAccount(id: string, dto: UpdateFinanceAccountDto, currentUser: AuthUser) {
+  async updateFinanceAccount(
+    id: string,
+    dto: UpdateFinanceAccountDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureGlobalFinanceManager(currentUser);
     const existing = await this.financeAccountModel.findById(id).lean();
 
@@ -1031,12 +1378,19 @@ export class FinanceService implements OnModuleInit {
 
     const name = dto.name?.trim() || existing.name;
     const key = this.slugify(dto.key || dto.name || existing.key);
-    await this.ensureUniqueRecord(this.financeAccountModel as unknown as Model<unknown>, name, key, id);
+    await this.ensureUniqueRecord(
+      this.financeAccountModel as unknown as Model<unknown>,
+      name,
+      key,
+      id,
+    );
 
     await this.financeAccountModel.findByIdAndUpdate(id, {
       ...(dto.name !== undefined ? { name } : {}),
       ...(dto.key !== undefined || dto.name !== undefined ? { key } : {}),
-      ...(dto.description !== undefined ? { description: dto.description?.trim() || undefined } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description?.trim() || undefined }
+        : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
     });
@@ -1053,13 +1407,22 @@ export class FinanceService implements OnModuleInit {
       action: 'updated',
       summary: `Finance account ${updated.name} updated`,
       actor: currentUser,
-      metadata: { name: updated.name, key: updated.key, isActive: updated.isActive },
+      metadata: {
+        name: updated.name,
+        key: updated.key,
+        isActive: updated.isActive,
+      },
     });
 
-    return this.toFinanceAccountResponse(updated as unknown as FinanceAccount & { _id?: unknown });
+    return this.toFinanceAccountResponse(
+      updated as unknown as FinanceAccount & { _id?: unknown },
+    );
   }
 
-  async createExpenseCategory(dto: CreateExpenseCategoryDto, currentUser: AuthUser) {
+  async createExpenseCategory(
+    dto: CreateExpenseCategoryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureGlobalFinanceManager(currentUser);
 
     const name = dto.name.trim();
@@ -1069,7 +1432,11 @@ export class FinanceService implements OnModuleInit {
       await this.resolveFinanceAccount(dto.defaultAccountKey.trim());
     }
 
-    await this.ensureUniqueRecord(this.expenseCategoryModel as unknown as Model<unknown>, name, key);
+    await this.ensureUniqueRecord(
+      this.expenseCategoryModel as unknown as Model<unknown>,
+      name,
+      key,
+    );
 
     const category = await this.expenseCategoryModel.create({
       name,
@@ -1087,7 +1454,11 @@ export class FinanceService implements OnModuleInit {
       action: 'created',
       summary: `Expense category ${name} created`,
       actor: currentUser,
-      metadata: { name, key, defaultAccountKey: dto.defaultAccountKey?.trim() || undefined },
+      metadata: {
+        name,
+        key,
+        defaultAccountKey: dto.defaultAccountKey?.trim() || undefined,
+      },
     });
 
     return this.toExpenseCategoryResponse(category.toObject());
@@ -1095,13 +1466,22 @@ export class FinanceService implements OnModuleInit {
 
   async listExpenseCategories(currentUser: AuthUser) {
     this.ensureFinanceViewRole(currentUser);
-    const categories = await this.expenseCategoryModel.find({}).sort({ sortOrder: 1, name: 1 }).lean();
+    const categories = await this.expenseCategoryModel
+      .find({})
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
     return categories.map((item) =>
-      this.toExpenseCategoryResponse(item as unknown as ExpenseCategory & { _id?: unknown }),
+      this.toExpenseCategoryResponse(
+        item as unknown as ExpenseCategory & { _id?: unknown },
+      ),
     );
   }
 
-  async updateExpenseCategory(id: string, dto: UpdateExpenseCategoryDto, currentUser: AuthUser) {
+  async updateExpenseCategory(
+    id: string,
+    dto: UpdateExpenseCategoryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureGlobalFinanceManager(currentUser);
 
     const existing = await this.expenseCategoryModel.findById(id).lean();
@@ -1117,13 +1497,22 @@ export class FinanceService implements OnModuleInit {
       await this.resolveFinanceAccount(dto.defaultAccountKey.trim());
     }
 
-    await this.ensureUniqueRecord(this.expenseCategoryModel as unknown as Model<unknown>, name, key, id);
+    await this.ensureUniqueRecord(
+      this.expenseCategoryModel as unknown as Model<unknown>,
+      name,
+      key,
+      id,
+    );
 
     await this.expenseCategoryModel.findByIdAndUpdate(id, {
       ...(dto.name !== undefined ? { name } : {}),
       ...(dto.key !== undefined || dto.name !== undefined ? { key } : {}),
-      ...(dto.description !== undefined ? { description: dto.description?.trim() || undefined } : {}),
-      ...(dto.defaultAccountKey !== undefined ? { defaultAccountKey: dto.defaultAccountKey?.trim() || undefined } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description?.trim() || undefined }
+        : {}),
+      ...(dto.defaultAccountKey !== undefined
+        ? { defaultAccountKey: dto.defaultAccountKey?.trim() || undefined }
+        : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
     });
@@ -1140,37 +1529,57 @@ export class FinanceService implements OnModuleInit {
       action: 'updated',
       summary: `Expense category ${updated.name} updated`,
       actor: currentUser,
-      metadata: { name: updated.name, key: updated.key, defaultAccountKey: updated.defaultAccountKey },
+      metadata: {
+        name: updated.name,
+        key: updated.key,
+        defaultAccountKey: updated.defaultAccountKey,
+      },
     });
 
-    return this.toExpenseCategoryResponse(updated as unknown as ExpenseCategory & { _id?: unknown });
+    return this.toExpenseCategoryResponse(
+      updated as unknown as ExpenseCategory & { _id?: unknown },
+    );
   }
 
-  async createOfferingEntry(dto: CreateOfferingEntryDto, currentUser: AuthUser) {
+  async createOfferingEntry(
+    dto: CreateOfferingEntryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureOfferingEntryCreator(currentUser);
 
     const branch = await this.resolveScopedCreateBranch(currentUser);
-    const serviceDate = this.validatePastOrTodayDate(dto.serviceDate, 'Service date');
+    const serviceDate = this.validatePastOrTodayDate(
+      dto.serviceDate,
+      'Service date',
+    );
     await this.ensurePeriodOpen(String(branch._id), serviceDate);
 
     const offeringType = await this.resolveOfferingType(dto.offeringTypeId);
-    const serviceType = await this.resolveServiceType(String(branch._id), dto.serviceTypeId);
-    const account = await this.resolveOfferingAccount(dto.accountId, offeringType.key);
-    const serviceInstance = await this.serviceSchedulesService.resolveServiceInstanceForEntry({
-      currentUser,
-      branchId: String(branch._id),
-      serviceDate,
-      serviceScheduleId: dto.serviceScheduleId,
-      serviceInstanceId: dto.serviceInstanceId,
-    });
+    const serviceType = await this.resolveServiceType(
+      String(branch._id),
+      dto.serviceTypeId,
+    );
+    const account = await this.resolveOfferingAccount(
+      dto.accountId,
+      offeringType.key,
+    );
+    const serviceInstance =
+      await this.serviceSchedulesService.resolveServiceInstanceForEntry({
+        currentUser,
+        branchId: String(branch._id),
+        serviceDate,
+        serviceScheduleId: dto.serviceScheduleId,
+        serviceInstanceId: dto.serviceInstanceId,
+      });
 
     const entry = await this.offeringEntryModel.create({
       branchId: branch._id,
       oversightRegion: branch.oversightRegion,
       district: branch.district,
       serviceDate,
-      serviceScheduleId: serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
+      serviceScheduleId:
+        serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
       serviceInstanceId: serviceInstance?._id,
       serviceLabel: serviceInstance?.serviceScheduleName || serviceType.name,
       serviceTypeId: serviceType._id,
@@ -1203,7 +1612,9 @@ export class FinanceService implements OnModuleInit {
       serviceScheduleId: serviceInstance?.serviceScheduleId
         ? String(serviceInstance.serviceScheduleId)
         : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id ? String(serviceInstance._id) : undefined,
+      serviceInstanceId: serviceInstance?._id
+        ? String(serviceInstance._id)
+        : undefined,
       serviceLabel: serviceInstance?.serviceScheduleName || serviceType.name,
       amount: dto.amount,
       currency: dto.currency?.trim() || 'USD',
@@ -1216,7 +1627,10 @@ export class FinanceService implements OnModuleInit {
     });
 
     if (serviceInstance?._id) {
-      await this.serviceSchedulesService.touchServiceInstance(String(serviceInstance._id), 'finance');
+      await this.serviceSchedulesService.touchServiceInstance(
+        String(serviceInstance._id),
+        'finance',
+      );
     }
 
     await this.auditLogsService.record({
@@ -1265,7 +1679,12 @@ export class FinanceService implements OnModuleInit {
       return {
         items: [],
         pagination: { page: 1, pageSize: safeLimit, total: 0, totalPages: 1 },
-        summary: { totalAmount: 0, currentMonthTotal: 0, totalEntries: 0, visibleBranchCount: 0 },
+        summary: {
+          totalAmount: 0,
+          currentMonthTotal: 0,
+          totalEntries: 0,
+          visibleBranchCount: 0,
+        },
         byType: [],
         byBranch: [],
       };
@@ -1324,7 +1743,13 @@ export class FinanceService implements OnModuleInit {
     const nextMonthStart = new Date(currentMonthStart);
     nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
 
-    const [total, amountAggregate, currentMonthAggregate, byTypeRaw, byBranchRaw] = await Promise.all([
+    const [
+      total,
+      amountAggregate,
+      currentMonthAggregate,
+      byTypeRaw,
+      byBranchRaw,
+    ] = await Promise.all([
       this.offeringEntryModel.countDocuments(query),
       this.offeringEntryModel.aggregate<{ totalAmount: number }>([
         { $match: query },
@@ -1339,7 +1764,12 @@ export class FinanceService implements OnModuleInit {
         },
         { $group: { _id: null, totalAmount: { $sum: '$amount' } } },
       ]),
-      this.offeringEntryModel.aggregate<{ _id: Types.ObjectId; label: string; totalAmount: number; entryCount: number }>([
+      this.offeringEntryModel.aggregate<{
+        _id: Types.ObjectId;
+        label: string;
+        totalAmount: number;
+        entryCount: number;
+      }>([
         { $match: query },
         {
           $group: {
@@ -1351,7 +1781,11 @@ export class FinanceService implements OnModuleInit {
         },
         { $sort: { totalAmount: -1, label: 1 } },
       ]),
-      this.offeringEntryModel.aggregate<{ _id: Types.ObjectId; totalAmount: number; entryCount: number }>([
+      this.offeringEntryModel.aggregate<{
+        _id: Types.ObjectId;
+        totalAmount: number;
+        entryCount: number;
+      }>([
         { $match: query },
         {
           $group: {
@@ -1383,10 +1817,17 @@ export class FinanceService implements OnModuleInit {
       .limit(safeLimit)
       .lean();
 
-    const branchMap = new Map(branches.map((branch) => [String(branch._id), branch]));
+    const branchMap = new Map(
+      branches.map((branch) => [String(branch._id), branch]),
+    );
 
     return {
-      items: items.map((item) => this.toOfferingEntryResponse(item as unknown as Record<string, unknown>, currentUser)),
+      items: items.map((item) =>
+        this.toOfferingEntryResponse(
+          item as unknown as Record<string, unknown>,
+          currentUser,
+        ),
+      ),
       pagination: { page: safePage, pageSize: safeLimit, total, totalPages },
       summary: {
         totalAmount: amountAggregate[0]?.totalAmount ?? 0,
@@ -1434,16 +1875,25 @@ export class FinanceService implements OnModuleInit {
     }
 
     const branchId =
-      typeof entry.branchId === 'object' && entry.branchId !== null && '_id' in entry.branchId
+      typeof entry.branchId === 'object' &&
+      entry.branchId !== null &&
+      '_id' in entry.branchId
         ? String((entry.branchId as { _id?: unknown })._id ?? '')
         : String(entry.branchId ?? '');
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
 
-    return this.toOfferingEntryResponse(entry as unknown as Record<string, unknown>, currentUser);
+    return this.toOfferingEntryResponse(
+      entry as unknown as Record<string, unknown>,
+      currentUser,
+    );
   }
 
-  async updateOfferingEntry(id: string, dto: UpdateOfferingEntryDto, currentUser: AuthUser) {
+  async updateOfferingEntry(
+    id: string,
+    dto: UpdateOfferingEntryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureFinanceViewRole(currentUser);
 
     const existing = (await this.offeringEntryModel.findById(id).lean()) as
@@ -1454,7 +1904,10 @@ export class FinanceService implements OnModuleInit {
       throw new NotFoundException('Offering entry not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
 
     const permission = this.getOfferingEditPermission(currentUser, {
       branchId: existing.branchId,
@@ -1473,25 +1926,41 @@ export class FinanceService implements OnModuleInit {
     await this.ensurePeriodOpen(String(existing.branchId), serviceDate);
 
     const serviceType = dto.serviceTypeId
-      ? await this.resolveServiceType(String(existing.branchId), dto.serviceTypeId)
-      : await this.resolveServiceType(String(existing.branchId), String(existing.serviceTypeId));
+      ? await this.resolveServiceType(
+          String(existing.branchId),
+          dto.serviceTypeId,
+        )
+      : await this.resolveServiceType(
+          String(existing.branchId),
+          String(existing.serviceTypeId),
+        );
     const offeringType = dto.offeringTypeId
       ? await this.resolveOfferingType(dto.offeringTypeId)
       : await this.resolveOfferingType(String(existing.offeringTypeId));
-    const account = await this.resolveOfferingAccount(dto.accountId, offeringType.key);
-    const serviceInstance = await this.serviceSchedulesService.resolveServiceInstanceForEntry({
-      currentUser,
-      branchId: String(existing.branchId),
-      serviceDate,
-      serviceScheduleId: dto.serviceScheduleId,
-      serviceInstanceId: dto.serviceInstanceId,
-    });
+    const account = await this.resolveOfferingAccount(
+      dto.accountId,
+      offeringType.key,
+    );
+    const serviceInstance =
+      await this.serviceSchedulesService.resolveServiceInstanceForEntry({
+        currentUser,
+        branchId: String(existing.branchId),
+        serviceDate,
+        serviceScheduleId: dto.serviceScheduleId,
+        serviceInstanceId: dto.serviceInstanceId,
+      });
 
     await this.offeringEntryModel.findByIdAndUpdate(id, {
       serviceDate,
-      serviceScheduleId: serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId ?? existing.serviceScheduleId,
+      serviceScheduleId:
+        serviceInstance?.serviceScheduleId ??
+        dto.serviceScheduleId ??
+        existing.serviceScheduleId,
       serviceInstanceId: serviceInstance?._id ?? existing.serviceInstanceId,
-      serviceLabel: serviceInstance?.serviceScheduleName || existing.serviceLabel || serviceType.name,
+      serviceLabel:
+        serviceInstance?.serviceScheduleName ||
+        existing.serviceLabel ||
+        serviceType.name,
       serviceTypeId: serviceType._id,
       serviceTypeKey: serviceType.key,
       serviceTypeLabel: serviceType.name,
@@ -1502,8 +1971,12 @@ export class FinanceService implements OnModuleInit {
       accountKey: account.key,
       accountLabel: account.name,
       ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
-      ...(dto.currency !== undefined ? { currency: dto.currency.trim() || 'USD' } : {}),
-      ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || undefined } : {}),
+      ...(dto.currency !== undefined
+        ? { currency: dto.currency.trim() || 'USD' }
+        : {}),
+      ...(dto.notes !== undefined
+        ? { notes: dto.notes?.trim() || undefined }
+        : {}),
       updatedBy: new Types.ObjectId(currentUser.sub),
     });
 
@@ -1521,8 +1994,13 @@ export class FinanceService implements OnModuleInit {
       serviceScheduleId: serviceInstance?.serviceScheduleId
         ? String(serviceInstance.serviceScheduleId)
         : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id ? String(serviceInstance._id) : dto.serviceInstanceId,
-      serviceLabel: serviceInstance?.serviceScheduleName || existing.serviceLabel || serviceType.name,
+      serviceInstanceId: serviceInstance?._id
+        ? String(serviceInstance._id)
+        : dto.serviceInstanceId,
+      serviceLabel:
+        serviceInstance?.serviceScheduleName ||
+        existing.serviceLabel ||
+        serviceType.name,
       amount: dto.amount ?? existing.amount,
       currency: dto.currency?.trim() || existing.currency || 'USD',
       description: `${offeringType.name} offering`,
@@ -1555,19 +2033,26 @@ export class FinanceService implements OnModuleInit {
     this.ensureFinanceViewRole(currentUser);
     this.ensureExpenseEntryCreator(currentUser);
 
-    const branch = await this.resolveScopedCreateBranch(currentUser, dto.branchId);
-    const expenseDate = this.validatePastOrTodayDate(dto.expenseDate, 'Expense date');
+    const branch = await this.resolveScopedCreateBranch(
+      currentUser,
+      dto.branchId,
+    );
+    const expenseDate = this.validatePastOrTodayDate(
+      dto.expenseDate,
+      'Expense date',
+    );
     await this.ensurePeriodOpen(String(branch._id), expenseDate);
 
     const account = await this.resolveFinanceAccount(dto.accountId);
     const category = await this.resolveExpenseCategory(dto.expenseCategoryId);
-    const serviceInstance = await this.serviceSchedulesService.resolveServiceInstanceForEntry({
-      currentUser,
-      branchId: String(branch._id),
-      serviceDate: expenseDate,
-      serviceScheduleId: dto.serviceScheduleId,
-      serviceInstanceId: dto.serviceInstanceId,
-    });
+    const serviceInstance =
+      await this.serviceSchedulesService.resolveServiceInstanceForEntry({
+        currentUser,
+        branchId: String(branch._id),
+        serviceDate: expenseDate,
+        serviceScheduleId: dto.serviceScheduleId,
+        serviceInstanceId: dto.serviceInstanceId,
+      });
 
     const autoApproved =
       isGlobalRole(currentUser.role) ||
@@ -1586,7 +2071,8 @@ export class FinanceService implements OnModuleInit {
       expenseCategoryId: category._id,
       expenseCategoryKey: category.key,
       expenseCategoryLabel: category.name,
-      serviceScheduleId: serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
+      serviceScheduleId:
+        serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
       serviceInstanceId: serviceInstance?._id,
       serviceLabel: serviceInstance?.serviceScheduleName,
       payee: dto.payee?.trim() || undefined,
@@ -1598,7 +2084,9 @@ export class FinanceService implements OnModuleInit {
       status,
       createdBy: new Types.ObjectId(currentUser.sub),
       updatedBy: new Types.ObjectId(currentUser.sub),
-      approvedBy: autoApproved ? new Types.ObjectId(currentUser.sub) : undefined,
+      approvedBy: autoApproved
+        ? new Types.ObjectId(currentUser.sub)
+        : undefined,
       reviewedAt: autoApproved ? new Date() : undefined,
     });
 
@@ -1616,7 +2104,9 @@ export class FinanceService implements OnModuleInit {
       serviceScheduleId: serviceInstance?.serviceScheduleId
         ? String(serviceInstance.serviceScheduleId)
         : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id ? String(serviceInstance._id) : undefined,
+      serviceInstanceId: serviceInstance?._id
+        ? String(serviceInstance._id)
+        : undefined,
       serviceLabel: serviceInstance?.serviceScheduleName,
       amount: dto.amount,
       currency: dto.currency?.trim() || 'USD',
@@ -1629,7 +2119,10 @@ export class FinanceService implements OnModuleInit {
     });
 
     if (serviceInstance?._id) {
-      await this.serviceSchedulesService.touchServiceInstance(String(serviceInstance._id), 'finance');
+      await this.serviceSchedulesService.touchServiceInstance(
+        String(serviceInstance._id),
+        'finance',
+      );
     }
 
     await this.auditLogsService.record({
@@ -1719,18 +2212,22 @@ export class FinanceService implements OnModuleInit {
       };
     }
 
-    const [total, totalAggregate, pendingAggregate, pendingCount] = await Promise.all([
-      this.expenseEntryModel.countDocuments(query),
-      this.expenseEntryModel.aggregate<{ totalAmount: number }>([
-        { $match: query },
-        { $group: { _id: null, totalAmount: { $sum: '$amount' } } },
-      ]),
-      this.expenseEntryModel.aggregate<{ totalAmount: number }>([
-        { $match: { ...query, status: 'submitted' } },
-        { $group: { _id: null, totalAmount: { $sum: '$amount' } } },
-      ]),
-      this.expenseEntryModel.countDocuments({ ...query, status: 'submitted' }),
-    ]);
+    const [total, totalAggregate, pendingAggregate, pendingCount] =
+      await Promise.all([
+        this.expenseEntryModel.countDocuments(query),
+        this.expenseEntryModel.aggregate<{ totalAmount: number }>([
+          { $match: query },
+          { $group: { _id: null, totalAmount: { $sum: '$amount' } } },
+        ]),
+        this.expenseEntryModel.aggregate<{ totalAmount: number }>([
+          { $match: { ...query, status: 'submitted' } },
+          { $group: { _id: null, totalAmount: { $sum: '$amount' } } },
+        ]),
+        this.expenseEntryModel.countDocuments({
+          ...query,
+          status: 'submitted',
+        }),
+      ]);
 
     const totalPages = Math.max(Math.ceil(total / safeLimit), 1);
     const safePage = Math.min(requestedPage, totalPages);
@@ -1749,7 +2246,12 @@ export class FinanceService implements OnModuleInit {
       .lean();
 
     return {
-      items: items.map((item) => this.toExpenseEntryResponse(item as unknown as Record<string, unknown>, currentUser)),
+      items: items.map((item) =>
+        this.toExpenseEntryResponse(
+          item as unknown as Record<string, unknown>,
+          currentUser,
+        ),
+      ),
       pagination: { page: safePage, pageSize: safeLimit, total, totalPages },
       summary: {
         totalAmount: totalAggregate[0]?.totalAmount ?? 0,
@@ -1777,16 +2279,25 @@ export class FinanceService implements OnModuleInit {
     }
 
     const branchId =
-      typeof entry.branchId === 'object' && entry.branchId !== null && '_id' in entry.branchId
+      typeof entry.branchId === 'object' &&
+      entry.branchId !== null &&
+      '_id' in entry.branchId
         ? String((entry.branchId as { _id?: unknown })._id ?? '')
         : String(entry.branchId ?? '');
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
 
-    return this.toExpenseEntryResponse(entry as unknown as Record<string, unknown>, currentUser);
+    return this.toExpenseEntryResponse(
+      entry as unknown as Record<string, unknown>,
+      currentUser,
+    );
   }
 
-  async updateExpenseEntry(id: string, dto: UpdateExpenseEntryDto, currentUser: AuthUser) {
+  async updateExpenseEntry(
+    id: string,
+    dto: UpdateExpenseEntryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureFinanceViewRole(currentUser);
 
     const existing = (await this.expenseEntryModel.findById(id).lean()) as
@@ -1797,7 +2308,10 @@ export class FinanceService implements OnModuleInit {
       throw new NotFoundException('Expense entry not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
     const permission = this.getExpenseEditPermission(currentUser, {
       expenseDate: existing.expenseDate,
       createdAt: existing.createdAt,
@@ -1820,16 +2334,19 @@ export class FinanceService implements OnModuleInit {
     const category = dto.expenseCategoryId
       ? await this.resolveExpenseCategory(dto.expenseCategoryId)
       : await this.resolveExpenseCategory(String(existing.expenseCategoryId));
-    const serviceInstance = await this.serviceSchedulesService.resolveServiceInstanceForEntry({
-      currentUser,
-      branchId: String(existing.branchId),
-      serviceDate: expenseDate,
-      serviceScheduleId: dto.serviceScheduleId,
-      serviceInstanceId: dto.serviceInstanceId,
-    });
+    const serviceInstance =
+      await this.serviceSchedulesService.resolveServiceInstanceForEntry({
+        currentUser,
+        branchId: String(existing.branchId),
+        serviceDate: expenseDate,
+        serviceScheduleId: dto.serviceScheduleId,
+        serviceInstanceId: dto.serviceInstanceId,
+      });
 
     const nextStatus =
-      ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(currentUser.role) &&
+      ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(
+        currentUser.role,
+      ) &&
       (dto.amount !== undefined ||
         dto.accountId !== undefined ||
         dto.expenseCategoryId !== undefined ||
@@ -1846,18 +2363,38 @@ export class FinanceService implements OnModuleInit {
       expenseCategoryId: category._id,
       expenseCategoryKey: category.key,
       expenseCategoryLabel: category.name,
-      serviceScheduleId: serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId ?? existing.serviceScheduleId,
+      serviceScheduleId:
+        serviceInstance?.serviceScheduleId ??
+        dto.serviceScheduleId ??
+        existing.serviceScheduleId,
       serviceInstanceId: serviceInstance?._id ?? existing.serviceInstanceId,
-      serviceLabel: serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
-      ...(dto.payee !== undefined ? { payee: dto.payee?.trim() || undefined } : {}),
-      ...(dto.description !== undefined ? { description: dto.description.trim() } : {}),
+      serviceLabel:
+        serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
+      ...(dto.payee !== undefined
+        ? { payee: dto.payee?.trim() || undefined }
+        : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description.trim() }
+        : {}),
       ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
-      ...(dto.currency !== undefined ? { currency: dto.currency.trim() || 'USD' } : {}),
-      ...(dto.receiptUrl !== undefined ? { receiptUrl: dto.receiptUrl?.trim() || undefined } : {}),
-      ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || undefined } : {}),
+      ...(dto.currency !== undefined
+        ? { currency: dto.currency.trim() || 'USD' }
+        : {}),
+      ...(dto.receiptUrl !== undefined
+        ? { receiptUrl: dto.receiptUrl?.trim() || undefined }
+        : {}),
+      ...(dto.notes !== undefined
+        ? { notes: dto.notes?.trim() || undefined }
+        : {}),
       status: nextStatus,
       updatedBy: new Types.ObjectId(currentUser.sub),
-      ...(nextStatus === 'submitted' ? { approvedBy: undefined, reviewedAt: undefined, reviewNotes: undefined } : {}),
+      ...(nextStatus === 'submitted'
+        ? {
+            approvedBy: undefined,
+            reviewedAt: undefined,
+            reviewNotes: undefined,
+          }
+        : {}),
     });
 
     await this.syncLedgerEntry({
@@ -1874,8 +2411,11 @@ export class FinanceService implements OnModuleInit {
       serviceScheduleId: serviceInstance?.serviceScheduleId
         ? String(serviceInstance.serviceScheduleId)
         : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id ? String(serviceInstance._id) : dto.serviceInstanceId,
-      serviceLabel: serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
+      serviceInstanceId: serviceInstance?._id
+        ? String(serviceInstance._id)
+        : dto.serviceInstanceId,
+      serviceLabel:
+        serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
       amount: dto.amount ?? existing.amount,
       currency: dto.currency?.trim() || existing.currency || 'USD',
       description: dto.description?.trim() || existing.description,
@@ -1904,7 +2444,11 @@ export class FinanceService implements OnModuleInit {
     return this.findExpenseEntry(id, currentUser);
   }
 
-  async approveExpenseEntry(id: string, dto: ReviewExpenseEntryDto, currentUser: AuthUser) {
+  async approveExpenseEntry(
+    id: string,
+    dto: ReviewExpenseEntryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureExpenseApprover(currentUser);
 
@@ -1914,7 +2458,10 @@ export class FinanceService implements OnModuleInit {
       throw new NotFoundException('Expense entry not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
 
     await this.expenseEntryModel.findByIdAndUpdate(id, {
       status: 'approved',
@@ -1935,8 +2482,12 @@ export class FinanceService implements OnModuleInit {
       direction: 'debit',
       sourceType: 'expense',
       sourceId: id,
-      serviceScheduleId: existing.serviceScheduleId ? String(existing.serviceScheduleId) : undefined,
-      serviceInstanceId: existing.serviceInstanceId ? String(existing.serviceInstanceId) : undefined,
+      serviceScheduleId: existing.serviceScheduleId
+        ? String(existing.serviceScheduleId)
+        : undefined,
+      serviceInstanceId: existing.serviceInstanceId
+        ? String(existing.serviceInstanceId)
+        : undefined,
       serviceLabel: existing.serviceLabel,
       amount: existing.amount,
       currency: existing.currency,
@@ -1964,7 +2515,11 @@ export class FinanceService implements OnModuleInit {
     return this.findExpenseEntry(id, currentUser);
   }
 
-  async rejectExpenseEntry(id: string, dto: ReviewExpenseEntryDto, currentUser: AuthUser) {
+  async rejectExpenseEntry(
+    id: string,
+    dto: ReviewExpenseEntryDto,
+    currentUser: AuthUser,
+  ) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureExpenseApprover(currentUser);
 
@@ -1974,7 +2529,10 @@ export class FinanceService implements OnModuleInit {
       throw new NotFoundException('Expense entry not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
 
     await this.expenseEntryModel.findByIdAndUpdate(id, {
       status: 'rejected',
@@ -1995,8 +2553,12 @@ export class FinanceService implements OnModuleInit {
       direction: 'debit',
       sourceType: 'expense',
       sourceId: id,
-      serviceScheduleId: existing.serviceScheduleId ? String(existing.serviceScheduleId) : undefined,
-      serviceInstanceId: existing.serviceInstanceId ? String(existing.serviceInstanceId) : undefined,
+      serviceScheduleId: existing.serviceScheduleId
+        ? String(existing.serviceScheduleId)
+        : undefined,
+      serviceInstanceId: existing.serviceInstanceId
+        ? String(existing.serviceInstanceId)
+        : undefined,
       serviceLabel: existing.serviceLabel,
       amount: existing.amount,
       currency: existing.currency,
@@ -2093,51 +2655,72 @@ export class FinanceService implements OnModuleInit {
       };
     }
 
-    const [total, aggregate, byAccountRaw, byBranchRaw, pendingApprovals, lockedPeriods] =
-      await Promise.all([
-        this.ledgerEntryModel.countDocuments(query),
-        this.ledgerEntryModel.aggregate<{ _id: string; total: number }>([
-          { $match: query },
-          { $group: { _id: '$direction', total: { $sum: '$amount' } } },
-        ]),
-        this.ledgerEntryModel.aggregate<{ _id: Types.ObjectId; label: string; direction: string; totalAmount: number }>([
-          { $match: { ...query, status: { $ne: 'rejected' } } },
-          {
-            $group: {
-              _id: '$accountId',
-              label: { $first: '$accountLabel' },
-              totalCredits: {
-                $sum: { $cond: [{ $eq: ['$direction', 'credit'] }, '$amount', 0] },
-              },
-              totalDebits: {
-                $sum: { $cond: [{ $eq: ['$direction', 'debit'] }, '$amount', 0] },
-              },
-            },
-          },
-        ]),
-        this.ledgerEntryModel.aggregate<{ _id: Types.ObjectId; totalCredits: number; totalDebits: number }>([
-          { $match: { ...query, status: { $ne: 'rejected' } } },
-          {
-            $group: {
-              _id: '$branchId',
-              totalCredits: {
-                $sum: { $cond: [{ $eq: ['$direction', 'credit'] }, '$amount', 0] },
-              },
-              totalDebits: {
-                $sum: { $cond: [{ $eq: ['$direction', 'debit'] }, '$amount', 0] },
+    const [
+      total,
+      aggregate,
+      byAccountRaw,
+      byBranchRaw,
+      pendingApprovals,
+      lockedPeriods,
+    ] = await Promise.all([
+      this.ledgerEntryModel.countDocuments(query),
+      this.ledgerEntryModel.aggregate<{ _id: string; total: number }>([
+        { $match: query },
+        { $group: { _id: '$direction', total: { $sum: '$amount' } } },
+      ]),
+      this.ledgerEntryModel.aggregate<{
+        _id: Types.ObjectId;
+        label: string;
+        direction: string;
+        totalAmount: number;
+      }>([
+        { $match: { ...query, status: { $ne: 'rejected' } } },
+        {
+          $group: {
+            _id: '$accountId',
+            label: { $first: '$accountLabel' },
+            totalCredits: {
+              $sum: {
+                $cond: [{ $eq: ['$direction', 'credit'] }, '$amount', 0],
               },
             },
+            totalDebits: {
+              $sum: { $cond: [{ $eq: ['$direction', 'debit'] }, '$amount', 0] },
+            },
           },
-        ]),
-        this.expenseEntryModel.countDocuments({
-          branchId: branchMatch,
-          status: 'submitted',
-        }),
-        this.financeLockModel.countDocuments({ branchId: branchMatch }),
-      ]);
+        },
+      ]),
+      this.ledgerEntryModel.aggregate<{
+        _id: Types.ObjectId;
+        totalCredits: number;
+        totalDebits: number;
+      }>([
+        { $match: { ...query, status: { $ne: 'rejected' } } },
+        {
+          $group: {
+            _id: '$branchId',
+            totalCredits: {
+              $sum: {
+                $cond: [{ $eq: ['$direction', 'credit'] }, '$amount', 0],
+              },
+            },
+            totalDebits: {
+              $sum: { $cond: [{ $eq: ['$direction', 'debit'] }, '$amount', 0] },
+            },
+          },
+        },
+      ]),
+      this.expenseEntryModel.countDocuments({
+        branchId: branchMatch,
+        status: 'submitted',
+      }),
+      this.financeLockModel.countDocuments({ branchId: branchMatch }),
+    ]);
 
-    const totalCredits = aggregate.find((item) => item._id === 'credit')?.total ?? 0;
-    const totalDebits = aggregate.find((item) => item._id === 'debit')?.total ?? 0;
+    const totalCredits =
+      aggregate.find((item) => item._id === 'credit')?.total ?? 0;
+    const totalDebits =
+      aggregate.find((item) => item._id === 'debit')?.total ?? 0;
     const totalPages = Math.max(Math.ceil(total / safeLimit), 1);
     const safePage = Math.min(requestedPage, totalPages);
     const skip = (safePage - 1) * safeLimit;
@@ -2151,10 +2734,14 @@ export class FinanceService implements OnModuleInit {
       .limit(safeLimit)
       .lean();
 
-    const branchMap = new Map(branches.map((branch) => [String(branch._id), branch]));
+    const branchMap = new Map(
+      branches.map((branch) => [String(branch._id), branch]),
+    );
 
     return {
-      items: items.map((item) => this.toLedgerEntryResponse(item as unknown as Record<string, unknown>)),
+      items: items.map((item) =>
+        this.toLedgerEntryResponse(item as unknown as Record<string, unknown>),
+      ),
       pagination: { page: safePage, pageSize: safeLimit, total, totalPages },
       summary: {
         totalCredits,
@@ -2166,8 +2753,10 @@ export class FinanceService implements OnModuleInit {
       byAccount: byAccountRaw.map((item) => ({
         accountId: String(item._id),
         label: item.label,
-        totalCredits: (item as unknown as { totalCredits?: number }).totalCredits ?? 0,
-        totalDebits: (item as unknown as { totalDebits?: number }).totalDebits ?? 0,
+        totalCredits:
+          (item as unknown as { totalCredits?: number }).totalCredits ?? 0,
+        totalDebits:
+          (item as unknown as { totalDebits?: number }).totalDebits ?? 0,
         balance:
           ((item as unknown as { totalCredits?: number }).totalCredits ?? 0) -
           ((item as unknown as { totalDebits?: number }).totalDebits ?? 0),
@@ -2189,7 +2778,11 @@ export class FinanceService implements OnModuleInit {
 
   async listFinanceLocks(
     currentUser: AuthUser,
-    filters: { branchId?: string; oversightRegion?: string; district?: string } = {},
+    filters: {
+      branchId?: string;
+      oversightRegion?: string;
+      district?: string;
+    } = {},
   ) {
     this.ensureFinanceViewRole(currentUser);
 
@@ -2214,7 +2807,8 @@ export class FinanceService implements OnModuleInit {
           ? {
               _id: String((lock.branchId as { _id?: unknown })._id ?? ''),
               name: (lock.branchId as { name?: string }).name,
-              oversightRegion: (lock.branchId as { oversightRegion?: string }).oversightRegion,
+              oversightRegion: (lock.branchId as { oversightRegion?: string })
+                .oversightRegion,
               district: (lock.branchId as { district?: string }).district,
             }
           : lock.branchId,
@@ -2236,16 +2830,23 @@ export class FinanceService implements OnModuleInit {
 
   async createFinanceLock(dto: CreateFinanceLockDto, currentUser: AuthUser) {
     this.ensureFinanceLockManager(currentUser);
-    const branch = await this.resolveScopedCreateBranch(currentUser, dto.branchId);
+    const branch = await this.resolveScopedCreateBranch(
+      currentUser,
+      dto.branchId,
+    );
 
     if (!/^\d{4}-\d{2}$/.test(dto.periodKey.trim())) {
-      throw new BadRequestException('Finance lock period must use YYYY-MM format');
+      throw new BadRequestException(
+        'Finance lock period must use YYYY-MM format',
+      );
     }
 
-    const existing = await this.financeLockModel.findOne({
-      branchId: branch._id,
-      periodKey: dto.periodKey.trim(),
-    }).lean();
+    const existing = await this.financeLockModel
+      .findOne({
+        branchId: branch._id,
+        periodKey: dto.periodKey.trim(),
+      })
+      .lean();
 
     if (existing) {
       throw new BadRequestException('This branch period is already locked');
@@ -2261,7 +2862,11 @@ export class FinanceService implements OnModuleInit {
       lockedAt: new Date(),
     });
 
-    await this.applyLockStateToPeriod(String(branch._id), dto.periodKey.trim(), true);
+    await this.applyLockStateToPeriod(
+      String(branch._id),
+      dto.periodKey.trim(),
+      true,
+    );
 
     await this.auditLogsService.record({
       entityType: 'finance_lock',
@@ -2270,7 +2875,10 @@ export class FinanceService implements OnModuleInit {
       summary: `Finance period ${dto.periodKey.trim()} locked for ${branch.name}`,
       actor: currentUser,
       branchId: String(branch._id),
-      metadata: { periodKey: dto.periodKey.trim(), reason: dto.reason?.trim() || undefined },
+      metadata: {
+        periodKey: dto.periodKey.trim(),
+        reason: dto.reason?.trim() || undefined,
+      },
     });
 
     return {
@@ -2291,9 +2899,16 @@ export class FinanceService implements OnModuleInit {
       throw new NotFoundException('Finance lock not found');
     }
 
-    await this.accessScopeService.ensureBranchAccess(currentUser, String(existing.branchId));
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(existing.branchId),
+    );
     await this.financeLockModel.findByIdAndDelete(id);
-    await this.applyLockStateToPeriod(String(existing.branchId), existing.periodKey, false);
+    await this.applyLockStateToPeriod(
+      String(existing.branchId),
+      existing.periodKey,
+      false,
+    );
 
     await this.auditLogsService.record({
       entityType: 'finance_lock',

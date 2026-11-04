@@ -31,9 +31,9 @@ export class AuthController {
   private getAuthCookieOptions(includeLifetime = true): CookieOptions {
     const options: CookieOptions = {
       httpOnly: true,
-      sameSite:
-        (this.configService.get<'lax' | 'strict' | 'none'>('cookieSameSite') ??
-          'lax') as CookieOptions['sameSite'],
+      sameSite: (this.configService.get<'lax' | 'strict' | 'none'>(
+        'cookieSameSite',
+      ) ?? 'lax') as CookieOptions['sameSite'],
       secure: this.configService.get<boolean>('cookieSecure') ?? false,
       domain: this.configService.get<string>('cookieDomain') || undefined,
       path: '/',
@@ -50,9 +50,16 @@ export class AuthController {
   @HttpCode(200)
   @Post('login')
   @ApiOperation({ summary: 'Login and set auth cookie' })
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const result = await this.authService.login(loginDto);
-    response.cookie(result.cookieName, result.accessToken, this.getAuthCookieOptions());
+    response.cookie(
+      result.cookieName,
+      result.accessToken,
+      this.getAuthCookieOptions(),
+    );
 
     return {
       message: 'Login successful',
@@ -81,7 +88,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('change-password')
-  changePassword(@CurrentUser() user: { sub: string }, @Body() dto: ChangePasswordDto) {
+  changePassword(
+    @CurrentUser() user: { sub: string },
+    @Body() dto: ChangePasswordDto,
+  ) {
     return this.authService.changePassword(user.sub, dto);
   }
 

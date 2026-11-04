@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Icon } from "@/components/app/icons";
+import { Badge, Button, EmptyState, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type {
   FinanceAccountSummary,
@@ -85,9 +87,9 @@ export function OfferingEntriesTable({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">
+      <EmptyState icon="finance" title="No offerings">
         No offering entries match the current scope or filters.
-      </div>
+      </EmptyState>
     );
   }
 
@@ -98,109 +100,123 @@ export function OfferingEntriesTable({
           (serviceType) =>
             getBranchId(serviceType.branchId) === entry.branchId?._id,
         );
+        const enteredBy = [entry.createdBy?.firstName, entry.createdBy?.lastName]
+          .filter(Boolean)
+          .join(" ");
 
         return (
-          <details key={entry._id} className="rounded-[20px] border border-slate-200 bg-white">
-            <summary className="cursor-pointer list-none px-4 py-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
+          <details
+            key={entry._id}
+            className="group rounded-2xl border border-black/[0.06] transition-colors hover:border-black/[0.12] open:border-black/[0.12]"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-medium text-[#111111]">
                     {entry.offeringTypeLabel} · {entry.serviceTypeLabel}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                     {entry.branchId?.name} · {formatDate(entry.serviceDate)} ·{" "}
                     {entry.serviceLabel || entry.serviceTypeLabel}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <span className="text-[14px] font-semibold tabular-nums text-emerald-700">
                     {formatMoney(entry.amount, entry.currency)}
                   </span>
-                  {entry.accountId?.name ? (
-                    <span className="rounded-full bg-sky-50 px-2.5 py-1 font-semibold text-sky-700">
-                      {entry.accountId.name}
-                    </span>
-                  ) : null}
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
-                    {entry.createdBy?.firstName} {entry.createdBy?.lastName}
-                  </span>
+                  {entry.accountId?.name ? <Badge tone="info">{entry.accountId.name}</Badge> : null}
+                  {enteredBy ? <Badge>{enteredBy}</Badge> : null}
                 </div>
               </div>
+              <Icon
+                name="chevronDown"
+                className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180"
+              />
             </summary>
-            <div className="border-t border-slate-200 px-4 py-4">
+
+            <div className="border-t border-black/[0.06] px-4 py-5">
               {entry.permissions.canEdit ? (
                 <form
                   action={(formData) => updateEntry(entry._id, formData)}
-                  className="grid gap-3 md:grid-cols-2"
+                  className="grid gap-4 md:grid-cols-2"
                 >
-                  <input
-                    name={`serviceDate-${entry._id}`}
-                    type="datetime-local"
-                    defaultValue={new Date(entry.serviceDate).toISOString().slice(0, 16)}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <select
-                    name={`serviceTypeId-${entry._id}`}
-                    defaultValue={entry.serviceTypeId?._id || ""}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  >
-                    {availableServiceTypes.map((serviceType) => (
-                      <option key={serviceType._id} value={serviceType._id}>
-                        {serviceType.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    name={`offeringTypeId-${entry._id}`}
-                    defaultValue={entry.offeringTypeId?._id || ""}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  >
-                    {offeringTypes.map((offeringType) => (
-                      <option key={offeringType._id} value={offeringType._id}>
-                        {offeringType.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    name={`accountId-${entry._id}`}
-                    defaultValue={entry.accountId?._id || ""}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  >
-                    <option value="">Use default account</option>
-                    {accounts.map((account) => (
-                      <option key={account._id} value={account._id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    name={`amount-${entry._id}`}
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    defaultValue={entry.amount}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <textarea
-                    name={`notes-${entry._id}`}
-                    defaultValue={entry.notes || ""}
-                    className="min-h-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-                  />
-                  <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                    {entry.permissions.reason}
+                  <Field label="Service date">
+                    <input
+                      name={`serviceDate-${entry._id}`}
+                      type="datetime-local"
+                      defaultValue={new Date(entry.serviceDate).toISOString().slice(0, 16)}
+                      className="ui-input"
+                    />
+                  </Field>
+                  <Field label="Service type">
+                    <select
+                      name={`serviceTypeId-${entry._id}`}
+                      defaultValue={entry.serviceTypeId?._id || ""}
+                      className="ui-input"
+                    >
+                      {availableServiceTypes.map((serviceType) => (
+                        <option key={serviceType._id} value={serviceType._id}>
+                          {serviceType.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Offering type">
+                    <select
+                      name={`offeringTypeId-${entry._id}`}
+                      defaultValue={entry.offeringTypeId?._id || ""}
+                      className="ui-input"
+                    >
+                      {offeringTypes.map((offeringType) => (
+                        <option key={offeringType._id} value={offeringType._id}>
+                          {offeringType.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Account">
+                    <select
+                      name={`accountId-${entry._id}`}
+                      defaultValue={entry.accountId?._id || ""}
+                      className="ui-input"
+                    >
+                      <option value="">Use default account</option>
+                      {accounts.map((account) => (
+                        <option key={account._id} value={account._id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Amount">
+                    <input
+                      name={`amount-${entry._id}`}
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      defaultValue={entry.amount}
+                      className="ui-input tabular-nums"
+                    />
+                  </Field>
+                  <Field label="Notes" className="md:col-span-2">
+                    <textarea
+                      name={`notes-${entry._id}`}
+                      defaultValue={entry.notes || ""}
+                      className="ui-input"
+                    />
+                  </Field>
+                  <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
+                    <p className="text-[13px] leading-[1.5] text-[#6b6b6b]">{entry.permissions.reason}</p>
+                    <Button type="submit" disabled={loadingId === entry._id || pending}>
+                      {loadingId === entry._id ? "Saving..." : "Update offering"}
+                    </Button>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={loadingId === entry._id || pending}
-                    className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-                  >
-                    {loadingId === entry._id ? "Saving..." : "Update offering"}
-                  </button>
                 </form>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                <p className="flex items-start gap-2 rounded-xl border border-black/[0.06] px-4 py-3 text-[13px] leading-[1.5] text-[#6b6b6b]">
+                  <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[#8a8780]" />
                   {entry.permissions.reason}
-                </div>
+                </p>
               )}
             </div>
           </details>

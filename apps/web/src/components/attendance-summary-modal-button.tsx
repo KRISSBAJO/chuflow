@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AttendanceCreateForm } from "@/components/attendance-create-form";
 import { ModalShell } from "@/components/modal-shell";
+import { Button } from "@/components/ui/ui";
 import type {
   BranchSummary,
   ServiceScheduleSummary,
@@ -24,19 +25,15 @@ export function AttendanceSummaryModalButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-      >
+      <Button icon="plus" onClick={() => setOpen(true)}>
         Record service summary
-      </button>
+      </Button>
       <ModalShell
         open={open}
         onClose={() => setOpen(false)}
         eyebrow="Attendance"
         title="Record service attendance summary"
-        description="Capture the ministry-facing totals for men, women, children, adults, first timers, new converts, and Holy Spirit baptism in one focused workflow."
+        description="Capture totals for men, women, children, adults, first timers, new converts and Holy Spirit baptism in one place."
       >
         <AttendanceCreateForm
           branches={branches}

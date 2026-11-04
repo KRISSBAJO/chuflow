@@ -3,6 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Icon } from "@/components/app/icons";
+import { Badge, Button, EmptyState, Field, formatStatus, type BadgeTone } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type {
   ExpenseCategorySummary,
@@ -22,6 +24,14 @@ function formatMoney(amount: number, currency = "USD") {
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString();
+}
+
+/** "submitted" means awaiting approval here, so it reads as pending rather than done. */
+function expenseStatusTone(status: string): BadgeTone {
+  if (status === "approved") return "success";
+  if (status === "submitted") return "warning";
+  if (status === "rejected") return "danger";
+  return "neutral";
 }
 
 function getScheduleBranchId(value: ServiceScheduleSummary["branchId"]) {
@@ -132,9 +142,9 @@ export function ExpenseEntriesTable({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">
+      <EmptyState icon="finance" title="No expenses">
         No expense entries match the current scope or filters.
-      </div>
+      </EmptyState>
     );
   }
 
@@ -155,165 +165,175 @@ export function ExpenseEntriesTable({
           "No linked service";
 
         return (
-          <details key={entry._id} className="rounded-[20px] border border-slate-200 bg-white">
-            <summary className="cursor-pointer list-none px-4 py-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
+          <details
+            key={entry._id}
+            className="group rounded-2xl border border-black/[0.06] transition-colors hover:border-black/[0.12] open:border-black/[0.12]"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-medium text-[#111111]">
                     {entry.expenseCategoryLabel} · {entry.description}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                     {entry.branchId?.name} · {formatDate(entry.expenseDate)} · {serviceLabel}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-rose-50 px-2.5 py-1 font-semibold text-rose-700">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <span className="text-[14px] font-semibold tabular-nums text-[#111111]">
                     {formatMoney(entry.amount, entry.currency)}
                   </span>
-                  <span
-                    className={`rounded-full px-2.5 py-1 font-semibold ${
-                      entry.status === "approved"
-                        ? "bg-emerald-50 text-emerald-700"
-                        : entry.status === "submitted"
-                          ? "bg-amber-50 text-amber-700"
-                          : entry.status === "rejected"
-                            ? "bg-rose-50 text-rose-700"
-                            : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {entry.status}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
-                    {entry.accountLabel}
-                  </span>
+                  <Badge tone={expenseStatusTone(entry.status)} dot>
+                    {formatStatus(entry.status)}
+                  </Badge>
+                  <Badge>{entry.accountLabel}</Badge>
                 </div>
               </div>
+              <Icon
+                name="chevronDown"
+                className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180"
+              />
             </summary>
-            <div className="border-t border-slate-200 px-4 py-4">
-              <div className="mb-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    Payee
-                  </p>
-                  <p className="mt-1">{entry.payee || "Not recorded"}</p>
+
+            <div className="border-t border-black/[0.06] px-4 py-5">
+              <dl className="grid gap-3 text-[14px] md:grid-cols-3">
+                <div className="rounded-xl bg-[#f6f5f1] px-4 py-3">
+                  <dt className="text-[12px] text-[#8a8780]">Payee</dt>
+                  <dd className="mt-0.5 text-[#111111]">{entry.payee || "Not recorded"}</dd>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    Account / Category
-                  </p>
-                  <p className="mt-1">
+                <div className="rounded-xl bg-[#f6f5f1] px-4 py-3">
+                  <dt className="text-[12px] text-[#8a8780]">Account and category</dt>
+                  <dd className="mt-0.5 text-[#111111]">
                     {entry.accountLabel} · {entry.expenseCategoryLabel}
-                  </p>
+                  </dd>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    Receipt
-                  </p>
-                  <p className="mt-1 break-all">{entry.receiptUrl || "No receipt link"}</p>
+                <div className="rounded-xl bg-[#f6f5f1] px-4 py-3">
+                  <dt className="text-[12px] text-[#8a8780]">Receipt</dt>
+                  <dd className="mt-0.5 break-all text-[#111111]">{entry.receiptUrl || "No receipt link"}</dd>
                 </div>
-              </div>
+              </dl>
 
               {entry.permissions.canEdit ? (
                 <form
                   action={(formData) => updateEntry(entry._id, formData)}
-                  className="grid gap-3 md:grid-cols-2"
+                  className="mt-5 grid gap-4 md:grid-cols-2"
                 >
-                  <input
-                    name={`expenseDate-${entry._id}`}
-                    type="date"
-                    defaultValue={entry.expenseDate.slice(0, 10)}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <select
-                    name={`accountId-${entry._id}`}
-                    defaultValue={entry.accountId?._id || ""}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  >
-                    {accounts.map((account) => (
-                      <option key={account._id} value={account._id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    name={`expenseCategoryId-${entry._id}`}
-                    defaultValue={entry.expenseCategoryId?._id || ""}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  >
-                    {expenseCategories.map((category) => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    name={`serviceScheduleId-${entry._id}`}
-                    defaultValue={entry.serviceScheduleId?._id || ""}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  >
-                    <option value="">No linked service</option>
-                    {availableSchedules.map((schedule) => (
-                      <option key={schedule._id} value={schedule._id}>
-                        {schedule.name} · {schedule.dayOfWeek} · {schedule.startTime}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    name={`payee-${entry._id}`}
-                    defaultValue={entry.payee || ""}
-                    placeholder="Payee / vendor"
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <input
-                    name={`description-${entry._id}`}
-                    defaultValue={entry.description}
-                    placeholder="Description"
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <input
-                    name={`amount-${entry._id}`}
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    defaultValue={entry.amount}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <input
-                    name={`currency-${entry._id}`}
-                    defaultValue={entry.currency}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                  />
-                  <input
-                    name={`receiptUrl-${entry._id}`}
-                    defaultValue={entry.receiptUrl || ""}
-                    placeholder="Receipt URL"
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-                  />
-                  <textarea
-                    name={`notes-${entry._id}`}
-                    defaultValue={entry.notes || ""}
-                    className="min-h-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none md:col-span-2"
-                  />
-                  <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                    {entry.permissions.reason}
+                  <Field label="Expense date">
+                    <input
+                      name={`expenseDate-${entry._id}`}
+                      type="date"
+                      defaultValue={entry.expenseDate.slice(0, 10)}
+                      className="ui-input"
+                    />
+                  </Field>
+                  <Field label="Account">
+                    <select
+                      name={`accountId-${entry._id}`}
+                      defaultValue={entry.accountId?._id || ""}
+                      className="ui-input"
+                    >
+                      {accounts.map((account) => (
+                        <option key={account._id} value={account._id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Category">
+                    <select
+                      name={`expenseCategoryId-${entry._id}`}
+                      defaultValue={entry.expenseCategoryId?._id || ""}
+                      className="ui-input"
+                    >
+                      {expenseCategories.map((category) => (
+                        <option key={category._id} value={category._id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Linked service">
+                    <select
+                      name={`serviceScheduleId-${entry._id}`}
+                      defaultValue={entry.serviceScheduleId?._id || ""}
+                      className="ui-input"
+                    >
+                      <option value="">No linked service</option>
+                      {availableSchedules.map((schedule) => (
+                        <option key={schedule._id} value={schedule._id}>
+                          {schedule.name} · {schedule.dayOfWeek} · {schedule.startTime}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Payee or vendor">
+                    <input
+                      name={`payee-${entry._id}`}
+                      defaultValue={entry.payee || ""}
+                      placeholder="Who received the payment?"
+                      className="ui-input"
+                    />
+                  </Field>
+                  <Field label="Description">
+                    <input
+                      name={`description-${entry._id}`}
+                      defaultValue={entry.description}
+                      placeholder="Description"
+                      className="ui-input"
+                    />
+                  </Field>
+                  <Field label="Amount">
+                    <input
+                      name={`amount-${entry._id}`}
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      defaultValue={entry.amount}
+                      className="ui-input tabular-nums"
+                    />
+                  </Field>
+                  <Field label="Currency">
+                    <input
+                      name={`currency-${entry._id}`}
+                      defaultValue={entry.currency}
+                      className="ui-input"
+                    />
+                  </Field>
+                  <Field label="Receipt link" className="md:col-span-2">
+                    <input
+                      name={`receiptUrl-${entry._id}`}
+                      defaultValue={entry.receiptUrl || ""}
+                      placeholder="Receipt URL"
+                      className="ui-input"
+                    />
+                  </Field>
+                  <Field label="Notes" className="md:col-span-2">
+                    <textarea
+                      name={`notes-${entry._id}`}
+                      defaultValue={entry.notes || ""}
+                      className="ui-input"
+                    />
+                  </Field>
+                  <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
+                    <p className="text-[13px] leading-[1.5] text-[#6b6b6b]">{entry.permissions.reason}</p>
+                    <Button type="submit" disabled={loadingId === entry._id || pending}>
+                      {loadingId === entry._id ? "Saving..." : "Update expense"}
+                    </Button>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={loadingId === entry._id || pending}
-                    className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white md:w-fit"
-                  >
-                    {loadingId === entry._id ? "Saving..." : "Update expense"}
-                  </button>
                 </form>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                <p className="mt-4 flex items-start gap-2 rounded-xl border border-black/[0.06] px-4 py-3 text-[13px] leading-[1.5] text-[#6b6b6b]">
+                  <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[#8a8780]" />
                   {entry.permissions.reason}
-                </div>
+                </p>
               )}
 
               {entry.status === "submitted" && canApprove ? (
-                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-900">Approval action</p>
+                <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-4">
+                  <p className="text-[14px] font-semibold text-[#111111]">Approval decision</p>
+                  <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+                    Approved expenses post to the branch ledger as debits.
+                  </p>
                   <textarea
                     value={reviewNotes[entry._id] || ""}
                     onChange={(event) =>
@@ -323,25 +343,26 @@ export function ExpenseEntriesTable({
                       }))
                     }
                     placeholder="Optional approval or rejection note"
-                    className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none"
+                    aria-label="Approval or rejection note"
+                    className="ui-input mt-3"
                   />
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
+                    <Button
+                      size="sm"
                       onClick={() => reviewEntry(entry._id, "approve")}
                       disabled={reviewingId === entry._id}
-                      className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
                     >
                       {reviewingId === entry._id ? "Working..." : "Approve expense"}
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-700 hover:bg-red-50 hover:text-red-800"
                       onClick={() => reviewEntry(entry._id, "reject")}
                       disabled={reviewingId === entry._id}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
                     >
                       Reject expense
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : null}

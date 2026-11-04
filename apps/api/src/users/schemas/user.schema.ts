@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 import { APP_ROLES } from '../../common/constants/roles.constants';
 
 export type UserDocument = HydratedDocument<User>;
@@ -13,7 +13,8 @@ export class UserPreferences {
   defaultReportDays!: number;
 }
 
-export const UserPreferencesSchema = SchemaFactory.createForClass(UserPreferences);
+export const UserPreferencesSchema =
+  SchemaFactory.createForClass(UserPreferences);
 
 @Schema({ timestamps: true })
 export class User {
@@ -47,7 +48,7 @@ export class User {
   @Prop()
   district?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Branch' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
   @Prop({ default: true })

@@ -1,11 +1,28 @@
+import { Icon, type IconName } from "@/components/app/icons";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { ServiceUnitCreateModalButton } from "@/components/service-unit-create-modal-button";
 import { ServiceUnitManagementList } from "@/components/service-unit-management-list";
 import { Shell } from "@/components/shell";
+import { Badge, Card, CardHeader } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type { BranchSummary, MemberListItem, ServiceUnitSummary } from "@/lib/types";
+
+const OPERATIONS_NOTES: { icon: IconName; text: string }[] = [
+  {
+    icon: "members",
+    text: "Service units feed directly into member placement, so a member's ministry is picked from a list instead of typed in.",
+  },
+  {
+    icon: "users",
+    text: "Leaders and secretaries can only be chosen from members of the same branch.",
+  },
+  {
+    icon: "arrowRight",
+    text: "Public member sign-ups land people in the right branch and service structure faster.",
+  },
+];
 
 export default async function ServiceUnitsPage() {
   const user = await requireServerRole("/service-units");
@@ -28,9 +45,9 @@ export default async function ServiceUnitsPage() {
   return (
     <Shell>
       <PageHeader
-        eyebrow="Service Units"
-        title="Branch service-unit structure and staffing"
-        description="Create the real ministry teams for each branch, appoint leadership, and connect members directly into the units they serve."
+        eyebrow="Service units"
+        title="Service units and staffing"
+        description="Create the ministry teams for each branch, appoint leaders, and connect members to the units they serve in."
         action={
           <ServiceUnitCreateModalButton
             branches={branches}
@@ -41,7 +58,7 @@ export default async function ServiceUnitsPage() {
         }
       />
 
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Service units"
           value={String(serviceUnits.length)}
@@ -68,20 +85,15 @@ export default async function ServiceUnitsPage() {
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-        <section className="surface rounded-[24px] p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Service unit directory</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Edit structure, officers, meeting rhythm, and member load without leaving the branch scope.
-              </p>
-            </div>
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Branch isolated
-            </div>
-          </div>
-          <div className="mt-4">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.8fr)] xl:items-start">
+        <Card className="app-rise p-6 sm:p-7">
+          <CardHeader
+            label="Directory"
+            title="Service units"
+            description="Edit structure, officers, meeting days, and notes without leaving the branch scope."
+            action={<Badge>Branch isolated</Badge>}
+          />
+          <div className="mt-6">
             <ServiceUnitManagementList
               serviceUnits={serviceUnits}
               members={members}
@@ -89,24 +101,21 @@ export default async function ServiceUnitsPage() {
               currentUserRole={user.role}
             />
           </div>
-        </section>
+        </Card>
 
-        <section className="space-y-4">
-          <section className="surface rounded-[24px] p-5">
-            <p className="eyebrow">Ministry operations</p>
-            <div className="mt-3 space-y-2.5 text-sm text-slate-600">
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                Service units now feed directly into member placement so interest is no longer free text.
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                Leaders and secretaries are pulled from members inside the same branch only.
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                Public member intake can now land people into the right branch environment and service structure faster.
-              </div>
-            </div>
-          </section>
-        </section>
+        <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+          <CardHeader label="How it works" title="Ministry operations" />
+          <ul className="mt-5 space-y-3">
+            {OPERATIONS_NOTES.map((note) => (
+              <li key={note.text} className="flex gap-3 rounded-2xl bg-[#f6f5f1] p-4">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#ea580c] shadow-[0_1px_2px_rgba(17,17,17,0.06)]">
+                  <Icon name={note.icon} className="h-4 w-4" />
+                </span>
+                <p className="text-[14px] leading-[1.6] text-[#55534e]">{note.text}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
       </section>
     </Shell>
   );

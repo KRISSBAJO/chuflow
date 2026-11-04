@@ -5,7 +5,10 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { Branch, BranchSchema } from '../branches/schemas/branch.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AppSetting, AppSettingSchema } from './schemas/app-setting.schema';
-import { BranchSetting, BranchSettingSchema } from './schemas/branch-setting.schema';
+import {
+  BranchSetting,
+  BranchSettingSchema,
+} from './schemas/branch-setting.schema';
 import { SettingsController } from './settings.controller';
 import { SettingsService } from './settings.service';
 

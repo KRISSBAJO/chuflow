@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
@@ -30,7 +40,16 @@ export class IntakeTemplatesController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-@Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.intakeTemplatesService.findAll(user, this.getWebUrl());
@@ -38,7 +57,16 @@ export class IntakeTemplatesController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateIntakeTemplateDto) {
     return this.intakeTemplatesService.create(dto, user, this.getWebUrl());
@@ -46,39 +74,89 @@ export class IntakeTemplatesController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Patch(':id')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateIntakeTemplateDto) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateIntakeTemplateDto,
+  ) {
     return this.intakeTemplatesService.update(id, dto, user, this.getWebUrl());
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Post(':id/branch-override')
   createBranchOverride(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: CreateBranchOverrideDto,
   ) {
-    return this.intakeTemplatesService.createBranchOverride(id, dto, user, this.getWebUrl());
+    return this.intakeTemplatesService.createBranchOverride(
+      id,
+      dto,
+      user,
+      this.getWebUrl(),
+    );
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Post(':id/district-override')
   createDistrictOverride(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: CreateDistrictOverrideDto,
   ) {
-    return this.intakeTemplatesService.createDistrictOverride(id, dto, user, this.getWebUrl());
+    return this.intakeTemplatesService.createDistrictOverride(
+      id,
+      dto,
+      user,
+      this.getWebUrl(),
+    );
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Get('weekly-reports')
   listWeeklyReports(
     @CurrentUser() user: AuthUser,
@@ -101,7 +179,16 @@ export class IntakeTemplatesController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Get('weekly-reports/export.csv')
   async exportWeeklyReportsCsv(
     @CurrentUser() user: AuthUser,
@@ -122,13 +209,25 @@ export class IntakeTemplatesController {
       dateTo,
     });
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    response.setHeader('Content-Disposition', 'attachment; filename="weekly-spiritual-indices.csv"');
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="weekly-spiritual-indices.csv"',
+    );
     response.send(csv);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Get('maag-reports')
   listMaagReports(
     @CurrentUser() user: AuthUser,
@@ -151,7 +250,16 @@ export class IntakeTemplatesController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
   @Get('maag-reports/export.csv')
   async exportMaagReportsCsv(
     @CurrentUser() user: AuthUser,
@@ -172,28 +280,29 @@ export class IntakeTemplatesController {
       monthTo,
     });
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    response.setHeader('Content-Disposition', 'attachment; filename="maag-monthly-report.csv"');
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="maag-monthly-report.csv"',
+    );
     response.send(csv);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor')
-  @Get(':id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.intakeTemplatesService.findOne(id, user, this.getWebUrl());
   }
 
   @Public()
   @Get('public/active')
   getActive(@Query('kind') kind: string) {
-    return this.intakeTemplatesService.getActivePublicTemplate(kind, this.getWebUrl());
+    return this.intakeTemplatesService.getActivePublicTemplate(
+      kind,
+      this.getWebUrl(),
+    );
   }
 
   @Public()
   @Get('public/templates')
   listActive(@Query('kind') kind: string): Promise<Record<string, unknown>[]> {
-    return this.intakeTemplatesService.listActivePublicTemplates(kind, this.getWebUrl());
+    return this.intakeTemplatesService.listActivePublicTemplates(
+      kind,
+      this.getWebUrl(),
+    );
   }
 
   @Public()
@@ -210,7 +319,10 @@ export class IntakeTemplatesController {
 
   @Public()
   @Get('public/:slug')
-  getPublicTemplate(@Param('slug') slug: string, @Query('branchId') branchId?: string) {
+  getPublicTemplate(
+    @Param('slug') slug: string,
+    @Query('branchId') branchId?: string,
+  ) {
     return this.intakeTemplatesService.getPublicTemplateBySlug(
       slug,
       this.getWebUrl(),
@@ -225,7 +337,12 @@ export class IntakeTemplatesController {
     @Body() dto: PublicTemplateSubmitDto,
     @Query('branchId') branchId?: string,
   ) {
-    return this.intakeTemplatesService.submitPublic(slug, dto, this.getWebUrl(), branchId);
+    return this.intakeTemplatesService.submitPublic(
+      slug,
+      dto,
+      this.getWebUrl(),
+      branchId,
+    );
   }
 
   @ApiBearerAuth()
@@ -248,7 +365,10 @@ export class IntakeTemplatesController {
     @Query('branchId') branchId?: string,
     @Query('status') status?: string,
   ) {
-    return this.intakeTemplatesService.listAttendanceSubmissions(user, { branchId, status });
+    return this.intakeTemplatesService.listAttendanceSubmissions(user, {
+      branchId,
+      status,
+    });
   }
 
   @ApiBearerAuth()
@@ -265,7 +385,10 @@ export class IntakeTemplatesController {
     'follow_up',
   )
   @Patch('attendance-submissions/:id/approve')
-  approveAttendanceSubmission(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+  approveAttendanceSubmission(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ) {
     return this.intakeTemplatesService.approveAttendanceSubmission(id, user);
   }
 
@@ -283,7 +406,29 @@ export class IntakeTemplatesController {
     'follow_up',
   )
   @Patch('attendance-submissions/:id/reject')
-  rejectAttendanceSubmission(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+  rejectAttendanceSubmission(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ) {
     return this.intakeTemplatesService.rejectAttendanceSubmission(id, user);
+  }
+
+  // Keep this catch-all last: routes are matched in declaration order, so a `:id` declared
+  // earlier swallows single-segment paths such as `attendance-submissions`.
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
+  @Get(':id')
+  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.intakeTemplatesService.findOne(id, user, this.getWebUrl());
   }
 }

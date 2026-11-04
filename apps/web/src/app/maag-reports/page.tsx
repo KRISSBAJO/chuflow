@@ -1,6 +1,7 @@
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
+import { Badge, Button, buttonClass, Card, CardHeader, EmptyState, formatStatus, statusTone, TableWrap } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { API_URL } from "@/lib/api";
 import { canFilterAcrossBranches } from "@/lib/permissions";
@@ -15,11 +16,28 @@ function money(value?: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value ?? 0);
 }
 
-function statusTone(status: string) {
-  if (status === "approved") return "bg-emerald-50 text-emerald-700";
-  if (status === "rejected") return "bg-rose-50 text-rose-700";
-  return "bg-amber-50 text-amber-700";
-}
+const MAAG_TEXT_COLUMNS_START = ["Month", "Station", "Status", "Facility", "Head"];
+
+const MAAG_NUMBER_COLUMNS = [
+  "Main cap",
+  "Main chairs",
+  "Services",
+  "Avg att'd",
+  "Highest",
+  "Adult",
+  "Children",
+  "CHOP",
+  "Income",
+  "ROF",
+  "Expense",
+  "WSF",
+  "FT",
+  "WOFBI",
+  "NC",
+  "BFC",
+  "HGB",
+  "WB",
+];
 
 export default async function MaagReportsPage({
   searchParams,
@@ -66,45 +84,55 @@ export default async function MaagReportsPage({
   );
   const exportUrl = `${API_URL}/intake-templates/maag-reports/export.csv?${query.toString()}`;
 
+  const maxTrendAttendance = Math.max(...report.trends.map((trend) => trend.averageAttendance ?? 0), 1);
+
   return (
     <Shell>
       <PageHeader
         eyebrow="MAAG reports"
-        title="Monthly MAAG reporting console"
-        description="Collate monthly branch MAAG reports across facility, attendance, finance, spiritual indices, and pastor details."
+        title="Monthly MAAG reports"
+        description="Collate monthly branch MAAG reports across facility, attendance, finance, spiritual indices and pastor details."
         action={
-          <form className="flex flex-wrap items-center gap-2">
-            <input name="monthFrom" type="month" defaultValue={report.filters.monthFrom} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" />
-            <input name="monthTo" type="month" defaultValue={report.filters.monthTo} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" />
-            {canCrossFilter ? (
-              <>
-                <select name="oversightRegion" defaultValue={oversightRegion || ""} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none">
-                  <option value="">All national areas</option>
-                  {nationalAreas.map((area) => <option key={area} value={area}>{area}</option>)}
-                </select>
-                <select name="district" defaultValue={district || ""} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none">
-                  <option value="">All districts</option>
-                  {districts.map((districtName) => <option key={districtName} value={districtName}>{districtName}</option>)}
-                </select>
-                <select name="branchId" defaultValue={branchId || ""} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none">
-                  <option value="">All branches</option>
-                  {branchOptions.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
-                </select>
-              </>
-            ) : null}
-            <select name="status" defaultValue={params.status || ""} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none">
-              <option value="">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Apply</button>
-            <a href={exportUrl} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Export CSV</a>
-          </form>
+          <a href={exportUrl} className={buttonClass("primary")}>
+            Export CSV
+          </a>
         }
       />
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <form
+        className="app-rise grid gap-2 rounded-2xl border border-black/[0.06] bg-white p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center"
+        style={{ animationDelay: "60ms" }}
+      >
+        <input name="monthFrom" type="month" aria-label="From month" defaultValue={report.filters.monthFrom} className="ui-input lg:w-auto" />
+        <input name="monthTo" type="month" aria-label="To month" defaultValue={report.filters.monthTo} className="ui-input lg:w-auto" />
+        {canCrossFilter ? (
+          <>
+            <select name="oversightRegion" aria-label="National area" defaultValue={oversightRegion || ""} className="ui-input lg:w-auto lg:min-w-[170px] lg:flex-1">
+              <option value="">All national areas</option>
+              {nationalAreas.map((area) => <option key={area} value={area}>{area}</option>)}
+            </select>
+            <select name="district" aria-label="District" defaultValue={district || ""} className="ui-input lg:w-auto lg:min-w-[150px] lg:flex-1">
+              <option value="">All districts</option>
+              {districts.map((districtName) => <option key={districtName} value={districtName}>{districtName}</option>)}
+            </select>
+            <select name="branchId" aria-label="Branch" defaultValue={branchId || ""} className="ui-input lg:w-auto lg:min-w-[150px] lg:flex-1">
+              <option value="">All branches</option>
+              {branchOptions.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
+            </select>
+          </>
+        ) : null}
+        <select name="status" aria-label="Status" defaultValue={params.status || ""} className="ui-input lg:w-auto lg:min-w-[140px]">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <Button type="submit" variant="secondary" icon="search">
+          Apply
+        </Button>
+      </form>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard label="Reports" value={String(report.totals.reports ?? 0)} delta={`${report.totals.pending ?? 0} pending`} tone="cool" />
         <MetricCard label="Avg attendance" value={formatNumber(report.totals.averageAttendance)} delta={`Highest ${formatNumber(report.totals.highestAttendance)}`} tone="warm" />
         <MetricCard label="Income" value={money(report.totals.incomeAmount)} delta={`Expense ${money(report.totals.expenseAmount)}`} tone="cool" />
@@ -112,128 +140,200 @@ export default async function MaagReportsPage({
         <MetricCard label="Baptisms" value={formatNumber((report.totals.holyGhostBaptismCount ?? 0) + (report.totals.waterBaptismCount ?? 0))} delta="Holy Ghost + water" tone="cool" />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <section className="surface rounded-[24px] p-5">
-          <p className="eyebrow">District totals</p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
-                <tr>{["District", "Reports", "Avg att'd", "Income", "FT", "NC"].map((column) => <th key={column} className="px-3 py-3 font-semibold">{column}</th>)}</tr>
-              </thead>
-              <tbody className="bg-white">
-                {report.districtTotals.map((item) => (
-                  <tr key={item.key} className="border-t border-slate-100">
-                    <td className="px-3 py-3 font-semibold text-slate-900">{item.label}</td>
-                    <td className="px-3 py-3 text-slate-600">{item.reports}</td>
-                    <td className="px-3 py-3 text-slate-600">{formatNumber(item.averageAttendance)}</td>
-                    <td className="px-3 py-3 text-slate-600">{money(item.incomeAmount)}</td>
-                    <td className="px-3 py-3 text-slate-600">{formatNumber(item.firstTimersCount)}</td>
-                    <td className="px-3 py-3 text-slate-600">{formatNumber(item.newConvertsCount)}</td>
-                  </tr>
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card className="app-rise min-w-0 p-6 sm:p-7">
+          <CardHeader label="District totals" title="By district" />
+          <div className="mt-6">
+            {report.districtTotals.length === 0 ? (
+              <EmptyState icon="structure" title="No district totals">
+                District totals will appear once reports are submitted.
+              </EmptyState>
+            ) : (
+              <TableWrap>
+                <table className="ui-table">
+                  <thead>
+                    <tr>
+                      <th>District</th>
+                      {["Reports", "Avg att'd", "Income", "FT", "NC"].map((column) => (
+                        <th key={column} className="text-right">
+                          {column}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.districtTotals.map((item) => (
+                      <tr key={item.key}>
+                        <td className="font-medium">{item.label}</td>
+                        <td className="text-right tabular-nums text-[#55534e]">{item.reports}</td>
+                        <td className="text-right tabular-nums">{formatNumber(item.averageAttendance)}</td>
+                        <td className="text-right tabular-nums">{money(item.incomeAmount)}</td>
+                        <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.firstTimersCount)}</td>
+                        <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.newConvertsCount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+            )}
+          </div>
+        </Card>
+
+        <Card className="app-rise min-w-0 p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+          <CardHeader label="Monthly trend" title="Average attendance by month" />
+          <div className="mt-6">
+            {report.trends.length === 0 ? (
+              <EmptyState icon="maag" title="No reports yet">
+                No MAAG reports in this range.
+              </EmptyState>
+            ) : (
+              <ul className="space-y-4">
+                {report.trends.map((trend, index) => (
+                  <li key={trend.key}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="truncate text-[14px] font-medium text-[#111111]">{trend.label}</span>
+                      <span className="text-[15px] font-semibold tabular-nums text-[#111111]">
+                        {formatNumber(trend.averageAttendance)}
+                      </span>
+                    </div>
+                    <span className="mt-2 block h-2 overflow-hidden rounded-full bg-[#f1f0ec]">
+                      <span
+                        className="app-bar block h-full rounded-full bg-[#ea580c]"
+                        style={{
+                          width: `${Math.max(3, ((trend.averageAttendance ?? 0) / maxTrendAttendance) * 100)}%`,
+                          animationDelay: `${index * 60}ms`,
+                        }}
+                      />
+                    </span>
+                    <p className="mt-1.5 text-[12px] text-[#8a8780]">
+                      Income <span className="tabular-nums">{money(trend.incomeAmount)}</span>
+                    </p>
+                  </li>
                 ))}
+              </ul>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      <Card className="app-rise min-w-0 p-6 sm:p-7">
+        <CardHeader
+          label="Branch rollup"
+          title="All branches in scope"
+          action={<Badge>{report.scope.branchCount} branches watched</Badge>}
+        />
+        <div className="mt-6">
+          {report.branchTotals.length === 0 ? (
+            <EmptyState icon="branches" title="No branch totals">
+              Branch totals will appear once reports are submitted.
+            </EmptyState>
+          ) : (
+            <TableWrap>
+              <table className="ui-table min-w-[900px]">
+                <thead>
+                  <tr>
+                    <th>Branch</th>
+                    <th>District</th>
+                    {["Reports", "Avg att'd", "Income", "Expense", "FT", "NC"].map((column) => (
+                      <th key={column} className="text-right">
+                        {column}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.branchTotals.map((item) => (
+                    <tr key={item.key}>
+                      <td className="font-medium">{item.label}</td>
+                      <td className="text-[#55534e]">{item.district}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{item.reports}</td>
+                      <td className="text-right tabular-nums">{formatNumber(item.averageAttendance)}</td>
+                      <td className="text-right tabular-nums">{money(item.incomeAmount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{money(item.expenseAmount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.firstTimersCount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.newConvertsCount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableWrap>
+          )}
+        </div>
+      </Card>
+
+      <Card className="app-rise min-w-0 p-6 sm:p-7">
+        <CardHeader
+          label="Submissions"
+          title="Monthly MAAG submissions"
+          action={<Badge>Matches the CSV export</Badge>}
+        />
+        <div className="mt-6">
+          <TableWrap>
+            <table className="ui-table min-w-[1500px]">
+              <thead>
+                <tr>
+                  {MAAG_TEXT_COLUMNS_START.map((column) => (
+                    <th key={column}>{column}</th>
+                  ))}
+                  {MAAG_NUMBER_COLUMNS.map((column) => (
+                    <th key={column} className="text-right">
+                      {column}
+                    </th>
+                  ))}
+                  <th>Pastor</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={25} className="py-10 text-center text-[#8a8780]">
+                      No MAAG reports match the current filters.
+                    </td>
+                  </tr>
+                ) : (
+                  report.items.map((item) => (
+                    <tr key={item._id} className="align-top">
+                      <td className="whitespace-nowrap font-medium tabular-nums">{item.reportMonth}</td>
+                      <td>
+                        <p className="font-medium text-[#111111]">{item.stationName || item.branch.name}</p>
+                        <p className="text-[12px] text-[#8a8780]">{item.branch.district}</p>
+                      </td>
+                      <td>
+                        <Badge tone={statusTone(item.status)} dot>
+                          {formatStatus(item.status)}
+                        </Badge>
+                      </td>
+                      <td className="text-[#55534e]">{item.facilityType}</td>
+                      <td className="text-[#55534e]">{item.stationHeadDesignation}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.mainHallCapacity)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.mainChairsCount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.servicesCount)}</td>
+                      <td className="text-right font-medium tabular-nums">{formatNumber(item.averageAttendance)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.highestAttendance)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.averageAdultAttendance)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.averageChildrenAttendance)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.chopAverageAttendance)}</td>
+                      <td className="text-right tabular-nums">{money(item.incomeAmount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{money(item.rofAmount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{money(item.expenseAmount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.wsfAverage)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.firstTimersCount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.wofbiAttendance)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.newConvertsCount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.foundationClassCount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.holyGhostBaptismCount)}</td>
+                      <td className="text-right tabular-nums text-[#55534e]">{formatNumber(item.waterBaptismCount)}</td>
+                      <td className="whitespace-nowrap text-[#55534e]">{item.pastorName || ""}</td>
+                      <td className="max-w-[280px] text-[13px] text-[#55534e]">{item.stationStatusRemarks || ""}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
-          </div>
-        </section>
-        <section className="surface rounded-[24px] p-5">
-          <p className="eyebrow">Monthly trend</p>
-          <div className="mt-4 space-y-3">
-            {report.trends.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500">No MAAG reports in this range.</p>
-            ) : report.trends.map((trend) => (
-              <div key={trend.key} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                <span className="font-semibold text-slate-900">{trend.label}</span>
-                <span className="text-sm text-slate-600">{formatNumber(trend.averageAttendance)} avg att'd · {money(trend.incomeAmount)}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      </section>
-
-      <section className="surface rounded-[24px] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="eyebrow">Branch rollup</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-950">All branches in scope</h2>
-          </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">{report.scope.branchCount} branches watched</span>
+          </TableWrap>
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
-              <tr>{["Branch", "District", "Reports", "Avg att'd", "Income", "Expense", "FT", "NC"].map((column) => <th key={column} className="px-4 py-3 font-semibold">{column}</th>)}</tr>
-            </thead>
-            <tbody className="bg-white">
-              {report.branchTotals.map((item) => (
-                <tr key={item.key} className="border-t border-slate-100">
-                  <td className="px-4 py-3 font-semibold text-slate-900">{item.label}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.district}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.reports}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.averageAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{money(item.incomeAmount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{money(item.expenseAmount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.firstTimersCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.newConvertsCount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="surface rounded-[24px] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="eyebrow">MAAG report table</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-950">Monthly submissions</h2>
-          </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">Export-ready</span>
-        </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[1500px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
-              <tr>
-                {["Month", "Station", "Status", "Facility", "Head", "Main cap", "Main chairs", "Services", "Avg att'd", "Highest", "Adult", "Children", "CHOP", "Income", "ROF", "Expense", "WSF", "FT", "WOFBI", "NC", "BFC", "HGB", "WB", "Pastor", "Remarks"].map((column) => (
-                  <th key={column} className="px-4 py-3 font-semibold">{column}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {report.items.length === 0 ? (
-                <tr><td colSpan={25} className="px-4 py-8 text-center text-slate-500">No MAAG reports match the current filters.</td></tr>
-              ) : report.items.map((item) => (
-                <tr key={item._id} className="border-t border-slate-100 align-top">
-                  <td className="px-4 py-3 font-semibold text-slate-900">{item.reportMonth}</td>
-                  <td className="px-4 py-3"><p className="font-semibold text-slate-900">{item.stationName || item.branch.name}</p><p className="text-xs text-slate-500">{item.branch.district}</p></td>
-                  <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusTone(item.status)}`}>{item.status}</span></td>
-                  <td className="px-4 py-3 text-slate-600">{item.facilityType}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.stationHeadDesignation}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.mainHallCapacity)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.mainChairsCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.servicesCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.averageAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.highestAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.averageAdultAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.averageChildrenAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.chopAverageAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{money(item.incomeAmount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{money(item.rofAmount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{money(item.expenseAmount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.wsfAverage)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.firstTimersCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.wofbiAttendance)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.newConvertsCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.foundationClassCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.holyGhostBaptismCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(item.waterBaptismCount)}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.pastorName || ""}</td>
-                  <td className="max-w-[280px] px-4 py-3 text-slate-600">{item.stationStatusRemarks || ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      </Card>
     </Shell>
   );
 }

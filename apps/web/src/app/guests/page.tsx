@@ -5,6 +5,8 @@ import { GuestPageHeader } from "@/components/guest-page-header";
 import { GuestDuplicatePanel } from "@/components/guest-duplicate-panel";
 import { GuestCreateModalButton } from "@/components/guest-create-modal-button";
 import { TemplateQrCard } from "@/components/template-qr-card";
+import { Icon } from "@/components/app/icons";
+import { Avatar, Badge, Button, buttonClass, Card, CardHeader, EmptyState, formatStatus, statusTone, TableWrap } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { canFilterAcrossBranches } from "@/lib/permissions";
 import { publicServerGet, serverGet } from "@/lib/server-api";
@@ -16,6 +18,18 @@ import type {
   ServiceTypeSummary,
   UserSummary,
 } from "@/lib/types";
+
+const channelRowClass =
+  "group flex items-center justify-between rounded-xl border border-black/[0.06] bg-white px-3.5 py-3 text-[14px] font-medium text-[#111111] transition-colors hover:bg-[#f6f5f1]";
+
+function ChannelHint({ children }: { children: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[12px] font-normal text-[#8a8780] transition-colors group-hover:text-[#111111]">
+      {children}
+      <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
+    </span>
+  );
+}
 
 export default async function GuestsPage({
   searchParams,
@@ -91,6 +105,8 @@ export default async function GuestsPage({
     guestList.pagination.page * guestList.pagination.pageSize,
     guestList.pagination.total,
   );
+  const atFirstPage = guestList.pagination.page <= 1;
+  const atLastPage = guestList.pagination.page >= guestList.pagination.totalPages;
 
   return (
     <Shell>
@@ -100,9 +116,9 @@ export default async function GuestsPage({
         serviceTypes={serviceTypes}
         defaultBranchId={selectedBranchId || user.branchId}
       />
-      <section className="grid gap-3 md:grid-cols-3">
-        <MetricCard label="Registered today" value={String(guestList.summary.todayCount)} delta="Fresh guest records created today" tone="warm" />
-        <MetricCard label="Possible duplicates" value={String(duplicateCount)} delta="Duplicate groups detected in the current scope" tone="cool" />
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard label="Registered today" value={String(guestList.summary.todayCount)} delta="New guest records created today" tone="warm" />
+        <MetricCard label="Possible duplicates" value={String(duplicateCount)} delta="Duplicate groups in the current scope" tone="cool" />
         <MetricCard
           label="Assigned follow-up"
           value={String(guestList.summary.assignedFollowUpCount)}
@@ -110,143 +126,147 @@ export default async function GuestsPage({
           tone="warm"
         />
       </section>
-      <section className="grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">
-        <div className="surface overflow-hidden rounded-[24px]">
-          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Latest guests</h2>
-              <p className="mt-1 text-xs text-slate-500">{scopeLabel}</p>
-            </div>
-            <form className="grid w-full gap-3 lg:max-w-2xl lg:grid-cols-[1fr_0.9fr_auto]">
-              <input
-                name="search"
-                defaultValue={search}
-                placeholder="Search name, phone, email"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-              />
-              {canChooseBranch ? (
-                <select
-                  name="branchId"
-                  defaultValue={selectedBranchId || ""}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                >
-                  <option value="">All branches</option>
-                  {branches.map((branch) => (
-                    <option key={branch._id} value={branch._id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-              <input type="hidden" name="page" value="1" />
-              <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
-                Apply
-              </button>
-            </form>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500">
-                <tr>
-                  {["Guest", "Branch", "Service date", "Status", "Next step"].map((column) => (
-                    <th key={column} className="px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em]">
-                      {column}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {guests.length > 0 ? (
-                  guests.map((guest) => (
-                    <tr key={guest._id} className="border-t border-slate-100">
-                      <td className="px-5 py-3.5">
-                        <Link href={`/guests/${guest._id}`} className="font-semibold text-slate-900 hover:text-orange-700">
-                          {guest.firstName} {guest.lastName}
-                        </Link>
-                        <p className="mt-0.5 text-xs text-slate-500">{guest.email || guest.phone}</p>
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-600">{guest.branchId?.name ?? "Unassigned"}</td>
-                      <td className="px-5 py-3.5 text-slate-600">
-                        {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString() : "No date"}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-800">
-                          {guest.visitStatus.replace("_", " ")}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 font-medium text-slate-700">
-                        {guest.nextFollowUpStatus?.replace("_", " ") ?? "Awaiting follow-up"}
-                      </td>
+      <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.55fr)]">
+        <Card className="app-rise min-w-0 p-6 sm:p-7">
+          <CardHeader
+            label={scopeLabel}
+            title="Latest guests"
+            action={<Badge>{guestList.pagination.total} total</Badge>}
+          />
+          <form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+            <input
+              name="search"
+              defaultValue={search}
+              placeholder="Search name, phone or email"
+              aria-label="Search guests"
+              className={canChooseBranch ? "ui-input" : "ui-input sm:col-span-2"}
+            />
+            {canChooseBranch ? (
+              <select name="branchId" defaultValue={selectedBranchId || ""} aria-label="Branch" className="ui-input">
+                <option value="">All branches</option>
+                {branches.map((branch) => (
+                  <option key={branch._id} value={branch._id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <input type="hidden" name="page" value="1" />
+            <Button type="submit" variant="secondary" icon="search">
+              Apply
+            </Button>
+          </form>
+          <div className="mt-6">
+            {guests.length > 0 ? (
+              <TableWrap>
+                <table className="ui-table">
+                  <thead>
+                    <tr>
+                      <th>Guest</th>
+                      <th>Branch</th>
+                      <th>Service date</th>
+                      <th>Status</th>
+                      <th>Next step</th>
                     </tr>
-                  ))
-                ) : (
-                  <tr className="border-t border-slate-100">
-                    <td colSpan={5} className="px-5 py-10 text-center text-sm text-slate-500">
-                      No guests match the current filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {guests.map((guest) => (
+                      <tr key={guest._id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <Avatar name={`${guest.firstName} ${guest.lastName}`} />
+                            <div className="min-w-0">
+                              <Link
+                                href={`/guests/${guest._id}`}
+                                className="font-medium text-[#111111] underline-offset-4 hover:text-[#ea580c] hover:underline"
+                              >
+                                {guest.firstName} {guest.lastName}
+                              </Link>
+                              <p className="mt-0.5 text-[13px] text-[#8a8780]">{guest.email || guest.phone}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="text-[#55534e]">{guest.branchId?.name ?? "Unassigned"}</td>
+                        <td className="whitespace-nowrap tabular-nums text-[#55534e]">
+                          {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString() : "No date"}
+                        </td>
+                        <td>
+                          <Badge tone={statusTone(guest.visitStatus)} dot>
+                            {formatStatus(guest.visitStatus)}
+                          </Badge>
+                        </td>
+                        <td className="text-[#55534e]">
+                          {guest.nextFollowUpStatus ? formatStatus(guest.nextFollowUpStatus) : "Awaiting follow-up"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+            ) : (
+              <EmptyState icon="guests" title="No guests found">
+                No guests match the current filters.
+              </EmptyState>
+            )}
           </div>
-          <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Showing {startItem}-{endItem} of {guestList.pagination.total}
+          <div className="mt-5 flex flex-col gap-3 border-t border-black/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[13px] text-[#8a8780]">
+              Showing{" "}
+              <span className="font-medium tabular-nums text-[#111111]">
+                {startItem}–{endItem}
+              </span>{" "}
+              of <span className="tabular-nums">{guestList.pagination.total}</span>
             </p>
             <div className="flex items-center gap-2">
               <Link
                 href={buildPageHref(Math.max(guestList.pagination.page - 1, 1))}
-                aria-disabled={guestList.pagination.page <= 1}
-                className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
-                  guestList.pagination.page <= 1
-                    ? "pointer-events-none border-slate-200 bg-slate-50 text-slate-400"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                }`}
+                aria-disabled={atFirstPage}
+                tabIndex={atFirstPage ? -1 : undefined}
+                className={buttonClass("secondary", "sm", atFirstPage ? "pointer-events-none opacity-40" : undefined)}
               >
                 Previous
               </Link>
-              <span className="text-sm text-slate-500">
+              <span className="px-1 text-[13px] tabular-nums text-[#6b6b6b]">
                 Page {guestList.pagination.page} of {guestList.pagination.totalPages}
               </span>
               <Link
                 href={buildPageHref(Math.min(guestList.pagination.page + 1, guestList.pagination.totalPages))}
-                aria-disabled={guestList.pagination.page >= guestList.pagination.totalPages}
-                className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
-                  guestList.pagination.page >= guestList.pagination.totalPages
-                    ? "pointer-events-none border-slate-200 bg-slate-50 text-slate-400"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                }`}
+                aria-disabled={atLastPage}
+                tabIndex={atLastPage ? -1 : undefined}
+                className={buttonClass("secondary", "sm", atLastPage ? "pointer-events-none opacity-40" : undefined)}
               >
                 Next
               </Link>
             </div>
           </div>
-        </div>
-        <div className="space-y-4">
-          <section id="guest-capture" className="surface rounded-[24px] p-5">
-            <p className="eyebrow">Guest capture desk</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-950">Use the full desk form or public intake</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {selectedBranch
-                ? `Desk staff can use the full assisted-registration modal here, while QR and self-registration can use the live public guest form for ${selectedBranch.name}.`
-                : canChooseBranch
-                  ? "Pick a branch when you need a branch-specific desk form or public guest link. Without a branch filter, you are seeing your full visible network."
-                  : "Desk staff can use the full assisted-registration modal here, while QR and self-registration can use the live public guest form for this branch."}
-            </p>
-            <div className="mt-4">
+        </Card>
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card id="guest-capture" className="p-6 sm:p-7">
+            <CardHeader
+              label="Guest capture desk"
+              title="Desk form or public intake"
+              description={
+                selectedBranch
+                  ? `Desk staff can use the full assisted-registration form here. QR codes and self-registration use the live public guest form for ${selectedBranch.name}.`
+                  : canChooseBranch
+                    ? "Pick a branch when you need a branch-specific desk form or public guest link. Without a branch filter you see your full visible network."
+                    : "Desk staff can use the full assisted-registration form here. QR codes and self-registration use the live public guest form for this branch."
+              }
+            />
+            <div className="mt-5">
               <GuestCreateModalButton
                 branches={branches}
                 users={users}
                 serviceTypes={serviceTypes}
                 defaultBranchId={selectedBranchId || user.branchId}
                 label="Open desk registration form"
-                className="rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white"
+                className={buttonClass("primary", "md", "w-full")}
               />
             </div>
-          </section>
-          <section className="surface rounded-[24px] p-5">
-            <p className="eyebrow">Public guest intake</p>
-            <div className="mt-4">
+          </Card>
+          <Card className="p-6 sm:p-7">
+            <CardHeader label="Public guest intake" title="Share links" />
+            <div className="mt-5">
               {guestTemplateCards.length > 0 ? (
                 <div className="space-y-4">
                   {guestTemplateCards.map((template) => (
@@ -262,69 +282,67 @@ export default async function GuestsPage({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
+                <EmptyState icon="templates" title="No public link yet">
                   {canChooseBranch && !selectedBranchId
-                    ? "Choose a branch to load its public guest link, or activate guest templates in Templates if none are live yet."
-                    : "No active public guest template is available yet. Activate one in Templates to expose self-registration."}
-                </div>
+                    ? "Choose a branch to load its public guest link, or activate a guest template in Templates if none are live yet."
+                    : "No public guest template is active yet. Activate one in Templates to turn on self-registration."}
+                </EmptyState>
               )}
             </div>
-          </section>
-          <section className="surface rounded-[24px] p-5">
-            <p className="eyebrow">Capture channels</p>
-            <div className="mt-3 space-y-2">
+          </Card>
+          <Card className="p-6 sm:p-7">
+            <CardHeader label="Capture channels" title="Ways to register" />
+            <div className="mt-5 space-y-2">
               <a
                 href={guestTemplateCards.length > 0 ? publicGuestUrl : "/templates"}
                 target={guestTemplateCards.length > 0 ? "_blank" : undefined}
                 rel={guestTemplateCards.length > 0 ? "noreferrer" : undefined}
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 hover:border-orange-200 hover:text-orange-700"
+                className={channelRowClass}
               >
                 <span>Public self-registration</span>
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Open
-                </span>
+                <ChannelHint>Open</ChannelHint>
               </a>
               <a
                 href={guestTemplateCards.length > 0 ? publicGuestUrl : "/templates"}
                 target={guestTemplateCards.length > 0 ? "_blank" : undefined}
                 rel={guestTemplateCards.length > 0 ? "noreferrer" : undefined}
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 hover:border-orange-200 hover:text-orange-700"
+                className={channelRowClass}
               >
                 <span>QR code connect card</span>
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Share
-                </span>
+                <ChannelHint>Share</ChannelHint>
               </a>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                <GuestCreateModalButton
-                  branches={branches}
-                  users={users}
-                  serviceTypes={serviceTypes}
-                  defaultBranchId={selectedBranchId || user.branchId}
-                  label="Usher desk registration"
-                  className="w-full text-left text-sm font-medium text-slate-700"
-                />
-              </div>
+              <GuestCreateModalButton
+                branches={branches}
+                users={users}
+                serviceTypes={serviceTypes}
+                defaultBranchId={selectedBranchId || user.branchId}
+                label="Usher desk registration"
+                className={`${channelRowClass} w-full text-left`}
+              />
               <a
                 href={guestTemplateCards.length > 0 ? publicGuestUrl : "/connect"}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 hover:border-orange-200 hover:text-orange-700"
+                className={channelRowClass}
               >
                 <span>Church tablet kiosk</span>
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Launch
-                </span>
+                <ChannelHint>Launch</ChannelHint>
               </a>
             </div>
-          </section>
-          <section className="surface rounded-[24px] p-5">
-            <p className="eyebrow">Data quality</p>
-            <div className="mt-3 rounded-[20px] bg-slate-950 p-4 text-white">
-              <p className="text-2xl font-bold">{guestList.summary.completionRate}%</p>
-              <p className="mt-1.5 text-sm text-slate-300">Guest cards completed with both phone and email</p>
+          </Card>
+          <Card className="p-6 sm:p-7">
+            <CardHeader label="Data quality" title="Complete guest cards" />
+            <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-5">
+              <p className="lp-heading text-[2.25rem] leading-none tabular-nums">{guestList.summary.completionRate}%</p>
+              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
+                <div
+                  className="lp-flame-bg app-bar h-full rounded-full"
+                  style={{ width: `${Math.min(Math.max(guestList.summary.completionRate, 0), 100)}%` }}
+                />
+              </div>
+              <p className="mt-3 text-[13px] text-[#6b6b6b]">Guest cards with both a phone number and an email</p>
             </div>
-          </section>
+          </Card>
           <GuestDuplicatePanel groups={duplicateGroups} />
         </div>
       </section>

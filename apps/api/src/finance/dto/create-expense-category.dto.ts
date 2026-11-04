@@ -33,4 +33,6 @@ export class CreateExpenseCategoryDto {
   sortOrder?: number;
 }
 
-export class UpdateExpenseCategoryDto extends PartialType(CreateExpenseCategoryDto) {}
+export class UpdateExpenseCategoryDto extends PartialType(
+  CreateExpenseCategoryDto,
+) {}

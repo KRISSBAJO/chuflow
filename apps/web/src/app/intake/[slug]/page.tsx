@@ -13,6 +13,9 @@ export default async function PublicIntakePage({
   const { slug } = await params;
   const { branchId, oversightRegion, district } = await searchParams;
 
+  let template: IntakeTemplate;
+  let branchOptions: PublicBranchOption[];
+
   try {
     const query = new URLSearchParams();
 
@@ -20,7 +23,7 @@ export default async function PublicIntakePage({
       query.set("branchId", branchId);
     }
 
-    const template = await publicServerGet<IntakeTemplate>(
+    template = await publicServerGet<IntakeTemplate>(
       `/intake-templates/public/${slug}${query.toString() ? `?${query.toString()}` : ""}`,
     );
     const branchOptionQuery = new URLSearchParams();
@@ -33,7 +36,7 @@ export default async function PublicIntakePage({
       branchOptionQuery.set("district", district);
     }
 
-    const branchOptions =
+    branchOptions =
       (template.kind === "weekly_report" || template.kind === "maag_report") && !branchId
         ? await publicServerGet<PublicBranchOption[]>(
             `/intake-templates/public/branch-options${
@@ -41,17 +44,17 @@ export default async function PublicIntakePage({
             }`,
           ).catch(() => [])
         : [];
-
-    return (
-      <PublicIntakeForm
-        template={template}
-        branchId={branchId}
-        branchOptions={branchOptions}
-        defaultOversightRegion={oversightRegion}
-        defaultDistrict={district}
-      />
-    );
   } catch {
     notFound();
   }
+
+  return (
+    <PublicIntakeForm
+      template={template}
+      branchId={branchId}
+      branchOptions={branchOptions}
+      defaultOversightRegion={oversightRegion}
+      defaultDistrict={district}
+    />
+  );
 }

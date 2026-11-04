@@ -1,4 +1,5 @@
-import Link from "next/link";
+import type { ReactNode } from "react";
+import { Avatar, Badge, ButtonLink, formatStatus, statusTone, type BadgeTone } from "@/components/ui/ui";
 import type { BranchOverview, UserSummary } from "@/lib/types";
 
 export function TeamPills({
@@ -9,19 +10,23 @@ export function TeamPills({
   emptyLabel: string;
 }) {
   if (users.length === 0) {
-    return <p className="text-sm text-slate-500">{emptyLabel}</p>;
+    return <p className="text-[13px] text-[#8a8780]">{emptyLabel}</p>;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      {users.map((user) => (
-        <span
-          key={user._id}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
-        >
-          {user.firstName} {user.lastName}
-        </span>
-      ))}
+      {users.map((user) => {
+        const name = `${user.firstName} ${user.lastName}`.trim();
+        return (
+          <span
+            key={user._id}
+            className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-white py-1 pl-1 pr-3 text-[13px] font-medium text-[#111111]"
+          >
+            <Avatar name={name || "?"} className="h-6 w-6 text-[10px]" />
+            {name}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -29,14 +34,14 @@ export function TeamPills({
 function getPastoralCoverage(
   residentPastors: UserSummary[],
   associatePastors: UserSummary[],
-) {
+): { label: string; tone: BadgeTone; message: string } {
   const hasResidentPastor = residentPastors.length > 0;
   const hasAssociatePastor = associatePastors.length > 0;
 
   if (hasResidentPastor && hasAssociatePastor) {
     return {
       label: "Pastoral team covered",
-      tone: "bg-emerald-50 text-emerald-700",
+      tone: "success",
       message:
         "Resident pastor and associate pastor are both assigned to this branch.",
     };
@@ -45,7 +50,7 @@ function getPastoralCoverage(
   if (!hasResidentPastor && !hasAssociatePastor) {
     return {
       label: "Both pastor roles vacant",
-      tone: "bg-rose-50 text-rose-700",
+      tone: "danger",
       message:
         "This branch still needs both a resident pastor and an associate pastor.",
     };
@@ -54,7 +59,7 @@ function getPastoralCoverage(
   if (!hasResidentPastor) {
     return {
       label: "Resident pastor vacant",
-      tone: "bg-amber-50 text-amber-700",
+      tone: "warning",
       message:
         "Resident pastor is still unassigned. Associate pastor coverage is present.",
     };
@@ -62,10 +67,19 @@ function getPastoralCoverage(
 
   return {
     label: "Associate pastor vacant",
-    tone: "bg-amber-50 text-amber-700",
+    tone: "warning",
     message:
       "Associate pastor is still unassigned. Resident pastor coverage is present.",
   };
+}
+
+function TeamGroup({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-2xl bg-[#f6f5f1] p-4 ${className ?? ""}`}>
+      <p className="text-[12px] font-medium text-[#6b6b6b]">{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
 }
 
 export function PastoralLeadershipCard({
@@ -78,44 +92,30 @@ export function PastoralLeadershipCard({
   const coverage = getPastoralCoverage(residentPastors, associatePastors);
 
   return (
-    <div className="rounded-2xl bg-slate-50 p-4 xl:col-span-2">
+    <div className="rounded-2xl border border-black/[0.06] p-5 xl:col-span-2">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Pastoral Leadership
-          </p>
-          <p className="mt-2 text-sm text-slate-500">{coverage.message}</p>
+          <p className="text-[15px] font-semibold text-[#111111]">Pastoral leadership</p>
+          <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">{coverage.message}</p>
         </div>
-        <span
-          className={`inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${coverage.tone}`}
-        >
+        <Badge tone={coverage.tone} dot className="w-fit">
           {coverage.label}
-        </span>
+        </Badge>
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Resident Pastor
-          </p>
-          <div className="mt-3">
-            <TeamPills
-              users={residentPastors}
-              emptyLabel="No resident pastor assigned yet."
-            />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Associate Pastor
-          </p>
-          <div className="mt-3">
-            <TeamPills
-              users={associatePastors}
-              emptyLabel="No associate pastor assigned yet."
-            />
-          </div>
-        </div>
+        <TeamGroup label="Resident pastor">
+          <TeamPills
+            users={residentPastors}
+            emptyLabel="No resident pastor assigned yet."
+          />
+        </TeamGroup>
+        <TeamGroup label="Associate pastor">
+          <TeamPills
+            users={associatePastors}
+            emptyLabel="No associate pastor assigned yet."
+          />
+        </TeamGroup>
       </div>
     </div>
   );
@@ -123,84 +123,57 @@ export function PastoralLeadershipCard({
 
 export function BranchCard({ branch }: { branch: BranchOverview }) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-black/[0.06] p-5 transition-colors hover:border-black/[0.12]">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-lg font-semibold text-slate-950">{branch.name}</h4>
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                branch.status === "active"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {branch.status}
-            </span>
+            <h4 className="lp-heading text-[18px]">{branch.name}</h4>
+            <Badge tone={statusTone(branch.status)} dot>
+              {formatStatus(branch.status)}
+            </Badge>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-[14px] text-[#55534e]">
             {branch.city}, {branch.state} · {branch.serviceTimes}
           </p>
-          <p className="mt-1 text-sm text-slate-500">{branch.contactInfo}</p>
+          <p className="mt-0.5 text-[13px] text-[#8a8780]">{branch.contactInfo}</p>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-orange-50 px-3 py-1.5 font-semibold text-orange-700">
-            {branch.metrics.guestCount} guests
-          </span>
-          <span className="rounded-full bg-cyan-50 px-3 py-1.5 font-semibold text-cyan-700">
-            {branch.metrics.memberCount} members
-          </span>
-          <span className="rounded-full bg-slate-100 px-3 py-1.5 font-semibold text-slate-700">
-            {branch.metrics.activeUserCount} active staff
-          </span>
+        <div className="flex flex-wrap gap-2">
+          <Badge tone="flame">
+            <span className="tabular-nums">{branch.metrics.guestCount}</span> guests
+          </Badge>
+          <Badge>
+            <span className="tabular-nums">{branch.metrics.memberCount}</span> members
+          </Badge>
+          <Badge>
+            <span className="tabular-nums">{branch.metrics.activeUserCount}</span> active staff
+          </Badge>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Branch Admins
-          </p>
-          <div className="mt-3">
-            <TeamPills users={branch.admins} emptyLabel="No branch admin assigned yet." />
-          </div>
-        </div>
+      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        <TeamGroup label="Branch admins">
+          <TeamPills users={branch.admins} emptyLabel="No branch admin assigned yet." />
+        </TeamGroup>
         <PastoralLeadershipCard
           residentPastors={branch.residentPastors}
           associatePastors={branch.associatePastors}
         />
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Follow-Up Team
-          </p>
-          <div className="mt-3">
-            <TeamPills users={branch.followUpTeam} emptyLabel="No follow-up team assigned." />
-          </div>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Ushers
-          </p>
-          <div className="mt-3">
-            <TeamPills users={branch.ushers} emptyLabel="No usher team assigned." />
-          </div>
-        </div>
+        <TeamGroup label="Follow-up team">
+          <TeamPills users={branch.followUpTeam} emptyLabel="No follow-up team assigned." />
+        </TeamGroup>
+        <TeamGroup label="Ushers">
+          <TeamPills users={branch.ushers} emptyLabel="No usher team assigned." />
+        </TeamGroup>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/branches"
-          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
-        >
+      <div className="mt-5 flex flex-wrap gap-2">
+        <ButtonLink href="/branches" variant="secondary" size="sm" icon="branches">
           Open branches
-        </Link>
-        <Link
-          href={`/users?branchId=${branch._id}`}
-          className="rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
-        >
+        </ButtonLink>
+        <ButtonLink href={`/users?branchId=${branch._id}`} size="sm" icon="users">
           Open branch staff
-        </Link>
+        </ButtonLink>
       </div>
-    </div>
+    </article>
   );
 }

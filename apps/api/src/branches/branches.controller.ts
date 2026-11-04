@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { BranchesService } from './branches.service';
@@ -6,7 +14,10 @@ import { CreateBranchDto, UpdateBranchDto } from './dto/create-branch.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import type { BranchOverviewSummary, BranchStructureSummary } from './branches.service';
+import type {
+  BranchOverviewSummary,
+  BranchStructureSummary,
+} from './branches.service';
 
 @ApiTags('Branches')
 @ApiBearerAuth()
@@ -32,7 +43,9 @@ export class BranchesController {
     'associate_pastor',
   )
   @Get('overview')
-  findOverview(@CurrentUser() user: AuthUser): Promise<BranchOverviewSummary[]> {
+  findOverview(
+    @CurrentUser() user: AuthUser,
+  ): Promise<BranchOverviewSummary[]> {
     return this.branchesService.findOverview(user);
   }
 
@@ -47,7 +60,9 @@ export class BranchesController {
     'associate_pastor',
   )
   @Get('structure')
-  findStructure(@CurrentUser() user: AuthUser): Promise<BranchStructureSummary> {
+  findStructure(
+    @CurrentUser() user: AuthUser,
+  ): Promise<BranchStructureSummary> {
     return this.branchesService.findStructure(user);
   }
 
@@ -83,7 +98,11 @@ export class BranchesController {
 
   @Roles('super_admin', 'district_admin')
   @Patch(':id')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateBranchDto) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateBranchDto,
+  ) {
     return this.branchesService.update(id, dto, user);
   }
 }

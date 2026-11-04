@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/ui";
 import type { BranchSummary, DistrictOption, OversightRegionOption } from "@/lib/types";
 
 type FollowUpScopeFilterBarProps = {
@@ -106,151 +107,141 @@ export function FollowUpScopeFilterBar({
     });
   };
 
+
   return (
-    <section className="surface rounded-[24px] p-5">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
-            Scope filters
+    <section
+      className="app-rise flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-white p-3"
+      style={{ animationDelay: "60ms" }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-0.5">
+        <p className="text-[13px] text-[#6b6b6b]">
+          Monitor broadly, then narrow to a branch before assigning a guest.
+        </p>
+        {isPending ? (
+          <span className="flex items-center gap-2 text-[13px] text-[#8a8780]" role="status">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#e4e3df] border-t-[#ea580c]" />
+            Updating
           </span>
-          <span className="text-sm text-slate-500">
-            Monitor broadly, then narrow to the branch before assigning a guest.
-          </span>
-          {isPending ? (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">
-              Updating
-            </span>
-          ) : null}
-        </div>
+        ) : null}
+      </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1.15fr_1.15fr_1.15fr_0.9fr_1.2fr]">
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              National area
-            </span>
-            <select
-              value={selectedRegion}
-              disabled={!canChooseRegion || isPending}
-              onChange={(event) => {
-                const nextRegion = event.target.value;
-                setSelectedRegion(nextRegion);
-                setSelectedDistrict("");
-                setSelectedBranchId("");
-                pushFilters({
-                  oversightRegion: nextRegion,
-                  district: "",
-                  branchId: "",
-                });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All national areas</option>
-              {oversightRegions.map((region) => (
-                <option key={region._id} value={region.name}>
-                  {region.name}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.3fr)]">
+        <label className="block">
+          <span className="sr-only">National area</span>
+          <select
+            value={selectedRegion}
+            disabled={!canChooseRegion || isPending}
+            onChange={(event) => {
+              const nextRegion = event.target.value;
+              setSelectedRegion(nextRegion);
+              setSelectedDistrict("");
+              setSelectedBranchId("");
+              pushFilters({
+                oversightRegion: nextRegion,
+                district: "",
+                branchId: "",
+              });
+            }}
+            className="ui-input"
+          >
+            <option value="">All national areas</option>
+            {oversightRegions.map((region) => (
+              <option key={region._id} value={region.name}>
+                {region.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              District
-            </span>
-            <select
-              value={selectedDistrict}
-              disabled={!canChooseDistrict || isPending}
-              onChange={(event) => {
-                const nextDistrict = event.target.value;
-                setSelectedDistrict(nextDistrict);
-                setSelectedBranchId("");
-                pushFilters({
-                  district: nextDistrict,
-                  branchId: "",
-                });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All districts</option>
-              {filteredDistricts.map((item) => (
-                <option key={item._id} value={item.name}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label className="block">
+          <span className="sr-only">District</span>
+          <select
+            value={selectedDistrict}
+            disabled={!canChooseDistrict || isPending}
+            onChange={(event) => {
+              const nextDistrict = event.target.value;
+              setSelectedDistrict(nextDistrict);
+              setSelectedBranchId("");
+              pushFilters({
+                district: nextDistrict,
+                branchId: "",
+              });
+            }}
+            className="ui-input"
+          >
+            <option value="">All districts</option>
+            {filteredDistricts.map((item) => (
+              <option key={item._id} value={item.name}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Branch
-            </span>
-            <select
-              value={selectedBranchId}
-              disabled={!canChooseBranch || isPending}
-              onChange={(event) => {
-                const nextBranchId = event.target.value;
-                setSelectedBranchId(nextBranchId);
-                pushFilters({ branchId: nextBranchId });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All branches</option>
-              {filteredBranches.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label className="block">
+          <span className="sr-only">Branch</span>
+          <select
+            value={selectedBranchId}
+            disabled={!canChooseBranch || isPending}
+            onChange={(event) => {
+              const nextBranchId = event.target.value;
+              setSelectedBranchId(nextBranchId);
+              pushFilters({ branchId: nextBranchId });
+            }}
+            className="ui-input"
+          >
+            <option value="">All branches</option>
+            {filteredBranches.map((item) => (
+              <option key={item._id} value={item._id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Stage
-            </span>
-            <select
-              value={selectedStatus}
-              disabled={isPending}
-              onChange={(event) => {
-                const nextStatus = event.target.value;
-                setSelectedStatus(nextStatus);
-                pushFilters({ status: nextStatus });
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="">All stages</option>
-              <option value="new">New</option>
-              <option value="assigned">Assigned</option>
-              <option value="contacted">Contacted</option>
-              <option value="prayed_with">Prayed with</option>
-              <option value="invited_back">Invited back</option>
-              <option value="returned">Returned</option>
-              <option value="converted">Converted</option>
-            </select>
-          </label>
+        <label className="block">
+          <span className="sr-only">Stage</span>
+          <select
+            value={selectedStatus}
+            disabled={isPending}
+            onChange={(event) => {
+              const nextStatus = event.target.value;
+              setSelectedStatus(nextStatus);
+              pushFilters({ status: nextStatus });
+            }}
+            className="ui-input"
+          >
+            <option value="">All stages</option>
+            <option value="new">New</option>
+            <option value="assigned">Assigned</option>
+            <option value="contacted">Contacted</option>
+            <option value="prayed_with">Prayed with</option>
+            <option value="invited_back">Invited back</option>
+            <option value="returned">Returned</option>
+            <option value="converted">Converted</option>
+          </select>
+        </label>
 
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Search
-            </span>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                pushFilters({ search: searchDraft });
-              }}
-              className="flex gap-2"
-            >
-              <input
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
-                placeholder="Guest or note"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
-              />
-              <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                Go
-              </button>
-            </form>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            pushFilters({ search: searchDraft });
+          }}
+          className="flex gap-2 sm:col-span-2 xl:col-span-1"
+        >
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">Search</span>
+            <input
+              value={searchDraft}
+              onChange={(event) => setSearchDraft(event.target.value)}
+              placeholder="Search guest or note"
+              className="ui-input"
+            />
           </label>
-        </div>
+          <Button type="submit" variant="secondary" icon="search">
+            Go
+          </Button>
+        </form>
       </div>
     </section>
   );

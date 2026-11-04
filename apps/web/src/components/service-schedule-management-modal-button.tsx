@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ModalShell } from "@/components/modal-shell";
+import { Button } from "@/components/ui/ui";
 import { ServiceScheduleCreateForm } from "@/components/service-schedule-create-form";
 import { ServiceScheduleManagementList } from "@/components/service-schedule-management-list";
 import type { BranchSummary, ServiceScheduleSummary, ServiceTypeSummary } from "@/lib/types";
@@ -23,23 +24,19 @@ export function ServiceScheduleManagementModalButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700"
-      >
+      <Button variant="secondary" onClick={() => setOpen(true)}>
         Manage service schedules
-      </button>
+      </Button>
       <ModalShell
         open={open}
         onClose={() => setOpen(false)}
         eyebrow="Service scheduling"
         title="Define recurring branch services"
-        description="Set up first service, second service, midweek, and other repeating branch gatherings so attendance and finance attach to the right service instance."
+        description="Set up first service, second service, midweek and other repeating gatherings so attendance and finance attach to the right service."
         maxWidthClass="max-w-6xl"
       >
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="surface rounded-[24px] p-5">
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-2xl border border-black/[0.06] p-5">
             <ServiceScheduleCreateForm
               branches={branches}
               serviceTypes={serviceTypes}
@@ -47,12 +44,10 @@ export function ServiceScheduleManagementModalButton({
               currentUserRole={currentUserRole}
             />
           </div>
-          <div className="surface rounded-[24px] p-5">
+          <div className="rounded-2xl border border-black/[0.06] p-5">
             <div className="mb-4">
-              <p className="eyebrow">Existing schedules</p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-950">
-                Review and update branch service rhythm
-              </h3>
+              <p className="text-[13px] font-medium text-[#6b6b6b]">Existing schedules</p>
+              <h3 className="lp-heading mt-1 text-[18px]">Review and update the service rhythm</h3>
             </div>
             <ServiceScheduleManagementList
               schedules={serviceSchedules}

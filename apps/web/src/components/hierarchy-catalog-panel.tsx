@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "@/components/app/icons";
+import { Badge, Button, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import { isGlobalRole } from "@/lib/permissions";
 import type { DistrictOption, OversightRegionOption } from "@/lib/types";
@@ -104,23 +106,30 @@ export function HierarchyCatalogPanel({
   }
 
   return (
-    <section className="surface rounded-[28px] p-6">
-      <p className="eyebrow">Hierarchy Catalog</p>
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <Card className="app-rise p-6 sm:p-7">
+      <CardHeader
+        label="Hierarchy catalog"
+        title="National areas and districts"
+        description="Create national areas first, then attach districts and branches underneath them."
+      />
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <div className="rounded-2xl border border-black/[0.06] p-5">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">
-                National areas
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Create the national or oversight areas first, then attach
-                districts and branches underneath them.
-              </p>
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[#111111]">
+                <Icon name="structure" className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="lp-heading text-[17px]">National areas</h3>
+                <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">
+                  The top level of your structure. Districts and branches sit
+                  underneath each area.
+                </p>
+              </div>
             </div>
-            <span className="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700">
-              {oversightRegions.length} regions
-            </span>
+            <Badge tone="flame">
+              <span className="tabular-nums">{oversightRegions.length}</span> areas
+            </Badge>
           </div>
 
           {canCreateRegion ? (
@@ -130,59 +139,66 @@ export function HierarchyCatalogPanel({
             >
               <input
                 name="regionName"
-                placeholder="Create national area"
-                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+                placeholder="New national area name"
+                aria-label="New national area name"
+                className="ui-input flex-1"
                 required
               />
-              <button
-                type="submit"
-                disabled={loading === "region"}
-                className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-              >
+              <Button type="submit" icon="plus" disabled={loading === "region"}>
                 {loading === "region" ? "Creating..." : "Create"}
-              </button>
+              </Button>
             </form>
           ) : null}
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-4">
             {oversightRegions.length > 0 ? (
-              oversightRegions.map((region) => (
-                <Link
-                  key={region._id}
-                  href={`/structure/national/${region._id}`}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-white"
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">{region.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {region.districtCount} districts · {region.branchCount} branches
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-600">
-                    Open
-                  </span>
-                </Link>
-              ))
+              <ul className="divide-y divide-black/[0.05]">
+                {oversightRegions.map((region) => (
+                  <li key={region._id}>
+                    <Link
+                      href={`/structure/national/${region._id}`}
+                      className="group -mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-[#f6f5f1]"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-medium text-[#111111]">{region.name}</span>
+                        <span className="block text-[13px] text-[#6b6b6b]">
+                          <span className="tabular-nums">{region.districtCount}</span> districts ·{" "}
+                          <span className="tabular-nums">{region.branchCount}</span> branches
+                        </span>
+                      </span>
+                      <Icon
+                        name="arrowRight"
+                        className="h-4 w-4 text-[#8a8780] transition-transform group-hover:translate-x-0.5 group-hover:text-[#111111]"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-                No oversight regions have been created yet.
-              </p>
+              <EmptyState icon="structure" title="No national areas yet">
+                Create the first national area to start building your structure.
+              </EmptyState>
             )}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-2xl border border-black/[0.06] p-5">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">Districts</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Districts sit inside a national area, and branches are created
-                under the district you select.
-              </p>
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[#111111]">
+                <Icon name="pin" className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="lp-heading text-[17px]">Districts</h3>
+                <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">
+                  Districts sit inside a national area, and branches are created
+                  under the district you select.
+                </p>
+              </div>
             </div>
-            <span className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
-              {districts.length} districts
-            </span>
+            <Badge>
+              <span className="tabular-nums">{districts.length}</span> districts
+            </Badge>
           </div>
 
           {canCreateDistrict ? (
@@ -192,7 +208,8 @@ export function HierarchyCatalogPanel({
                   name="districtOversightRegion"
                   value={selectedRegion}
                   onChange={(event) => setSelectedRegion(event.target.value)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+                  aria-label="National area"
+                  className="ui-input"
                   required
                 >
                   <option value="">Select national area</option>
@@ -212,7 +229,8 @@ export function HierarchyCatalogPanel({
                   <input
                     value={defaultOversightRegion || "Current national area"}
                     readOnly
-                    className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500 outline-none"
+                    aria-label="National area"
+                    className="ui-input bg-[#f6f5f1] text-[#6b6b6b]"
                   />
                 </>
               )}
@@ -220,50 +238,56 @@ export function HierarchyCatalogPanel({
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   name="districtName"
-                  placeholder="Create district"
-                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none"
+                  placeholder="New district name"
+                  aria-label="New district name"
+                  className="ui-input flex-1"
                   required
                 />
-                <button
-                  type="submit"
-                  disabled={loading === "district"}
-                  className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
-                >
+                <Button type="submit" icon="plus" disabled={loading === "district"}>
                   {loading === "district" ? "Creating..." : "Create"}
-                </button>
+                </Button>
               </div>
             </form>
           ) : null}
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-4">
             {visibleDistricts.length > 0 ? (
-              visibleDistricts.map((district) => (
-                <Link
-                  key={district._id}
-                  href={`/structure/district/${district._id}`}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-white"
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">{district.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {district.oversightRegion} · {district.branchCount} branches
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-700">
-                    Open
-                  </span>
-                </Link>
-              ))
+              <ul className="divide-y divide-black/[0.05]">
+                {visibleDistricts.map((district) => (
+                  <li key={district._id}>
+                    <Link
+                      href={`/structure/district/${district._id}`}
+                      className="group -mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-[#f6f5f1]"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-medium text-[#111111]">{district.name}</span>
+                        <span className="block text-[13px] text-[#6b6b6b]">
+                          {district.oversightRegion} ·{" "}
+                          <span className="tabular-nums">{district.branchCount}</span> branches
+                        </span>
+                      </span>
+                      <Icon
+                        name="arrowRight"
+                        className="h-4 w-4 text-[#8a8780] transition-transform group-hover:translate-x-0.5 group-hover:text-[#111111]"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+              <EmptyState icon="pin" title="No districts here yet">
                 No districts are available in the selected national area yet.
-              </p>
+              </EmptyState>
             )}
           </div>
         </div>
       </div>
 
-      {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
-    </section>
+      {status ? (
+        <p role="status" className="mt-5 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] text-[#55534e]">
+          {status}
+        </p>
+      ) : null}
+    </Card>
   );
 }

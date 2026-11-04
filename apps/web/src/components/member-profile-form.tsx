@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import {
   formatMembershipStatus,
@@ -141,28 +142,20 @@ export function MemberProfileForm({
   }
 
   return (
-    <section className="surface rounded-[32px] p-6">
-      <p className="eyebrow">Profile Edit</p>
-      <div className="mt-3 flex flex-col gap-2">
-        <h2 className="text-2xl font-semibold text-slate-950">
-          Update member details
-        </h2>
-        <p className="text-sm leading-6 text-slate-500">
-          {member.branchId?.name
-            ? `This record is isolated to ${member.branchId.name}.`
-            : "This record stays inside its current branch scope."}{" "}
-          Replace raw milestone codes with clean church-admin data.
-        </p>
-      </div>
-      <form action={handleSubmit} className="mt-5 rounded-[28px] bg-white p-5">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Title</span>
-            <select
-              name="title"
-              defaultValue={member.title || ""}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            >
+    <Card className="p-6 sm:p-7">
+      <CardHeader
+        label="Edit profile"
+        title="Update member details"
+        description={
+          member.branchId?.name
+            ? `This record belongs to ${member.branchId.name}. Keep milestones and placement up to date.`
+            : "This record stays inside its current branch. Keep milestones and placement up to date."
+        }
+      />
+      <form action={handleSubmit} className="mt-6 space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Title">
+            <select name="title" defaultValue={member.title || ""} className="ui-input">
               <option value="">No title selected</option>
               {MEMBER_TITLE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -170,91 +163,52 @@ export function MemberProfileForm({
                 </option>
               ))}
             </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">First name</span>
-            <input
-              name="firstName"
-              defaultValue={member.firstName}
-              required
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Last name</span>
-            <input
-              name="lastName"
-              defaultValue={member.lastName}
-              required
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Phone number</span>
-            <input
-              name="phone"
-              defaultValue={member.phone || ""}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">Email</span>
-            <input
-              name="email"
-              type="email"
-              defaultValue={member.email || ""}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">
-              Membership status
-            </span>
-            <select
-              name="membershipStatus"
-              defaultValue={member.membershipStatus}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-            >
+          </Field>
+          <Field label="First name" required>
+            <input name="firstName" defaultValue={member.firstName} required className="ui-input" />
+          </Field>
+          <Field label="Last name" required>
+            <input name="lastName" defaultValue={member.lastName} required className="ui-input" />
+          </Field>
+          <Field label="Phone number">
+            <input name="phone" defaultValue={member.phone || ""} className="ui-input" />
+          </Field>
+          <Field label="Email">
+            <input name="email" type="email" defaultValue={member.email || ""} className="ui-input" />
+          </Field>
+          <Field label="Membership status" hint={`Current status: ${formatMembershipStatus(member.membershipStatus)}`}>
+            <select name="membershipStatus" defaultValue={member.membershipStatus} className="ui-input">
               {MEMBERSHIP_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-slate-500">
-              Current status: {formatMembershipStatus(member.membershipStatus)}
-            </p>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">
-              Date joined church
-            </span>
+          </Field>
+          <Field label="Date joined church">
             <input
               name="dateJoinedChurch"
               type="date"
               max={getTodayDateString()}
               defaultValue={member.dateJoinedChurch || ""}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+              className="ui-input"
             />
-          </label>
+          </Field>
         </div>
 
-        <section className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-          <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Service Unit Placement
-            </h4>
-            <p className="text-sm text-slate-500">
-              Keep this member attached to the right branch service unit.
-            </p>
-          </div>
-          <label className="mt-4 block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Service unit</span>
-            <select
-              name="serviceUnitId"
-              defaultValue={selectedServiceUnitId}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-            >
+        <section className="rounded-2xl bg-[#f6f5f1] p-5">
+          <h3 className="text-[15px] font-semibold text-[#111111]">Service unit placement</h3>
+          <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Keep this member attached to the right branch service unit.</p>
+          <Field
+            label="Service unit"
+            className="mt-4"
+            hint={
+              member.serviceUnitInterest
+                ? `Previously recorded interest: ${member.serviceUnitInterest}.`
+                : "Assign a service unit rather than storing free-text interest."
+            }
+          >
+            <select name="serviceUnitId" defaultValue={selectedServiceUnitId} className="ui-input">
               <option value="">No service unit assigned yet</option>
               {scopedServiceUnits.map((unit) => (
                 <option key={unit._id} value={unit._id}>
@@ -262,86 +216,61 @@ export function MemberProfileForm({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-slate-500">
-              {member.serviceUnitInterest
-                ? `Previously recorded interest: ${member.serviceUnitInterest}.`
-                : "Assign a real service unit instead of storing free-text interest."}
-            </p>
-          </label>
+          </Field>
         </section>
 
-        <div className="mt-6 space-y-4">
-          {MEMBER_COURSE_GROUPS.map((group) => {
-            const values = member as unknown as Record<string, string | undefined>;
+        {MEMBER_COURSE_GROUPS.map((group) => {
+          const values = member as unknown as Record<string, string | undefined>;
 
-            return (
-              <section
-                key={group.key}
-                className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4"
-              >
-                <div className="flex flex-col gap-1">
-                  <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {group.title}
-                  </h4>
-                  <p className="text-sm text-slate-500">{group.helperText}</p>
-                </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-700">
-                      {group.question}
-                    </span>
-                    <select
-                      name={group.statusName}
-                      defaultValue={normalizeYesNoValue(values[group.statusName])}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-                    >
-                      <option value="">Select one</option>
-                      {YES_NO_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-700">
-                      Date or year
-                    </span>
-                    <input
-                      name={group.dateName}
-                      type="date"
-                      max={getTodayDateString()}
-                      defaultValue={values[group.dateName] || ""}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-                    />
-                  </label>
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-700">
-                      Location
-                    </span>
-                    <input
-                      name={group.locationName}
-                      defaultValue={values[group.locationName] || ""}
-                      placeholder={`${group.title} location`}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
-                    />
-                  </label>
-                </div>
-              </section>
-            );
-          })}
-        </div>
+          return (
+            <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
+              <h3 className="text-[15px] font-semibold text-[#111111]">{group.title}</h3>
+              <p className="mt-0.5 text-[13px] text-[#6b6b6b]">{group.helperText}</p>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <Field label={group.question}>
+                  <select
+                    name={group.statusName}
+                    defaultValue={normalizeYesNoValue(values[group.statusName])}
+                    className="ui-input"
+                  >
+                    <option value="">Select one</option>
+                    {YES_NO_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Date or year">
+                  <input
+                    name={group.dateName}
+                    type="date"
+                    max={getTodayDateString()}
+                    defaultValue={values[group.dateName] || ""}
+                    className="ui-input"
+                  />
+                </Field>
+                <Field label="Location">
+                  <input
+                    name={group.locationName}
+                    defaultValue={values[group.locationName] || ""}
+                    placeholder={`${group.title} location`}
+                    className="ui-input"
+                  />
+                </Field>
+              </div>
+            </section>
+          );
+        })}
 
-        <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">
-                Holy Ghost baptism
-              </span>
+        <section className="rounded-2xl bg-[#f6f5f1] p-5">
+          <h3 className="text-[15px] font-semibold text-[#111111]">Baptism</h3>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Field label="Holy Ghost baptism">
               <select
                 name="holySpiritBaptismStatus"
                 defaultValue={normalizeYesNoValue(member.holySpiritBaptismStatus)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
+                className="ui-input"
               >
                 <option value="">Select one</option>
                 {YES_NO_OPTIONS.map((option) => (
@@ -350,15 +279,12 @@ export function MemberProfileForm({
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">
-                Water baptism
-              </span>
+            </Field>
+            <Field label="Water baptism">
               <select
                 name="waterBaptismStatus"
                 defaultValue={normalizeYesNoValue(member.waterBaptismStatus)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none"
+                className="ui-input"
               >
                 <option value="">Select one</option>
                 {YES_NO_OPTIONS.map((option) => (
@@ -367,28 +293,25 @@ export function MemberProfileForm({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
-        </div>
+        </section>
 
-        <label className="mt-6 block space-y-2">
-          <span className="text-sm font-medium text-slate-700">Family details</span>
+        <Field label="Family details">
           <textarea
             name="familyDetails"
             defaultValue={member.familyDetails || ""}
-            placeholder="Family details, dependants, or pastoral notes"
-            className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+            placeholder="Family details, dependants or pastoral notes"
+            className="ui-input"
           />
-        </label>
+        </Field>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-        >
-          {loading ? "Saving..." : "Save member profile"}
-        </button>
+        <div className="flex justify-end border-t border-black/[0.06] pt-5">
+          <Button type="submit" disabled={loading}>
+            {loading ? "Saving..." : "Save member profile"}
+          </Button>
+        </div>
       </form>
-    </section>
+    </Card>
   );
 }
