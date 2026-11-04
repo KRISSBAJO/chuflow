@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ExportTableButtons } from "@/components/table-export";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { Icon } from "@/components/app/icons";
-import { Badge, Button, EmptyState, Field, formatStatus } from "@/components/ui/ui";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  formatStatus,
+} from "@/components/ui/ui";
 import type {
   AttendanceItem,
   GuestListItem,
@@ -34,7 +41,9 @@ export function AttendanceManagementTable({
     setLoadingId(recordId);
 
     const personType = String(formData.get(`personType-${recordId}`) ?? "");
-    const serviceTypeId = String(formData.get(`serviceTypeId-${recordId}`) ?? "").trim();
+    const serviceTypeId = String(
+      formData.get(`serviceTypeId-${recordId}`) ?? "",
+    ).trim();
 
     try {
       const response = await fetch(`${API_URL}/attendance/${recordId}`, {
@@ -45,8 +54,14 @@ export function AttendanceManagementTable({
           serviceDate: formData.get(`serviceDate-${recordId}`),
           serviceTypeId: serviceTypeId || undefined,
           personType,
-          guestId: personType === "guest" ? formData.get(`guestId-${recordId}`) || undefined : undefined,
-          memberId: personType === "member" ? formData.get(`memberId-${recordId}`) || undefined : undefined,
+          guestId:
+            personType === "guest"
+              ? formData.get(`guestId-${recordId}`) || undefined
+              : undefined,
+          memberId:
+            personType === "member"
+              ? formData.get(`memberId-${recordId}`) || undefined
+              : undefined,
         }),
       });
 
@@ -56,7 +71,8 @@ export function AttendanceManagementTable({
       }
 
       toast.success("Attendance record updated", {
-        description: "The service type, person link, and service date were saved.",
+        description:
+          "The service type, person link, and service date were saved.",
       });
       startTransition(() => {
         router.refresh();
@@ -64,7 +80,9 @@ export function AttendanceManagementTable({
     } catch (error) {
       toast.error("Attendance update failed", {
         description:
-          error instanceof Error ? error.message : "Unable to update attendance",
+          error instanceof Error
+            ? error.message
+            : "Unable to update attendance",
       });
     } finally {
       setLoadingId(null);
@@ -81,6 +99,7 @@ export function AttendanceManagementTable({
 
   return (
     <div className="space-y-2">
+      <ExportTableButtons resource="attendance-individual" rows={records} />
       {records.slice(0, 18).map((record) => (
         <details
           key={record._id}
@@ -90,24 +109,38 @@ export function AttendanceManagementTable({
             <div className="min-w-0">
               <p className="truncate text-[14px] font-medium text-[#111111]">
                 {record.personType === "guest"
-                  ? `${record.guestId?.firstName ?? ""} ${record.guestId?.lastName ?? ""}`.trim() || "Guest record"
-                  : `${record.memberId?.firstName ?? ""} ${record.memberId?.lastName ?? ""}`.trim() || "Member record"}
+                  ? `${record.guestId?.firstName ?? ""} ${record.guestId?.lastName ?? ""}`.trim() ||
+                    "Guest record"
+                  : `${record.memberId?.firstName ?? ""} ${record.memberId?.lastName ?? ""}`.trim() ||
+                    "Member record"}
               </p>
-              <p className="mt-0.5 text-[12px] text-[#8a8780]">{new Date(record.serviceDate).toLocaleString()}</p>
+              <p className="mt-0.5 text-[12px] text-[#8a8780]">
+                {new Date(record.serviceDate).toLocaleString()}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge>{record.serviceTypeLabel || record.serviceType}</Badge>
-              <Badge tone={record.personType === "guest" ? "flame" : "info"}>{formatStatus(record.personType)}</Badge>
-              <Icon name="chevronDown" className="ml-1 h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180" />
+              <Badge tone={record.personType === "guest" ? "flame" : "info"}>
+                {formatStatus(record.personType)}
+              </Badge>
+              <Icon
+                name="chevronDown"
+                className="ml-1 h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180"
+              />
             </div>
           </summary>
           <div className="border-t border-black/[0.06] px-4 py-4">
-            <form action={(formData) => updateRecord(record._id, formData)} className="grid gap-4 md:grid-cols-2">
+            <form
+              action={(formData) => updateRecord(record._id, formData)}
+              className="grid gap-4 md:grid-cols-2"
+            >
               <Field label="Service date">
                 <input
                   name={`serviceDate-${record._id}`}
                   type="datetime-local"
-                  defaultValue={new Date(record.serviceDate).toISOString().slice(0, 16)}
+                  defaultValue={new Date(record.serviceDate)
+                    .toISOString()
+                    .slice(0, 16)}
                   disabled={!canEdit}
                   className="ui-input"
                 />
@@ -120,7 +153,8 @@ export function AttendanceManagementTable({
                   className="ui-input"
                 >
                   <option value="">
-                    {record.serviceTypeLabel || record.serviceType} (keep current)
+                    {record.serviceTypeLabel || record.serviceType} (keep
+                    current)
                   </option>
                   {serviceTypes.map((serviceType) => (
                     <option key={serviceType._id} value={serviceType._id}>
@@ -172,13 +206,18 @@ export function AttendanceManagementTable({
               </Field>
               {canEdit ? (
                 <div className="flex items-end">
-                  <Button type="submit" size="sm" disabled={loadingId === record._id || pending}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={loadingId === record._id || pending}
+                  >
                     {loadingId === record._id ? "Saving..." : "Update record"}
                   </Button>
                 </div>
               ) : (
                 <p className="text-[13px] text-[#8a8780] md:col-span-2">
-                  Your role can review these older records but cannot edit them here.
+                  Your role can review these older records but cannot edit them
+                  here.
                 </p>
               )}
             </form>

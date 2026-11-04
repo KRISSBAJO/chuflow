@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  Matches,
   IsMongoId,
   IsOptional,
   IsString,
@@ -56,6 +57,9 @@ class IntakeTemplateFieldDto {
 }
 
 class IntakeTemplateThemeDto {
+  @IsOptional()
+  @Matches(/^#[0-9a-f]{6}$/i)
+  headerColor?: string;
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsEmail,
   IsIn,
+  Matches,
   IsMongoId,
   IsNotEmpty,
   IsNumberString,
@@ -31,6 +32,10 @@ export const OUTREACH_METHODS = [
 ] as const;
 
 export class CreateOutreachLinkDto {
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerColor?: string | null;
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonColor?: string | null;
+
+  @IsOptional() @IsString() @Length(2, 150) churchName?: string;
   @IsMongoId() branchId!: string;
   @IsString() @Length(2, 100) name!: string;
   @IsIn(['personal', 'branch']) kind!: 'personal' | 'branch';
@@ -72,8 +77,13 @@ export class UpdateOutreachDto {
   @IsOptional() @IsBoolean() clearNextAction?: boolean;
 }
 
-export class ToggleOutreachLinkDto {
-  @IsBoolean() isActive!: boolean;
+export class UpdateOutreachLinkDto {
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) headerColor?: string | null;
+  @IsOptional() @Matches(/^#[0-9a-f]{6}$/i) buttonColor?: string | null;
+
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsString() @Length(2, 150) churchName?: string;
+  @IsOptional() @IsString() @Length(2, 100) name?: string;
 }
 
 export class LinkOutreachGuestDto {

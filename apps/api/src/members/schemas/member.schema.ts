@@ -85,3 +85,5 @@ export class Member {
 }
 
 export const MemberSchema = SchemaFactory.createForClass(Member);
+MemberSchema.index({ branchId: 1, createdAt: -1, _id: -1 });
+MemberSchema.index({ branchId: 1, membershipStatus: 1 });

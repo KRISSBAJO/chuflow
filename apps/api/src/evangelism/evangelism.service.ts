@@ -18,6 +18,7 @@ import {
   CreateOutreachLinkDto,
   OUTREACH_STAGES,
   UpdateOutreachDto,
+  UpdateOutreachLinkDto,
 } from './evangelism.dto';
 import {
   OutreachContact,
@@ -87,10 +88,15 @@ export class EvangelismService {
   async createLink(user: AuthUser, dto: CreateOutreachLinkDto) {
     if (dto.name.trim().length < 2)
       throw new BadRequestException('Give this link a descriptive name');
+    if (dto.churchName !== undefined && dto.churchName.trim().length < 2)
+      throw new BadRequestException('Enter a church name');
     const branch = await this.branch(user, dto.branchId);
     return this.links.create({
       branchId: branch._id,
       name: dto.name.trim(),
+      churchName: dto.churchName?.trim() || branch.name,
+      headerColor: dto.headerColor || undefined,
+      buttonColor: dto.buttonColor || undefined,
       kind: dto.kind,
       createdBy: user.sub,
       ownerId: dto.kind === 'personal' ? user.sub : undefined,
@@ -101,6 +107,7 @@ export class EvangelismService {
   async listLinks(
     user: AuthUser,
     branchId?: string,
+    exportAll = false,
   ): Promise<Record<string, unknown>[]> {
     if (branchId) this.id(branchId);
     const links = await this.links
@@ -108,7 +115,7 @@ export class EvangelismService {
       .populate('branchId', 'name')
       .populate('ownerId', 'firstName lastName')
       .sort({ createdAt: -1 })
-      .limit(200)
+      .limit(exportAll ? 100001 : 200)
       .lean();
     const counts = await this.contacts.aggregate<{
       _id: Types.ObjectId;
@@ -124,11 +131,32 @@ export class EvangelismService {
     }));
   }
 
-  async toggleLink(user: AuthUser, id: string, isActive: boolean) {
+  async getLink(user: AuthUser, id: string) {
     const link = await this.links.findById(this.id(id));
     if (!link) throw new NotFoundException('Link not found');
     await this.scope.ensureBranchAccess(user, String(link.branchId));
-    link.isActive = isActive;
+    return link.populate('branchId', 'name');
+  }
+
+  async updateLink(user: AuthUser, id: string, dto: UpdateOutreachLinkDto) {
+    const link = await this.links.findById(this.id(id));
+    if (!link) throw new NotFoundException('Link not found');
+    await this.scope.ensureBranchAccess(user, String(link.branchId));
+    if (dto.churchName !== undefined) {
+      if (dto.churchName.trim().length < 2)
+        throw new BadRequestException('Enter a church name');
+      link.churchName = dto.churchName.trim();
+    }
+    if (dto.name !== undefined) {
+      if (dto.name.trim().length < 2)
+        throw new BadRequestException('Give this link a descriptive name');
+      link.name = dto.name.trim();
+    }
+    if (dto.isActive !== undefined) link.isActive = dto.isActive;
+    if (dto.headerColor !== undefined)
+      link.headerColor = dto.headerColor || undefined;
+    if (dto.buttonColor !== undefined)
+      link.buttonColor = dto.buttonColor || undefined;
     return link.save();
   }
 
@@ -170,8 +198,13 @@ export class EvangelismService {
   }
 
   async publicInfo(token: string) {
-    const { branch } = await this.publicLink(token);
-    return { branchName: branch.name };
+    const { branch, link } = await this.publicLink(token);
+    return {
+      branchName: branch.name,
+      churchName: link.churchName || branch.name,
+      ...(link.headerColor ? { headerColor: link.headerColor } : {}),
+      ...(link.buttonColor ? { buttonColor: link.buttonColor } : {}),
+    };
   }
 
   private async capture(

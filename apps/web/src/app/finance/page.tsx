@@ -11,7 +11,15 @@ import { OfferingEntriesTable } from "@/components/offering-entries-table";
 import { OfferingTypeManagementCard } from "@/components/offering-type-management-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
-import { Badge, buttonClass, Card, CardHeader, EmptyState, Pagination, TabLinks } from "@/components/ui/ui";
+import {
+  Badge,
+  buttonClass,
+  Card,
+  CardHeader,
+  EmptyState,
+  Pagination,
+  TabLinks,
+} from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import {
@@ -94,7 +102,9 @@ export default async function FinancePage({
     isGlobalRole(user.role) || isNationalRole(user.role)
       ? params.district?.trim() || undefined
       : user.district;
-  const selectedBranchId = canChooseBranch ? params.branchId?.trim() || undefined : user.branchId;
+  const selectedBranchId = canChooseBranch
+    ? params.branchId?.trim() || undefined
+    : user.branchId;
   const offeringTypeId = params.offeringTypeId?.trim() || undefined;
   const accountId = params.accountId?.trim() || undefined;
   const search = params.search?.trim() || undefined;
@@ -156,65 +166,88 @@ export default async function FinancePage({
     branchId: selectedBranchId,
   });
 
-  const [branches, oversightRegions, districts, offeringTypes, accounts, expenseCategories, serviceTypes, serviceSchedules, offeringList, expenseList, pendingExpenses, ledger, locks] =
-    await Promise.all([
-      serverGet<BranchSummary[]>("/branches").catch(() => []),
-      serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
-      serverGet<DistrictOption[]>("/districts").catch(() => []),
-      serverGet<OfferingTypeSummary[]>("/finance/offering-types").catch(() => []),
-      serverGet<FinanceAccountSummary[]>("/finance/accounts").catch(() => []),
-      serverGet<ExpenseCategorySummary[]>("/finance/expense-categories").catch(() => []),
-      serverGet<ServiceTypeSummary[]>("/service-types").catch(() => []),
-      serverGet<ServiceScheduleSummary[]>("/service-schedules").catch(() => []),
-      serverGet<OfferingListResponse>(`/finance/offerings?${offeringQuery.toString()}`).catch(() => ({
-        items: [],
-        pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
-        summary: {
-          totalAmount: 0,
-          currentMonthTotal: 0,
-          totalEntries: 0,
-          visibleBranchCount: 0,
-        },
-        byType: [],
-        byBranch: [],
-      })),
-      serverGet<ExpenseListResponse>(`/finance/expenses?${expenseQuery.toString()}`).catch(() => ({
-        items: [],
-        pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
-        summary: {
-          totalAmount: 0,
-          pendingAmount: 0,
-          pendingCount: 0,
-          visibleBranchCount: 0,
-        },
-      })),
-      serverGet<ExpenseListResponse>(`/finance/expenses?${pendingExpenseQuery.toString()}`).catch(
-        () => ({
-          items: [],
-          pagination: { page: 1, pageSize: 6, total: 0, totalPages: 1 },
-          summary: {
-            totalAmount: 0,
-            pendingAmount: 0,
-            pendingCount: 0,
-            visibleBranchCount: 0,
-          },
-        }),
-      ),
-      serverGet<FinanceLedgerResponse>(`/finance/ledger?${ledgerQuery.toString()}`).catch(() => ({
-        items: [],
-        pagination: { page: 1, pageSize: 12, total: 0, totalPages: 1 },
-        summary: {
-          totalCredits: 0,
-          totalDebits: 0,
-          netBalance: 0,
-          pendingExpenseApprovals: 0,
-          lockedPeriods: 0,
-        },
-        byAccount: [],
-        byBranch: [],
-      })),
-      serverGet<FinanceLockSummary[]>(`/finance/locks?${locksQuery.toString()}`).catch(() => []),
-    ]);
+  const [
+    branches,
+    oversightRegions,
+    districts,
+    offeringTypes,
+    accounts,
+    expenseCategories,
+    serviceTypes,
+    serviceSchedules,
+    offeringList,
+    expenseList,
+    pendingExpenses,
+    ledger,
+    locks,
+  ] = await Promise.all([
+    serverGet<BranchSummary[]>("/branches").catch(() => []),
+    serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
+    serverGet<DistrictOption[]>("/districts").catch(() => []),
+    serverGet<OfferingTypeSummary[]>("/finance/offering-types").catch(() => []),
+    serverGet<FinanceAccountSummary[]>("/finance/accounts").catch(() => []),
+    serverGet<ExpenseCategorySummary[]>("/finance/expense-categories").catch(
+      () => [],
+    ),
+    serverGet<ServiceTypeSummary[]>("/service-types").catch(() => []),
+    serverGet<ServiceScheduleSummary[]>("/service-schedules").catch(() => []),
+    serverGet<OfferingListResponse>(
+      `/finance/offerings?${offeringQuery.toString()}`,
+    ).catch(() => ({
+      items: [],
+      pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
+      summary: {
+        totalAmount: 0,
+        currentMonthTotal: 0,
+        totalEntries: 0,
+        visibleBranchCount: 0,
+      },
+      byType: [],
+      byBranch: [],
+    })),
+    serverGet<ExpenseListResponse>(
+      `/finance/expenses?${expenseQuery.toString()}`,
+    ).catch(() => ({
+      items: [],
+      pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
+      summary: {
+        totalAmount: 0,
+        pendingAmount: 0,
+        pendingCount: 0,
+        visibleBranchCount: 0,
+      },
+    })),
+    serverGet<ExpenseListResponse>(
+      `/finance/expenses?${pendingExpenseQuery.toString()}`,
+    ).catch(() => ({
+      items: [],
+      pagination: { page: 1, pageSize: 6, total: 0, totalPages: 1 },
+      summary: {
+        totalAmount: 0,
+        pendingAmount: 0,
+        pendingCount: 0,
+        visibleBranchCount: 0,
+      },
+    })),
+    serverGet<FinanceLedgerResponse>(
+      `/finance/ledger?${ledgerQuery.toString()}`,
+    ).catch(() => ({
+      items: [],
+      pagination: { page: 1, pageSize: 12, total: 0, totalPages: 1 },
+      summary: {
+        totalCredits: 0,
+        totalDebits: 0,
+        netBalance: 0,
+        pendingExpenseApprovals: 0,
+        lockedPeriods: 0,
+      },
+      byAccount: [],
+      byBranch: [],
+    })),
+    serverGet<FinanceLockSummary[]>(
+      `/finance/locks?${locksQuery.toString()}`,
+    ).catch(() => []),
+  ]);
 
   function buildFinanceHref(overrides: {
     tab?: string;
@@ -234,7 +267,10 @@ export default async function FinancePage({
       dateTo,
     });
     nextQuery.set("tab", overrides.tab ?? activeTab);
-    nextQuery.set("offeringPage", overrides.offeringPage ?? String(offeringPage));
+    nextQuery.set(
+      "offeringPage",
+      overrides.offeringPage ?? String(offeringPage),
+    );
     nextQuery.set("expensePage", overrides.expensePage ?? String(expensePage));
     nextQuery.set("ledgerPage", overrides.ledgerPage ?? String(ledgerPage));
     return `/finance?${nextQuery.toString()}`;
@@ -296,6 +332,22 @@ export default async function FinancePage({
 
   const showExpenseSide = canApproveExpenses;
 
+  const createdId =
+    params.created && /^[a-f0-9]{24}$/i.test(params.created)
+      ? params.created
+      : undefined;
+  const savedOffering =
+    createdId && activeTab === "offerings"
+      ? await serverGet<OfferingListResponse["items"][number]>(
+          `/finance/offerings/${createdId}`,
+        ).catch(() => undefined)
+      : undefined;
+  const savedExpense =
+    createdId && activeTab === "expenses"
+      ? await serverGet<ExpenseListResponse["items"][number]>(
+          `/finance/expenses/${createdId}`,
+        ).catch(() => undefined)
+      : undefined;
   return (
     <Shell>
       <PageHeader
@@ -316,6 +368,37 @@ export default async function FinancePage({
         }
       />
 
+      {savedOffering && (
+        <Card className="p-6">
+          <CardHeader
+            label="Just created"
+            title="Your saved offering"
+            description="Review this entry here, including entries dated before the current list page."
+          />
+          <OfferingEntriesTable
+            entries={[savedOffering]}
+            offeringTypes={offeringTypes}
+            serviceTypes={serviceTypes}
+            accounts={accounts}
+          />
+        </Card>
+      )}
+      {savedExpense && (
+        <Card className="p-6">
+          <CardHeader
+            label="Just created"
+            title="Your saved expense"
+            description="Review the saved entry and its approval status."
+          />
+          <ExpenseEntriesTable
+            entries={[savedExpense]}
+            accounts={accounts}
+            expenseCategories={expenseCategories}
+            serviceSchedules={serviceSchedules}
+            canApprove={canApproveExpenses}
+          />
+        </Card>
+      )}
       <FinanceScopeFilterBar
         canChooseRegion={isGlobalRole(user.role)}
         canChooseDistrict={isGlobalRole(user.role) || isNationalRole(user.role)}
@@ -389,12 +472,18 @@ export default async function FinancePage({
               )}
               nextHref={buildPageHref(
                 "ledgerPage",
-                Math.min(ledger.pagination.page + 1, ledger.pagination.totalPages),
+                Math.min(
+                  ledger.pagination.page + 1,
+                  ledger.pagination.totalPages,
+                ),
               )}
             />
           </div>
 
-          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+          <Card
+            className="app-rise p-6 sm:p-7"
+            style={{ animationDelay: "60ms" }}
+          >
             <CardHeader
               label="Branch balance"
               title="Balance by branch"
@@ -409,7 +498,9 @@ export default async function FinancePage({
                       className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-[14px] font-medium text-[#111111]">{item.name}</p>
+                        <p className="truncate text-[14px] font-medium text-[#111111]">
+                          {item.name}
+                        </p>
                         <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                           {item.district} · {item.oversightRegion}
                         </p>
@@ -460,7 +551,11 @@ export default async function FinancePage({
               <Pagination
                 page={offeringList.pagination.page}
                 totalPages={offeringList.pagination.totalPages}
-                {...pagerHrefs("offeringPage", offeringList.pagination.page, offeringList.pagination.totalPages)}
+                {...pagerHrefs(
+                  "offeringPage",
+                  offeringList.pagination.page,
+                  offeringList.pagination.totalPages,
+                )}
               />
             </div>
           </Card>
@@ -472,13 +567,22 @@ export default async function FinancePage({
           {showExpenseSide ? (
             <div id="finance-entry" className="min-w-0 space-y-4">
               {canApproveExpenses ? (
-                <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+                <Card
+                  className="app-rise p-6 sm:p-7"
+                  style={{ animationDelay: "60ms" }}
+                >
                   <CardHeader
                     label="Expense approvals"
                     title="Waiting for approval"
                     description="Review submitted expenses before they post to the ledger."
                     action={
-                      <Badge tone={pendingExpenses.summary.pendingCount ? "warning" : "neutral"}>
+                      <Badge
+                        tone={
+                          pendingExpenses.summary.pendingCount
+                            ? "warning"
+                            : "neutral"
+                        }
+                      >
                         {pendingExpenses.summary.pendingCount} pending
                       </Badge>
                     }
@@ -523,7 +627,11 @@ export default async function FinancePage({
               <Pagination
                 page={expenseList.pagination.page}
                 totalPages={expenseList.pagination.totalPages}
-                {...pagerHrefs("expensePage", expenseList.pagination.page, expenseList.pagination.totalPages)}
+                {...pagerHrefs(
+                  "expensePage",
+                  expenseList.pagination.page,
+                  expenseList.pagination.totalPages,
+                )}
               />
             </div>
           </Card>
@@ -543,7 +651,9 @@ export default async function FinancePage({
             </div>
           ) : null}
 
-          <div className={`min-w-0 space-y-4 ${canManageLocks ? "" : "xl:col-span-2"}`}>
+          <div
+            className={`min-w-0 space-y-4 ${canManageLocks ? "" : "xl:col-span-2"}`}
+          >
             {canManageTypes ? (
               <>
                 <FinanceAccountManagementCard accounts={accounts} />
@@ -556,7 +666,8 @@ export default async function FinancePage({
             ) : (
               <Card className="p-6 sm:p-7">
                 <EmptyState icon="settings" title="Limited access">
-                  Shared accounts, expense categories and offering types are managed by finance administrators.
+                  Shared accounts, expense categories and offering types are
+                  managed by finance administrators.
                 </EmptyState>
               </Card>
             )}

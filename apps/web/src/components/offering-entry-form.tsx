@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
@@ -104,6 +105,7 @@ export function OfferingEntryForm({
         description:
           "This entry is now visible in branch, district, national, and overall finance oversight.",
       });
+      router.push(createdHref("/finance?tab=offerings", result, "Offering"));
       router.refresh();
     } catch (error) {
       toast.error("Offering not recorded", {

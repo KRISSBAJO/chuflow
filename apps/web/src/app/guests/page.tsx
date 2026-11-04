@@ -6,7 +6,18 @@ import { GuestDuplicatePanel } from "@/components/guest-duplicate-panel";
 import { GuestCreateModalButton } from "@/components/guest-create-modal-button";
 import { TemplateQrCard } from "@/components/template-qr-card";
 import { Icon } from "@/components/app/icons";
-import { Avatar, Badge, Button, buttonClass, Card, CardHeader, EmptyState, formatStatus, statusTone, TableWrap } from "@/components/ui/ui";
+import {
+  Avatar,
+  Badge,
+  Button,
+  buttonClass,
+  Card,
+  CardHeader,
+  EmptyState,
+  formatStatus,
+  statusTone,
+  TableWrap,
+} from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { canFilterAcrossBranches } from "@/lib/permissions";
 import { publicServerGet, serverGet } from "@/lib/server-api";
@@ -34,14 +45,22 @@ function ChannelHint({ children }: { children: string }) {
 export default async function GuestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; branchId?: string; page?: string }>;
+  searchParams: Promise<{
+    search?: string;
+    branchId?: string;
+    page?: string;
+    sort?: string;
+    pageSize?: string;
+  }>;
 }) {
   const user = await requireServerRole("/guests");
 
   const params = await searchParams;
   const search = params.search?.trim();
   const canChooseBranch = canFilterAcrossBranches(user.role);
-  const selectedBranchId = canChooseBranch ? params.branchId?.trim() : user.branchId;
+  const selectedBranchId = canChooseBranch
+    ? params.branchId?.trim()
+    : user.branchId;
   const requestedPage = Math.max(Number(params.page) || 1, 1);
   const queryParams = new URLSearchParams();
 
@@ -54,37 +73,65 @@ export default async function GuestsPage({
   }
 
   queryParams.set("page", String(requestedPage));
-  queryParams.set("limit", "20");
+  const pageSize = [25, 50, 100].includes(Number(params.pageSize))
+    ? Number(params.pageSize)
+    : 25;
+  queryParams.set("limit", String(pageSize));
+  queryParams.set("sort", params.sort || "newest");
 
   const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
-  const [guestList, branches, users, duplicateGroups, serviceTypes, publicGuestTemplates] = await Promise.all([
+  const [
+    guestList,
+    branches,
+    users,
+    duplicateGroups,
+    serviceTypes,
+    publicGuestTemplates,
+  ] = await Promise.all([
     serverGet<GuestListResponse>(`/guests${query}`),
     serverGet<BranchSummary[]>("/branches").catch(() => []),
-    serverGet<UserSummary[]>(selectedBranchId ? `/users?branchId=${encodeURIComponent(selectedBranchId)}` : "/users").catch(() => []),
-    serverGet<GuestDuplicateGroup[]>(selectedBranchId ? `/guests/duplicates?branchId=${encodeURIComponent(selectedBranchId)}` : "/guests/duplicates").catch(() => []),
+    serverGet<UserSummary[]>(
+      selectedBranchId
+        ? `/users?branchId=${encodeURIComponent(selectedBranchId)}`
+        : "/users",
+    ).catch(() => []),
+    serverGet<GuestDuplicateGroup[]>(
+      selectedBranchId
+        ? `/guests/duplicates?branchId=${encodeURIComponent(selectedBranchId)}`
+        : "/guests/duplicates",
+    ).catch(() => []),
     serverGet<ServiceTypeSummary[]>("/service-types").catch(() => []),
-    publicServerGet<PublicConnectOption[]>("/intake-templates/public/templates?kind=guest").catch(() => []),
+    publicServerGet<PublicConnectOption[]>(
+      "/intake-templates/public/templates?kind=guest",
+    ).catch(() => []),
   ]);
 
   const guests = guestList.items;
   const duplicateCount = duplicateGroups.length;
-  const selectedBranch = branches.find((branch) => branch._id === selectedBranchId);
+  const selectedBranch = branches.find(
+    (branch) => branch._id === selectedBranchId,
+  );
   const scopedGuestTemplates = selectedBranchId
-    ? publicGuestTemplates.filter((template) => template.branch?._id === selectedBranchId)
+    ? publicGuestTemplates.filter(
+        (template) => template.branch?._id === selectedBranchId,
+      )
     : publicGuestTemplates;
   const guestTemplateCards =
     selectedBranchId || !canChooseBranch
       ? scopedGuestTemplates.slice(0, 1)
       : scopedGuestTemplates;
   const fallbackPublicGuestUrl = `${process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3001"}/connect`;
-  const publicGuestUrl = guestTemplateCards[0]?.shareUrl || fallbackPublicGuestUrl;
+  const publicGuestUrl =
+    guestTemplateCards[0]?.shareUrl || fallbackPublicGuestUrl;
   const scopeLabel = selectedBranch
     ? `${selectedBranch.name} guest records`
     : canChooseBranch
       ? "All visible branches"
       : "Current branch";
   const paginationQueryBase = new URLSearchParams();
+  paginationQueryBase.set("sort", params.sort || "newest");
+  paginationQueryBase.set("pageSize", String(pageSize));
 
   if (search) {
     paginationQueryBase.set("search", search);
@@ -100,13 +147,17 @@ export default async function GuestsPage({
     return `/guests?${query.toString()}`;
   }
 
-  const startItem = guestList.pagination.total === 0 ? 0 : (guestList.pagination.page - 1) * guestList.pagination.pageSize + 1;
+  const startItem =
+    guestList.pagination.total === 0
+      ? 0
+      : (guestList.pagination.page - 1) * guestList.pagination.pageSize + 1;
   const endItem = Math.min(
     guestList.pagination.page * guestList.pagination.pageSize,
     guestList.pagination.total,
   );
   const atFirstPage = guestList.pagination.page <= 1;
-  const atLastPage = guestList.pagination.page >= guestList.pagination.totalPages;
+  const atLastPage =
+    guestList.pagination.page >= guestList.pagination.totalPages;
 
   return (
     <Shell>
@@ -117,8 +168,18 @@ export default async function GuestsPage({
         defaultBranchId={selectedBranchId || user.branchId}
       />
       <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Registered today" value={String(guestList.summary.todayCount)} delta="New guest records created today" tone="warm" />
-        <MetricCard label="Possible duplicates" value={String(duplicateCount)} delta="Duplicate groups in the current scope" tone="cool" />
+        <MetricCard
+          label="Registered today"
+          value={String(guestList.summary.todayCount)}
+          delta="New guest records created today"
+          tone="warm"
+        />
+        <MetricCard
+          label="Possible duplicates"
+          value={String(duplicateCount)}
+          delta="Duplicate groups in the current scope"
+          tone="cool"
+        />
         <MetricCard
           label="Assigned follow-up"
           value={String(guestList.summary.assignedFollowUpCount)}
@@ -139,10 +200,17 @@ export default async function GuestsPage({
               defaultValue={search}
               placeholder="Search name, phone or email"
               aria-label="Search guests"
-              className={canChooseBranch ? "ui-input" : "ui-input sm:col-span-2"}
+              className={
+                canChooseBranch ? "ui-input" : "ui-input sm:col-span-2"
+              }
             />
             {canChooseBranch ? (
-              <select name="branchId" defaultValue={selectedBranchId || ""} aria-label="Branch" className="ui-input">
+              <select
+                name="branchId"
+                defaultValue={selectedBranchId || ""}
+                aria-label="Branch"
+                className="ui-input"
+              >
                 <option value="">All branches</option>
                 {branches.map((branch) => (
                   <option key={branch._id} value={branch._id}>
@@ -151,6 +219,36 @@ export default async function GuestsPage({
                 ))}
               </select>
             ) : null}
+            <label className="text-xs text-[#6b6b6b]">
+              Sort
+              <select
+                name="sort"
+                className="ui-input mt-1"
+                defaultValue={params.sort || "newest"}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name_asc">Name A–Z</option>
+                <option value="name_desc">Name Z–A</option>
+              </select>
+            </label>
+            <label className="text-xs text-[#6b6b6b]">
+              Per page
+              <select
+                name="pageSize"
+                className="ui-input mt-1"
+                defaultValue={pageSize}
+              >
+                {[25, 50, 100].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Link href="/guests" className={buttonClass("secondary")}>
+              Reset
+            </Link>
             <input type="hidden" name="page" value="1" />
             <Button type="submit" variant="secondary" icon="search">
               Apply
@@ -174,7 +272,9 @@ export default async function GuestsPage({
                       <tr key={guest._id}>
                         <td>
                           <div className="flex items-center gap-3">
-                            <Avatar name={`${guest.firstName} ${guest.lastName}`} />
+                            <Avatar
+                              name={`${guest.firstName} ${guest.lastName}`}
+                            />
                             <div className="min-w-0">
                               <Link
                                 href={`/guests/${guest._id}`}
@@ -182,13 +282,19 @@ export default async function GuestsPage({
                               >
                                 {guest.firstName} {guest.lastName}
                               </Link>
-                              <p className="mt-0.5 text-[13px] text-[#8a8780]">{guest.email || guest.phone}</p>
+                              <p className="mt-0.5 text-[13px] text-[#8a8780]">
+                                {guest.email || guest.phone}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="text-[#55534e]">{guest.branchId?.name ?? "Unassigned"}</td>
+                        <td className="text-[#55534e]">
+                          {guest.branchId?.name ?? "Unassigned"}
+                        </td>
                         <td className="whitespace-nowrap tabular-nums text-[#55534e]">
-                          {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString() : "No date"}
+                          {guest.createdAt
+                            ? new Date(guest.createdAt).toLocaleDateString()
+                            : "No date"}
                         </td>
                         <td>
                           <Badge tone={statusTone(guest.visitStatus)} dot>
@@ -196,7 +302,9 @@ export default async function GuestsPage({
                           </Badge>
                         </td>
                         <td className="text-[#55534e]">
-                          {guest.nextFollowUpStatus ? formatStatus(guest.nextFollowUpStatus) : "Awaiting follow-up"}
+                          {guest.nextFollowUpStatus
+                            ? formatStatus(guest.nextFollowUpStatus)
+                            : "Awaiting follow-up"}
                         </td>
                       </tr>
                     ))}
@@ -215,25 +323,40 @@ export default async function GuestsPage({
               <span className="font-medium tabular-nums text-[#111111]">
                 {startItem}–{endItem}
               </span>{" "}
-              of <span className="tabular-nums">{guestList.pagination.total}</span>
+              of{" "}
+              <span className="tabular-nums">{guestList.pagination.total}</span>
             </p>
             <div className="flex items-center gap-2">
               <Link
                 href={buildPageHref(Math.max(guestList.pagination.page - 1, 1))}
                 aria-disabled={atFirstPage}
                 tabIndex={atFirstPage ? -1 : undefined}
-                className={buttonClass("secondary", "sm", atFirstPage ? "pointer-events-none opacity-40" : undefined)}
+                className={buttonClass(
+                  "secondary",
+                  "sm",
+                  atFirstPage ? "pointer-events-none opacity-40" : undefined,
+                )}
               >
                 Previous
               </Link>
               <span className="px-1 text-[13px] tabular-nums text-[#6b6b6b]">
-                Page {guestList.pagination.page} of {guestList.pagination.totalPages}
+                Page {guestList.pagination.page} of{" "}
+                {guestList.pagination.totalPages}
               </span>
               <Link
-                href={buildPageHref(Math.min(guestList.pagination.page + 1, guestList.pagination.totalPages))}
+                href={buildPageHref(
+                  Math.min(
+                    guestList.pagination.page + 1,
+                    guestList.pagination.totalPages,
+                  ),
+                )}
                 aria-disabled={atLastPage}
                 tabIndex={atLastPage ? -1 : undefined}
-                className={buttonClass("secondary", "sm", atLastPage ? "pointer-events-none opacity-40" : undefined)}
+                className={buttonClass(
+                  "secondary",
+                  "sm",
+                  atLastPage ? "pointer-events-none opacity-40" : undefined,
+                )}
               >
                 Next
               </Link>
@@ -272,7 +395,10 @@ export default async function GuestsPage({
                   {guestTemplateCards.map((template) => (
                     <TemplateQrCard
                       key={template._id}
-                      url={template.shareUrl || `${process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3001"}/intake/${template.slug}`}
+                      url={
+                        template.shareUrl ||
+                        `${process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3001"}/intake/${template.slug}`
+                      }
                       title={
                         canChooseBranch && !selectedBranchId
                           ? `${template.branch?.name ?? template.name} guest share link`
@@ -294,7 +420,9 @@ export default async function GuestsPage({
             <CardHeader label="Capture channels" title="Ways to register" />
             <div className="mt-5 space-y-2">
               <a
-                href={guestTemplateCards.length > 0 ? publicGuestUrl : "/templates"}
+                href={
+                  guestTemplateCards.length > 0 ? publicGuestUrl : "/templates"
+                }
                 target={guestTemplateCards.length > 0 ? "_blank" : undefined}
                 rel={guestTemplateCards.length > 0 ? "noreferrer" : undefined}
                 className={channelRowClass}
@@ -303,7 +431,9 @@ export default async function GuestsPage({
                 <ChannelHint>Open</ChannelHint>
               </a>
               <a
-                href={guestTemplateCards.length > 0 ? publicGuestUrl : "/templates"}
+                href={
+                  guestTemplateCards.length > 0 ? publicGuestUrl : "/templates"
+                }
                 target={guestTemplateCards.length > 0 ? "_blank" : undefined}
                 rel={guestTemplateCards.length > 0 ? "noreferrer" : undefined}
                 className={channelRowClass}
@@ -320,7 +450,9 @@ export default async function GuestsPage({
                 className={`${channelRowClass} w-full text-left`}
               />
               <a
-                href={guestTemplateCards.length > 0 ? publicGuestUrl : "/connect"}
+                href={
+                  guestTemplateCards.length > 0 ? publicGuestUrl : "/connect"
+                }
                 target="_blank"
                 rel="noreferrer"
                 className={channelRowClass}
@@ -333,14 +465,20 @@ export default async function GuestsPage({
           <Card className="p-6 sm:p-7">
             <CardHeader label="Data quality" title="Complete guest cards" />
             <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-5">
-              <p className="lp-heading text-[2.25rem] leading-none tabular-nums">{guestList.summary.completionRate}%</p>
+              <p className="lp-heading text-[2.25rem] leading-none tabular-nums">
+                {guestList.summary.completionRate}%
+              </p>
               <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
                 <div
                   className="lp-flame-bg app-bar h-full rounded-full"
-                  style={{ width: `${Math.min(Math.max(guestList.summary.completionRate, 0), 100)}%` }}
+                  style={{
+                    width: `${Math.min(Math.max(guestList.summary.completionRate, 0), 100)}%`,
+                  }}
                 />
               </div>
-              <p className="mt-3 text-[13px] text-[#6b6b6b]">Guest cards with both a phone number and an email</p>
+              <p className="mt-3 text-[13px] text-[#6b6b6b]">
+                Guest cards with both a phone number and an email
+              </p>
             </div>
           </Card>
           <GuestDuplicatePanel groups={duplicateGroups} />

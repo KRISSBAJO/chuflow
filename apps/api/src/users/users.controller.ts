@@ -67,6 +67,7 @@ export class UsersController {
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.usersService.findUserDirectory(user, {
       branchId,
@@ -77,6 +78,7 @@ export class UsersController {
       status,
       page: Number(page) || 1,
       limit: Number(limit) || 12,
+      sort,
     });
   }
 

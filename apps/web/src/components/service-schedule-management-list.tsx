@@ -1,13 +1,24 @@
 "use client";
+import { ExportTableButtons } from "@/components/table-export";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { isBranchScopedRole } from "@/lib/permissions";
-import type { BranchSummary, ServiceScheduleSummary, ServiceTypeSummary } from "@/lib/types";
+import type {
+  BranchSummary,
+  ServiceScheduleSummary,
+  ServiceTypeSummary,
+} from "@/lib/types";
 import { Icon } from "@/components/app/icons";
-import { Badge, Button, EmptyState, Field, formatStatus } from "@/components/ui/ui";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  formatStatus,
+} from "@/components/ui/ui";
 
 const weekdayOptions = [
   "sunday",
@@ -49,26 +60,31 @@ export function ServiceScheduleManagementList({
     setLoadingId(scheduleId);
 
     try {
-      const response = await fetch(`${API_URL}/service-schedules/${scheduleId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          branchId: (formData.get(`branchId-${scheduleId}`) as string) || undefined,
-          serviceTypeId: formData.get(`serviceTypeId-${scheduleId}`),
-          name: formData.get(`name-${scheduleId}`),
-          dayOfWeek: formData.get(`dayOfWeek-${scheduleId}`),
-          startTime: formData.get(`startTime-${scheduleId}`),
-          endTime: formData.get(`endTime-${scheduleId}`) || undefined,
-          timezone: formData.get(`timezone-${scheduleId}`) || undefined,
-          locationNotes: formData.get(`locationNotes-${scheduleId}`) || undefined,
-          attendanceEntryEnabled:
-            formData.get(`attendanceEntryEnabled-${scheduleId}`) === "on",
-          financeEntryEnabled:
-            formData.get(`financeEntryEnabled-${scheduleId}`) === "on",
-          isActive: formData.get(`isActive-${scheduleId}`) === "on",
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/service-schedules/${scheduleId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            branchId:
+              (formData.get(`branchId-${scheduleId}`) as string) || undefined,
+            serviceTypeId: formData.get(`serviceTypeId-${scheduleId}`),
+            name: formData.get(`name-${scheduleId}`),
+            dayOfWeek: formData.get(`dayOfWeek-${scheduleId}`),
+            startTime: formData.get(`startTime-${scheduleId}`),
+            endTime: formData.get(`endTime-${scheduleId}`) || undefined,
+            timezone: formData.get(`timezone-${scheduleId}`) || undefined,
+            locationNotes:
+              formData.get(`locationNotes-${scheduleId}`) || undefined,
+            attendanceEntryEnabled:
+              formData.get(`attendanceEntryEnabled-${scheduleId}`) === "on",
+            financeEntryEnabled:
+              formData.get(`financeEntryEnabled-${scheduleId}`) === "on",
+            isActive: formData.get(`isActive-${scheduleId}`) === "on",
+          }),
+        },
+      );
 
       const result = await response.json();
       if (!response.ok) {
@@ -82,7 +98,9 @@ export function ServiceScheduleManagementList({
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to update service schedule";
+        error instanceof Error
+          ? error.message
+          : "Unable to update service schedule";
       toast.error("Service schedule update failed", {
         description: message,
       });
@@ -101,6 +119,7 @@ export function ServiceScheduleManagementList({
 
   return (
     <div className="space-y-2">
+      <ExportTableButtons resource="service-schedules" rows={schedules} />
       {schedules.map((schedule) => {
         const branchId = getBranchId(schedule.branchId) || "";
         const filteredServiceTypes = serviceTypes.filter((serviceType) => {
@@ -108,7 +127,9 @@ export function ServiceScheduleManagementList({
             return false;
           }
 
-          return !branchId || getServiceTypeId(serviceType.branchId) === branchId;
+          return (
+            !branchId || getServiceTypeId(serviceType.branchId) === branchId
+          );
         });
 
         return (
@@ -118,9 +139,12 @@ export function ServiceScheduleManagementList({
           >
             <summary className="flex cursor-pointer list-none flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:justify-between [&::-webkit-details-marker]:hidden">
               <div className="min-w-0">
-                <p className="truncate text-[14px] font-medium text-[#111111]">{schedule.name}</p>
+                <p className="truncate text-[14px] font-medium text-[#111111]">
+                  {schedule.name}
+                </p>
                 <p className="mt-0.5 text-[12px] text-[#8a8780]">
-                  {getBranchName(schedule.branchId) || "Branch scope"} · {schedule.serviceTypeLabel} ·{" "}
+                  {getBranchName(schedule.branchId) || "Branch scope"} ·{" "}
+                  {schedule.serviceTypeLabel} ·{" "}
                   {formatStatus(schedule.dayOfWeek)} · {schedule.startTime}
                 </p>
               </div>
@@ -128,9 +152,20 @@ export function ServiceScheduleManagementList({
                 <Badge tone={schedule.isActive ? "success" : "neutral"} dot>
                   {schedule.isActive ? "Active" : "Inactive"}
                 </Badge>
-                <Badge tone={schedule.attendanceEntryEnabled ? "info" : "neutral"}>Attendance</Badge>
-                <Badge tone={schedule.financeEntryEnabled ? "warning" : "neutral"}>Finance</Badge>
-                <Icon name="chevronDown" className="ml-1 h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180" />
+                <Badge
+                  tone={schedule.attendanceEntryEnabled ? "info" : "neutral"}
+                >
+                  Attendance
+                </Badge>
+                <Badge
+                  tone={schedule.financeEntryEnabled ? "warning" : "neutral"}
+                >
+                  Finance
+                </Badge>
+                <Icon
+                  name="chevronDown"
+                  className="ml-1 h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180"
+                />
               </div>
             </summary>
             <div className="border-t border-black/[0.06] px-4 py-4">
@@ -140,7 +175,11 @@ export function ServiceScheduleManagementList({
               >
                 {!isBranchScopedRole(currentUserRole) ? (
                   <Field label="Branch">
-                    <select name={`branchId-${schedule._id}`} defaultValue={branchId} className="ui-input">
+                    <select
+                      name={`branchId-${schedule._id}`}
+                      defaultValue={branchId}
+                      className="ui-input"
+                    >
                       <option value="">Select branch</option>
                       {branches.map((branch) => (
                         <option key={branch._id} value={branch._id}>
@@ -150,7 +189,11 @@ export function ServiceScheduleManagementList({
                     </select>
                   </Field>
                 ) : (
-                  <input type="hidden" name={`branchId-${schedule._id}`} value={branchId} />
+                  <input
+                    type="hidden"
+                    name={`branchId-${schedule._id}`}
+                    value={branchId}
+                  />
                 )}
 
                 <Field label="Service type">
@@ -172,11 +215,19 @@ export function ServiceScheduleManagementList({
                 </Field>
 
                 <Field label="Schedule name">
-                  <input name={`name-${schedule._id}`} defaultValue={schedule.name} className="ui-input" />
+                  <input
+                    name={`name-${schedule._id}`}
+                    defaultValue={schedule.name}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <Field label="Day of week">
-                  <select name={`dayOfWeek-${schedule._id}`} defaultValue={schedule.dayOfWeek} className="ui-input">
+                  <select
+                    name={`dayOfWeek-${schedule._id}`}
+                    defaultValue={schedule.dayOfWeek}
+                    className="ui-input"
+                  >
                     {weekdayOptions.map((day) => (
                       <option key={day} value={day}>
                         {day.charAt(0).toUpperCase() + day.slice(1)}
@@ -186,19 +237,37 @@ export function ServiceScheduleManagementList({
                 </Field>
 
                 <Field label="Start time">
-                  <input name={`startTime-${schedule._id}`} type="time" defaultValue={schedule.startTime} className="ui-input" />
+                  <input
+                    name={`startTime-${schedule._id}`}
+                    type="time"
+                    defaultValue={schedule.startTime}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <Field label="End time">
-                  <input name={`endTime-${schedule._id}`} type="time" defaultValue={schedule.endTime || ""} className="ui-input" />
+                  <input
+                    name={`endTime-${schedule._id}`}
+                    type="time"
+                    defaultValue={schedule.endTime || ""}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <Field label="Timezone" className="md:col-span-2">
-                  <input name={`timezone-${schedule._id}`} defaultValue={schedule.timezone} className="ui-input" />
+                  <input
+                    name={`timezone-${schedule._id}`}
+                    defaultValue={schedule.timezone}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <Field label="Location notes" className="md:col-span-2">
-                  <textarea name={`locationNotes-${schedule._id}`} defaultValue={schedule.locationNotes || ""} className="ui-input" />
+                  <textarea
+                    name={`locationNotes-${schedule._id}`}
+                    defaultValue={schedule.locationNotes || ""}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <div className="grid gap-2 rounded-2xl bg-[#f6f5f1] p-4 md:col-span-2 md:grid-cols-3">
@@ -232,8 +301,14 @@ export function ServiceScheduleManagementList({
                 </div>
 
                 <div className="md:col-span-2">
-                  <Button type="submit" size="sm" disabled={loadingId === schedule._id}>
-                    {loadingId === schedule._id ? "Saving..." : "Update service schedule"}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={loadingId === schedule._id}
+                  >
+                    {loadingId === schedule._id
+                      ? "Saving..."
+                      : "Update service schedule"}
                   </Button>
                 </div>
               </form>

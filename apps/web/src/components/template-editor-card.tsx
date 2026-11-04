@@ -2,14 +2,34 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formTextColor } from "@/lib/form-colors";
+import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
-import { isBranchScopedRole, isDistrictRole, isNationalRole } from "@/lib/permissions";
+import {
+  isBranchScopedRole,
+  isDistrictRole,
+  isNationalRole,
+} from "@/lib/permissions";
 import { TemplateQrCard } from "./template-qr-card";
 import { Badge, Button, Field } from "@/components/ui/ui";
-import type { BranchSummary, IntakeTemplate, IntakeTemplateField } from "@/lib/types";
+import type {
+  BranchSummary,
+  IntakeTemplate,
+  IntakeTemplateField,
+} from "@/lib/types";
 
-const fieldTypes = ["text", "email", "tel", "date", "month", "textarea", "radio", "select", "number"];
+const fieldTypes = [
+  "text",
+  "email",
+  "tel",
+  "date",
+  "month",
+  "textarea",
+  "radio",
+  "select",
+  "number",
+];
 
 function slugify(value: string) {
   return value
@@ -22,52 +42,216 @@ function slugify(value: string) {
 function starterFields(kind: IntakeTemplate["kind"]): IntakeTemplateField[] {
   if (kind === "guest") {
     return [
-      { key: "visitDate", label: "Today's date", type: "date", required: true, width: "half" },
-      { key: "firstName", label: "First name", type: "text", required: true, width: "half" },
-      { key: "lastName", label: "Last name", type: "text", required: true, width: "half" },
-      { key: "email", label: "Email", type: "email", required: true, width: "full" },
-      { key: "phone", label: "Phone", type: "tel", required: true, width: "full" },
+      {
+        key: "visitDate",
+        label: "Today's date",
+        type: "date",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "firstName",
+        label: "First name",
+        type: "text",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "lastName",
+        label: "Last name",
+        type: "text",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "email",
+        label: "Email",
+        type: "email",
+        required: true,
+        width: "full",
+      },
+      {
+        key: "phone",
+        label: "Phone",
+        type: "tel",
+        required: true,
+        width: "full",
+      },
     ];
   }
 
   if (kind === "member") {
     return [
-      { key: "dateJoinedChurch", label: "Date joined the church", type: "date", required: true, width: "half" },
-      { key: "firstName", label: "First name", type: "text", required: true, width: "half" },
-      { key: "lastName", label: "Last name", type: "text", required: true, width: "half" },
-      { key: "email", label: "Email", type: "email", required: true, width: "half" },
-      { key: "phone", label: "Phone number", type: "tel", required: true, width: "half" },
+      {
+        key: "dateJoinedChurch",
+        label: "Date joined the church",
+        type: "date",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "firstName",
+        label: "First name",
+        type: "text",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "lastName",
+        label: "Last name",
+        type: "text",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "email",
+        label: "Email",
+        type: "email",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "phone",
+        label: "Phone number",
+        type: "tel",
+        required: true,
+        width: "half",
+      },
     ];
   }
 
   if (kind === "weekly_report") {
     return [
-      { key: "reportWeek", label: "Report week ending", type: "date", required: true, width: "half" },
-      { key: "currentAttendance", label: "Current attendance", type: "number", required: true, width: "half" },
-      { key: "previousAttendance", label: "Previous attendance", type: "number", required: false, width: "half" },
-      { key: "firstTimersCount", label: "FT - First timers", type: "number", required: false, width: "half" },
-      { key: "newConvertsCount", label: "NC - New converts", type: "number", required: false, width: "half" },
-      { key: "remarks", label: "Remarks", type: "textarea", required: false, width: "full" },
+      {
+        key: "reportWeek",
+        label: "Report week ending",
+        type: "date",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "currentAttendance",
+        label: "Current attendance",
+        type: "number",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "previousAttendance",
+        label: "Previous attendance",
+        type: "number",
+        required: false,
+        width: "half",
+      },
+      {
+        key: "firstTimersCount",
+        label: "FT - First timers",
+        type: "number",
+        required: false,
+        width: "half",
+      },
+      {
+        key: "newConvertsCount",
+        label: "NC - New converts",
+        type: "number",
+        required: false,
+        width: "half",
+      },
+      {
+        key: "remarks",
+        label: "Remarks",
+        type: "textarea",
+        required: false,
+        width: "full",
+      },
     ];
   }
 
   if (kind === "maag_report") {
     return [
-      { key: "reportMonth", label: "Month and year", type: "month", required: true, width: "half" },
-      { key: "nation", label: "Nation", type: "text", required: true, width: "half" },
-      { key: "stationName", label: "Station", type: "text", required: true, width: "half" },
-      { key: "facilityType", label: "Facility type", type: "select", required: true, width: "half", options: ["Ministry Owned", "Rented", "Temporary Structure"] },
-      { key: "averageAttendance", label: "Avg att'd", type: "number", required: true, width: "half" },
-      { key: "incomeAmount", label: "Income ($ dollars only)", type: "number", required: true, width: "half" },
+      {
+        key: "reportMonth",
+        label: "Month and year",
+        type: "month",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "nation",
+        label: "Nation",
+        type: "text",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "stationName",
+        label: "Station",
+        type: "text",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "facilityType",
+        label: "Facility type",
+        type: "select",
+        required: true,
+        width: "half",
+        options: ["Ministry Owned", "Rented", "Temporary Structure"],
+      },
+      {
+        key: "averageAttendance",
+        label: "Avg att'd",
+        type: "number",
+        required: true,
+        width: "half",
+      },
+      {
+        key: "incomeAmount",
+        label: "Income ($ dollars only)",
+        type: "number",
+        required: true,
+        width: "half",
+      },
     ];
   }
 
   return [
-    { key: "serviceDate", label: "Day of service", type: "date", required: true, width: "half" },
-    { key: "serviceType", label: "Service type", type: "select", required: true, width: "half", options: ["Sunday service", "Midweek service"] },
-    { key: "serviceName", label: "Service name", type: "text", required: true, width: "full" },
-    { key: "menCount", label: "Number of men", type: "number", required: true, width: "half" },
-    { key: "womenCount", label: "Number of women", type: "number", required: true, width: "half" },
+    {
+      key: "serviceDate",
+      label: "Day of service",
+      type: "date",
+      required: true,
+      width: "half",
+    },
+    {
+      key: "serviceType",
+      label: "Service type",
+      type: "select",
+      required: true,
+      width: "half",
+      options: ["Sunday service", "Midweek service"],
+    },
+    {
+      key: "serviceName",
+      label: "Service name",
+      type: "text",
+      required: true,
+      width: "full",
+    },
+    {
+      key: "menCount",
+      label: "Number of men",
+      type: "number",
+      required: true,
+      width: "half",
+    },
+    {
+      key: "womenCount",
+      label: "Number of women",
+      type: "number",
+      required: true,
+      width: "half",
+    },
   ];
 }
 
@@ -82,7 +266,9 @@ function sanitizeField(field: IntakeTemplateField): IntakeTemplateField {
     helpText: field.helpText?.trim() || undefined,
     width: field.width === "full" ? "full" : "half",
     options:
-      field.type === "radio" || field.type === "select" || field.type === "checkbox"
+      field.type === "radio" ||
+      field.type === "select" ||
+      field.type === "checkbox"
         ? (field.options || []).map((option) => option.trim()).filter(Boolean)
         : undefined,
   };
@@ -90,6 +276,7 @@ function sanitizeField(field: IntakeTemplateField): IntakeTemplateField {
 
 function sanitizeTheme(theme?: IntakeTemplate["theme"]) {
   return {
+    headerColor: theme?.headerColor || undefined,
     accentColor: theme?.accentColor || "#dc2626",
     darkColor: theme?.darkColor || "#111827",
     softColor: theme?.softColor || "#fff7ed",
@@ -118,7 +305,8 @@ function toEditableTemplate(template: IntakeTemplate): IntakeTemplate {
     closingText: template.closingText || "",
     submitLabel: template.submitLabel || "Submit form",
     successTitle: template.successTitle || "Thank you",
-    successMessage: template.successMessage || "Your submission has been received.",
+    successMessage:
+      template.successMessage || "Your submission has been received.",
     logoPath: template.logoPath || "/logo.png",
     shareUrl: template.shareUrl,
     theme: sanitizeTheme(template.theme),
@@ -126,7 +314,10 @@ function toEditableTemplate(template: IntakeTemplate): IntakeTemplate {
   };
 }
 
-function defaultTemplate(kind: IntakeTemplate["kind"], defaultBranchId?: string): IntakeTemplate {
+function defaultTemplate(
+  kind: IntakeTemplate["kind"],
+  defaultBranchId?: string,
+): IntakeTemplate {
   return {
     _id: "",
     kind,
@@ -173,29 +364,49 @@ export function TemplateEditorCard({
   readonly?: boolean;
 }) {
   const router = useRouter();
-  const baseTemplate = template ? toEditableTemplate(template) : defaultTemplate("guest", defaultBranchId);
+  const baseTemplate = template
+    ? toEditableTemplate(template)
+    : defaultTemplate("guest", defaultBranchId);
   const [draft, setDraft] = useState<IntakeTemplate>(baseTemplate);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [overrideLoading, setOverrideLoading] = useState(false);
   const [districtOverrideLoading, setDistrictOverrideLoading] = useState(false);
-  const branchLabel = branches.find((branch) => branch._id === draft.branchId)?.name;
-  const isDistrictVersion = !!template?._id && !!template.district && !!template.oversightRegion;
-  const isGlobalBaseTemplate = !!template?._id && !template.branchId && !template.isBranchOverride && !isDistrictVersion;
-  const isBranchVersion = !!template?._id && (!!template.branchId || !!template.isBranchOverride);
+  const branchLabel = branches.find(
+    (branch) => branch._id === draft.branchId,
+  )?.name;
+  const isDistrictVersion =
+    !!template?._id && !!template.district && !!template.oversightRegion;
+  const isGlobalBaseTemplate =
+    !!template?._id &&
+    !template.branchId &&
+    !template.isBranchOverride &&
+    !isDistrictVersion;
+  const isBranchVersion =
+    !!template?._id && (!!template.branchId || !!template.isBranchOverride);
   const canCreateBranchVersion =
-    isGlobalBaseTemplate && isBranchScopedRole(currentUserRole) && !!defaultBranchId;
+    isGlobalBaseTemplate &&
+    isBranchScopedRole(currentUserRole) &&
+    !!defaultBranchId;
   const canCreateDistrictVersion =
     isGlobalBaseTemplate &&
-    (isDistrictRole(currentUserRole) || isNationalRole(currentUserRole) || currentUserRole === "super_admin") &&
+    (isDistrictRole(currentUserRole) ||
+      isNationalRole(currentUserRole) ||
+      currentUserRole === "super_admin") &&
     !!defaultOversightRegion &&
     !!defaultDistrict;
 
-  function updateDraft<K extends keyof IntakeTemplate>(key: K, value: IntakeTemplate[K]) {
+  function updateDraft<K extends keyof IntakeTemplate>(
+    key: K,
+    value: IntakeTemplate[K],
+  ) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function updateTheme(key: "accentColor" | "darkColor" | "softColor", value: string) {
+  function updateTheme(
+    key: "accentColor" | "darkColor" | "softColor" | "headerColor",
+    value: string,
+  ) {
     setDraft((current) => ({
       ...current,
       theme: {
@@ -208,7 +419,9 @@ export function TemplateEditorCard({
   function updateField(index: number, patch: Partial<IntakeTemplateField>) {
     setDraft((current) => ({
       ...current,
-      fields: current.fields.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field)),
+      fields: current.fields.map((field, fieldIndex) =>
+        fieldIndex === index ? { ...field, ...patch } : field,
+      ),
     }));
   }
 
@@ -264,8 +477,9 @@ export function TemplateEditorCard({
         successTitle: draft.successTitle?.trim() || undefined,
         successMessage: draft.successMessage?.trim() || undefined,
         logoPath: draft.logoPath?.trim() || undefined,
-        branchId:
-          !isBranchScopedRole(currentUserRole) ? draft.branchId || undefined : defaultBranchId || undefined,
+        branchId: !isBranchScopedRole(currentUserRole)
+          ? draft.branchId || undefined
+          : defaultBranchId || undefined,
         oversightRegion: draft.oversightRegion || undefined,
         district: draft.district || undefined,
         theme: sanitizeTheme(draft.theme),
@@ -290,9 +504,12 @@ export function TemplateEditorCard({
       const message = template?._id ? "Template updated." : "Template created.";
       setStatus(message);
       toast.success(message);
+      if (!template?._id)
+        router.push(createdHref("/templates?sort=newest", result, "Template"));
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to save template";
+      const message =
+        error instanceof Error ? error.message : "Unable to save template";
       setStatus(message);
       toast.error("Template save failed", {
         description: message,
@@ -311,12 +528,15 @@ export function TemplateEditorCard({
     setStatus(null);
 
     try {
-      const response = await fetch(`${API_URL}/intake-templates/${template._id}/branch-override`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ branchId: defaultBranchId }),
-      });
+      const response = await fetch(
+        `${API_URL}/intake-templates/${template._id}/branch-override`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ branchId: defaultBranchId }),
+        },
+      );
 
       const result = await response.json();
 
@@ -329,7 +549,10 @@ export function TemplateEditorCard({
       toast.success(message);
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to create branch version";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to create branch version";
       setStatus(message);
       toast.error("Branch version unavailable", {
         description: message,
@@ -348,15 +571,18 @@ export function TemplateEditorCard({
     setStatus(null);
 
     try {
-      const response = await fetch(`${API_URL}/intake-templates/${template._id}/district-override`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          oversightRegion: defaultOversightRegion,
-          district: defaultDistrict,
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/intake-templates/${template._id}/district-override`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            oversightRegion: defaultOversightRegion,
+            district: defaultDistrict,
+          }),
+        },
+      );
 
       const result = await response.json();
 
@@ -369,7 +595,10 @@ export function TemplateEditorCard({
       toast.success(message);
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to create district version";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to create district version";
       setStatus(message);
       toast.error("District version unavailable", {
         description: message,
@@ -379,7 +608,6 @@ export function TemplateEditorCard({
     }
   }
 
-
   const checkRowClass =
     "flex min-h-[40px] items-center gap-2.5 rounded-xl border border-[#e4e3df] bg-white px-3 text-[14px] text-[#55534e]";
   const colorInputClass =
@@ -387,8 +615,12 @@ export function TemplateEditorCard({
 
   return (
     <div className="space-y-4">
-      {template?.shareUrl && !(isGlobalBaseTemplate && canCreateBranchVersion) ? (
-        <TemplateQrCard url={template.shareUrl} title={`${draft.name} share link`} />
+      {template?.shareUrl &&
+      !(isGlobalBaseTemplate && canCreateBranchVersion) ? (
+        <TemplateQrCard
+          url={template.shareUrl}
+          title={`${draft.name} share link`}
+        />
       ) : null}
       {template ? (
         <section className="rounded-2xl bg-[#f6f5f1] p-4">
@@ -408,25 +640,45 @@ export function TemplateEditorCard({
                   ? "This shared template stays centrally managed."
                   : isDistrictVersion
                     ? `This version applies to ${template?.district || "the selected district"}.`
-                  : `This version only applies to ${branchLabel || "the selected branch"}.`}
+                    : `This version only applies to ${branchLabel || "the selected branch"}.`}
               </p>
             </div>
-            {isDistrictVersion && template?.district ? <Badge tone="info">{template.district}</Badge> : null}
-            {isBranchVersion && branchLabel ? <Badge tone="info">{branchLabel}</Badge> : null}
+            {isDistrictVersion && template?.district ? (
+              <Badge tone="info">{template.district}</Badge>
+            ) : null}
+            {isBranchVersion && branchLabel ? (
+              <Badge tone="info">{branchLabel}</Badge>
+            ) : null}
           </div>
           {canCreateBranchVersion ? (
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
-              <p>Start a branch version to customise this template for your branch.</p>
-              <Button size="sm" onClick={handleCreateBranchVersion} disabled={overrideLoading}>
+              <p>
+                Start a branch version to customise this template for your
+                branch.
+              </p>
+              <Button
+                size="sm"
+                onClick={handleCreateBranchVersion}
+                disabled={overrideLoading}
+              >
                 {overrideLoading ? "Creating..." : "Create branch version"}
               </Button>
             </div>
           ) : null}
           {canCreateDistrictVersion ? (
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
-              <p>Adopt this template for {defaultDistrict} so every branch in the district uses the district version.</p>
-              <Button size="sm" onClick={handleCreateDistrictVersion} disabled={districtOverrideLoading}>
-                {districtOverrideLoading ? "Creating..." : "Create district version"}
+              <p>
+                Adopt this template for {defaultDistrict} so every branch in the
+                district uses the district version.
+              </p>
+              <Button
+                size="sm"
+                onClick={handleCreateDistrictVersion}
+                disabled={districtOverrideLoading}
+              >
+                {districtOverrideLoading
+                  ? "Creating..."
+                  : "Create district version"}
               </Button>
             </div>
           ) : null}
@@ -435,7 +687,9 @@ export function TemplateEditorCard({
 
       <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
         <p className="text-[14px] font-medium text-[#111111]">Basics</p>
-        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Name, public link, form type and branch.</p>
+        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+          Name, public link, form type and branch.
+        </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Template name">
             <input
@@ -458,7 +712,9 @@ export function TemplateEditorCard({
           <Field label="Form type">
             <select
               value={draft.kind}
-              onChange={(event) => resetForKind(event.target.value as IntakeTemplate["kind"])}
+              onChange={(event) =>
+                resetForKind(event.target.value as IntakeTemplate["kind"])
+              }
               disabled={readonly}
               className="ui-input"
             >
@@ -473,7 +729,9 @@ export function TemplateEditorCard({
             {!isBranchScopedRole(currentUserRole) ? (
               <select
                 value={draft.branchId || ""}
-                onChange={(event) => updateDraft("branchId", event.target.value || undefined)}
+                onChange={(event) =>
+                  updateDraft("branchId", event.target.value || undefined)
+                }
                 disabled={readonly}
                 className="ui-input"
               >
@@ -505,7 +763,9 @@ export function TemplateEditorCard({
             <input
               type="checkbox"
               checked={draft.isActive}
-              onChange={(event) => updateDraft("isActive", event.target.checked)}
+              onChange={(event) =>
+                updateDraft("isActive", event.target.checked)
+              }
               disabled={readonly}
               className="h-4 w-4 accent-[#111111]"
             />
@@ -515,8 +775,12 @@ export function TemplateEditorCard({
       </section>
 
       <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
-        <p className="text-[14px] font-medium text-[#111111]">Public page wording</p>
-        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">What visitors read before and after they submit.</p>
+        <p className="text-[14px] font-medium text-[#111111]">
+          Public page wording
+        </p>
+        <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+          What visitors read before and after they submit.
+        </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Public title" className="sm:col-span-2">
             <input
@@ -539,7 +803,9 @@ export function TemplateEditorCard({
           <Field label="Intro title" className="sm:col-span-2">
             <input
               value={draft.introTitle || ""}
-              onChange={(event) => updateDraft("introTitle", event.target.value)}
+              onChange={(event) =>
+                updateDraft("introTitle", event.target.value)
+              }
               placeholder="Intro title"
               disabled={readonly}
               className="ui-input"
@@ -557,7 +823,9 @@ export function TemplateEditorCard({
           <Field label="Closing text" className="sm:col-span-2">
             <textarea
               value={draft.closingText || ""}
-              onChange={(event) => updateDraft("closingText", event.target.value)}
+              onChange={(event) =>
+                updateDraft("closingText", event.target.value)
+              }
               placeholder="Closing text"
               disabled={readonly}
               className="ui-input !min-h-20"
@@ -566,7 +834,9 @@ export function TemplateEditorCard({
           <Field label="Submit button label">
             <input
               value={draft.submitLabel || ""}
-              onChange={(event) => updateDraft("submitLabel", event.target.value)}
+              onChange={(event) =>
+                updateDraft("submitLabel", event.target.value)
+              }
               placeholder="Submit label"
               disabled={readonly}
               className="ui-input"
@@ -584,7 +854,9 @@ export function TemplateEditorCard({
           <Field label="Success title">
             <input
               value={draft.successTitle || ""}
-              onChange={(event) => updateDraft("successTitle", event.target.value)}
+              onChange={(event) =>
+                updateDraft("successTitle", event.target.value)
+              }
               placeholder="Success title"
               disabled={readonly}
               className="ui-input"
@@ -593,7 +865,9 @@ export function TemplateEditorCard({
           <Field label="Success message">
             <input
               value={draft.successMessage || ""}
-              onChange={(event) => updateDraft("successMessage", event.target.value)}
+              onChange={(event) =>
+                updateDraft("successMessage", event.target.value)
+              }
               placeholder="Success message"
               disabled={readonly}
               className="ui-input"
@@ -601,13 +875,62 @@ export function TemplateEditorCard({
           </Field>
         </div>
 
-        <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">Theme colours</p>
+        <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">
+          Theme colours
+        </p>
+        <div className="mt-3 rounded-xl border border-black/[0.06] p-4">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={!!draft.theme?.headerColor}
+              disabled={readonly}
+              onChange={(event) =>
+                updateTheme(
+                  "headerColor",
+                  event.target.checked ? "#111111" : "",
+                )
+              }
+            />{" "}
+            Customize header color
+          </label>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <input
+              type="color"
+              aria-label="Header background color"
+              value={draft.theme?.headerColor || "#ffffff"}
+              disabled={readonly || !draft.theme?.headerColor}
+              onChange={(event) =>
+                updateTheme("headerColor", event.target.value)
+              }
+              className={colorInputClass}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={readonly}
+              onClick={() => updateTheme("headerColor", "")}
+            >
+              Use default header
+            </Button>
+          </div>
+          <div
+            className="mt-3 rounded-xl p-4 text-sm font-medium"
+            style={{
+              backgroundColor: draft.theme?.headerColor || "#ffffff",
+              color: formTextColor(draft.theme?.headerColor || "#ffffff"),
+            }}
+          >
+            Header preview — {draft.name || "Your church form"}
+          </div>
+        </div>
         <div className="mt-2 grid grid-cols-3 gap-3">
-          <Field label="Accent">
+          <Field label="Accent / buttons">
             <input
               type="color"
               value={draft.theme?.accentColor || "#dc2626"}
-              onChange={(event) => updateTheme("accentColor", event.target.value)}
+              onChange={(event) =>
+                updateTheme("accentColor", event.target.value)
+              }
               disabled={readonly}
               className={colorInputClass}
             />
@@ -637,22 +960,37 @@ export function TemplateEditorCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[14px] font-medium text-[#111111]">
-              Form fields <span className="ml-1 text-[#8a8780] tabular-nums">{draft.fields.length}</span>
+              Form fields{" "}
+              <span className="ml-1 text-[#8a8780] tabular-nums">
+                {draft.fields.length}
+              </span>
             </p>
-            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Edit labels, field types, options and required rules.</p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+              Edit labels, field types, options and required rules.
+            </p>
           </div>
           {!readonly ? (
-            <Button size="sm" variant="secondary" icon="plus" onClick={addField}>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="plus"
+              onClick={addField}
+            >
               Add field
             </Button>
           ) : null}
         </div>
         <div className="mt-4 space-y-3">
           {draft.fields.map((field, index) => (
-            <div key={`${field.key}-${index}`} className="rounded-2xl bg-[#f6f5f1] p-4">
+            <div
+              key={`${field.key}-${index}`}
+              className="rounded-2xl bg-[#f6f5f1] p-4"
+            >
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="text-[13px] font-medium text-[#111111]">
-                  <span className="mr-1.5 text-[#8a8780] tabular-nums">{index + 1}.</span>
+                  <span className="mr-1.5 text-[#8a8780] tabular-nums">
+                    {index + 1}.
+                  </span>
                   {field.label || "Untitled field"}
                 </p>
                 {!readonly ? (
@@ -670,7 +1008,9 @@ export function TemplateEditorCard({
                 <Field label="Label">
                   <input
                     value={field.label}
-                    onChange={(event) => updateField(index, { label: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { label: event.target.value })
+                    }
                     disabled={readonly}
                     placeholder="Field label"
                     className="ui-input"
@@ -679,7 +1019,9 @@ export function TemplateEditorCard({
                 <Field label="Key">
                   <input
                     value={field.key}
-                    onChange={(event) => updateField(index, { key: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { key: event.target.value })
+                    }
                     disabled={readonly}
                     placeholder="field_key"
                     className="ui-input"
@@ -688,7 +1030,9 @@ export function TemplateEditorCard({
                 <Field label="Type">
                   <select
                     value={field.type}
-                    onChange={(event) => updateField(index, { type: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { type: event.target.value })
+                    }
                     disabled={readonly}
                     className="ui-input"
                   >
@@ -702,7 +1046,9 @@ export function TemplateEditorCard({
                 <Field label="Width">
                   <select
                     value={field.width || "half"}
-                    onChange={(event) => updateField(index, { width: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { width: event.target.value })
+                    }
                     disabled={readonly}
                     className="ui-input"
                   >
@@ -713,7 +1059,9 @@ export function TemplateEditorCard({
                 <Field label="Placeholder">
                   <input
                     value={field.placeholder || ""}
-                    onChange={(event) => updateField(index, { placeholder: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { placeholder: event.target.value })
+                    }
                     disabled={readonly}
                     placeholder="Placeholder"
                     className="ui-input"
@@ -722,7 +1070,9 @@ export function TemplateEditorCard({
                 <Field label="Default value">
                   <input
                     value={field.defaultValue || ""}
-                    onChange={(event) => updateField(index, { defaultValue: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { defaultValue: event.target.value })
+                    }
                     disabled={readonly}
                     placeholder="Default value"
                     className="ui-input"
@@ -732,7 +1082,9 @@ export function TemplateEditorCard({
                   <input
                     type="checkbox"
                     checked={!!field.required}
-                    onChange={(event) => updateField(index, { required: event.target.checked })}
+                    onChange={(event) =>
+                      updateField(index, { required: event.target.checked })
+                    }
                     disabled={readonly}
                     className="h-4 w-4 accent-[#111111]"
                   />
@@ -741,19 +1093,28 @@ export function TemplateEditorCard({
                 <Field label="Helper text" className="sm:col-span-2">
                   <textarea
                     value={field.helpText || ""}
-                    onChange={(event) => updateField(index, { helpText: event.target.value })}
+                    onChange={(event) =>
+                      updateField(index, { helpText: event.target.value })
+                    }
                     disabled={readonly}
                     placeholder="Helper text"
                     className="ui-input !min-h-20"
                   />
                 </Field>
                 {field.type === "select" || field.type === "radio" ? (
-                  <Field label="Options" hint="Separate options with commas." className="sm:col-span-2">
+                  <Field
+                    label="Options"
+                    hint="Separate options with commas."
+                    className="sm:col-span-2"
+                  >
                     <input
                       value={(field.options || []).join(", ")}
                       onChange={(event) =>
                         updateField(index, {
-                          options: event.target.value.split(",").map((item) => item.trim()).filter(Boolean),
+                          options: event.target.value
+                            .split(",")
+                            .map((item) => item.trim())
+                            .filter(Boolean),
                         })
                       }
                       disabled={readonly}
@@ -771,9 +1132,15 @@ export function TemplateEditorCard({
       {!readonly ? (
         <div className="flex flex-wrap items-center gap-3">
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Saving..." : template?._id ? "Update template" : "Create template"}
+            {loading
+              ? "Saving..."
+              : template?._id
+                ? "Update template"
+                : "Create template"}
           </Button>
-          {status ? <p className="text-[13px] text-[#6b6b6b]">{status}</p> : null}
+          {status ? (
+            <p className="text-[13px] text-[#6b6b6b]">{status}</p>
+          ) : null}
         </div>
       ) : (
         <p className="rounded-2xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">

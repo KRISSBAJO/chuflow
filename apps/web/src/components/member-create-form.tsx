@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
@@ -110,6 +111,7 @@ export function MemberCreateForm({
       toast.success("Member saved", {
         description: "The member profile has been created in the selected branch.",
       });
+      router.push(createdHref(`/members/${result._id}`, result, "Member"));
       router.refresh();
     } catch (error) {
       const message =

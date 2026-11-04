@@ -1,4 +1,5 @@
 "use client";
+import { validFormColor, formTextColor } from "@/lib/form-colors";
 
 import Image from "next/image";
 import { useRef, useState, type CSSProperties } from "react";
@@ -45,7 +46,8 @@ function createInitialAnswers(fields: IntakeTemplate["fields"]) {
   const initialAnswers: Record<string, IntakeAnswerValue> = {};
 
   for (const field of fields) {
-    initialAnswers[field.key] = field.type === "checkbox" ? [] : field.defaultValue || "";
+    initialAnswers[field.key] =
+      field.type === "checkbox" ? [] : field.defaultValue || "";
   }
 
   return initialAnswers;
@@ -59,7 +61,10 @@ function getArrayValue(value: IntakeAnswerValue | undefined) {
   return Array.isArray(value) ? value : [];
 }
 
-function isAnswerMissing(field: IntakeTemplate["fields"][number], value: IntakeAnswerValue | undefined) {
+function isAnswerMissing(
+  field: IntakeTemplate["fields"][number],
+  value: IntakeAnswerValue | undefined,
+) {
   if (!field.required) {
     return false;
   }
@@ -189,7 +194,9 @@ function getWeeklyGrowthPreview(answers: Record<string, IntakeAnswerValue>) {
 
   const growth = currentAttendance - previousAttendance;
   const growthPercent =
-    previousAttendance > 0 ? Number(((growth / previousAttendance) * 100).toFixed(2)) : 0;
+    previousAttendance > 0
+      ? Number(((growth / previousAttendance) * 100).toFixed(2))
+      : 0;
 
   return {
     currentAttendance,
@@ -210,7 +217,9 @@ function collectAnswersFromForm(
   for (const field of fields) {
     if (field.type === "checkbox") {
       if (formData.has(field.key)) {
-        nextAnswers[field.key] = formData.getAll(field.key).map((value) => String(value));
+        nextAnswers[field.key] = formData
+          .getAll(field.key)
+          .map((value) => String(value));
       }
       continue;
     }
@@ -231,19 +240,35 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
         title: "Welcome",
         description: "Tell us who you are and the basics of this visit.",
         matches: (value: string) =>
-          matchesAny(value, ["visitdate", "servicedate", "firstname", "lastname", "gender"]),
+          matchesAny(value, [
+            "visitdate",
+            "servicedate",
+            "firstname",
+            "lastname",
+            "gender",
+          ]),
       },
       {
         key: "contact",
         title: "Contact",
         description: "How can the church reach and locate you well?",
         matches: (value: string) =>
-          matchesAny(value, ["email", "phone", "address", "street", "city", "state", "zipcode", "zip"]),
+          matchesAny(value, [
+            "email",
+            "phone",
+            "address",
+            "street",
+            "city",
+            "state",
+            "zipcode",
+            "zip",
+          ]),
       },
       {
         key: "followup",
         title: "Follow-up",
-        description: "Help us understand your family context and next-care needs.",
+        description:
+          "Help us understand your family context and next-care needs.",
         matches: () => true,
       },
     ];
@@ -256,19 +281,35 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
         title: "Identity",
         description: "Capture the member's core record and joining details.",
         matches: (value: string) =>
-          matchesAny(value, ["datejoinedchurch", "joined", "firstname", "lastname", "membershipstatus"]),
+          matchesAny(value, [
+            "datejoinedchurch",
+            "joined",
+            "firstname",
+            "lastname",
+            "membershipstatus",
+          ]),
       },
       {
         key: "contact",
         title: "Contact",
         description: "Keep communication and household details up to date.",
         matches: (value: string) =>
-          matchesAny(value, ["email", "phone", "address", "street", "city", "state", "zip", "family"]),
+          matchesAny(value, [
+            "email",
+            "phone",
+            "address",
+            "street",
+            "city",
+            "state",
+            "zip",
+            "family",
+          ]),
       },
       {
         key: "schooling",
         title: "Bible School",
-        description: "Track BFC, BCC, LCC, and LCD attendance with date and location.",
+        description:
+          "Track BFC, BCC, LCC, and LCD attendance with date and location.",
         matches: (value: string) =>
           matchesAny(value, [
             "believerfoundationclass",
@@ -293,7 +334,8 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
       {
         key: "week",
         title: "Report week",
-        description: "Confirm the branch reporting week and attendance movement.",
+        description:
+          "Confirm the branch reporting week and attendance movement.",
         matches: (value: string) =>
           matchesAny(value, [
             "reportweek",
@@ -307,7 +349,8 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
       {
         key: "spiritual",
         title: "Spiritual indices",
-        description: "Enter first timers, new converts, foundation class, baptism, CHOP, and WSF figures.",
+        description:
+          "Enter first timers, new converts, foundation class, baptism, CHOP, and WSF figures.",
         matches: (value: string) =>
           matchesAny(value, [
             "firsttimers",
@@ -323,7 +366,8 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
       {
         key: "cells",
         title: "Cells & remarks",
-        description: "Capture cell growth, WOFBI, and any branch remarks for district review.",
+        description:
+          "Capture cell growth, WOFBI, and any branch remarks for district review.",
         matches: () => true,
       },
     ];
@@ -334,23 +378,45 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
       {
         key: "station",
         title: "Station details",
-        description: "Confirm the month, nation, station, facility type, and station leadership.",
+        description:
+          "Confirm the month, nation, station, facility type, and station leadership.",
         matches: (value: string) =>
-          matchesAny(value, ["reportmonth", "nation", "station", "facilitytype", "designation"]),
+          matchesAny(value, [
+            "reportmonth",
+            "nation",
+            "station",
+            "facilitytype",
+            "designation",
+          ]),
       },
       {
         key: "facilities",
         title: "Facilities",
-        description: "Enter auditorium, overflow, youth, and children facility capacities.",
+        description:
+          "Enter auditorium, overflow, youth, and children facility capacities.",
         matches: (value: string) =>
-          matchesAny(value, ["hallcapacity", "chairs", "overflow", "youth", "childrenfacility", "mainauditorium"]),
+          matchesAny(value, [
+            "hallcapacity",
+            "chairs",
+            "overflow",
+            "youth",
+            "childrenfacility",
+            "mainauditorium",
+          ]),
       },
       {
         key: "attendance",
         title: "Attendance",
-        description: "Record services, average attendance, highest attendance, adult, children, and CHOP figures.",
+        description:
+          "Record services, average attendance, highest attendance, adult, children, and CHOP figures.",
         matches: (value: string) =>
-          matchesAny(value, ["servicescount", "attendance", "adult", "children", "chop"]),
+          matchesAny(value, [
+            "servicescount",
+            "attendance",
+            "adult",
+            "children",
+            "chop",
+          ]),
       },
       {
         key: "finance",
@@ -362,14 +428,23 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
       {
         key: "indices",
         title: "Spiritual indices",
-        description: "Capture WSF, first timers, WOFBI, new converts, foundation class, and baptisms.",
+        description:
+          "Capture WSF, first timers, WOFBI, new converts, foundation class, and baptisms.",
         matches: (value: string) =>
-          matchesAny(value, ["wsf", "firsttimers", "wofbi", "newconverts", "foundation", "baptism"]),
+          matchesAny(value, [
+            "wsf",
+            "firsttimers",
+            "wofbi",
+            "newconverts",
+            "foundation",
+            "baptism",
+          ]),
       },
       {
         key: "pastor",
         title: "Pastor details",
-        description: "Record pastor contact, family, nationality, enlistment, resumption, and station remarks.",
+        description:
+          "Record pastor contact, family, nationality, enlistment, resumption, and station remarks.",
         matches: () => true,
       },
     ];
@@ -381,7 +456,12 @@ function getStepBlueprints(kind: IntakeTemplate["kind"]) {
       title: "Service details",
       description: "Record when and which service this attendance belongs to.",
       matches: (value: string) =>
-        matchesAny(value, ["servicedate", "servicetype", "servicename", "dayofservice"]),
+        matchesAny(value, [
+          "servicedate",
+          "servicetype",
+          "servicename",
+          "dayofservice",
+        ]),
     },
     {
       key: "counts",
@@ -455,20 +535,31 @@ export function PublicIntakeForm({
   defaultDistrict?: string;
 }) {
   const formRef = useRef<HTMLFormElement | null>(null);
-  const [answers, setAnswers] = useState<Record<string, IntakeAnswerValue>>(() =>
-    createInitialAnswers(template.fields),
+  const [answers, setAnswers] = useState<Record<string, IntakeAnswerValue>>(
+    () => createInitialAnswers(template.fields),
   );
   const [stepIndex, setStepIndex] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ title: string; message: string } | null>(null);
+  const [success, setSuccess] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedOversightRegion, setSelectedOversightRegion] = useState(defaultOversightRegion || "");
-  const [selectedDistrict, setSelectedDistrict] = useState(defaultDistrict || "");
-  const [selectedBranchId, setSelectedBranchId] = useState(branchId || template.branchId || "");
+  const [selectedOversightRegion, setSelectedOversightRegion] = useState(
+    defaultOversightRegion || "",
+  );
+  const [selectedDistrict, setSelectedDistrict] = useState(
+    defaultDistrict || "",
+  );
+  const [selectedBranchId, setSelectedBranchId] = useState(
+    branchId || template.branchId || "",
+  );
 
   const steps = buildTemplateSteps(template);
   const currentStep = steps[stepIndex];
+  const headerColor = validFormColor(template.theme?.headerColor);
+  const headerText = headerColor ? formTextColor(headerColor) : undefined;
   const accentColor = template.theme?.accentColor || "#dc2626";
   const softColor = template.theme?.softColor || "#fff7ed";
   const submissionBranchId = template.branchId || branchId || selectedBranchId;
@@ -478,18 +569,27 @@ export function PublicIntakeForm({
     (template.kind === "weekly_report" || template.kind === "maag_report") &&
     !template.branchId &&
     !branchId;
-  const oversightRegions = Array.from(new Set(branchOptions.map((branch) => branch.oversightRegion).filter(Boolean))).sort();
+  const oversightRegions = Array.from(
+    new Set(
+      branchOptions.map((branch) => branch.oversightRegion).filter(Boolean),
+    ),
+  ).sort();
   const districtOptions = Array.from(
     new Set(
       branchOptions
-        .filter((branch) => !selectedOversightRegion || branch.oversightRegion === selectedOversightRegion)
+        .filter(
+          (branch) =>
+            !selectedOversightRegion ||
+            branch.oversightRegion === selectedOversightRegion,
+        )
         .map((branch) => branch.district)
         .filter(Boolean),
     ),
   ).sort();
   const visibleBranchOptions = branchOptions.filter(
     (branch) =>
-      (!selectedOversightRegion || branch.oversightRegion === selectedOversightRegion) &&
+      (!selectedOversightRegion ||
+        branch.oversightRegion === selectedOversightRegion) &&
       (!selectedDistrict || branch.district === selectedDistrict),
   );
 
@@ -520,7 +620,10 @@ export function PublicIntakeForm({
     const currentAnswers = formRef.current
       ? collectAnswersFromForm(formRef.current, template.fields, answers)
       : answers;
-    const message = validateFields(steps[targetStepIndex]?.fields || [], currentAnswers);
+    const message = validateFields(
+      steps[targetStepIndex]?.fields || [],
+      currentAnswers,
+    );
 
     if (formRef.current) {
       setAnswers(currentAnswers);
@@ -570,15 +673,20 @@ export function PublicIntakeForm({
     setAnswers(nextAnswers);
 
     const invalidStepIndex = steps.findIndex(
-      (step) => step.fields.length > 0 && validateFields(step.fields, nextAnswers),
+      (step) =>
+        step.fields.length > 0 && validateFields(step.fields, nextAnswers),
     );
 
     if (invalidStepIndex >= 0) {
-      const message = validateFields(steps[invalidStepIndex].fields, nextAnswers);
+      const message = validateFields(
+        steps[invalidStepIndex].fields,
+        nextAnswers,
+      );
       setStepIndex(invalidStepIndex);
       setStepError(message);
       toast.error("Complete the required fields", {
-        description: message || "Please finish the highlighted step before submitting.",
+        description:
+          message || "Please finish the highlighted step before submitting.",
       });
       return;
     }
@@ -592,7 +700,9 @@ export function PublicIntakeForm({
 
     try {
       if (needsBranchSelection && !submissionBranchId) {
-        throw new Error("Please choose the branch this weekly report belongs to.");
+        throw new Error(
+          "Please choose the branch this weekly report belongs to.",
+        );
       }
 
       const submissionQuery = submissionBranchId
@@ -601,13 +711,15 @@ export function PublicIntakeForm({
       const response = await fetch(
         `${API_URL}/intake-templates/public/${template.slug}/submit${submissionQuery}`,
         {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: nextAnswers }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers: nextAnswers }),
         },
       );
 
-      const result = response.headers.get("content-type")?.includes("application/json")
+      const result = response.headers
+        .get("content-type")
+        ?.includes("application/json")
         ? ((await response.json()) as {
             successTitle?: string;
             successMessage?: string;
@@ -622,9 +734,12 @@ export function PublicIntakeForm({
         throw new Error(message);
       }
 
-      const successTitle = result?.successTitle || template.successTitle || "Thank you";
+      const successTitle =
+        result?.successTitle || template.successTitle || "Thank you";
       const successMessage =
-        result?.successMessage || template.successMessage || "Your submission has been received.";
+        result?.successMessage ||
+        template.successMessage ||
+        "Your submission has been received.";
 
       setSuccess({
         title: successTitle,
@@ -636,7 +751,8 @@ export function PublicIntakeForm({
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to submit form";
+      const message =
+        error instanceof Error ? error.message : "Unable to submit form";
       setStatus(message);
       toast.error("Submission failed", {
         id: loadingToast,
@@ -655,16 +771,34 @@ export function PublicIntakeForm({
     </span>
   );
   const fieldHelp = (field: IntakeTemplate["fields"][number]) =>
-    field.helpText ? <span className="-mt-1 mb-2 block text-[13px] text-[var(--lp-muted)]">{field.helpText}</span> : null;
+    field.helpText ? (
+      <span className="-mt-1 mb-2 block text-[13px] text-[var(--lp-muted)]">
+        {field.helpText}
+      </span>
+    ) : null;
   const optionClass =
     "flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#e4e3df] bg-white px-4 py-3 text-[15px] text-[var(--lp-ink)] transition-colors hover:border-[#cfcdc8] has-[:checked]:border-[var(--accent)] has-[:checked]:bg-[var(--accent-soft)]";
 
   return (
     <div
       className="lp-root lp-intake min-h-screen w-full bg-white"
-      style={{ "--accent": accentColor, "--accent-soft": softColor } as CSSProperties}
+      style={
+        { "--accent": accentColor, "--accent-soft": softColor } as CSSProperties
+      }
     >
-      <header className="flex h-20 items-center justify-between gap-4 px-5 sm:px-10">
+      <header
+        className="flex h-20 items-center justify-between gap-4 px-5 sm:px-10"
+        style={
+          headerColor
+            ? ({
+                backgroundColor: headerColor,
+                color: headerText,
+                "--lp-ink": headerText,
+                "--lp-muted": headerText,
+              } as CSSProperties)
+            : undefined
+        }
+      >
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--lp-panel)]">
             <Image
@@ -675,7 +809,9 @@ export function PublicIntakeForm({
               className="h-8 w-8 object-contain"
             />
           </span>
-          <span className="truncate text-[15px] font-medium text-[var(--lp-ink)]">{template.name}</span>
+          <span className="truncate text-[15px] font-medium text-[var(--lp-ink)]">
+            {template.name}
+          </span>
         </div>
         <span className="flex shrink-0 items-center gap-2 text-[12px] text-[var(--lp-muted)]">
           <span className="hidden sm:inline">Powered by</span>
@@ -686,30 +822,65 @@ export function PublicIntakeForm({
       <div className="mx-auto grid max-w-[1180px] gap-10 px-5 pb-20 pt-6 sm:px-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 lg:pt-12">
         <section className="lp-rise lg:sticky lg:top-10 lg:self-start">
           <p className="inline-flex items-center gap-2 rounded-full bg-[var(--lp-panel)] px-3.5 py-1.5 text-[13px] font-medium text-[var(--lp-ink)]">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accentColor }} />
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: accentColor }}
+            />
             {template.badge || "Welcome"}
           </p>
-          <h1 className="lp-heading mt-6 text-[2.5rem] leading-[1.04] sm:text-[3.25rem]">{template.title}</h1>
+          <h1 className="lp-heading mt-6 text-[2.5rem] leading-[1.04] sm:text-[3.25rem]">
+            {template.title}
+          </h1>
           {template.subtitle ? (
-            <p className="mt-4 text-[17px] leading-[1.6] text-[var(--lp-muted)]">{template.subtitle}</p>
+            <p className="mt-4 text-[17px] leading-[1.6] text-[var(--lp-muted)]">
+              {template.subtitle}
+            </p>
           ) : null}
 
           {template.introTitle || template.introBody || template.closingText ? (
             <div className="mt-8 rounded-[24px] bg-[var(--lp-panel)] p-6 text-[15px] leading-[1.7] text-[var(--lp-ink)]">
-              {template.introTitle ? <p className="text-[16px] font-semibold">{template.introTitle}</p> : null}
-              {template.introBody ? (
-                <p className="mt-2 whitespace-pre-line text-[var(--lp-muted)]">{template.introBody}</p>
+              {template.introTitle ? (
+                <p className="text-[16px] font-semibold">
+                  {template.introTitle}
+                </p>
               ) : null}
-              {template.closingText ? <p className="mt-4 font-medium">{template.closingText}</p> : null}
+              {template.introBody ? (
+                <p className="mt-2 whitespace-pre-line text-[var(--lp-muted)]">
+                  {template.introBody}
+                </p>
+              ) : null}
+              {template.closingText ? (
+                <p className="mt-4 font-medium">{template.closingText}</p>
+              ) : null}
             </div>
           ) : null}
 
           <ul className="mt-8 hidden space-y-3 lg:block">
-            {["A few short steps", "Your details stay private", "Ready for a warm follow-up"].map((item) => (
-              <li key={item} className="flex items-center gap-3 text-[14px] text-[var(--lp-muted)]">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ backgroundColor: accentColor }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} className="h-3 w-3">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            {[
+              "A few short steps",
+              "Your details stay private",
+              "Ready for a warm follow-up",
+            ].map((item) => (
+              <li
+                key={item}
+                className="flex items-center gap-3 text-[14px] text-[var(--lp-muted)]"
+              >
+                <span
+                  className="flex h-5 w-5 items-center justify-center rounded-full text-white"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    className="h-3 w-3"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </span>
                 {item}
@@ -733,14 +904,31 @@ export function PublicIntakeForm({
             <div className="lp-rise px-6 py-20 text-center sm:px-12">
               <span
                 className="mx-auto flex h-16 w-16 items-center justify-center rounded-full text-white"
-                style={{ backgroundColor: accentColor, boxShadow: `0 20px 40px -18px ${accentColor}` }}
+                style={{
+                  backgroundColor: accentColor,
+                  boxShadow: `0 20px 40px -18px ${accentColor}`,
+                }}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-7 w-7">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  className="h-7 w-7"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.5 12.75l6 6 9-13.5"
+                  />
                 </svg>
               </span>
-              <h2 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">{success.title}</h2>
-              <p className="mx-auto mt-4 max-w-[440px] text-[16px] leading-[1.7] text-[var(--lp-muted)]">{success.message}</p>
+              <h2 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">
+                {success.title}
+              </h2>
+              <p className="mx-auto mt-4 max-w-[440px] text-[16px] leading-[1.7] text-[var(--lp-muted)]">
+                {success.message}
+              </p>
             </div>
           ) : (
             <form
@@ -770,7 +958,11 @@ export function PublicIntakeForm({
                         className="h-2 rounded-full transition-all duration-500"
                         style={{
                           width: isCurrent ? 28 : 8,
-                          backgroundColor: isCurrent ? "var(--lp-ink)" : isComplete ? accentColor : "#e4e3df",
+                          backgroundColor: isCurrent
+                            ? "var(--lp-ink)"
+                            : isComplete
+                              ? accentColor
+                              : "#e4e3df",
                         }}
                       />
                     );
@@ -780,21 +972,30 @@ export function PublicIntakeForm({
 
               <div key={stepIndex} className="lp-rise">
                 <div className="mb-8 mt-6">
-                  <h2 className="lp-heading text-[1.85rem] leading-[1.1]">{currentStep.title}</h2>
+                  <h2 className="lp-heading text-[1.85rem] leading-[1.1]">
+                    {currentStep.title}
+                  </h2>
                   {currentStep.description ? (
-                    <p className="mt-2 text-[15px] leading-[1.6] text-[var(--lp-muted)]">{currentStep.description}</p>
+                    <p className="mt-2 text-[15px] leading-[1.6] text-[var(--lp-muted)]">
+                      {currentStep.description}
+                    </p>
                   ) : null}
                 </div>
 
                 {needsBranchSelection ? (
                   <div className="mb-8 rounded-[24px] bg-[var(--lp-panel)] p-5">
-                    <p className="text-[15px] font-medium text-[var(--lp-ink)]">Report scope</p>
+                    <p className="text-[15px] font-medium text-[var(--lp-ink)]">
+                      Report scope
+                    </p>
                     <p className="mt-1 text-[13px] text-[var(--lp-muted)]">
-                      Choose the district and branch this report belongs to before submitting.
+                      Choose the district and branch this report belongs to
+                      before submitting.
                     </p>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <label className="block">
-                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">National area</span>
+                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">
+                          National area
+                        </span>
                         <select
                           value={selectedOversightRegion}
                           onChange={(event) => {
@@ -814,7 +1015,9 @@ export function PublicIntakeForm({
                         </select>
                       </label>
                       <label className="block">
-                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">District</span>
+                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">
+                          District
+                        </span>
                         <select
                           value={selectedDistrict}
                           onChange={(event) => {
@@ -833,24 +1036,32 @@ export function PublicIntakeForm({
                         </select>
                       </label>
                       <label className="block">
-                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">Branch</span>
+                        <span className="mb-2 block text-[13px] font-medium text-[var(--lp-ink)]">
+                          Branch
+                        </span>
                         <select
                           value={selectedBranchId}
-                          onChange={(event) => setSelectedBranchId(event.target.value)}
+                          onChange={(event) =>
+                            setSelectedBranchId(event.target.value)
+                          }
                           className="lp-input"
                         >
                           <option value="">Select branch</option>
                           {visibleBranchOptions.map((branch) => (
                             <option key={branch._id} value={branch._id}>
                               {branch.name}
-                              {branch.city || branch.state ? ` · ${[branch.city, branch.state].filter(Boolean).join(", ")}` : ""}
+                              {branch.city || branch.state
+                                ? ` · ${[branch.city, branch.state].filter(Boolean).join(", ")}`
+                                : ""}
                             </option>
                           ))}
                         </select>
                       </label>
                     </div>
                     {branchOptions.length === 0 ? (
-                      <p className="mt-3 text-[13px] text-red-700">No active branches are available for this report link.</p>
+                      <p className="mt-3 text-[13px] text-red-700">
+                        No active branches are available for this report link.
+                      </p>
                     ) : null}
                   </div>
                 ) : null}
@@ -858,7 +1069,8 @@ export function PublicIntakeForm({
                 {currentStep.fields.length > 0 ? (
                   <div className="grid gap-x-4 gap-y-6 md:grid-cols-2">
                     {currentStep.fields.map((field) => {
-                      const colSpan = field.width === "full" ? "md:col-span-2" : "";
+                      const colSpan =
+                        field.width === "full" ? "md:col-span-2" : "";
 
                       if (field.type === "textarea") {
                         return (
@@ -868,7 +1080,9 @@ export function PublicIntakeForm({
                             <textarea
                               name={field.key}
                               value={getStringValue(answers[field.key])}
-                              onChange={(event) => updateAnswer(field.key, event.target.value)}
+                              onChange={(event) =>
+                                updateAnswer(field.key, event.target.value)
+                              }
                               required={field.required}
                               placeholder={field.placeholder}
                               className="lp-input"
@@ -881,7 +1095,9 @@ export function PublicIntakeForm({
                         const isRadio = field.type === "radio";
                         return (
                           <fieldset key={field.key} className={colSpan}>
-                            <legend className="contents">{fieldLabel(field)}</legend>
+                            <legend className="contents">
+                              {fieldLabel(field)}
+                            </legend>
                             {fieldHelp(field)}
                             <div className="grid gap-2 sm:grid-cols-2">
                               {(field.options || []).map((option) => (
@@ -892,15 +1108,27 @@ export function PublicIntakeForm({
                                     value={option}
                                     checked={
                                       isRadio
-                                        ? getStringValue(answers[field.key]) === option
-                                        : getArrayValue(answers[field.key]).includes(option)
+                                        ? getStringValue(answers[field.key]) ===
+                                          option
+                                        : getArrayValue(
+                                            answers[field.key],
+                                          ).includes(option)
                                     }
                                     onChange={(event) =>
                                       isRadio
-                                        ? updateAnswer(field.key, event.target.value)
-                                        : toggleCheckbox(field.key, option, event.target.checked)
+                                        ? updateAnswer(
+                                            field.key,
+                                            event.target.value,
+                                          )
+                                        : toggleCheckbox(
+                                            field.key,
+                                            option,
+                                            event.target.checked,
+                                          )
                                     }
-                                    required={isRadio ? field.required : undefined}
+                                    required={
+                                      isRadio ? field.required : undefined
+                                    }
                                     className="h-4 w-4 shrink-0"
                                     style={{ accentColor }}
                                   />
@@ -920,11 +1148,15 @@ export function PublicIntakeForm({
                             <select
                               name={field.key}
                               value={getStringValue(answers[field.key])}
-                              onChange={(event) => updateAnswer(field.key, event.target.value)}
+                              onChange={(event) =>
+                                updateAnswer(field.key, event.target.value)
+                              }
                               required={field.required}
                               className="lp-input"
                             >
-                              <option value="">{field.placeholder || "Select an option"}</option>
+                              <option value="">
+                                {field.placeholder || "Select an option"}
+                              </option>
                               {(field.options || []).map((option) => (
                                 <option key={option} value={option}>
                                   {option}
@@ -943,10 +1175,16 @@ export function PublicIntakeForm({
                             name={field.key}
                             type={getInputType(field.type)}
                             value={getStringValue(answers[field.key])}
-                            onChange={(event) => updateAnswer(field.key, event.target.value)}
+                            onChange={(event) =>
+                              updateAnswer(field.key, event.target.value)
+                            }
                             required={field.required}
                             placeholder={field.placeholder}
-                            max={field.type === "date" ? getTodayDateString() : undefined}
+                            max={
+                              field.type === "date"
+                                ? getTodayDateString()
+                                : undefined
+                            }
                             min={field.type === "number" ? "0" : undefined}
                             step={field.type === "number" ? "1" : undefined}
                             className="lp-input"
@@ -960,14 +1198,24 @@ export function PublicIntakeForm({
                     {steps
                       .filter((step) => step.fields.length > 0)
                       .map((step) => (
-                        <div key={step.key} className="rounded-[24px] bg-[var(--lp-panel)] p-5">
-                          <p className="text-[15px] font-medium text-[var(--lp-ink)]">{step.title}</p>
+                        <div
+                          key={step.key}
+                          className="rounded-[24px] bg-[var(--lp-panel)] p-5"
+                        >
+                          <p className="text-[15px] font-medium text-[var(--lp-ink)]">
+                            {step.title}
+                          </p>
                           <dl className="mt-3 grid gap-x-6 gap-y-3 md:grid-cols-2">
                             {step.fields.map((field) => (
                               <div key={field.key}>
-                                <dt className="text-[12px] text-[var(--lp-muted)]">{field.label}</dt>
+                                <dt className="text-[12px] text-[var(--lp-muted)]">
+                                  {field.label}
+                                </dt>
                                 <dd className="mt-0.5 text-[15px] text-[var(--lp-ink)]">
-                                  {formatAnswerForReview(field, answers[field.key])}
+                                  {formatAnswerForReview(
+                                    field,
+                                    answers[field.key],
+                                  )}
                                 </dd>
                               </div>
                             ))}
@@ -983,10 +1231,18 @@ export function PublicIntakeForm({
                       ["Current", weeklyGrowthPreview.currentAttendance],
                       ["Previous", weeklyGrowthPreview.previousAttendance],
                       ["Growth", weeklyGrowthPreview.growth],
-                      ["Growth %", `${weeklyGrowthPreview.growthPercent > 0 ? "+" : ""}${weeklyGrowthPreview.growthPercent}%`],
+                      [
+                        "Growth %",
+                        `${weeklyGrowthPreview.growthPercent > 0 ? "+" : ""}${weeklyGrowthPreview.growthPercent}%`,
+                      ],
                     ].map(([label, value]) => (
-                      <div key={label} className="rounded-[18px] bg-[var(--lp-panel)] px-4 py-3">
-                        <p className="text-[12px] text-[var(--lp-muted)]">{label}</p>
+                      <div
+                        key={label}
+                        className="rounded-[18px] bg-[var(--lp-panel)] px-4 py-3"
+                      >
+                        <p className="text-[12px] text-[var(--lp-muted)]">
+                          {label}
+                        </p>
                         <p className="lp-heading mt-1 text-[22px]">{value}</p>
                       </div>
                     ))}
@@ -1024,8 +1280,18 @@ export function PublicIntakeForm({
                     className="lp-pill-dark group inline-flex h-12 items-center gap-2 rounded-full pl-6 pr-5 text-[15px] font-medium"
                   >
                     Continue
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 transition-transform group-hover:translate-x-0.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 12h14M13 6l6 6-6 6"
+                      />
                     </svg>
                   </button>
                 ) : (

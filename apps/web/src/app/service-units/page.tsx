@@ -1,3 +1,8 @@
+import {
+  DirectoryControls,
+  DirectoryPagination,
+} from "@/components/directory-controls";
+import { browseDirectory, type DirectoryParams } from "@/lib/directory";
 import { Icon, type IconName } from "@/components/app/icons";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -7,7 +12,11 @@ import { Shell } from "@/components/shell";
 import { Badge, Card, CardHeader } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
-import type { BranchSummary, MemberListItem, ServiceUnitSummary } from "@/lib/types";
+import type {
+  BranchSummary,
+  MemberListItem,
+  ServiceUnitSummary,
+} from "@/lib/types";
 
 const OPERATIONS_NOTES: { icon: IconName; text: string }[] = [
   {
@@ -24,7 +33,12 @@ const OPERATIONS_NOTES: { icon: IconName; text: string }[] = [
   },
 ];
 
-export default async function ServiceUnitsPage() {
+export default async function ServiceUnitsPage({
+  searchParams,
+}: {
+  searchParams: Promise<DirectoryParams>;
+}) {
+  const params = await searchParams;
   const user = await requireServerRole("/service-units");
 
   const [serviceUnits, branches, members] = await Promise.all([
@@ -42,6 +56,45 @@ export default async function ServiceUnitsPage() {
     0,
   );
 
+  const directory = browseDirectory(
+    serviceUnits,
+    params,
+    (unit) =>
+      [
+        unit.name,
+        unit.meetingDay,
+        unit.prayerDay,
+        unit.notes,
+        unit.leaderMemberId?.firstName,
+        unit.leaderMemberId?.lastName,
+      ].join(" "),
+    (unit) => unit.name,
+    {
+      status: (unit) => (unit.isActive ? "active" : "inactive"),
+      branchId: (unit) =>
+        typeof unit.branchId === "string"
+          ? unit.branchId
+          : unit.branchId?._id || "",
+    },
+  );
+  const directoryFilters = [
+    {
+      key: "status",
+      label: "Status",
+      options: [
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+      ],
+    },
+    {
+      key: "branchId",
+      label: "Branch",
+      options: branches.map((branch) => ({
+        value: branch._id,
+        label: branch.name,
+      })),
+    },
+  ];
   return (
     <Shell>
       <PageHeader
@@ -94,24 +147,42 @@ export default async function ServiceUnitsPage() {
             action={<Badge>Branch isolated</Badge>}
           />
           <div className="mt-6">
+            <DirectoryControls
+              path="/service-units"
+              params={params}
+              filters={directoryFilters}
+            />
             <ServiceUnitManagementList
-              serviceUnits={serviceUnits}
+              serviceUnits={directory.items}
               members={members}
               branches={branches}
               currentUserRole={user.role}
             />
+            <DirectoryPagination
+              path="/service-units"
+              params={params}
+              {...directory}
+            />
           </div>
         </Card>
 
-        <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+        <Card
+          className="app-rise p-6 sm:p-7"
+          style={{ animationDelay: "60ms" }}
+        >
           <CardHeader label="How it works" title="Ministry operations" />
           <ul className="mt-5 space-y-3">
             {OPERATIONS_NOTES.map((note) => (
-              <li key={note.text} className="flex gap-3 rounded-2xl bg-[#f6f5f1] p-4">
+              <li
+                key={note.text}
+                className="flex gap-3 rounded-2xl bg-[#f6f5f1] p-4"
+              >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#ea580c] shadow-[0_1px_2px_rgba(17,17,17,0.06)]">
                   <Icon name={note.icon} className="h-4 w-4" />
                 </span>
-                <p className="text-[14px] leading-[1.6] text-[#55534e]">{note.text}</p>
+                <p className="text-[14px] leading-[1.6] text-[#55534e]">
+                  {note.text}
+                </p>
               </li>
             ))}
           </ul>

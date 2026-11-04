@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
@@ -76,6 +77,7 @@ export function ServiceUnitCreateForm({
         description: "The branch service unit is now ready for member assignment.",
       });
       onSuccess?.();
+      router.push(createdHref("/service-units?sort=newest", result, "Service unit"));
       router.refresh();
     } catch (error) {
       const message =

@@ -28,6 +28,9 @@ export type OutreachPerson = {
   lastName: string;
 };
 export type OutreachLink = {
+  headerColor?: string;
+  buttonColor?: string;
+  churchName?: string;
   _id: string;
   name: string;
   token: string;

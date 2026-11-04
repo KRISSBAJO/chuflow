@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { Button, EmptyState, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import {
@@ -111,6 +112,7 @@ export function UserCreateForm({
       }
 
       setStatus("User created successfully.");
+      router.push(createdHref(`/users?search=${encodeURIComponent(String(formData.get("email") || ""))}`, result, "User"));
       router.refresh();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to create user");

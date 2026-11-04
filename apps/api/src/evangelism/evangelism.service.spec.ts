@@ -39,7 +39,7 @@ describe('Evangelism follow-up safeguards', () => {
     consentToContact: true,
   };
   let service: EvangelismService;
-  let links: { findOne: jest.Mock; create: jest.Mock };
+  let links: { findOne: jest.Mock; findById: jest.Mock; create: jest.Mock };
   let contacts: {
     create: jest.Mock;
     findById: jest.Mock;
@@ -55,6 +55,7 @@ describe('Evangelism follow-up safeguards', () => {
   beforeEach(() => {
     guests = { findOne: jest.fn() };
     links = {
+      findById: jest.fn(),
       findOne: jest.fn().mockResolvedValue({
         _id: new Types.ObjectId(),
         branchId,
@@ -177,6 +178,7 @@ describe('Evangelism follow-up safeguards', () => {
   it('does not leak internal link or owner details on the public form', async () => {
     await expect(service.publicInfo(token)).resolves.toEqual({
       branchName: 'Central',
+      churchName: 'Central',
     });
   });
 
@@ -288,5 +290,49 @@ describe('Evangelism follow-up safeguards', () => {
     expect(update.$push.activities.note).toContain(
       'No attendance record was created',
     );
+  });
+  it('updates the public church name without changing the shareable token or ownership', async () => {
+    const link = {
+      branchId,
+      token,
+      ownerId,
+      churchName: 'Old name',
+      name: 'Outreach',
+      save: jest.fn().mockResolvedValue({}),
+    };
+    links.findById.mockResolvedValue(link);
+    await service.updateLink(user, String(new Types.ObjectId()), {
+      churchName: ' New Church Name ',
+    });
+    expect(link.churchName).toBe('New Church Name');
+    expect(link.token).toBe(token);
+    expect(link.ownerId).toBe(ownerId);
+    expect(link.save).toHaveBeenCalled();
+  });
+
+  it('shows the configured church name on an existing public link', async () => {
+    links.findOne.mockResolvedValue({ branchId, churchName: 'Grace Church' });
+    await expect(service.publicInfo(token)).resolves.toEqual({
+      branchName: 'Central',
+      churchName: 'Grace Church',
+    });
+  });
+
+  it('can restore default colors without changing the existing link', async () => {
+    const link = {
+      branchId,
+      token,
+      headerColor: '#000000',
+      buttonColor: '#ff8800',
+      save: jest.fn().mockResolvedValue({}),
+    };
+    links.findById.mockResolvedValue(link);
+    await service.updateLink(user, String(new Types.ObjectId()), {
+      headerColor: null,
+      buttonColor: null,
+    });
+    expect(link.headerColor).toBeUndefined();
+    expect(link.buttonColor).toBeUndefined();
+    expect(link.token).toBe(token);
   });
 });

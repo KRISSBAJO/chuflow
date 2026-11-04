@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import {
@@ -79,6 +80,7 @@ export function BranchCreateForm({
       }
 
       setStatus("Branch created successfully.");
+      router.push(createdHref(`/branches/${result._id}`, result, "Branch"));
       router.refresh();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to create branch");

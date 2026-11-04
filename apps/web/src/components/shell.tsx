@@ -1,6 +1,8 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, Suspense, useEffect, useState } from "react";
+import { CreationNotice } from "./creation-notice";
+import { TableExportToolbar } from "./table-export";
 import { API_URL } from "@/lib/api";
 import { syncPush } from "@/lib/pwa";
 import type { AlertsSummary, SettingsOverview } from "@/lib/types";
@@ -149,6 +151,12 @@ function ShellContent({ children }: { children: ReactNode }) {
         expanded={expanded}
         onExpandedChange={handleExpandedChange}
       >
+        <Suspense fallback={null}>
+          <CreationNotice />
+        </Suspense>
+        <Suspense fallback={null}>
+          <TableExportToolbar />
+        </Suspense>
         {children}
       </AppFrame>
     </SessionGuard>

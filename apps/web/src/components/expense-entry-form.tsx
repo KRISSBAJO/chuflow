@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
@@ -87,6 +88,7 @@ export function ExpenseEntryForm({
         description:
           "The expense is now in the finance ledger and follows the approval rules for your role.",
       });
+      router.push(createdHref("/finance?tab=expenses", result, "Expense"));
       router.refresh();
     } catch (error) {
       toast.error("Expense not recorded", {

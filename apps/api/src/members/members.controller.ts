@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { CreateMemberDto, UpdateMemberDto } from './dto/create-member.dto';
 import { MembersService } from './members.service';
+import { MemberDirectoryDto } from './dto/member-directory.dto';
 
 @ApiTags('Members')
 @ApiBearerAuth()
@@ -46,6 +47,11 @@ export class MembersController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Query('branchId') branchId?: string) {
     return this.membersService.findAll(user, branchId);
+  }
+
+  @Get('directory')
+  directory(@CurrentUser() user: AuthUser, @Query() query: MemberDirectoryDto) {
+    return this.membersService.directory(user, query);
   }
 
   @Get(':id')

@@ -226,6 +226,7 @@ export class GuestsService {
     search?: string,
     page = 1,
     limit = 20,
+    sort = 'newest',
   ) {
     const safeLimit = Math.min(Math.max(limit || 20, 1), 100);
     const requestedPage = Math.max(page || 1, 1);
@@ -287,85 +288,93 @@ export class GuestsService {
       });
     }
 
+    const directorySorts: Record<string, Record<string, 1 | -1>> = {
+      newest: { createdAt: -1, _id: -1 },
+      oldest: { createdAt: 1, _id: 1 },
+      name_asc: { firstName: 1, lastName: 1, _id: 1 },
+      name_desc: { firstName: -1, lastName: -1, _id: -1 },
+    };
     const [items, assignedFollowUpCountRaw] = await Promise.all([
-      this.guestModel.aggregate([
-        { $match: aggregateQuery },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: safeLimit },
-        {
-          $lookup: {
-            from: 'branches',
-            let: { branchRef: '$branchId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $or: [
-                      { $eq: ['$_id', '$$branchRef'] },
-                      {
-                        $eq: [
-                          { $toString: '$_id' },
-                          { $toString: '$$branchRef' },
-                        ],
-                      },
-                      { $eq: ['$name', '$$branchRef'] },
-                    ],
+      this.guestModel
+        .aggregate([
+          { $match: aggregateQuery },
+          { $sort: directorySorts[sort] || directorySorts.newest },
+          { $skip: skip },
+          { $limit: safeLimit },
+          {
+            $lookup: {
+              from: 'branches',
+              let: { branchRef: '$branchId' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $or: [
+                        { $eq: ['$_id', '$$branchRef'] },
+                        {
+                          $eq: [
+                            { $toString: '$_id' },
+                            { $toString: '$$branchRef' },
+                          ],
+                        },
+                        { $eq: ['$name', '$$branchRef'] },
+                      ],
+                    },
                   },
                 },
-              },
-              { $limit: 1 },
-            ],
-            as: 'branch',
+                { $limit: 1 },
+              ],
+              as: 'branch',
+            },
           },
-        },
-        {
-          $unwind: {
-            path: '$branch',
-            preserveNullAndEmptyArrays: true,
+          {
+            $unwind: {
+              path: '$branch',
+              preserveNullAndEmptyArrays: true,
+            },
           },
-        },
-        {
-          $lookup: {
-            from: 'followups',
-            let: { guestId: '$_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$guestId', '$$guestId'],
+          {
+            $lookup: {
+              from: 'followups',
+              let: { guestId: '$_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ['$guestId', '$$guestId'],
+                    },
                   },
                 },
-              },
-              { $sort: { updatedAt: -1 } },
-              { $limit: 1 },
-            ],
-            as: 'latestFollowUp',
+                { $sort: { updatedAt: -1 } },
+                { $limit: 1 },
+              ],
+              as: 'latestFollowUp',
+            },
           },
-        },
-        {
-          $project: {
-            firstName: 1,
-            lastName: 1,
-            phone: 1,
-            email: 1,
-            visitStatus: 1,
-            createdAt: 1,
-            nextFollowUpStatus: {
-              $let: {
-                vars: {
-                  latest: { $arrayElemAt: ['$latestFollowUp', 0] },
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              phone: 1,
+              email: 1,
+              visitStatus: 1,
+              createdAt: 1,
+              nextFollowUpStatus: {
+                $let: {
+                  vars: {
+                    latest: { $arrayElemAt: ['$latestFollowUp', 0] },
+                  },
+                  in: '$$latest.status',
                 },
-                in: '$$latest.status',
+              },
+              branchId: {
+                _id: '$branch._id',
+                name: '$branch.name',
               },
             },
-            branchId: {
-              _id: '$branch._id',
-              name: '$branch.name',
-            },
           },
-        },
-      ]),
+        ])
+        .collation({ locale: 'en', strength: 2 }),
       this.followUpModel.aggregate<{ total: number }>([
         {
           $lookup: {

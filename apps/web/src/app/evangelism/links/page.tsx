@@ -61,7 +61,16 @@ export default async function OutreachLinksPage() {
                   This link is paused. Existing contacts remain in your queue.
                 </p>
               )}
-              <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[#6b6b6b]">
+                Church shown on form: {link.churchName || link.branchId?.name}
+              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <Link
+                  href={`/evangelism/links/${link._id}/edit`}
+                  className={buttonClass("secondary", "sm")}
+                >
+                  Edit link
+                </Link>
                 <OutreachLinkToggle id={link._id} active={link.isActive} />
                 {link.isActive && (
                   <Link

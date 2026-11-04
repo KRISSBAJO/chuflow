@@ -23,7 +23,7 @@ import {
   CreateOutreachLinkDto,
   OutreachListQueryDto,
   LinkOutreachGuestDto,
-  ToggleOutreachLinkDto,
+  UpdateOutreachLinkDto,
   UpdateOutreachDto,
 } from './evangelism.dto';
 import { EvangelismService } from './evangelism.service';
@@ -80,8 +80,12 @@ export class EvangelismController {
 
   @Roles(...APP_ROLES)
   @Get('links')
-  links(@CurrentUser() user: AuthUser, @Query('branchId') branchId?: string) {
-    return this.service.listLinks(user, branchId);
+  links(
+    @CurrentUser() user: AuthUser,
+    @Query('branchId') branchId?: string,
+    @Query('exportAll') exportAll?: string,
+  ) {
+    return this.service.listLinks(user, branchId, exportAll === 'true');
   }
 
   @Roles(...APP_ROLES)
@@ -94,13 +98,19 @@ export class EvangelismController {
   }
 
   @Roles(...APP_ROLES)
+  @Get('links/:id')
+  getLink(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.getLink(user, id);
+  }
+
+  @Roles(...APP_ROLES)
   @Patch('links/:id')
   toggleLink(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
-    @Body() dto: ToggleOutreachLinkDto,
+    @Body() dto: UpdateOutreachLinkDto,
   ) {
-    return this.service.toggleLink(user, id, dto.isActive);
+    return this.service.updateLink(user, id, dto);
   }
 
   @Roles(...APP_ROLES)

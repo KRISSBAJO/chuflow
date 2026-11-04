@@ -508,6 +508,7 @@ export class UsersService implements OnModuleInit {
     filters: UserDirectoryFilters & {
       page?: number;
       limit?: number;
+      sort?: string;
     } = {},
   ) {
     const query = await this.buildUserDirectoryQuery(currentUser, filters);
@@ -538,11 +539,18 @@ export class UsersService implements OnModuleInit {
     const safePage = Math.min(requestedPage, totalPages);
     const skip = (safePage - 1) * safeLimit;
 
+    const directorySorts: Record<string, Record<string, 1 | -1>> = {
+      newest: { createdAt: -1, _id: -1 },
+      oldest: { createdAt: 1, _id: 1 },
+      name_asc: { firstName: 1, lastName: 1, _id: 1 },
+      name_desc: { firstName: -1, lastName: -1, _id: -1 },
+    };
     const [items, summaryRows] = await Promise.all([
       this.userModel
         .find(query)
         .select('-password -passwordResetToken')
-        .sort({ createdAt: -1 })
+        .collation({ locale: 'en', strength: 2 })
+        .sort(directorySorts[filters.sort || 'newest'] || directorySorts.newest)
         .skip(skip)
         .limit(safeLimit)
         .lean(),

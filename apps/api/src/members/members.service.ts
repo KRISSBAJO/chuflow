@@ -16,6 +16,7 @@ import {
 } from '../service-units/schemas/service-unit.schema';
 import { CreateMemberDto, UpdateMemberDto } from './dto/create-member.dto';
 import { Member, MemberDocument } from './schemas/member.schema';
+import { MemberDirectoryDto } from './dto/member-directory.dto';
 
 @Injectable()
 export class MembersService {
@@ -317,6 +318,98 @@ export class MembersService {
       .populate('serviceUnitId')
       .sort({ createdAt: -1 })
       .lean();
+  }
+
+  async directory(
+    currentUser: AuthUser,
+    params: MemberDirectoryDto,
+  ): Promise<{
+    items: Record<string, unknown>[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      active: number;
+      foundationPending: number;
+      pendingConversion: number;
+    };
+  }> {
+    const scope = await this.accessScopeService.buildBranchFilter(
+      currentUser,
+      params.branchId,
+    );
+    const query: Record<string, unknown> = { ...scope };
+    if (params.status) query.membershipStatus = params.status;
+    if (params.serviceUnitId) query.serviceUnitId = params.serviceUnitId;
+    const positiveFormationValues = [
+      'yes',
+      'completed',
+      'received',
+      'in_progress',
+    ];
+    if (params.foundation)
+      query.believerFoundationClassStatus =
+        params.foundation === 'yes'
+          ? { $in: positiveFormationValues }
+          : { $nin: positiveFormationValues };
+    if (params.holySpirit)
+      query.holySpiritBaptismStatus =
+        params.holySpirit === 'yes'
+          ? { $in: positiveFormationValues }
+          : { $nin: positiveFormationValues };
+    const search = params.search?.trim();
+    if (search)
+      query.$and = search.split(/\s+/).map((term) => ({
+        $or: ['firstName', 'lastName', 'phone', 'email'].map((field) => ({
+          [field]: { $regex: this.escapeRegExp(term), $options: 'i' },
+        })),
+      }));
+    const [total, all, active, foundationPending, pendingConversion] =
+      await Promise.all([
+        this.memberModel.countDocuments(query),
+        this.memberModel.countDocuments(scope),
+        this.memberModel.countDocuments({
+          ...scope,
+          membershipStatus: 'active',
+        }),
+        this.memberModel.countDocuments({
+          ...scope,
+          believerFoundationClassStatus: { $nin: positiveFormationValues },
+        }),
+        this.guestModel.countDocuments({
+          ...scope,
+          visitStatus: { $ne: 'member' },
+        }),
+      ]);
+    const pageSize = [25, 50, 100].includes(Number(params.pageSize))
+      ? Number(params.pageSize)
+      : 25;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(Math.max(1, Number(params.page) || 1), totalPages);
+    const sorts: Record<string, Record<string, 1 | -1>> = {
+      newest: { createdAt: -1, _id: -1 },
+      oldest: { createdAt: 1, _id: 1 },
+      name_asc: { firstName: 1, lastName: 1, _id: 1 },
+      name_desc: { firstName: -1, lastName: -1, _id: -1 },
+    };
+    const items = await this.memberModel
+      .find(query)
+      .populate('branchId', 'name')
+      .populate('serviceUnitId', 'name')
+      .collation({ locale: 'en', strength: 2 })
+      .sort(sorts[params.sort || 'newest'] || sorts.newest)
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean();
+    return {
+      items,
+      pagination: { page, pageSize, total, totalPages },
+      summary: { total: all, active, foundationPending, pendingConversion },
+    };
   }
 
   async findOne(id: string, currentUser: AuthUser) {

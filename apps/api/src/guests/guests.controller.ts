@@ -69,6 +69,7 @@ export class GuestsController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.guestsService.findAll(
       user,
@@ -76,6 +77,7 @@ export class GuestsController {
       search,
       Number(page) || 1,
       Number(limit) || 20,
+      sort,
     );
   }
 

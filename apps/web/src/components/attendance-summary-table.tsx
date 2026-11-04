@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ExportTableButtons } from "@/components/table-export";
 import { AttendanceCreateForm } from "@/components/attendance-create-form";
 import { ModalShell } from "@/components/modal-shell";
 import { Badge, Button, EmptyState, TableWrap } from "@/components/ui/ui";
@@ -11,13 +12,24 @@ import type {
   ServiceTypeSummary,
 } from "@/lib/types";
 
-const NUMBER_COLUMNS = ["Men", "Women", "Children", "Adults", "First timers", "New converts", "Holy Spirit"];
+const NUMBER_COLUMNS = [
+  "Men",
+  "Women",
+  "Children",
+  "Adults",
+  "First timers",
+  "New converts",
+  "Holy Spirit",
+];
 
 function getBranchId(value: AttendanceItem["branchId"]) {
   return typeof value === "string" ? value : value?._id;
 }
 
-function getBranchName(value: AttendanceItem["branchId"], branches: BranchSummary[]) {
+function getBranchName(
+  value: AttendanceItem["branchId"],
+  branches: BranchSummary[],
+) {
   if (typeof value === "string") {
     return branches.find((branch) => branch._id === value)?.name || "Branch";
   }
@@ -27,7 +39,9 @@ function getBranchName(value: AttendanceItem["branchId"], branches: BranchSummar
   }
 
   if (value?._id) {
-    return branches.find((branch) => branch._id === value._id)?.name || "Branch";
+    return (
+      branches.find((branch) => branch._id === value._id)?.name || "Branch"
+    );
   }
 
   return "Branch";
@@ -54,7 +68,11 @@ export function AttendanceSummaryTable({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
-  const [editingRecord, setEditingRecord] = useState<AttendanceItem | null>(null);
+  const [sort, setSort] = useState("newest");
+  const [pageSize, setPageSize] = useState(25);
+  const [editingRecord, setEditingRecord] = useState<AttendanceItem | null>(
+    null,
+  );
 
   const filteredRecords = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -63,7 +81,8 @@ export function AttendanceSummaryTable({
       .filter((record) => {
         const branchId = getBranchId(record.branchId);
         const serviceDate = record.serviceDate.slice(0, 10);
-        const serviceLabel = `${record.serviceName || ""} ${record.serviceTypeLabel || ""} ${record.serviceType || ""}`.toLowerCase();
+        const serviceLabel =
+          `${record.serviceName || ""} ${record.serviceTypeLabel || ""} ${record.serviceType || ""}`.toLowerCase();
 
         if (branchFilter && branchId !== branchFilter) {
           return false;
@@ -91,13 +110,29 @@ export function AttendanceSummaryTable({
 
         return true;
       })
-      .sort((left, right) => new Date(right.serviceDate).getTime() - new Date(left.serviceDate).getTime());
-  }, [branchFilter, dateFrom, dateTo, records, search, serviceTypeFilter]);
+      .sort(
+        (left, right) =>
+          (sort === "oldest" ? 1 : -1) *
+            (new Date(left.serviceDate).getTime() -
+              new Date(right.serviceDate).getTime()) ||
+          left._id.localeCompare(right._id),
+      );
+  }, [
+    branchFilter,
+    dateFrom,
+    dateTo,
+    records,
+    search,
+    serviceTypeFilter,
+    sort,
+  ]);
 
-  const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(page, totalPages);
-  const visibleRecords = filteredRecords.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const visibleRecords = filteredRecords.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
 
   return (
     <>
@@ -167,6 +202,58 @@ export function AttendanceSummaryTable({
           />
         </div>
 
+        <div className="flex flex-wrap gap-3">
+          <label className="text-xs text-[#6b6b6b]">
+            Sort
+            <select
+              className="ui-input mt-1"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="newest">Newest service first</option>
+              <option value="oldest">Oldest service first</option>
+            </select>
+          </label>
+          <label className="text-xs text-[#6b6b6b]">
+            Per page
+            <select
+              className="ui-input mt-1"
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
+                setPage(1);
+              }}
+            >
+              {[25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSearch("");
+              setBranchFilter(defaultBranchId || "");
+              setServiceTypeFilter("");
+              setDateFrom("");
+              setDateTo("");
+              setSort("newest");
+              setPage(1);
+            }}
+          >
+            Reset filters
+          </Button>
+        </div>
+        <ExportTableButtons
+          resource="attendance"
+          rows={filteredRecords}
+          label="Download filtered summaries"
+        />
         {filteredRecords.length === 0 ? (
           <EmptyState icon="attendance" title="No summaries found">
             No service summaries match the current filters.
@@ -198,21 +285,45 @@ export function AttendanceSummaryTable({
                     <td className="whitespace-nowrap text-[#55534e]">
                       {new Date(record.serviceDate).toLocaleString()}
                     </td>
-                    <td className="text-[#55534e]">{getBranchName(record.branchId, branches)}</td>
-                    <td className="font-medium">{record.serviceName || "Not named"}</td>
-                    <td>
-                      <Badge>{record.serviceTypeLabel || record.serviceType}</Badge>
+                    <td className="text-[#55534e]">
+                      {getBranchName(record.branchId, branches)}
                     </td>
-                    <td className="text-right tabular-nums">{record.menCount ?? 0}</td>
-                    <td className="text-right tabular-nums">{record.womenCount ?? 0}</td>
-                    <td className="text-right tabular-nums">{record.childrenCount ?? 0}</td>
-                    <td className="text-right tabular-nums">{record.adultsCount ?? 0}</td>
-                    <td className="text-right tabular-nums">{record.firstTimersCount ?? 0}</td>
-                    <td className="text-right tabular-nums">{record.newConvertsCount ?? 0}</td>
-                    <td className="text-right tabular-nums">{record.holySpiritBaptismCount ?? 0}</td>
+                    <td className="font-medium">
+                      {record.serviceName || "Not named"}
+                    </td>
+                    <td>
+                      <Badge>
+                        {record.serviceTypeLabel || record.serviceType}
+                      </Badge>
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.menCount ?? 0}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.womenCount ?? 0}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.childrenCount ?? 0}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.adultsCount ?? 0}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.firstTimersCount ?? 0}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.newConvertsCount ?? 0}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {record.holySpiritBaptismCount ?? 0}
+                    </td>
                     {canEdit ? (
                       <td className="text-right">
-                        <Button size="sm" variant="secondary" onClick={() => setEditingRecord(record)}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setEditingRecord(record)}
+                        >
                           Edit
                         </Button>
                       </td>
@@ -230,9 +341,11 @@ export function AttendanceSummaryTable({
               <>
                 Showing{" "}
                 <span className="font-medium tabular-nums text-[#111111]">
-                  {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredRecords.length)}
+                  {(safePage - 1) * pageSize + 1}–
+                  {Math.min(safePage * pageSize, filteredRecords.length)}
                 </span>{" "}
-                of <span className="tabular-nums">{filteredRecords.length}</span>
+                of{" "}
+                <span className="tabular-nums">{filteredRecords.length}</span>
               </>
             ) : (
               "No summaries found"
@@ -248,13 +361,18 @@ export function AttendanceSummaryTable({
               Previous
             </Button>
             <span className="text-[13px] text-[#8a8780]">
-              Page <span className="font-medium tabular-nums text-[#111111]">{safePage}</span> of{" "}
-              <span className="tabular-nums">{totalPages}</span>
+              Page{" "}
+              <span className="font-medium tabular-nums text-[#111111]">
+                {safePage}
+              </span>{" "}
+              of <span className="tabular-nums">{totalPages}</span>
             </span>
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
+              }
               disabled={safePage === totalPages}
             >
               Next

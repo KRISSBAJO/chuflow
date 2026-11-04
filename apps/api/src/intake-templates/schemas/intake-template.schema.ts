@@ -16,6 +16,7 @@ const TemplateFieldSchema = raw({
 });
 
 const TemplateThemeSchema = raw({
+  headerColor: { type: String },
   accentColor: { type: String, default: '#dc2626' },
   darkColor: { type: String, default: '#111827' },
   softColor: { type: String, default: '#fff7ed' },
@@ -91,6 +92,7 @@ export class IntakeTemplate {
 
   @Prop({ type: TemplateThemeSchema, default: () => ({}) })
   theme!: {
+    headerColor?: string;
     accentColor?: string;
     darkColor?: string;
     softColor?: string;

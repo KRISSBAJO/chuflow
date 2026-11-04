@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
@@ -83,6 +84,7 @@ export function GuestCreateForm({
         description: "The guest record is now in the registry and ready for follow-up.",
       });
       onSuccess?.();
+      router.push(createdHref(`/guests/${result._id}`, result, "Guest"));
       router.refresh();
     } catch (error) {
       toast.error("Guest not saved", {

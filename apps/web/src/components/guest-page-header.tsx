@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { GuestCreateForm } from "@/components/guest-create-form";
 import { Button, Card, CardHeader } from "@/components/ui/ui";
 import type { BranchSummary, ServiceTypeSummary, UserSummary } from "@/lib/types";
@@ -16,6 +17,7 @@ export function GuestPageHeader({
   serviceTypes: ServiceTypeSummary[];
   defaultBranchId?: string;
 }) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
 
   if (showForm) {
@@ -56,7 +58,7 @@ export function GuestPageHeader({
         </p>
       </div>
       <div className="shrink-0">
-        <Button icon="plus" onClick={() => setShowForm(true)}>
+        <Button icon="plus" onClick={() => router.push("/guests/new")}>
           New guest
         </Button>
       </div>

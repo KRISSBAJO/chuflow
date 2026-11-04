@@ -1,4 +1,5 @@
 "use client";
+import { ExportTableButtons } from "@/components/table-export";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -33,18 +34,23 @@ export function ServiceTypeManagementList({
     setLoadingId(serviceTypeId);
 
     try {
-      const response = await fetch(`${API_URL}/service-types/${serviceTypeId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          branchId: (formData.get(`branchId-${serviceTypeId}`) as string) || undefined,
-          name: formData.get(`name-${serviceTypeId}`),
-          key: formData.get(`key-${serviceTypeId}`) || undefined,
-          isActive: formData.get(`isActive-${serviceTypeId}`) === "on",
-          notes: formData.get(`notes-${serviceTypeId}`) || undefined,
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/service-types/${serviceTypeId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            branchId:
+              (formData.get(`branchId-${serviceTypeId}`) as string) ||
+              undefined,
+            name: formData.get(`name-${serviceTypeId}`),
+            key: formData.get(`key-${serviceTypeId}`) || undefined,
+            isActive: formData.get(`isActive-${serviceTypeId}`) === "on",
+            notes: formData.get(`notes-${serviceTypeId}`) || undefined,
+          }),
+        },
+      );
 
       const result = await response.json();
       if (!response.ok) {
@@ -52,12 +58,15 @@ export function ServiceTypeManagementList({
       }
 
       toast.success("Service type updated", {
-        description: "Attendance dropdowns will use the latest version immediately.",
+        description:
+          "Attendance dropdowns will use the latest version immediately.",
       });
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to update service type";
+        error instanceof Error
+          ? error.message
+          : "Unable to update service type";
       toast.error("Service type update failed", {
         description: message,
       });
@@ -76,6 +85,7 @@ export function ServiceTypeManagementList({
 
   return (
     <div className="space-y-2">
+      <ExportTableButtons resource="service-types" rows={serviceTypes} />
       {serviceTypes.map((serviceType) => {
         const branchId = getBranchId(serviceType.branchId) || "";
 
@@ -86,15 +96,21 @@ export function ServiceTypeManagementList({
           >
             <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-medium text-[#111111]">{serviceType.name}</p>
+                <p className="truncate text-[14px] font-medium text-[#111111]">
+                  {serviceType.name}
+                </p>
                 <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
-                  {serviceType.key} · {getBranchName(serviceType.branchId) || "Branch scope"}
+                  {serviceType.key} ·{" "}
+                  {getBranchName(serviceType.branchId) || "Branch scope"}
                 </p>
               </div>
               <Badge tone={serviceType.isActive ? "success" : "neutral"} dot>
                 {serviceType.isActive ? "Active" : "Inactive"}
               </Badge>
-              <Icon name="chevronDown" className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180" />
+              <Icon
+                name="chevronDown"
+                className="h-4 w-4 shrink-0 text-[#8a8780] transition-transform group-open:rotate-180"
+              />
             </summary>
             <div className="border-t border-black/[0.06] px-4 py-4">
               <form
@@ -103,7 +119,11 @@ export function ServiceTypeManagementList({
               >
                 {!isBranchScopedRole(currentUserRole) ? (
                   <Field label="Branch">
-                    <select name={`branchId-${serviceType._id}`} defaultValue={branchId} className="ui-input">
+                    <select
+                      name={`branchId-${serviceType._id}`}
+                      defaultValue={branchId}
+                      className="ui-input"
+                    >
                       <option value="">Select branch</option>
                       {branches.map((branch) => (
                         <option key={branch._id} value={branch._id}>
@@ -121,15 +141,27 @@ export function ServiceTypeManagementList({
                 )}
 
                 <Field label="Display name">
-                  <input name={`name-${serviceType._id}`} defaultValue={serviceType.name} className="ui-input" />
+                  <input
+                    name={`name-${serviceType._id}`}
+                    defaultValue={serviceType.name}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <Field label="Key">
-                  <input name={`key-${serviceType._id}`} defaultValue={serviceType.key} className="ui-input" />
+                  <input
+                    name={`key-${serviceType._id}`}
+                    defaultValue={serviceType.key}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <Field label="Notes" className="md:col-span-2">
-                  <textarea name={`notes-${serviceType._id}`} defaultValue={serviceType.notes || ""} className="ui-input" />
+                  <textarea
+                    name={`notes-${serviceType._id}`}
+                    defaultValue={serviceType.notes || ""}
+                    className="ui-input"
+                  />
                 </Field>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 md:col-span-2">
@@ -143,8 +175,14 @@ export function ServiceTypeManagementList({
                     Active service type
                   </label>
 
-                  <Button type="submit" size="sm" disabled={loadingId === serviceType._id}>
-                    {loadingId === serviceType._id ? "Saving..." : "Update service type"}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={loadingId === serviceType._id}
+                  >
+                    {loadingId === serviceType._id
+                      ? "Saving..."
+                      : "Update service type"}
                   </Button>
                 </div>
               </form>

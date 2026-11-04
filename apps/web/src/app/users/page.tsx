@@ -1,7 +1,15 @@
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
-import { Badge, Button, ButtonLink, Card, CardHeader, Field, Pagination } from "@/components/ui/ui";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  Field,
+  Pagination,
+} from "@/components/ui/ui";
 import { UserCreateModalButton } from "@/components/user-create-modal-button";
 import { UserManagementList } from "@/components/user-management-list";
 import { requireServerRole } from "@/lib/auth";
@@ -28,6 +36,7 @@ type UsersPageSearchParams = Promise<{
   status?: string;
   page?: string;
   limit?: string;
+  sort?: string;
 }>;
 
 function buildUsersQuery(params: {
@@ -39,10 +48,12 @@ function buildUsersQuery(params: {
   status?: string;
   page?: number;
   limit?: number;
+  sort?: string;
   isSuperAdmin: boolean;
   canChooseDistrict: boolean;
 }) {
   const query = new URLSearchParams();
+  if (params.sort) query.set("sort", params.sort);
 
   if (params.selectedBranchId) {
     query.set("branchId", params.selectedBranchId);
@@ -95,7 +106,7 @@ export default async function UsersPage({
   const role = params.role?.trim() || "";
   const status = params.status?.trim() || "";
   const requestedPage = Math.max(Number(params.page) || 1, 1);
-  const pageSize = [10, 20, 50].includes(Number(params.limit))
+  const pageSize = [10, 20, 25, 50, 100].includes(Number(params.limit))
     ? Number(params.limit)
     : 10;
 
@@ -122,6 +133,7 @@ export default async function UsersPage({
     status,
     page: requestedPage,
     limit: pageSize,
+    sort: params.sort || "newest",
     isSuperAdmin,
     canChooseDistrict,
   });
@@ -130,16 +142,17 @@ export default async function UsersPage({
     ? `/users/directory?${usersQuery.toString()}`
     : `/users/directory?limit=${pageSize}`;
 
-  const [userDirectory, branches, oversightRegions, districts] = await Promise.all([
-    serverGet<UserDirectoryResponse>(usersEndpoint),
-    serverGet<BranchSummary[]>("/branches").catch(() => []),
-    serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
-    serverGet<DistrictOption[]>(
-      oversightRegion
-        ? `/districts?oversightRegion=${encodeURIComponent(oversightRegion)}`
-        : "/districts",
-    ).catch(() => []),
-  ]);
+  const [userDirectory, branches, oversightRegions, districts] =
+    await Promise.all([
+      serverGet<UserDirectoryResponse>(usersEndpoint),
+      serverGet<BranchSummary[]>("/branches").catch(() => []),
+      serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
+      serverGet<DistrictOption[]>(
+        oversightRegion
+          ? `/districts?oversightRegion=${encodeURIComponent(oversightRegion)}`
+          : "/districts",
+      ).catch(() => []),
+    ]);
 
   const oversightRegionNames = oversightRegions.map((region) => region.name);
   const districtNames = districts.map((item) => item.name);
@@ -153,7 +166,9 @@ export default async function UsersPage({
   const startItem =
     totalUsers === 0
       ? 0
-      : (userDirectory.pagination.page - 1) * userDirectory.pagination.pageSize + 1;
+      : (userDirectory.pagination.page - 1) *
+          userDirectory.pagination.pageSize +
+        1;
   const endItem = Math.min(
     userDirectory.pagination.page * userDirectory.pagination.pageSize,
     totalUsers,
@@ -177,6 +192,7 @@ export default async function UsersPage({
       status,
       page,
       limit: pageSize,
+      sort: params.sort || "newest",
       isSuperAdmin,
       canChooseDistrict,
     });
@@ -270,7 +286,11 @@ export default async function UsersPage({
 
             {isSuperAdmin ? (
               <Field label="Oversight region">
-                <select name="oversightRegion" defaultValue={oversightRegion} className="ui-input">
+                <select
+                  name="oversightRegion"
+                  defaultValue={oversightRegion}
+                  className="ui-input"
+                >
                   <option value="">All oversight regions</option>
                   {oversightRegionNames.map((regionName) => (
                     <option key={regionName} value={regionName}>
@@ -283,7 +303,11 @@ export default async function UsersPage({
 
             {canChooseDistrict ? (
               <Field label="District">
-                <select name="district" defaultValue={district} className="ui-input">
+                <select
+                  name="district"
+                  defaultValue={district}
+                  className="ui-input"
+                >
                   <option value="">All districts</option>
                   {districtNames.map((districtName) => (
                     <option key={districtName} value={districtName}>
@@ -296,7 +320,11 @@ export default async function UsersPage({
 
             {canFilterBranches ? (
               <Field label="Branch">
-                <select name="branchId" defaultValue={selectedBranchId} className="ui-input">
+                <select
+                  name="branchId"
+                  defaultValue={selectedBranchId}
+                  className="ui-input"
+                >
                   <option value="">All branches</option>
                   {branches.map((branch) => (
                     <option key={branch._id} value={branch._id}>
@@ -307,11 +335,29 @@ export default async function UsersPage({
               </Field>
             ) : null}
 
+            <Field label="Sort">
+              <select
+                name="sort"
+                className="ui-input"
+                defaultValue={params.sort || "newest"}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name_asc">Name A–Z</option>
+                <option value="name_desc">Name Z–A</option>
+              </select>
+            </Field>
             <Field label="Page size">
-              <select name="limit" defaultValue={String(pageSize)} className="ui-input">
+              <select
+                name="limit"
+                defaultValue={String(pageSize)}
+                className="ui-input"
+              >
                 <option value="10">10 per page</option>
                 <option value="20">20 per page</option>
+                <option value="25">25 per page</option>
                 <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
               </select>
             </Field>
           </div>
@@ -322,8 +368,11 @@ export default async function UsersPage({
             <p className="text-[13px] text-[#6b6b6b]">
               {totalUsers > 0 ? (
                 <>
-                  Showing <span className="font-medium tabular-nums text-[#111111]">{startItem}–{endItem}</span> of{" "}
-                  <span className="tabular-nums">{totalUsers}</span> users
+                  Showing{" "}
+                  <span className="font-medium tabular-nums text-[#111111]">
+                    {startItem}–{endItem}
+                  </span>{" "}
+                  of <span className="tabular-nums">{totalUsers}</span> users
                 </>
               ) : (
                 "No users found in this scope"
@@ -346,7 +395,11 @@ export default async function UsersPage({
           label="Directory"
           title="Staff accounts"
           description="Open an account to update its details, role, scope, or sign-in access."
-          action={<Badge>{selectedBranchId ? "Filtered scope" : "Current scope"}</Badge>}
+          action={
+            <Badge>
+              {selectedBranchId ? "Filtered scope" : "Current scope"}
+            </Badge>
+          }
         />
 
         <div className="mt-6">
@@ -365,14 +418,21 @@ export default async function UsersPage({
 
         <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-4">
           <p className="text-[13px] text-[#8a8780]">
-            {totalUsers > 0 ? `Showing ${startItem}–${endItem} of ${totalUsers}` : "No users found"}
+            {totalUsers > 0
+              ? `Showing ${startItem}–${endItem} of ${totalUsers}`
+              : "No users found"}
           </p>
           <Pagination
             page={userDirectory.pagination.page}
             totalPages={userDirectory.pagination.totalPages}
-            prevHref={buildPageHref(Math.max(1, userDirectory.pagination.page - 1))}
+            prevHref={buildPageHref(
+              Math.max(1, userDirectory.pagination.page - 1),
+            )}
             nextHref={buildPageHref(
-              Math.min(userDirectory.pagination.totalPages, userDirectory.pagination.page + 1),
+              Math.min(
+                userDirectory.pagination.totalPages,
+                userDirectory.pagination.page + 1,
+              ),
             )}
           />
         </div>
