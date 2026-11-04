@@ -4,6 +4,7 @@ import { ChangePasswordForm } from "@/components/change-password-form";
 import { LogoutButton } from "@/components/logout-button";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
+import { DeviceSettings } from "@/components/pwa/device-settings";
 import { requireServerRole } from "@/lib/auth";
 import { canConfigureAppSettings, canFilterAcrossBranches } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
@@ -84,6 +85,14 @@ export default async function SettingsPage({
           description="Change how the app feels for you without changing any ministry data."
         >
           <UserPreferencesForm preferences={overview.preferences} />
+        </SettingsSection>
+        <Divider />
+
+        <SettingsSection
+          title="This device"
+          description="Install ChuFlow on this phone or computer and choose whether it gets alerts."
+        >
+          <DeviceSettings />
         </SettingsSection>
         <Divider />
 

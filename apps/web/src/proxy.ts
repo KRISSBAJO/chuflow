@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const AUTH_COOKIE_NAME = "cms_access_token";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
-const publicPages = ["/", "/request-workspace", "/connect", "/intake"];
+const publicPages = ["/", "/request-workspace", "/connect", "/intake", "/offline"];
 
 function matchesRoute(pathname: string, route: string) {
   if (route === "/") {
@@ -35,7 +35,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (token && isAuthPage) {
+  // `reason` means the app sent the user here on purpose (e.g. a stale cookie), so let them sign in.
+  if (token && isAuthPage && !request.nextUrl.searchParams.has("reason")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

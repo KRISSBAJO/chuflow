@@ -1,0 +1,13 @@
+"use client";
+
+export function RetryButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => window.location.reload()}
+      className="lp-pill-dark mt-8 inline-flex h-12 items-center justify-center rounded-full px-7 text-[15px] font-medium"
+    >
+      Try again
+    </button>
+  );
+}

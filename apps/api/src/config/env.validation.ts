@@ -20,4 +20,11 @@ export const envValidationSchema = Joi.object({
   MAIL_USER: Joi.string().allow('').optional(),
   MAIL_PASS: Joi.string().allow('').optional(),
   MAIL_FROM: Joi.string().allow('').default('no-reply@church.local'),
+  VAPID_PUBLIC_KEY: Joi.string().allow('').optional(),
+  VAPID_PRIVATE_KEY: Joi.string().allow('').optional(),
+  // A mailto: or https: contact the push services can reach if something goes wrong.
+  VAPID_SUBJECT: Joi.string()
+    .allow('')
+    .pattern(/^(mailto:|https:)/)
+    .optional(),
 });

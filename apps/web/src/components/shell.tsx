@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { syncPush } from "@/lib/pwa";
 import type { AlertsSummary, SettingsOverview } from "@/lib/types";
 import { AppFrame } from "./app/app-frame";
 import { SessionGuard } from "./session-guard";
@@ -83,6 +84,14 @@ function ShellContent({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+
+  // Re-link this device's notifications to whoever is signed in (also renews dropped subscriptions).
+  const signedInAs = user?.id ?? user?._id ?? user?.email;
+  useEffect(() => {
+    if (signedInAs) {
+      void syncPush();
+    }
+  }, [signedInAs]);
 
   useEffect(() => {
     let active = true;

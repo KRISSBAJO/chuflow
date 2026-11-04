@@ -43,5 +43,8 @@ export default () => {
     mailUser: process.env.MAIL_USER,
     mailPass: process.env.MAIL_PASS,
     mailFrom: process.env.MAIL_FROM ?? 'no-reply@church.local',
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY?.trim() || undefined,
+    vapidPrivateKey: process.env.VAPID_PRIVATE_KEY?.trim() || undefined,
+    vapidSubject: process.env.VAPID_SUBJECT?.trim() || undefined,
   };
 };

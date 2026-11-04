@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { Guest, GuestSchema } from '../guests/schemas/guest.schema';
+import { PushModule } from '../push/push.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { FollowUpsController } from './follow-ups.controller';
 import { FollowUpsService } from './follow-ups.service';
@@ -12,6 +13,7 @@ import { FollowUp, FollowUpSchema } from './schemas/follow-up.schema';
   imports: [
     AccessScopeModule,
     AuditLogsModule,
+    PushModule,
     MongooseModule.forFeature([
       { name: FollowUp.name, schema: FollowUpSchema },
       { name: Guest.name, schema: GuestSchema },

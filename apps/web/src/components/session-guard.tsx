@@ -28,7 +28,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (expired || !user) {
-      window.location.href = "/login";
+      window.location.href = "/login?reason=session-expired";
       return;
     }
 

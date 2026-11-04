@@ -33,6 +33,10 @@ const PATHS = {
   trendDown: "M3 7l6 6 4-4 8 8M15 17h6v-6",
   clock: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2",
   sparkle: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z",
+  device: "M8 2.75h8a1.75 1.75 0 011.75 1.75v15A1.75 1.75 0 0116 21.25H8a1.75 1.75 0 01-1.75-1.75v-15A1.75 1.75 0 018 2.75zM11 18h2",
+  share: "M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7",
+  more: "M5 12h.01M12 12h.01M19 12h.01",
+  check: "M5 12.5l4.5 4.5L19 7.5",
 } as const;
 
 export type IconName = keyof typeof PATHS;

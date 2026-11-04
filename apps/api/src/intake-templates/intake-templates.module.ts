@@ -7,6 +7,7 @@ import { AttendanceModule } from '../attendance/attendance.module';
 import { Branch, BranchSchema } from '../branches/schemas/branch.schema';
 import { GuestsModule } from '../guests/guests.module';
 import { MembersModule } from '../members/members.module';
+import { PushModule } from '../push/push.module';
 import { ServiceTypesModule } from '../service-types/service-types.module';
 import { ServiceUnitsModule } from '../service-units/service-units.module';
 import { IntakeTemplatesController } from './intake-templates.controller';
@@ -30,6 +31,7 @@ import {
     AttendanceModule,
     ServiceTypesModule,
     ServiceUnitsModule,
+    PushModule,
     MongooseModule.forFeature([
       { name: IntakeTemplate.name, schema: IntakeTemplateSchema },
       { name: IntakeSubmission.name, schema: IntakeSubmissionSchema },

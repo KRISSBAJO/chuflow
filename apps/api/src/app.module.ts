@@ -33,6 +33,7 @@ import { ServiceSchedulesModule } from './service-schedules/service-schedules.mo
 import { AlertsModule } from './alerts/alerts.module';
 import { SearchModule } from './search/search.module';
 import { DatabaseMaintenanceModule } from './database-maintenance/database-maintenance.module';
+import { PushModule } from './push/push.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { DatabaseMaintenanceModule } from './database-maintenance/database-maint
     AlertsModule,
     SearchModule,
     DatabaseMaintenanceModule,
+    PushModule,
   ],
   controllers: [AppController],
   providers: [

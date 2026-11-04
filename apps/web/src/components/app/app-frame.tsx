@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { LogoutButton } from "@/components/logout-button";
+import { AppNudge } from "@/components/pwa/app-nudge";
 import type { SessionUser } from "@/lib/auth";
 import { canAccessRoute, formatRoleLabel, getUserScopeLabel } from "@/lib/permissions";
 import type { AlertsSummary } from "@/lib/types";
@@ -68,6 +69,17 @@ const QUICK_ACTIONS: { href: string; label: string; hint: string; icon: IconName
   { href: "/members", label: "Add a member", hint: "Create a member record", icon: "members" },
 ];
 
+/** Phone tab bar: the first four of these the user can open, then "More" for the full menu. */
+const TAB_CANDIDATES: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: "home" },
+  { href: "/guests", label: "Guests", icon: "guests" },
+  { href: "/follow-up", label: "Follow-up", icon: "care", badge: "followUp" },
+  { href: "/attendance", label: "Attendance", icon: "attendance" },
+  { href: "/approvals", label: "Approvals", icon: "approvals", badge: "approvals" },
+  { href: "/members", label: "Members", icon: "members" },
+  { href: "/reports", label: "Reports", icon: "reports" },
+];
+
 const ALERT_TONES: Record<AlertsSummary["items"][number]["tone"], { dot: string; label: string }> = {
   critical: { dot: "bg-red-500", label: "Urgent" },
   warm: { dot: "bg-amber-500", label: "Needs attention" },
@@ -115,6 +127,58 @@ function useDismiss(open: boolean, close: () => void) {
 function initialsOf(user: SessionUser | null) {
   if (!user) return "";
   return `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
+}
+
+function TabBar({
+  user,
+  badges,
+  pathname,
+  menuOpen,
+  onMore,
+}: {
+  user: SessionUser | null;
+  badges: Record<BadgeKey, number>;
+  pathname: string;
+  menuOpen: boolean;
+  onMore: () => void;
+}) {
+  const tabs = TAB_CANDIDATES.filter((item) => canAccessRoute(user?.role, item.href)).slice(0, 4);
+  const tabClass = (active: boolean) =>
+    `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${active ? "text-[var(--lp-ink)]" : "text-[#8a8780] active:text-[var(--lp-ink)]"}`;
+  const anyTabActive = tabs.some((item) => isActive(pathname, item.href));
+
+  return (
+    <nav
+      aria-label="Quick navigation"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.06] bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+    >
+      <div className="mx-auto flex h-16 max-w-md items-stretch px-2">
+        {tabs.map((item) => {
+          const active = isActive(pathname, item.href);
+          const count = item.badge ? badges[item.badge] : 0;
+          return (
+            <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={tabClass(active)}>
+              {active ? <span className="lp-flame-bg absolute top-0 h-[3px] w-8 rounded-b-full" /> : null}
+              <span className="relative">
+                <Icon name={item.icon} className="h-[22px] w-[22px]" strokeWidth={active ? 2 : 1.7} />
+                {count > 0 ? (
+                  <span className="lp-flame-bg absolute -right-2.5 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
+                    {count > 99 ? "99+" : count}
+                  </span>
+                ) : null}
+              </span>
+              <span className="max-w-full truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+        <button type="button" onClick={onMore} aria-expanded={menuOpen} className={tabClass(menuOpen || !anyTabActive)}>
+          {!menuOpen && !anyTabActive ? <span className="lp-flame-bg absolute top-0 h-[3px] w-8 rounded-b-full" /> : null}
+          <Icon name="menu" className="h-[22px] w-[22px]" />
+          <span>More</span>
+        </button>
+      </div>
+    </nav>
+  );
 }
 
 function Sidebar({
@@ -339,14 +403,16 @@ export function AppFrame({
         </div>
       ) : null}
 
-      <div className={`transition-[padding] duration-300 ease-out ${expanded ? "xl:pl-[264px]" : "xl:pl-[76px]"}`}>
-        <header className="sticky top-0 z-30 border-b border-black/[0.06] bg-white/85 backdrop-blur-xl">
+      <div
+        className={`pb-[calc(64px+env(safe-area-inset-bottom))] transition-[padding] duration-300 ease-out md:pb-0 ${expanded ? "xl:pl-[264px]" : "xl:pl-[76px]"}`}
+      >
+        <header className="sticky top-0 z-30 border-b border-black/[0.06] bg-white/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--lp-ink)] hover:bg-black/[0.04] xl:hidden"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--lp-ink)] hover:bg-black/[0.04] md:flex xl:hidden"
             >
               <Icon name="menu" className="h-5 w-5" />
             </button>
@@ -476,9 +542,12 @@ export function AppFrame({
         <main
           className={`mx-auto flex max-w-[1440px] flex-col px-4 sm:px-6 lg:px-8 ${user?.preferences?.interfaceDensity === "compact" ? "gap-4 py-4 lg:py-5" : "gap-6 py-6 lg:py-8"}`}
         >
+          <AppNudge />
           {children}
         </main>
       </div>
+
+      <TabBar user={user} badges={badges} pathname={pathname} menuOpen={mobileOpen} onMore={() => setMobileOpen(true)} />
     </div>
   );
 }
