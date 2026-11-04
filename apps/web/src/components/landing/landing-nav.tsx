@@ -22,7 +22,7 @@ export function Logo() {
   return <Wordmark size={22} />;
 }
 
-export function LandingNav() {
+export function LandingNav({ signedIn = false, firstName, workspaceHref = "/dashboard" }: { signedIn?: boolean; firstName?: string; workspaceHref?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -54,13 +54,13 @@ export function LandingNav() {
 
         <div className="flex items-center gap-2">
           <Link
-            href="/login"
+            href={signedIn ? "/settings" : "/login"}
             className="hidden rounded-full px-4 py-2 text-[14px] font-medium text-[var(--lp-ink)] transition-colors hover:bg-[var(--lp-panel)] sm:block"
           >
-            Sign in
+            {signedIn ? firstName || "My account" : "Sign in"}
           </Link>
-          <Link href="/request-workspace" className="lp-pill-dark hidden h-10 items-center rounded-full px-5 text-[14px] font-medium sm:inline-flex">
-            Get started
+          <Link href={signedIn ? workspaceHref : "/request-workspace"} className="lp-pill-dark hidden h-10 items-center rounded-full px-5 text-[14px] font-medium sm:inline-flex">
+            {signedIn ? "Open workspace" : "Get started"}
           </Link>
           <button
             type="button"
@@ -89,11 +89,11 @@ export function LandingNav() {
             </a>
           ))}
           <div className="mt-5 grid grid-cols-2 gap-2">
-            <Link href="/login" className="flex h-12 items-center justify-center rounded-full bg-[var(--lp-panel)] text-[15px] font-medium text-[var(--lp-ink)]">
-              Sign in
+            <Link href={signedIn ? "/settings" : "/login"} className="flex h-12 items-center justify-center rounded-full bg-[var(--lp-panel)] text-[15px] font-medium text-[var(--lp-ink)]">
+              {signedIn ? firstName || "My account" : "Sign in"}
             </Link>
-            <Link href="/request-workspace" className="lp-pill-dark flex h-12 items-center justify-center rounded-full text-[15px] font-medium">
-              Get started
+            <Link href={signedIn ? workspaceHref : "/request-workspace"} className="lp-pill-dark flex h-12 items-center justify-center rounded-full text-[15px] font-medium">
+              {signedIn ? "Open workspace" : "Get started"}
             </Link>
           </div>
         </div>

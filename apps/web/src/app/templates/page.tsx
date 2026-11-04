@@ -1,9 +1,9 @@
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
-import { TemplateEditorCard } from "@/components/template-editor-card";
+import Link from "next/link";
 import { TemplateManagementList } from "@/components/template-management-list";
-import { Badge, Card, CardHeader } from "@/components/ui/ui";
+import { Badge, buttonClass, Card, CardHeader } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type { BranchSummary, IntakeTemplate } from "@/lib/types";
@@ -25,6 +25,7 @@ export default async function TemplatesPage() {
   return (
     <Shell>
       <PageHeader
+        action={<Link href="/templates/new" className={buttonClass("primary")}>Create template</Link>}
         eyebrow="Templates"
         title="Intake templates and public links"
         description="Manage first-timer, member, attendance and weekly report templates: wording, field structure, live public links and scannable QR codes."
@@ -54,22 +55,7 @@ export default async function TemplatesPage() {
             />
           </div>
         </Card>
-        <Card className="app-rise min-w-0 p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
-          <CardHeader
-            label="Create template"
-            title="Build a new intake flow"
-            description="Create a public form, choose its fields, connect it to a branch, and make it the active template when you are ready."
-          />
-          <div className="mt-6">
-            <TemplateEditorCard
-              branches={branches}
-              currentUserRole={user.role}
-              defaultBranchId={user.branchId}
-              defaultOversightRegion={user.oversightRegion}
-              defaultDistrict={user.district}
-            />
-          </div>
-        </Card>
+
       </section>
     </Shell>
   );

@@ -1,16 +1,14 @@
+import Link from "next/link";
 import { BranchManagementList } from "@/components/branch-management-list";
 import { MetricCard } from "@/components/metric-card";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
-import { BranchCreateForm } from "@/components/branch-create-form";
-import { UserCreateForm } from "@/components/user-create-form";
 import { Icon } from "@/components/app/icons";
 import { Badge, buttonClass, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
   canManageBranchStructure,
   getManageableUserRoleOptions,
-  isBranchScopedRole,
   isDistrictRole,
   isNationalRole,
 } from "@/lib/permissions";
@@ -18,8 +16,6 @@ import { serverGet } from "@/lib/server-api";
 import type {
   BranchOverview,
   BranchSummary,
-  DistrictOption,
-  OversightRegionOption,
 } from "@/lib/types";
 
 export default async function BranchesPage() {
@@ -36,7 +32,7 @@ export default async function BranchesPage() {
     branchScopedCreateRoles.includes(role),
   );
 
-  const [branches, oversightRegions, districts] = await Promise.all([
+  const [branches] = await Promise.all([
     serverGet<BranchOverview[]>("/branches/overview").catch(async () => {
       const fallbackBranches = await serverGet<BranchSummary[]>("/branches").catch(() => []);
       return fallbackBranches.map((branch) => ({
@@ -59,10 +55,7 @@ export default async function BranchesPage() {
         ushers: [],
       }));
     }),
-    serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
-    serverGet<DistrictOption[]>("/districts").catch(() => []),
   ]);
-  const defaultStaffBranchId = isBranchScopedRole(user.role) ? branches[0]?._id : undefined;
   const totalBranches = branches.length;
   const activeBranches = branches.filter((branch) => branch.status === "active").length;
   const branchAdmins = branches.reduce((total, branch) => total + branch.metrics.branchAdminCount, 0);
@@ -88,10 +81,10 @@ export default async function BranchesPage() {
         description="Keep branch structure, staffing and operating load visible in one place so leadership can grow ministry without losing clarity."
         action={
           canManageBranches ? (
-            <a href="#branch-create" className={buttonClass("primary", "md")}>
+            <Link href="/branches/new" className={buttonClass("primary", "md")}>
               <Icon name="plus" className="h-4 w-4" />
               Create branch
-            </a>
+            </Link>
           ) : (
             <a href="/users" className={buttonClass("secondary", "md")}>
               <Icon name="users" className="h-4 w-4" />
@@ -127,34 +120,8 @@ export default async function BranchesPage() {
           </div>
         </Card>
         <div className="space-y-4">
-          {canManageBranches ? (
-            <Card id="branch-create" className="app-rise scroll-mt-24 p-1.5" style={{ animationDelay: "60ms" }}>
-              <BranchCreateForm
-                currentUserRole={user.role}
-                defaultOversightRegion={user.oversightRegion}
-                defaultDistrict={user.district}
-                oversightRegions={oversightRegions}
-                districts={districts}
-              />
-            </Card>
-          ) : null}
-          {canCreateBranchLeadership ? (
-            <Card className="app-rise p-1.5" style={{ animationDelay: "120ms" }}>
-              <UserCreateForm
-                branches={branches}
-                currentUserRole={user.role}
-                defaultBranchId={defaultStaffBranchId}
-                defaultOversightRegion={user.oversightRegion}
-                defaultDistrict={user.district}
-                oversightRegions={oversightRegions}
-                districts={districts}
-                allowedRoles={branchScopedCreateRoles}
-                title="Add branch leadership and support"
-                description="Create branch admins, resident pastors, associate pastors, follow-up staff and ushers without leaving branch operations."
-                submitLabel="Add branch staff"
-              />
-            </Card>
-          ) : null}
+          {canCreateBranchLeadership ? <Link href="/branches/staff/new" className={buttonClass("secondary")}>Add branch leadership and support</Link> : null}
+
           <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "180ms" }}>
             <CardHeader label="Branch operations" title="Good habits" />
             <ul className="mt-5 space-y-2.5">

@@ -231,15 +231,15 @@ function Footer() {
   );
 }
 
-export function LandingPage({ tagline }: { tagline: string }) {
+export function LandingPage({ tagline, signedIn = false, firstName, workspaceHref = "/dashboard" }: { tagline: string; signedIn?: boolean; firstName?: string; workspaceHref?: string }) {
   return (
     <div className={`${landingFont.variable} lp-root min-h-screen w-full overflow-x-clip`}>
       <noscript>
         <style>{`.lp-reveal{opacity:1!important;transform:none!important}`}</style>
       </noscript>
-      <LandingNav />
+      <LandingNav signedIn={signedIn} firstName={firstName} workspaceHref={workspaceHref} />
       <main>
-        <LandingHero />
+        <LandingHero signedIn={signedIn} workspaceHref={workspaceHref} />
         <Statement />
         <LandingFlow />
         <Features />

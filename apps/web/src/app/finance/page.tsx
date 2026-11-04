@@ -1,14 +1,13 @@
+import Link from "next/link";
 import { Icon } from "@/components/app/icons";
 import { ExpenseCategoryManagementCard } from "@/components/expense-category-management-card";
 import { ExpenseEntriesTable } from "@/components/expense-entries-table";
-import { ExpenseEntryForm } from "@/components/expense-entry-form";
 import { FinanceAccountManagementCard } from "@/components/finance-account-management-card";
 import { FinanceLedgerTable } from "@/components/finance-ledger-table";
 import { FinanceLockManagementCard } from "@/components/finance-lock-management-card";
 import { FinanceScopeFilterBar } from "@/components/finance-scope-filter-bar";
 import { MetricCard } from "@/components/metric-card";
 import { OfferingEntriesTable } from "@/components/offering-entries-table";
-import { OfferingEntryForm } from "@/components/offering-entry-form";
 import { OfferingTypeManagementCard } from "@/components/offering-type-management-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -295,7 +294,7 @@ export default async function FinancePage({
       : []),
   ];
 
-  const showExpenseSide = canCreateExpenses || canApproveExpenses;
+  const showExpenseSide = canApproveExpenses;
 
   return (
     <Shell>
@@ -305,10 +304,10 @@ export default async function FinancePage({
         description="Record offerings and expenses, route them to the right account, approve spending and lock closed months, all in one scoped ledger."
         action={
           canCreateOfferings || canCreateExpenses ? (
-            <a href="#finance-entry" className={buttonClass("primary", "md")}>
+            <Link href="/finance/new" className={buttonClass("primary", "md")}>
               <Icon name="plus" className="h-4 w-4" />
               New finance entry
-            </a>
+            </Link>
           ) : (
             <a href="#ledger" className={buttonClass("secondary", "md")}>
               Review ledger
@@ -437,21 +436,8 @@ export default async function FinancePage({
 
       {activeTab === "offerings" ? (
         <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          {canCreateOfferings ? (
-            <div id="finance-entry" className="min-w-0">
-              <OfferingEntryForm
-                defaultBranchId={user.branchId}
-                branches={branches}
-                offeringTypes={offeringTypes}
-                serviceTypes={serviceTypes}
-                serviceSchedules={serviceSchedules}
-                accounts={accounts}
-              />
-            </div>
-          ) : null}
-
           <Card
-            className={`app-rise p-6 sm:p-7 ${canCreateOfferings ? "" : "xl:col-span-2"}`}
+            className="app-rise p-6 sm:p-7 xl:col-span-2"
             style={{ animationDelay: "60ms" }}
           >
             <CardHeader
@@ -485,17 +471,6 @@ export default async function FinancePage({
         <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           {showExpenseSide ? (
             <div id="finance-entry" className="min-w-0 space-y-4">
-              {canCreateExpenses ? (
-                <ExpenseEntryForm
-                  defaultBranchId={selectedBranchId || user.branchId}
-                  branches={branches}
-                  accounts={accounts}
-                  expenseCategories={expenseCategories}
-                  serviceSchedules={serviceSchedules}
-                  canChooseBranch={canChooseBranch}
-                />
-              ) : null}
-
               {canApproveExpenses ? (
                 <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
                   <CardHeader

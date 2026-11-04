@@ -63,10 +63,10 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: "settings" };
 
 const QUICK_ACTIONS: { href: string; label: string; hint: string; icon: IconName }[] = [
-  { href: "/guests", label: "Register a guest", hint: "Capture a first-timer", icon: "guests" },
+  { href: "/guests/new", label: "Register a guest", hint: "Capture a first-timer", icon: "guests" },
   { href: "/attendance", label: "Record attendance", hint: "Log a service count", icon: "attendance" },
   { href: "/follow-up/new", label: "Log follow-up", hint: "Assign care to someone", icon: "care" },
-  { href: "/members", label: "Add a member", hint: "Create a member record", icon: "members" },
+  { href: "/members/new", label: "Add a member", hint: "Create a member record", icon: "members" },
 ];
 
 /** Phone tab bar: the first four of these the user can open, then "More" for the full menu. */
@@ -243,15 +243,15 @@ function Sidebar({
     <div className="flex h-full flex-col">
       <div className={`flex min-h-16 shrink-0 items-center py-3 ${compact ? "justify-center" : "justify-between gap-2 px-5"}`}>
         {compact ? (
-          <Link href="/dashboard" aria-label="Dashboard" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--lp-ink)] text-[17px] font-semibold tracking-[-0.04em] text-white">
+          <Link href="/" aria-label="Home" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--lp-ink)] text-[17px] font-semibold tracking-[-0.04em] text-white">
             C
           </Link>
         ) : (
           <div className="min-w-0">
             {branding.organizationName === "ChuFlow" ? (
-              <Wordmark size={22} href="/dashboard" />
+              <Wordmark size={22} href="/" />
             ) : (
-              <Link href="/dashboard" className="block truncate text-[17px] font-semibold tracking-[-0.02em] text-[var(--lp-ink)]">
+              <Link href="/" className="block truncate text-[17px] font-semibold tracking-[-0.02em] text-[var(--lp-ink)]">
                 {branding.organizationName}
               </Link>
             )}

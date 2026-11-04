@@ -3,7 +3,6 @@ import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { ConvertGuestForm } from "@/components/convert-guest-form";
-import { MemberCreateForm } from "@/components/member-create-form";
 import { TemplateQrCard } from "@/components/template-qr-card";
 import { Icon } from "@/components/app/icons";
 import { Avatar, Badge, buttonClass, Card, CardHeader, EmptyState, statusTone, TableWrap } from "@/components/ui/ui";
@@ -16,25 +15,21 @@ import {
 } from "@/lib/member-form-options";
 import { serverGet } from "@/lib/server-api";
 import type {
-  BranchSummary,
   GuestListResponse,
   IntakeTemplate,
   MemberListItem,
-  ServiceUnitSummary,
 } from "@/lib/types";
 
 export default async function MembersPage() {
   const user = await requireServerRole("/members");
 
-  const [members, branches, guestList, serviceUnits, templates] = await Promise.all([
+  const [members, guestList, templates] = await Promise.all([
     serverGet<MemberListItem[]>("/members"),
-    serverGet<BranchSummary[]>("/branches").catch(() => []),
     serverGet<GuestListResponse>("/guests?limit=500").catch(() => ({
       items: [],
       pagination: { page: 1, pageSize: 500, total: 0, totalPages: 1 },
       summary: { todayCount: 0, completionRate: 0, assignedFollowUpCount: 0 },
     })),
-    serverGet<ServiceUnitSummary[]>("/service-units").catch(() => []),
     serverGet<IntakeTemplate[]>("/intake-templates").catch(() => []),
   ]);
   const guests = guestList.items;
@@ -64,10 +59,10 @@ export default async function MembersPage() {
         title="Member growth and conversion records"
         description="Member records stay connected to the guest journey. Convert guests cleanly and keep growth milestones visible."
         action={
-          <a href="#member-create" className={buttonClass("primary", "md")}>
+          <Link href="/members/new" className={buttonClass("primary", "md")}>
             <Icon name="plus" className="h-4 w-4" />
             Add member
-          </a>
+          </Link>
         }
       />
       <section className="grid gap-4 md:grid-cols-3">
@@ -169,21 +164,6 @@ export default async function MembersPage() {
                   No active member intake template is available in this scope yet.
                 </EmptyState>
               )}
-            </div>
-          </Card>
-          <Card id="member-create" className="scroll-mt-24 p-6 sm:p-7">
-            <CardHeader
-              label="New member"
-              title="Add member"
-              description="Direct member intake, no guest record required. Link a guest only when this member is continuing an existing guest journey."
-            />
-            <div className="mt-6">
-              <MemberCreateForm
-                branches={branches}
-                guests={guests}
-                serviceUnits={serviceUnits}
-                defaultBranchId={user.branchId}
-              />
             </div>
           </Card>
           <Card className="p-6 sm:p-7">
