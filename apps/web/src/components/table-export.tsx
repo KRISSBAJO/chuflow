@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/ui";
 import { useSession } from "@/components/session-context";
 
 const TABLES: Record<string, [string, string][]> = {
+  "/meetings": [["meetings", "Meetings"]],
   "/members": [["members", "Members"]],
   "/guests": [["guests", "Guests"]],
   "/users": [["users", "Users"]],

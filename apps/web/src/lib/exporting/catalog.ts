@@ -182,6 +182,56 @@ function arrayFilter(
 }
 
 export const EXPORTS: Record<string, ExportDefinition> = {
+  meetings: {
+    title: "Meetings",
+    permission: "/meetings",
+    endpoint: "/meetings",
+    paginated: true,
+    filters: [
+      "q",
+      "branchId",
+      "groupId",
+      "status",
+      "minutes",
+      "sort",
+      "from",
+      "to",
+      "actions",
+      "upcoming",
+    ],
+    columns: [
+      col("Meeting", "title"),
+      col("Branch", "branchId.name"),
+      col("Group", "groupId.name"),
+      col("Starts (UTC)", "startsAt", "date"),
+      col("Ends (UTC)", "endsAt", "date"),
+      col("Venue", "location"),
+      col("Meeting link", "joinUrl"),
+      col("Status", "status"),
+      col("Minutes required", "minutesRequired"),
+      col("Minutes status", "minutesStatus"),
+      col("Minutes due (UTC)", "minutesDueAt", "date"),
+      {
+        header: "Staff present",
+        value: (row) =>
+          Array.isArray(row.presentUserIds) ? row.presentUserIds.length : 0,
+      },
+      {
+        header: "Members present",
+        value: (row) =>
+          Array.isArray(row.presentMemberIds) ? row.presentMemberIds.length : 0,
+      },
+      {
+        header: "Open actions",
+        value: (row) =>
+          Array.isArray(row.actions)
+            ? row.actions.filter((a: { status: string }) => a.status === "open")
+                .length
+            : 0,
+      },
+    ],
+  },
+
   members: {
     title: "Members",
     permission: "/members",

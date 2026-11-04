@@ -1,3 +1,4 @@
+import { MeetingsModule } from '../meetings/meetings.module';
 import { Module } from '@nestjs/common';
 import {
   OutreachContact,
@@ -33,6 +34,7 @@ import { AlertsService } from './alerts.service';
 
 @Module({
   imports: [
+    MeetingsModule,
     AccessScopeModule,
     MongooseModule.forFeature([
       { name: OutreachContact.name, schema: OutreachContactSchema },

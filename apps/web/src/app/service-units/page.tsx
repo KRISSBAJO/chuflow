@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   DirectoryControls,
   DirectoryPagination,
@@ -9,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { ServiceUnitCreateModalButton } from "@/components/service-unit-create-modal-button";
 import { ServiceUnitManagementList } from "@/components/service-unit-management-list";
 import { Shell } from "@/components/shell";
-import { Badge, Card, CardHeader } from "@/components/ui/ui";
+import { Badge, Card, CardHeader, buttonClass } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type {
@@ -102,12 +103,17 @@ export default async function ServiceUnitsPage({
         title="Service units and staffing"
         description="Create the ministry teams for each branch, appoint leaders, and connect members to the units they serve in."
         action={
-          <ServiceUnitCreateModalButton
-            branches={branches}
-            members={members}
-            defaultBranchId={user.branchId}
-            currentUserRole={user.role}
-          />
+          <div className="flex flex-wrap gap-2">
+            <Link href="/meetings/groups" className={buttonClass("secondary")}>
+              Meeting requirements
+            </Link>
+            <ServiceUnitCreateModalButton
+              branches={branches}
+              members={members}
+              defaultBranchId={user.branchId}
+              currentUserRole={user.role}
+            />
+          </div>
         }
       />
 

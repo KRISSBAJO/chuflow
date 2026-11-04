@@ -317,6 +317,7 @@ export const routePermissions: Record<string, AppRole[]> = {
   "/follow-up": [...LEADERSHIP_ROLES, "follow_up"],
   "/members": [...LEADERSHIP_ROLES],
   "/service-units": [...LEADERSHIP_ROLES],
+  "/meetings": [...LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES],
   "/attendance": [...LEADERSHIP_ROLES, "follow_up", "usher"],
   "/weekly-reports": [...LEADERSHIP_ROLES],
   "/maag-reports": [...LEADERSHIP_ROLES],

@@ -1,3 +1,4 @@
+import { MeetingsModule } from './meetings/meetings.module';
 import { Module } from '@nestjs/common';
 import { EvangelismModule } from './evangelism/evangelism.module';
 import { APP_GUARD } from '@nestjs/core';
@@ -51,6 +52,7 @@ import { PushModule } from './push/push.module';
     }),
     AuthModule,
     EvangelismModule,
+    MeetingsModule,
     UsersModule,
     BranchesModule,
     GuestsModule,

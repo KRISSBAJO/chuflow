@@ -1,3 +1,4 @@
+import { MeetingsService } from '../meetings/meetings.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -51,6 +52,7 @@ type AlertItem = {
 @Injectable()
 export class AlertsService {
   constructor(
+    private readonly meetingsService: MeetingsService,
     @InjectModel(OutreachContact.name)
     private readonly outreachModel: Model<OutreachContactDocument>,
     @InjectModel(Branch.name)
@@ -377,6 +379,7 @@ export class AlertsService {
         : null,
     ].filter((item): item is AlertItem => !!item);
 
+    items.push(...(await this.meetingsService.alertItems(currentUser)));
     items.sort((left, right) => right.count - left.count);
 
     return {

@@ -37,6 +37,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Services",
     items: [
+      { href: "/meetings", label: "Meetings", icon: "attendance" },
       { href: "/attendance", label: "Attendance", icon: "attendance" },
       { href: "/weekly-reports", label: "Weekly reports", icon: "weekly" },
       { href: "/maag-reports", label: "MAAG reports", icon: "maag" },
@@ -64,6 +65,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: "settings" };
 
 const QUICK_ACTIONS: { href: string; label: string; hint: string; icon: IconName }[] = [
+  { href: "/meetings/new", label: "Schedule meeting", hint: "Plan a meeting and follow up actions", icon: "attendance" },
   { href: "/evangelism/new", label: "Add outreach contact", hint: "Follow up an outreach conversation", icon: "share" },
   { href: "/guests/new", label: "Register a guest", hint: "Capture a first-timer", icon: "guests" },
   { href: "/attendance", label: "Record attendance", hint: "Log a service count", icon: "attendance" },
