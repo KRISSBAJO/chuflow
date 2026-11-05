@@ -10,6 +10,7 @@ export class MeetingGroup {
     index: true,
   })
   branchId!: Types.ObjectId;
+  @Prop({ default: false }) isGeneral!: boolean;
   @Prop({ required: true }) name!: string;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceUnit' })
   serviceUnitId?: Types.ObjectId;
@@ -22,6 +23,10 @@ export class MeetingGroup {
 }
 export type MeetingGroupDocument = HydratedDocument<MeetingGroup>;
 export const MeetingGroupSchema = SchemaFactory.createForClass(MeetingGroup);
+MeetingGroupSchema.index(
+  { branchId: 1, isGeneral: 1 },
+  { unique: true, partialFilterExpression: { isGeneral: true } },
+);
 
 export type MeetingAction = {
   id: string;
@@ -63,6 +68,15 @@ export class Meeting {
   @Prop({ default: '' }) joinUrl!: string;
   @Prop({ required: true }) organizerUserId!: string;
   @Prop({ type: [String], default: [] }) attendeeUserIds!: string[];
+  @Prop({
+    enum: ['individuals', 'service_groups', 'church'],
+    default: 'individuals',
+  })
+  audienceMode!: string;
+  @Prop({ type: [String], default: [] }) audienceServiceUnitIds!: string[];
+  @Prop({ type: [String], default: undefined }) additionalMemberIds?: string[];
+  @Prop({ default: false }) invitationsRequested!: boolean;
+  @Prop({ default: false }) invitationsPrepared!: boolean;
   @Prop({ type: [String], default: [] }) attendeeMemberIds!: string[];
   @Prop({ type: [String], default: [] }) presentMemberIds!: string[];
   @Prop({ type: [String], default: [] }) presentUserIds!: string[];
@@ -101,3 +115,26 @@ export class MeetingFile {
 }
 export type MeetingFileDocument = HydratedDocument<MeetingFile>;
 export const MeetingFileSchema = SchemaFactory.createForClass(MeetingFile);
+
+@Schema({ timestamps: true })
+export class MeetingInvitation {
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Meeting', required: true })
+  meetingId!: Types.ObjectId;
+  @Prop({ required: true }) email!: string;
+  @Prop({ type: [String], default: [] }) memberIds!: string[];
+  @Prop({ type: [String], default: [] }) userIds!: string[];
+  @Prop({
+    enum: ['queued', 'sending', 'sent', 'failed', 'uncertain', 'cancelled'],
+    default: 'queued',
+  })
+  status!: string;
+  @Prop() claimedAt?: Date;
+  @Prop() sentAt?: Date;
+  @Prop() messageId?: string;
+  @Prop({ default: '' }) error!: string;
+}
+export type MeetingInvitationDocument = HydratedDocument<MeetingInvitation>;
+export const MeetingInvitationSchema =
+  SchemaFactory.createForClass(MeetingInvitation);
+MeetingInvitationSchema.index({ meetingId: 1, email: 1 }, { unique: true });
+MeetingInvitationSchema.index({ status: 1, createdAt: 1 });

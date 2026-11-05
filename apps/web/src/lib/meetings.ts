@@ -1,5 +1,6 @@
 export type MeetingPerson = {
   _id: string;
+  email?: string;
   firstName: string;
   lastName: string;
   branchId?: string;
@@ -32,6 +33,17 @@ export type MeetingAction = {
   status: "open" | "done";
 };
 export type Meeting = {
+  audienceMode?: string;
+  audienceServiceUnitIds?: string[];
+  additionalMemberIds?: string[];
+  invitationsRequested?: boolean;
+  invitationSummary?: {
+    requested: boolean;
+    prepared: boolean;
+    uniqueEmails: number;
+    missingEmail: number;
+    counts: Record<string, number>;
+  };
   _id: string;
   branchId: string | { _id: string; name: string };
   groupId: string | { _id: string; name: string };

@@ -1,7 +1,7 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { apiGet, apiPost, apiPatch } from "@/lib/api";
+import { API_URL, apiPost, apiPatch } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import {
   referenceId,
@@ -22,56 +22,71 @@ export function MemberPicker({
   onChange: (people: MeetingPerson[]) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<MeetingPerson[]>([]);
   const [page, setPage] = useState(1);
+  const [items, setItems] = useState<MeetingPerson[]>([]);
   const [total, setTotal] = useState(0);
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  async function search(nextPage = 1) {
-    if (!branchId) return;
-    setBusy(true);
-    setError("");
-    try {
-      const result = await apiGet<{ items: MeetingPerson[]; total: number }>(
-        `/meetings/participants?branchId=${encodeURIComponent(branchId)}&q=${encodeURIComponent(query)}&page=${nextPage}`,
-      );
-      setItems(result.items);
-      setTotal(result.total);
-      setPage(nextPage);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not find members");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const [error, setError] = useState("");
+  const listId = useId();
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      if (!branchId) return;
+      setBusy(true);
+      setError("");
+      try {
+        const response = await fetch(
+          `${API_URL}/meetings/participants?branchId=${encodeURIComponent(branchId)}&q=${encodeURIComponent(query)}&page=${page}`,
+          { credentials: "include", signal: controller.signal },
+        );
+        if (!response.ok) throw new Error("Could not load matching members.");
+        const result = (await response.json()) as {
+          items: MeetingPerson[];
+          total: number;
+        };
+        if (!controller.signal.aborted) {
+          setItems(result.items);
+          setTotal(result.total);
+        }
+      } catch (e) {
+        if (!controller.signal.aborted)
+          setError(
+            e instanceof Error ? e.message : "Could not search members.",
+          );
+      } finally {
+        if (!controller.signal.aborted) setBusy(false);
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [branchId, query, page]);
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <input
-          className="ui-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search members by name"
-          aria-label="Search members"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              void search();
-            }
-          }}
-        />
-        <Button
-          variant="secondary"
-          disabled={busy || !branchId}
-          onClick={() => void search()}
-        >
-          Find
-        </Button>
-      </div>
-      {error && <p role="alert">{error}</p>}
+      <input
+        className="ui-input"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setPage(1);
+        }}
+        placeholder="Start typing a member’s name or email…"
+        aria-label="Search members"
+        aria-controls={listId}
+        role="searchbox"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.preventDefault();
+        }}
+      />
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
       <p className="text-sm text-[#6b6b6b]">
-        {selected.length} members selected. Search to add members, including
-        those without a login.
+        {selected.length} individual members selected. People already in a
+        selected group are counted once.
       </p>
       <div className="flex flex-wrap gap-2">
         {selected.map((p) => (
@@ -85,10 +100,27 @@ export function MemberPicker({
           </Button>
         ))}
       </div>
-      <div className="max-h-56 overflow-y-auto space-y-2">
+      <div
+        id={listId}
+        aria-label="Matching members"
+        aria-busy={busy}
+        className="max-h-64 overflow-y-auto rounded-xl bg-white p-3 space-y-2"
+      >
+        {busy && (
+          <p role="status" className="text-sm">
+            Searching…
+          </p>
+        )}
+        {!busy && !error && items.length === 0 && (
+          <p className="text-sm">No matching members.</p>
+        )}
         {items.map((p) => (
-          <label className="flex gap-2 text-sm" key={p._id}>
+          <label
+            className="flex items-start gap-2 rounded-lg px-2 py-1 text-sm"
+            key={p._id}
+          >
             <input
+              className="mt-1"
               type="checkbox"
               checked={selected.some((x) => x._id === p._id)}
               onChange={(e) =>
@@ -99,17 +131,22 @@ export function MemberPicker({
                 )
               }
             />
-            {meetingName(p)}
+            <span>
+              {meetingName(p)}
+              <span className="block text-xs text-[#6b6b6b]">
+                {p.email || "No email recorded"}
+              </span>
+            </span>
           </label>
         ))}
       </div>
-      {total > 0 && (
+      {total > 50 && (
         <div className="flex items-center gap-3 text-sm">
           <Button
             size="sm"
             variant="secondary"
             disabled={page <= 1 || busy}
-            onClick={() => void search(page - 1)}
+            onClick={() => setPage(page - 1)}
           >
             Previous
           </Button>
@@ -120,7 +157,7 @@ export function MemberPicker({
             size="sm"
             variant="secondary"
             disabled={page * 50 >= total || busy}
-            onClick={() => void search(page + 1)}
+            onClick={() => setPage(page + 1)}
           >
             Next
           </Button>
@@ -329,22 +366,109 @@ export function MeetingForm({
       (options.isAdmin || g.submitterUserIds.includes(options.userId)),
   );
   const [groupId, setGroupId] = useState(
-    meeting ? referenceId(meeting.groupId) : available[0]?._id || "",
+    meeting
+      ? referenceId(meeting.groupId)
+      : options.isAdmin
+        ? "__church__"
+        : available[0]?._id || "",
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [members, setMembers] = useState<MeetingPerson[]>(
-    meeting?.attendeeMembers || [],
+    (meeting?.attendeeMembers || []).filter((p) =>
+      (
+        meeting?.additionalMemberIds ??
+        meeting?.attendeeMemberIds ??
+        []
+      ).includes(p._id),
+    ),
   );
   const group = options.groups.find((g) => g._id === groupId);
-  const branch = group
-    ? referenceId(group.branchId)
-    : meeting
-      ? referenceId(meeting.branchId)
-      : "";
+  const [generalBranch, setGeneralBranch] = useState(
+    options.branches[0]?._id || "",
+  );
+  const branch =
+    groupId === "__church__"
+      ? generalBranch
+      : group
+        ? referenceId(group.branchId)
+        : meeting
+          ? referenceId(meeting.branchId)
+          : "";
   const users = options.users.filter(
     (u) => u.branchId === branch || u._id === options.userId,
   );
+  const [audienceMode, setAudienceMode] = useState(
+    meeting?.audienceMode || "individuals",
+  );
+  const [audienceGroups, setAudienceGroups] = useState<string[]>(
+    meeting?.audienceServiceUnitIds || [],
+  );
+  const [staffIds, setStaffIds] = useState<string[]>(
+    meeting?.attendeeUserIds || [],
+  );
+  const [sendInvitations, setSendInvitations] = useState(
+    meeting ? !!meeting.invitationsRequested : true,
+  );
+  const [preview, setPreview] = useState<{
+    memberCount: number;
+    staffCount: number;
+    uniqueEmails: number;
+    missingEmail: number;
+  } | null>(null);
+  const [previewError, setPreviewError] = useState("");
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const previewPayload = JSON.stringify({
+    ...(groupId === "__church__" ? { branchId: branch } : { groupId }),
+    ...(meeting ? { meetingId: meeting._id } : {}),
+    audienceMode,
+    audienceServiceUnitIds: audienceGroups,
+    attendeeMemberIds: members.map((m) => m._id),
+    attendeeUserIds: staffIds,
+  });
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      if (
+        !groupId ||
+        (groupId === "__church__" && !branch) ||
+        (audienceMode === "service_groups" && !audienceGroups.length)
+      ) {
+        setPreview(null);
+        setPreviewBusy(false);
+        setPreviewError("");
+        return;
+      }
+      setPreviewBusy(true);
+      setPreviewError("");
+      try {
+        const response = await fetch(`${API_URL}/meetings/audience-preview`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: previewPayload,
+          signal: controller.signal,
+        });
+        const body = await response.json();
+        if (!response.ok)
+          throw new Error(body.message || "Could not preview audience");
+        if (!controller.signal.aborted) setPreview(body);
+      } catch (e) {
+        if (!controller.signal.aborted) {
+          setPreview(null);
+          setPreviewError(
+            e instanceof Error ? e.message : "Could not preview audience",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setPreviewBusy(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [previewPayload, groupId, branch, audienceMode, audienceGroups.length]);
   function local(value?: string) {
     if (!value) return "";
     const d = new Date(value);
@@ -366,7 +490,10 @@ export function MeetingForm({
         endsAt: new Date(String(d.get("endsAt"))).toISOString(),
         location: d.get("location"),
         joinUrl: d.get("joinUrl") || "",
-        attendeeUserIds: d.getAll("attendeeUserIds"),
+        attendeeUserIds: staffIds,
+        audienceMode,
+        audienceServiceUnitIds: audienceGroups,
+        sendInvitations,
         attendeeMemberIds: members.map((m) => m._id),
       };
       const result = meeting
@@ -375,7 +502,10 @@ export function MeetingForm({
             operation: "details",
             expectedRevision: meeting.revision,
           })
-        : await apiPost<Meeting>("/meetings", { ...payload, groupId });
+        : await apiPost<Meeting>("/meetings", {
+            ...payload,
+            ...(groupId === "__church__" ? { branchId: branch } : { groupId }),
+          });
       router.push(`/meetings/${result._id}`);
       router.refresh();
     } catch (e) {
@@ -396,8 +526,13 @@ export function MeetingForm({
               onChange={(e) => {
                 setGroupId(e.target.value);
                 setMembers([]);
+                setAudienceGroups([]);
+                setStaffIds([]);
               }}
             >
+              {options.isAdmin && (
+                <option value="__church__">Church / general meeting</option>
+              )}
               {available.map((g) => (
                 <option key={g._id} value={g._id}>
                   {g.name} —{" "}
@@ -405,12 +540,33 @@ export function MeetingForm({
                 </option>
               ))}
             </select>
-            {!available.length && (
+            {!available.length && !options.isAdmin && (
               <p className="text-sm">
                 An admin must enable a meeting group and assign a submitter
                 first.
               </p>
             )}
+          </Field>
+        )}
+        {groupId === "__church__" && (
+          <Field label="Church / branch" required>
+            <select
+              className="ui-input"
+              required
+              value={generalBranch}
+              onChange={(e) => {
+                setGeneralBranch(e.target.value);
+                setMembers([]);
+                setStaffIds([]);
+                setAudienceGroups([]);
+              }}
+            >
+              {options.branches.map((b) => (
+                <option value={b._id} key={b._id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </Field>
         )}
         <Field label="Meeting title" required>
@@ -472,18 +628,61 @@ export function MeetingForm({
             defaultValue={meeting?.agenda}
           />
         </Field>
-        <Field
-          label="Staff attendees"
-          hint="Selected users can open this meeting and complete their assigned actions."
-        >
-          <UserChoices
-            key={branch}
-            users={users}
-            name="attendeeUserIds"
-            chosen={meeting?.attendeeUserIds}
-          />
+        <Field label="Who is this meeting for?">
+          <select
+            className="ui-input"
+            value={audienceMode}
+            onChange={(e) => setAudienceMode(e.target.value)}
+          >
+            <option value="individuals">
+              Choose individual church members
+            </option>
+            <option value="service_groups">
+              Members of selected service groups
+            </option>
+            <option value="church">All active church / branch members</option>
+          </select>
         </Field>
-        <Field label="Member attendees">
+        {audienceMode === "service_groups" && (
+          <Field
+            label="Service groups"
+            hint="All active members in these groups are included. People belonging to multiple selected groups appear once."
+          >
+            <div className="max-h-56 overflow-auto rounded-xl bg-white p-3 space-y-2">
+              {options.serviceUnits
+                .filter((unit) => unit.branchId === branch)
+                .map((unit) => (
+                  <label className="flex gap-2 text-sm" key={unit._id}>
+                    <input
+                      type="checkbox"
+                      checked={audienceGroups.includes(unit._id)}
+                      onChange={(e) =>
+                        setAudienceGroups(
+                          e.target.checked
+                            ? [...audienceGroups, unit._id]
+                            : audienceGroups.filter((id) => id !== unit._id),
+                        )
+                      }
+                    />
+                    {unit.name}
+                  </label>
+                ))}
+            </div>
+          </Field>
+        )}
+        {audienceMode === "church" && (
+          <p className="text-sm">
+            All active members in this meeting’s church/branch will be included.
+            You can add other members individually below.
+          </p>
+        )}
+        <Field
+          label={
+            audienceMode === "individuals"
+              ? "Choose church members"
+              : "Add other members (optional)"
+          }
+        >
           <MemberPicker
             key={branch}
             branchId={branch}
@@ -491,6 +690,60 @@ export function MeetingForm({
             onChange={setMembers}
           />
         </Field>
+        <Field
+          label="Staff attendees (optional)"
+          hint="Selected users can open this meeting and receive invitations. An email shared with a member record receives only one invitation."
+        >
+          <div className="max-h-52 overflow-y-auto rounded-xl bg-white p-3 space-y-2">
+            {users.map((u) => (
+              <label className="flex gap-2 text-sm" key={u._id}>
+                <input
+                  type="checkbox"
+                  checked={staffIds.includes(u._id)}
+                  onChange={(e) =>
+                    setStaffIds(
+                      e.target.checked
+                        ? [...staffIds, u._id]
+                        : staffIds.filter((id) => id !== u._id),
+                    )
+                  }
+                />
+                {meetingName(u)}
+              </label>
+            ))}
+          </div>
+        </Field>
+        <label className="flex gap-2">
+          <input
+            type="checkbox"
+            checked={sendInvitations}
+            onChange={(e) => setSendInvitations(e.target.checked)}
+          />
+          Send email invitations
+        </label>
+        <p className="text-sm text-[#6b6b6b]">
+          Invitations include the meeting time, location, agenda and join link.
+          Each email address is invited once per meeting, even across several
+          groups or member/staff records. Saving changes emails only new
+          addresses.
+        </p>
+        <div role="status" className="rounded-xl bg-white p-4 text-sm">
+          {previewBusy
+            ? "Checking audience…"
+            : preview
+              ? `${preview.memberCount} unique members · ${preview.staffCount} staff users · ${preview.uniqueEmails} unique email addresses`
+              : audienceMode === "service_groups"
+                ? "Select at least one service group to preview your audience."
+                : "Select a meeting group to preview your audience."}
+          {preview && !previewBusy && preview.missingEmail > 0 && (
+            <p className="mt-2 text-amber-800">
+              {preview.missingEmail} selected records have no valid email. They
+              remain on the attendance list but cannot receive an email
+              invitation.
+            </p>
+          )}
+          {previewError && <p className="text-red-700">{previewError}</p>}
+        </div>
         {error && (
           <p role="alert" className="text-red-700">
             {error}
@@ -498,7 +751,11 @@ export function MeetingForm({
         )}
         <Button
           type="submit"
-          disabled={busy || (!meeting && !available.length)}
+          disabled={
+            busy ||
+            (!meeting && !available.length && !options.isAdmin) ||
+            (audienceMode === "service_groups" && !audienceGroups.length)
+          }
         >
           {busy
             ? "Saving…"

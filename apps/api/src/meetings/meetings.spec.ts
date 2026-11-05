@@ -1,3 +1,4 @@
+import { MeetingInvitationsService } from './meeting-invitations.service';
 import { collectExport } from '../../../web/src/lib/exporting/data';
 import {
   BadRequestException,
@@ -86,16 +87,26 @@ function fixture() {
     updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
     create: jest.fn().mockImplementation((x: unknown) => Promise.resolve(x)),
   };
-  const groups = { findById: jest.fn(() => ({ lean: async () => group })) };
+  const groups = {
+    findById: jest.fn(() => ({ lean: async () => group })),
+    findOneAndUpdate: jest
+      .fn()
+      .mockResolvedValue({
+        toObject: () => ({ ...group, minutesRequired: false }),
+      }),
+  };
   const files = {
     create: jest.fn().mockResolvedValue({ _id: fileId }),
     deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
     findOne: jest.fn(),
   };
   const users = {
-    find: jest.fn(() => ({
+    find: jest.fn((filter: { _id: { $in: string[] } }) => ({
       select: () => ({
-        lean: async () => [{ _id: attendee, branchId: branch }],
+        lean: async () =>
+          filter._id.$in.includes(attendee)
+            ? [{ _id: attendee, branchId: branch }]
+            : [],
       }),
     })),
   };
@@ -103,19 +114,46 @@ function fixture() {
     ensureBranchAccess: jest.fn().mockResolvedValue(undefined),
     resolveScopedBranchId: jest.fn().mockResolvedValue(branch),
   };
-  const members = { countDocuments: jest.fn().mockResolvedValue(0) };
+  const members = {
+    countDocuments: jest.fn().mockResolvedValue(0),
+    find: jest.fn(() => ({
+      select: () => ({
+        limit: () => ({
+          lean: async () => [{ _id: attendee }, { _id: reviewer }],
+        }),
+      }),
+    })),
+  };
+  const units = { countDocuments: jest.fn().mockResolvedValue(2) };
+  const invitationService = {
+    recipients: jest
+      .fn()
+      .mockResolvedValue({ recipients: [], missingEmail: 0 }),
+  };
   const service = new MeetingsService(
     members as unknown as Model<MemberDocument>,
     meetings as unknown as Model<MeetingDocument>,
     groups as unknown as Model<MeetingGroupDocument>,
     files as unknown as Model<MeetingFileDocument>,
     users as unknown as Model<UserDocument>,
-    {} as Model<ServiceUnitDocument>,
+    units as unknown as Model<ServiceUnitDocument>,
     {} as Model<BranchDocument>,
     scope as unknown as AccessScopeService,
+    invitationService as unknown as MeetingInvitationsService,
   );
   jest.spyOn(service, 'details').mockResolvedValue({});
-  return { service, meeting, group, meetings, scope, files, users };
+  return {
+    service,
+    meeting,
+    group,
+    meetings,
+    scope,
+    files,
+    users,
+    members,
+    units,
+    invitationService,
+  };
 }
 describe('Meeting scheduling and access', () => {
   it('rejects inverted, invalid, or overlong meeting times', () => {
@@ -531,5 +569,100 @@ describe('Meeting table export pagination', () => {
       ),
     ).toBe(true);
     expect(result.sheets[0].rows).toHaveLength(101);
+  });
+});
+
+describe('Church and service-group meeting audiences', () => {
+  it('combines selected groups with additional members and removes overlaps', async () => {
+    const f = fixture();
+    f.members.countDocuments.mockResolvedValue(2);
+    const result = await f.service.previewAudience(user(), {
+      groupId,
+      audienceMode: 'service_groups',
+      audienceServiceUnitIds: [id(), id()],
+      attendeeMemberIds: [attendee, stranger],
+      attendeeUserIds: [],
+    });
+    expect(result.memberCount).toBe(3);
+    expect(
+      f.invitationService.recipients.mock.calls[0][0].attendeeMemberIds,
+    ).toEqual([attendee, reviewer, stranger]);
+    expect(f.members.find.mock.calls[0][0]).toMatchObject({
+      branchId: branch,
+      membershipStatus: 'active',
+    });
+  });
+  it('includes all active branch members for a church-wide audience', async () => {
+    const f = fixture();
+    const result = await f.service.previewAudience(user(), {
+      groupId,
+      audienceMode: 'church',
+      audienceServiceUnitIds: [],
+      attendeeMemberIds: [],
+      attendeeUserIds: [],
+    });
+    expect(result.memberCount).toBe(2);
+    expect(f.members.find.mock.calls[0][0]).toEqual({
+      branchId: branch,
+      membershipStatus: 'active',
+    });
+  });
+  it('rejects cross-branch or inactive service groups', async () => {
+    const f = fixture();
+    f.units.countDocuments.mockResolvedValue(0);
+    await expect(
+      f.service.previewAudience(user(), {
+        groupId,
+        audienceMode: 'service_groups',
+        audienceServiceUnitIds: [id()],
+        attendeeMemberIds: [],
+        attendeeUserIds: [],
+      }),
+    ).rejects.toThrow('meeting branch');
+  });
+  it('requires a service group when that audience mode is selected', async () => {
+    const f = fixture();
+    await expect(
+      f.service.previewAudience(user(), {
+        groupId,
+        audienceMode: 'service_groups',
+        audienceServiceUnitIds: [],
+        attendeeMemberIds: [],
+        attendeeUserIds: [],
+      }),
+    ).rejects.toThrow('at least one');
+  });
+  it('prevents support users from previewing unconfigured general church meetings', async () => {
+    const f = fixture();
+    await expect(
+      f.service.previewAudience(user(), {
+        branchId: branch,
+        audienceMode: 'church',
+        audienceServiceUnitIds: [],
+        attendeeMemberIds: [],
+        attendeeUserIds: [],
+      }),
+    ).rejects.toThrow(ForbiddenException);
+  });
+});
+
+describe('General church meeting scheduling', () => {
+  it('allows branch leadership to schedule a church meeting without pre-configuring a group', async () => {
+    const f = fixture();
+    const result = await f.service.create(user(organizer, 'branch_admin'), {
+      branchId: branch,
+      title: 'Church planning',
+      startsAt: '2026-11-05T18:00:00Z',
+      endsAt: '2026-11-05T19:00:00Z',
+      attendeeUserIds: [],
+      sendInvitations: true,
+    });
+    expect(result).toMatchObject({
+      groupId,
+      branchId: branch,
+      minutesRequired: false,
+      invitationsRequested: true,
+      invitationsPrepared: false,
+    });
   });
 });

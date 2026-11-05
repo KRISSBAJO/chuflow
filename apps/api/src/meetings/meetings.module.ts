@@ -1,3 +1,6 @@
+import { MailModule } from '../mail/mail.module';
+import { MeetingInvitationsService } from './meeting-invitations.service';
+import { MeetingInvitation, MeetingInvitationSchema } from './meetings.schema';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -21,7 +24,9 @@ import { MeetingsService } from './meetings.service';
 @Module({
   imports: [
     AccessScopeModule,
+    MailModule,
     MongooseModule.forFeature([
+      { name: MeetingInvitation.name, schema: MeetingInvitationSchema },
       { name: Member.name, schema: MemberSchema },
       { name: Branch.name, schema: BranchSchema },
       { name: Meeting.name, schema: MeetingSchema },
@@ -32,7 +37,7 @@ import { MeetingsService } from './meetings.service';
     ]),
   ],
   controllers: [MeetingsController],
-  providers: [MeetingsService],
+  providers: [MeetingsService, MeetingInvitationsService],
   exports: [MeetingsService],
 })
 export class MeetingsModule {}

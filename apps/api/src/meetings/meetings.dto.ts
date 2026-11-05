@@ -40,12 +40,24 @@ export class GroupDto {
 }
 export class CreateMeetingDto {
   @IsOptional()
+  @IsIn(['individuals', 'service_groups', 'church'])
+  audienceMode?: 'individuals' | 'service_groups' | 'church';
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  audienceServiceUnitIds?: string[];
+  @IsOptional() @IsBoolean() sendInvitations?: boolean;
+
+  @IsOptional()
   @IsArray()
   @ArrayMaxSize(2000)
   @ArrayUnique()
   @IsMongoId({ each: true })
   attendeeMemberIds?: string[];
-  @IsMongoId() groupId!: string;
+  @IsOptional() @IsMongoId() branchId?: string;
+  @IsOptional() @IsMongoId() groupId?: string;
   @IsString() @MinLength(2) @MaxLength(200) title!: string;
   @IsOptional() @IsString() @MaxLength(10000) agenda?: string;
   @IsDateString() startsAt!: string;
@@ -69,6 +81,17 @@ export class ActionDto {
   @IsIn(['open', 'done']) status!: 'open' | 'done';
 }
 export class UpdateMeetingDto {
+  @IsOptional()
+  @IsIn(['individuals', 'service_groups', 'church'])
+  audienceMode?: 'individuals' | 'service_groups' | 'church';
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  audienceServiceUnitIds?: string[];
+  @IsOptional() @IsBoolean() sendInvitations?: boolean;
+
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(2000)
@@ -161,4 +184,29 @@ export class MeetingParticipantsDto {
 
 export class MeetingRevisionDto {
   @IsInt() @Min(0) expectedRevision!: number;
+}
+
+export class MeetingAudienceDto {
+  @IsOptional() @IsMongoId() branchId?: string;
+  @IsOptional() @IsMongoId() groupId?: string;
+  @IsOptional() @IsMongoId() meetingId?: string;
+  @IsIn(['individuals', 'service_groups', 'church']) audienceMode!:
+    | 'individuals'
+    | 'service_groups'
+    | 'church';
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  audienceServiceUnitIds!: string[];
+  @IsArray()
+  @ArrayMaxSize(2000)
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  attendeeMemberIds!: string[];
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  attendeeUserIds!: string[];
 }

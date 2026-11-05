@@ -23,6 +23,7 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { MeetingsService } from './meetings.service';
 import {
   MeetingListDto,
+  MeetingAudienceDto,
   MeetingRevisionDto,
   MeetingParticipantsDto,
   CreateMeetingDto,
@@ -36,6 +37,18 @@ export class MeetingsController {
   @Get('participants')
   participants(@CurrentUser() u: AuthUser, @Query() q: MeetingParticipantsDto) {
     return this.service.participants(u, q.branchId, q.q, q.page);
+  }
+  @Post('audience-preview') previewAudience(
+    @CurrentUser() u: AuthUser,
+    @Body() dto: MeetingAudienceDto,
+  ) {
+    return this.service.previewAudience(u, dto);
+  }
+  @Post(':id/invitations/retry') retryInvitations(
+    @CurrentUser() u: AuthUser,
+    @Param('id') id: string,
+  ) {
+    return this.service.retryInvitations(u, id);
   }
   @Get('options') options(@CurrentUser() u: AuthUser) {
     return this.service.options(u);

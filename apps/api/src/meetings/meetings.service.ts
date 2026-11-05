@@ -1,3 +1,5 @@
+import { MeetingInvitationsService } from './meeting-invitations.service';
+import { serviceAudienceFilter } from './meeting-recipients';
 import {
   BadRequestException,
   ConflictException,
@@ -27,6 +29,7 @@ import {
 } from './meetings.schema';
 import {
   MeetingListDto,
+  MeetingAudienceDto,
   CreateMeetingDto,
   GroupDto,
   UpdateMeetingDto,
@@ -110,6 +113,7 @@ export class MeetingsService {
     private readonly units: Model<ServiceUnitDocument>,
     @InjectModel(Branch.name) private readonly branches: Model<BranchDocument>,
     private readonly scope: AccessScopeService,
+    private readonly invitations: MeetingInvitationsService,
   ) {}
   private id(id: string) {
     if (!Types.ObjectId.isValid(id))
@@ -177,14 +181,18 @@ export class MeetingsService {
     this.id(branchId);
     await this.scope.ensureBranchAccess(u, branchId);
     const search = q.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const terms = search.split(/\s+/).filter(Boolean).slice(0, 8);
     const filter = {
       branchId,
-      ...(search
+      ...(terms.length
         ? {
-            $or: [
-              { firstName: { $regex: search, $options: 'i' } },
-              { lastName: { $regex: search, $options: 'i' } },
-            ],
+            $and: terms.map((term) => ({
+              $or: [
+                { firstName: { $regex: term, $options: 'i' } },
+                { lastName: { $regex: term, $options: 'i' } },
+                { email: { $regex: term, $options: 'i' } },
+              ],
+            })),
           }
         : {}),
     };
@@ -192,7 +200,7 @@ export class MeetingsService {
     const [items, total] = await Promise.all([
       this.members
         .find(filter)
-        .select('_id firstName lastName')
+        .select('_id firstName lastName email')
         .sort({ firstName: 1, _id: 1 })
         .skip(skip)
         .limit(50)
@@ -200,6 +208,74 @@ export class MeetingsService {
       this.members.countDocuments(filter),
     ]);
     return { items, total };
+  }
+  private async resolveAudience(
+    branchId: string,
+    mode: string,
+    groupIds: string[],
+    extraIds: string[],
+  ) {
+    await this.validateMembers(extraIds, branchId);
+    let query: Record<string, unknown> | undefined;
+    if (mode === 'service_groups') {
+      if (!groupIds.length)
+        throw new BadRequestException('Select at least one service group.');
+      if (
+        (await this.units.countDocuments({
+          _id: { $in: groupIds },
+          branchId,
+          isActive: true,
+        })) !== new Set(groupIds).size
+      )
+        throw new BadRequestException(
+          'Choose active service groups from the meeting branch.',
+        );
+      query = {
+        ...serviceAudienceFilter(branchId, groupIds),
+        membershipStatus: 'active',
+      };
+    } else if (mode === 'church')
+      query = { branchId, membershipStatus: 'active' };
+    const rows = query
+      ? await this.members.find(query).select('_id').limit(10001).lean()
+      : [];
+    const ids = [...new Set([...rows.map((m) => String(m._id)), ...extraIds])];
+    if (ids.length > 10000)
+      throw new BadRequestException(
+        'Choose a smaller audience: at most 10,000 members per meeting.',
+      );
+    return ids;
+  }
+  async previewAudience(u: AuthUser, dto: MeetingAudienceDto) {
+    const context = dto.meetingId ? await this.context(u, dto.meetingId) : null;
+    const g = dto.groupId ? await this.group(u, dto.groupId) : null;
+    if (context && String(context.m.groupId) !== dto.groupId)
+      throw new BadRequestException('Meeting group does not match.');
+    if (g ? !this.canWrite(u, g, context?.m) : !meetingAdmin(u))
+      throw new ForbiddenException('You cannot select this meeting audience.');
+    const branchId = g
+      ? String(g.branchId)
+      : await this.scope.resolveScopedBranchId(u, dto.branchId);
+    if (!branchId) throw new BadRequestException('Select a church / branch.');
+    await this.scope.ensureBranchAccess(u, branchId);
+    await this.validateUsers(dto.attendeeUserIds, branchId, u);
+    const ids = await this.resolveAudience(
+      branchId,
+      dto.audienceMode,
+      dto.audienceServiceUnitIds,
+      dto.attendeeMemberIds,
+    );
+    const delivery = await this.invitations.recipients({
+      branchId: new Types.ObjectId(branchId),
+      attendeeMemberIds: ids,
+      attendeeUserIds: dto.attendeeUserIds,
+    });
+    return {
+      memberCount: ids.length,
+      staffCount: dto.attendeeUserIds.length,
+      uniqueEmails: delivery.recipients.length,
+      missingEmail: delivery.missingEmail,
+    };
   }
   async groups(u: AuthUser) {
     return this.groupModel
@@ -295,8 +371,45 @@ export class MeetingsService {
       throw new ConflictException('This group changed. Reload before saving.');
     return result;
   }
+  private async generalGroup(u: AuthUser, branchRef?: string) {
+    if (!meetingAdmin(u))
+      throw new ForbiddenException(
+        'Only leadership can schedule general church meetings.',
+      );
+    const branchId = await this.scope.resolveScopedBranchId(u, branchRef);
+    if (!branchId) throw new BadRequestException('Select a church / branch.');
+    await this.scope.ensureBranchAccess(u, branchId);
+    const filter = { branchId, isGeneral: true };
+    const data = {
+      ...filter,
+      name: 'Church meetings',
+      enabled: true,
+      minutesRequired: false,
+      minutesDueHours: 72,
+      submitterUserIds: [],
+      reviewerUserIds: [],
+      revision: 0,
+    };
+    try {
+      const g = await this.groupModel.findOneAndUpdate(
+        filter,
+        { $setOnInsert: data },
+        { upsert: true, new: true },
+      );
+      if (g) return g.toObject();
+    } catch (e) {
+      if ((e as { code?: number }).code !== 11000) throw e;
+      const existing = await this.groupModel.findOne(filter).lean();
+      if (existing) return existing;
+    }
+    throw new BadRequestException(
+      'Could not set up church meetings. Please retry.',
+    );
+  }
   async create(u: AuthUser, dto: CreateMeetingDto) {
-    const g = await this.group(u, dto.groupId);
+    const g = dto.groupId
+      ? await this.group(u, dto.groupId)
+      : await this.generalGroup(u, dto.branchId);
     if (!g.enabled)
       throw new BadRequestException('This meeting group is disabled.');
     if (!this.canWrite(u, g))
@@ -305,12 +418,26 @@ export class MeetingsService {
       );
     const times = validateMeetingTimes(dto.startsAt, dto.endsAt);
     await this.validateUsers(dto.attendeeUserIds, String(g.branchId), u);
-    await this.validateMembers(dto.attendeeMemberIds || [], String(g.branchId));
+    const mode = dto.audienceMode || 'individuals';
+    const attendeeMemberIds = await this.resolveAudience(
+      String(g.branchId),
+      mode,
+      dto.audienceServiceUnitIds || [],
+      dto.attendeeMemberIds || [],
+    );
     if (dto.title.trim().length < 2)
       throw new BadRequestException('Meeting title is required.');
     return this.meetings.create({
       ...dto,
       ...times,
+      groupId: g._id,
+      attendeeMemberIds,
+      additionalMemberIds: dto.attendeeMemberIds || [],
+      audienceMode: mode,
+      audienceServiceUnitIds:
+        mode === 'service_groups' ? dto.audienceServiceUnitIds || [] : [],
+      invitationsRequested: dto.sendInvitations ?? true,
+      invitationsPrepared: false,
       title: dto.title.trim(),
       branchId: g.branchId,
       organizerUserId: u.sub,
@@ -449,8 +576,12 @@ export class MeetingsService {
         .select('_id firstName lastName')
         .lean(),
     ]);
+    const invitationSummary = this.canWrite(u, g, m)
+      ? await this.invitations.summary(m)
+      : undefined;
     return {
       ...m,
+      invitationSummary,
       attendeeMembers,
       attendeeUsers,
       group: g,
@@ -517,13 +648,34 @@ export class MeetingsService {
           dto.attendeeUserIds!.includes(x),
         );
       }
-      if (dto.attendeeMemberIds) {
-        await this.validateMembers(dto.attendeeMemberIds, String(m.branchId));
-        data.attendeeMemberIds = dto.attendeeMemberIds;
-        data.presentMemberIds = (m.presentMemberIds || []).filter((x) =>
-          dto.attendeeMemberIds!.includes(x),
+      if (
+        dto.attendeeMemberIds !== undefined ||
+        dto.audienceMode !== undefined ||
+        dto.audienceServiceUnitIds !== undefined
+      ) {
+        const mode = dto.audienceMode || m.audienceMode || 'individuals';
+        const extras =
+          dto.attendeeMemberIds ?? m.additionalMemberIds ?? m.attendeeMemberIds;
+        const ids = await this.resolveAudience(
+          String(m.branchId),
+          mode,
+          dto.audienceServiceUnitIds ?? m.audienceServiceUnitIds ?? [],
+          extras,
+        );
+        data.attendeeMemberIds = ids;
+        data.additionalMemberIds = extras;
+        data.audienceMode = mode;
+        data.audienceServiceUnitIds =
+          mode === 'service_groups'
+            ? (dto.audienceServiceUnitIds ?? m.audienceServiceUnitIds ?? [])
+            : [];
+        data.presentMemberIds = (m.presentMemberIds || []).filter((id) =>
+          ids.includes(id),
         );
       }
+      if (dto.sendInvitations !== undefined)
+        data.invitationsRequested = dto.sendInvitations;
+      data.invitationsPrepared = false;
     } else if (op === 'attendance') {
       if (
         !dto.presentUserIds ||
@@ -754,6 +906,17 @@ export class MeetingsService {
         count: item.count,
         href: item.href,
       }));
+  }
+  async retryInvitations(u: AuthUser, id: string) {
+    const { m, g } = await this.context(u, id);
+    if (!this.canWrite(u, g, m))
+      throw new ForbiddenException('You cannot send meeting invitations.');
+    if (!m.invitationsRequested || m.status === 'cancelled')
+      throw new BadRequestException(
+        'Enable invitations on an active meeting first.',
+      );
+    await this.invitations.retryFailed(id);
+    return this.details(u, id);
   }
   async removeFile(
     u: AuthUser,

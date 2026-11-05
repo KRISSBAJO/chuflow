@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { apiPatch, API_URL } from "@/lib/api";
+import { apiGet, apiPost, apiPatch, API_URL } from "@/lib/api";
 import { Button, Card, CardHeader, buttonClass } from "@/components/ui/ui";
 import {
   meetingName,
@@ -45,6 +45,30 @@ export function MeetingDetails({
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function refreshInvitations(retry = false) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const updated = retry
+        ? await apiPost<Meeting>(
+            `/meetings/${meeting._id}/invitations/retry`,
+            {},
+          )
+        : await apiGet<Meeting>(`/meetings/${meeting._id}`);
+      setMeeting(updated);
+      if (retry)
+        setNotice(
+          "Failed invitations queued for retry. Already-sent invitations will not be resent.",
+        );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not refresh invitations",
+      );
     } finally {
       setBusy(false);
     }
@@ -256,6 +280,70 @@ export function MeetingDetails({
           </div>
         )}
       </Card>
+      {meeting.canManage && meeting.invitationSummary && (
+        <Card className="p-6 space-y-3">
+          <CardHeader
+            title="Email invitations"
+            description="Each unique email address receives one invitation per meeting, including people in several selected groups."
+          />
+          {meeting.invitationSummary.requested ? (
+            <>
+              <p>
+                {meeting.invitationSummary.uniqueEmails} unique email addresses
+                · {meeting.invitationSummary.counts.sent || 0} accepted by the
+                email provider · {meeting.invitationSummary.counts.queued || 0}{" "}
+                queued · {meeting.invitationSummary.counts.sending || 0} sending
+              </p>
+              {!meeting.invitationSummary.prepared && (
+                <p className="text-sm">
+                  Preparing invitations. Refresh shortly to see progress.
+                </p>
+              )}
+              {meeting.invitationSummary.missingEmail > 0 && (
+                <p className="text-amber-800">
+                  {meeting.invitationSummary.missingEmail} selected records have
+                  no valid email address.
+                </p>
+              )}
+              {(meeting.invitationSummary.counts.failed || 0) > 0 && (
+                <p className="text-red-700">
+                  {meeting.invitationSummary.counts.failed} invitations were not
+                  sent because email delivery is not configured. Configure the
+                  mail provider, then retry.
+                </p>
+              )}
+              {(meeting.invitationSummary.counts.uncertain || 0) > 0 && (
+                <p className="text-amber-800">
+                  {meeting.invitationSummary.counts.uncertain} attempts could
+                  not be confirmed. Check the mail provider before sending
+                  again; they are not automatically retried to avoid duplicate
+                  emails.
+                </p>
+              )}
+            </>
+          ) : (
+            <p>Email invitations are off. Edit the meeting to enable them.</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => void refreshInvitations()}
+            >
+              Refresh invitation status
+            </Button>
+            {meeting.invitationSummary.requested &&
+              (meeting.invitationSummary.counts.failed || 0) > 0 && (
+                <Button
+                  disabled={busy}
+                  onClick={() => void refreshInvitations(true)}
+                >
+                  Retry unsent invitations
+                </Button>
+              )}
+          </div>
+        </Card>
+      )}
       <Card className="p-6 space-y-4">
         <CardHeader
           title="Meeting attendance"
