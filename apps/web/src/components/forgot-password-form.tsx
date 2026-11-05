@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AuthHeading, Field, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 
 export function ForgotPasswordForm() {
+  const t = useTranslations("auth.forgot");
+  const ta = useTranslations("auth");
+  const tc = useTranslations("common");
   const [status, setStatus] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [resetUrl, setResetUrl] = useState<string | null>(null);
@@ -26,18 +30,14 @@ export function ForgotPasswordForm() {
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to start password reset");
+        throw new Error(result.message || t("failed"));
       }
 
-      setStatus(
-        result.delivery === "email"
-          ? "Reset email sent. Check your inbox."
-          : result.message,
-      );
+      setStatus(result.delivery === "email" ? t("emailSent") : result.message);
       setResetUrl(result.resetUrl ?? null);
     } catch (error) {
       setFailed(true);
-      setStatus(error instanceof Error ? error.message : "Unable to start password reset");
+      setStatus(error instanceof Error ? error.message : t("failed"));
     } finally {
       setLoading(false);
     }
@@ -45,18 +45,15 @@ export function ForgotPasswordForm() {
 
   return (
     <div>
-      <AuthHeading
-        title="Reset your password"
-        body="Enter the email on your account and we'll send you a link to choose a new password."
-      />
+      <AuthHeading title={t("title")} body={t("body")} />
 
       <form action={handleSubmit} className="space-y-5">
-        <Field label="Email">
-          <input name="email" type="email" placeholder="you@church.org" autoComplete="email" className="lp-input" required />
+        <Field label={tc("email")}>
+          <input name="email" type="email" placeholder={tc("emailPlaceholder")} autoComplete="email" className="lp-input" required />
         </Field>
         <div className="pt-2">
-          <SubmitButton loading={loading} loadingLabel="Sending link...">
-            Send reset link
+          <SubmitButton loading={loading} loadingLabel={t("sending")}>
+            {t("submit")}
           </SubmitButton>
         </div>
       </form>
@@ -69,17 +66,17 @@ export function ForgotPasswordForm() {
 
       {resetUrl ? (
         <div className="mt-3 rounded-2xl bg-[var(--lp-panel)] px-4 py-4 text-[14px]">
-          <p className="text-[var(--lp-muted)]">Email delivery isn&apos;t set up yet, so here is your link directly.</p>
+          <p className="text-[var(--lp-muted)]">{t("previewNote")}</p>
           <a href={resetUrl} className="mt-2 inline-flex font-medium text-[var(--lp-ink)] underline underline-offset-4">
-            Open reset page
+            {t("openResetPage")}
           </a>
         </div>
       ) : null}
 
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
-        Remembered it?{" "}
+        {ta("rememberedIt")}{" "}
         <Link href="/login" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
-          Back to sign in
+          {t("backToSignIn")}
         </Link>
       </p>
     </div>

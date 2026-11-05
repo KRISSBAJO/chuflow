@@ -1,14 +1,17 @@
+import { getTranslations } from "next-intl/server";
 import { StatusShell } from "@/components/auth/auth-shell";
 
-export default function UnauthorizedPage() {
+export default async function UnauthorizedPage() {
+  const t = await getTranslations("status.unauthorized");
+
   return (
     <StatusShell
-      label="Access restricted"
-      title="This area isn't part of your role."
-      body="You're signed in, but this page is outside the permissions assigned to your account. Ask an administrator if you need access."
+      label={t("label")}
+      title={t("title")}
+      body={t("body")}
       actions={[
-        { label: "Open my workspace", href: "/dashboard", primary: true },
-        { label: "Switch account", href: "/login?reason=switch-account" },
+        { label: t("openWorkspace"), href: "/dashboard", primary: true },
+        { label: t("switchAccount"), href: "/login?reason=switch-account" },
       ]}
     />
   );

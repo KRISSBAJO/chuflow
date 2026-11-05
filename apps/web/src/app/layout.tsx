@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Manrope } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import { Toaster } from "sonner";
 import { landingFont } from "@/components/landing/landing-font";
 import { PwaRoot } from "@/components/pwa/pwa-root";
@@ -33,19 +35,23 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${headingFont.variable} ${bodyFont.variable} ${landingFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
-        <PwaRoot />
+        <NextIntlClientProvider>
+          {children}
+          <PwaRoot />
+        </NextIntlClientProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>

@@ -1,0 +1,281 @@
+{
+  "locale": {
+    "label": "Idioma",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "pt": "Português"
+  },
+  "common": {
+    "signIn": "Entrar",
+    "backToHome": "Voltar ao início",
+    "requestWorkspace": "Solicitar um espaço",
+    "openDashboard": "Abrir o painel",
+    "myAccount": "A minha conta",
+    "openWorkspace": "Abrir o espaço",
+    "copyright": "© {year} ChuFlow",
+    "email": "E-mail",
+    "emailPlaceholder": "voce@igreja.org"
+  },
+  "nav": {
+    "howItFlows": "Como funciona",
+    "features": "Funcionalidades",
+    "structure": "Estrutura",
+    "getStarted": "Começar",
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu"
+  },
+  "hero": {
+    "badgeNew": "Novo",
+    "badgeText": "Os relatórios semanais e MAAG chegaram",
+    "title": "Cada membro, cada ministério, num só <accent>fluxo.</accent>",
+    "subtitle": "O ChuFlow é a plataforma de gestão de igrejas para visitantes, acompanhamento, membros, presença e finanças, criada para filiais, distritos e equipas nacionais.",
+    "signInToChurch": "Entrar na sua igreja",
+    "tiles": {
+      "sanctuary": "Santuário",
+      "community": "Comunidade",
+      "worship": "Adoração",
+      "fellowship": "Comunhão",
+      "family": "Família"
+    }
+  },
+  "statement": {
+    "text": "Ajudamos as igrejas a <p1></p1> receber cada visitante, <p2></p2> cuidar de cada membro e <p3></p3> administrar cada oferta, <muted>de uma filial a toda uma nação.</muted>",
+    "alt1": "Membros da igreja a rir juntos",
+    "alt2": "Mulheres a ler a Bíblia juntas",
+    "alt3": "Um homem a ler a sua Bíblia"
+  },
+  "flow": {
+    "label": "Como funciona",
+    "title": "Da primeira visita ao serviço fiel.",
+    "subtitle": "Um percurso contínuo para cada pessoa, para que as suas equipas saibam sempre qual é o próximo passo.",
+    "step": "Passo {number}",
+    "steps": {
+      "welcome": {
+        "title": "Acolher",
+        "body": "Os visitantes registam-se na mesa de boas-vindas ou com um código QR em menos de um minuto.",
+        "tag": "Registo de visitantes"
+      },
+      "followUp": {
+        "title": "Acompanhar",
+        "body": "Um responsável pelo cuidado é designado com um próximo passo claro, para que ninguém fique esquecido.",
+        "tag": "Fluxo de cuidado"
+      },
+      "belong": {
+        "title": "Pertencer",
+        "body": "Quando estão prontos, os visitantes tornam-se membros e mantêm todo o seu historial.",
+        "tag": "Membros"
+      },
+      "grow": {
+        "title": "Crescer",
+        "body": "Presença, unidades de serviço e relatórios mostram cada vida a avançar.",
+        "tag": "Ministério"
+      }
+    }
+  },
+  "features": {
+    "label": "Funcionalidades",
+    "title": "Tudo o que faz a sua igreja funcionar.",
+    "subtitle": "Seis fluxos de ministério que viviam em cadernos, folhas de cálculo e grupos de conversa, agora num só lugar.",
+    "guests": {
+      "label": "Visitantes e acompanhamento",
+      "title": "Um cuidado de visitantes que nunca esquece um nome.",
+      "point1": "Registo por código QR e na mesa de boas-vindas",
+      "point2": "Atribuição automática de cuidado",
+      "point3": "Chamadas, visitas e pedidos de oração registados",
+      "photoAlt": "Membros da igreja vestidos para o culto de domingo"
+    },
+    "attendance": {
+      "label": "Presença",
+      "title": "Cada culto, contado com clareza.",
+      "caption": "Adultos, crianças, visitantes novos e convertidos, por culto."
+    },
+    "members": {
+      "label": "Membros",
+      "title": "Um só registo para cada pessoa.",
+      "body": "Perfis, filiais, unidades de serviço e historial, guardados num lugar partilhado em vez de folhas dispersas."
+    },
+    "finance": {
+      "label": "Finanças",
+      "title": "Uma mordomia pela qual pode responder.",
+      "offerings": "Ofertas",
+      "recorded": "Registadas",
+      "expenses": "Despesas",
+      "approved": "Aprovadas",
+      "period": "Período",
+      "locked": "Fechado"
+    },
+    "reports": {
+      "label": "Relatórios",
+      "title": "Relatórios que se consolidam sozinhos.",
+      "weekly": "Semanal",
+      "monthly": "Mensal",
+      "maag": "MAAG",
+      "spiritualIndices": "Índices espirituais",
+      "branchToNational": "Da filial ao nacional"
+    }
+  },
+  "structure": {
+    "label": "Feito para a estrutura da igreja",
+    "title": "A vista certa para cada nível.",
+    "body": "O acesso segue a estrutura da sua igreja. Cada pessoa vê o que o seu papel precisa, e cada ação fica num registo de auditoria.",
+    "levels": {
+      "national": {
+        "name": "Nacional",
+        "body": "Veja toda a rede de uma vez: relatórios, aprovações, definições e a saúde de cada distrito.",
+        "role1": "Administrador nacional",
+        "role2": "Pastor nacional"
+      },
+      "district": {
+        "name": "Distrito",
+        "body": "Coordene uma região, compare filiais e intervenha onde uma filial precisa de apoio.",
+        "role1": "Administrador de distrito",
+        "role2": "Pastor de distrito"
+      },
+      "branch": {
+        "name": "Filial",
+        "body": "Gira o dia a dia: visitantes, membros, cultos, ofertas e as equipas que servem.",
+        "role1": "Administrador de filial",
+        "role2": "Pastor residente",
+        "role3": "Pastor associado"
+      },
+      "units": {
+        "name": "Unidades",
+        "body": "Dê aos responsáveis pelo acompanhamento e aos recepcionistas ferramentas focadas exatamente no trabalho que fazem.",
+        "role1": "Acompanhamento",
+        "role2": "Recepcionista"
+      }
+    }
+  },
+  "cta": {
+    "title": "Pronto quando a sua igreja estiver.",
+    "body": "Solicite um espaço para a sua equipa, ou entre se a sua igreja já usa o ChuFlow."
+  },
+  "footer": {
+    "connect": "Ligue-se a nós",
+    "requestWorkspace": "Solicitar espaço",
+    "tagline": "A vida da igreja, em fluxo."
+  },
+  "auth": {
+    "newToChuFlow": "Novo no ChuFlow?",
+    "alreadyHaveWorkspace": "Já tem um espaço?",
+    "rememberedIt": "Lembrou-se?",
+    "knowYourPassword": "Sabe a sua palavra-passe?",
+    "password": "Palavra-passe",
+    "showPassword": "Mostrar palavra-passe",
+    "hidePassword": "Ocultar palavra-passe",
+    "apiUnavailable": "A API do ChuFlow está temporariamente indisponível. Tente novamente dentro de instantes.",
+    "sessionExpired": "A sua sessão terminou. Entre novamente.",
+    "login": {
+      "asideTitle": "Cada membro, cada ministério, num só fluxo.",
+      "asideBody": "Continue de onde a sua equipa parou: visitantes, cuidado, presença e finanças num só lugar.",
+      "asideAlt": "Um pai a levantar o filho enquanto a congregação adora",
+      "title": "Bem-vindo de volta",
+      "body": "Entre no espaço ChuFlow da sua igreja.",
+      "passwordPlaceholder": "A sua palavra-passe",
+      "forgotPassword": "Esqueceu a palavra-passe?",
+      "signingIn": "A entrar...",
+      "failed": "Não foi possível entrar",
+      "success": "Sessão iniciada. A redirecionar..."
+    },
+    "forgot": {
+      "asideTitle": "Estará de volta num instante.",
+      "asideBody": "As ligações de redefinição são enviadas para o e-mail da sua conta e expiram em pouco tempo.",
+      "asideAlt": "Uma mãe e o filho sentados juntos nos bancos da igreja",
+      "title": "Redefinir a sua palavra-passe",
+      "body": "Introduza o e-mail da sua conta e enviaremos uma ligação para escolher uma nova palavra-passe.",
+      "sending": "A enviar ligação...",
+      "submit": "Enviar ligação",
+      "failed": "Não foi possível iniciar a redefinição da palavra-passe",
+      "emailSent": "E-mail de redefinição enviado. Verifique a sua caixa de entrada.",
+      "previewNote": "O envio de e-mails ainda não está configurado, por isso aqui está a sua ligação diretamente.",
+      "openResetPage": "Abrir a página de redefinição",
+      "backToSignIn": "Voltar ao início de sessão"
+    },
+    "reset": {
+      "asideTitle": "Um novo começo para a sua conta.",
+      "asideBody": "Escolha uma nova palavra-passe e voltará logo ao trabalho do ministério.",
+      "asideAlt": "Uma mãe e o filho sentados juntos nos bancos da igreja",
+      "title": "Escolher uma nova palavra-passe",
+      "body": "Escolha uma que nunca tenha usado nesta conta.",
+      "missingToken": "Esta ligação de redefinição está incompleta. Peça uma nova ligação para continuar.",
+      "invalidLink": "Esta ligação de redefinição é inválida ou expirou.",
+      "verifyFailed": "Não conseguimos verificar esta ligação de redefinição. Tente novamente.",
+      "checking": "A verificar a sua ligação...",
+      "verified": "Ligação de redefinição verificada.",
+      "verifiedExpires": "Ligação de redefinição verificada. Expira em {expiresAt}.",
+      "mismatch": "As duas palavras-passe não coincidem.",
+      "failed": "Não foi possível redefinir a palavra-passe",
+      "newPassword": "Nova palavra-passe",
+      "confirmPassword": "Confirmar a nova palavra-passe",
+      "repeatPlaceholder": "Repita a nova palavra-passe",
+      "saving": "A guardar...",
+      "submit": "Redefinir palavra-passe",
+      "doneTitle": "Está tudo pronto",
+      "doneBody": "A sua palavra-passe foi redefinida. Entre com a nova palavra-passe.",
+      "goToSignIn": "Ir para o início de sessão",
+      "linkExpired": "Ligação expirada?",
+      "requestNew": "Pedir uma nova"
+    },
+    "request": {
+      "asideTitle": "Traga toda a sua igreja para um só fluxo.",
+      "asideBody": "Visitantes, membros, cuidado, presença, finanças e relatórios, configurados para as suas filiais, distritos e equipas nacionais.",
+      "asideAlt": "Jovens membros da igreja a rir juntos com as suas Bíblias",
+      "point1": "Registo de visitantes",
+      "point2": "Cuidado de acompanhamento",
+      "point3": "Membros",
+      "point4": "Presença",
+      "point5": "Finanças",
+      "point6": "Relatórios",
+      "title": "Solicitar um espaço",
+      "body": "Fale-nos da sua igreja e configuraremos o seu espaço, a estrutura e as primeiras contas.",
+      "yourChurch": "A sua igreja",
+      "organizationName": "Nome da igreja ou organização",
+      "organizationPlaceholder": "Igreja Comunidade da Graça",
+      "city": "Cidade",
+      "cityPlaceholder": "Luanda",
+      "state": "Estado ou província",
+      "selectState": "Selecionar estado",
+      "branchCount": "Quantas filiais?",
+      "branchCountHint": "Uma estimativa é suficiente. Pode acrescentar mais depois.",
+      "branchCountPlaceholder": "ex.: 5",
+      "mainContact": "Contacto principal",
+      "fullName": "Nome completo",
+      "fullNamePlaceholder": "Pastor João Silva",
+      "emailPlaceholder": "pastor@igreja.org",
+      "phone": "Telefone",
+      "notes": "Algo que devamos saber?",
+      "notesPlaceholder": "A estrutura da sua igreja, necessidades especiais, prazos...",
+      "sending": "A enviar pedido...",
+      "submit": "Enviar pedido",
+      "reviewNote": "Vamos analisar o seu pedido e responder por e-mail.",
+      "failed": "Não foi possível enviar o pedido de espaço",
+      "received": "Pedido recebido. A equipa de administração vai analisá-lo e entrar em contacto.",
+      "receivedTitle": "Pedido recebido",
+      "backToSignIn": "Voltar ao início de sessão"
+    }
+  },
+  "status": {
+    "notFound": {
+      "label": "Erro 404",
+      "title": "Não encontrámos essa página.",
+      "body": "A ligação pode estar mal escrita ou desatualizada, ou pertencer a uma filial, distrito ou formulário que mudou de nome."
+    },
+    "unauthorized": {
+      "label": "Acesso restrito",
+      "title": "Esta área não faz parte do seu papel.",
+      "body": "Tem sessão iniciada, mas esta página está fora das permissões atribuídas à sua conta. Peça acesso a um administrador se precisar.",
+      "openWorkspace": "Abrir o meu espaço",
+      "switchAccount": "Mudar de conta"
+    },
+    "connect": {
+      "label": "Ligue-se",
+      "pausedTitle": "O registo de visitantes está em pausa.",
+      "pausedBody": "{organization} não está a aceitar registos de visitantes online neste momento. Fale com alguém da equipa de boas-vindas.",
+      "offlineTitle": "Voltamos já.",
+      "offlineBody": "O registo de visitantes está temporariamente indisponível. Tente novamente dentro de alguns minutos.",
+      "emptyTitle": "O registo de visitantes ainda não está aberto.",
+      "emptyBody": "Não há um formulário de visitantes ativo neste momento. Se gere esta igreja, ative um modelo de registo de visitantes no ChuFlow."
+    }
+  }
+}

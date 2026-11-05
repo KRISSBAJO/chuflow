@@ -1,14 +1,17 @@
+import { getTranslations } from "next-intl/server";
 import { StatusShell } from "@/components/auth/auth-shell";
 
-export default function NotFoundPage() {
+export default async function NotFoundPage() {
+  const [t, tc] = await Promise.all([getTranslations("status.notFound"), getTranslations("common")]);
+
   return (
     <StatusShell
-      label="Error 404"
-      title="We couldn't find that page."
-      body="The link may be mistyped or out of date, or it may belong to a branch, district or form that has been renamed."
+      label={t("label")}
+      title={t("title")}
+      body={t("body")}
       actions={[
-        { label: "Open dashboard", href: "/dashboard", primary: true },
-        { label: "Back to home", href: "/" },
+        { label: tc("openDashboard"), href: "/dashboard", primary: true },
+        { label: tc("backToHome"), href: "/" },
       ]}
     />
   );

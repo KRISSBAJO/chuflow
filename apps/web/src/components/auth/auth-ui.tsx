@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, type InputHTMLAttributes, type ReactNode } from "react";
 
 export function AuthHeading({ title, body }: { title: string; body?: ReactNode }) {
@@ -35,6 +36,7 @@ export function Field({
 }
 
 export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className">) {
+  const t = useTranslations("auth");
   const [visible, setVisible] = useState(false);
 
   return (
@@ -43,7 +45,7 @@ export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>,
       <button
         type="button"
         onClick={() => setVisible((value) => !value)}
-        aria-label={visible ? "Hide password" : "Show password"}
+        aria-label={visible ? t("hidePassword") : t("showPassword")}
         className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[var(--lp-muted)] transition-colors hover:text-[var(--lp-ink)]"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-[18px] w-[18px]">

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { StatusShell } from "@/components/auth/auth-shell";
 import { PublicConnectChooser } from "@/components/public-connect-chooser";
 import { publicServerGet } from "@/lib/server-api";
@@ -56,36 +57,32 @@ export default async function ConnectPage() {
     return <PublicConnectChooser options={state.templates} />;
   }
 
+  const [t, tc] = await Promise.all([getTranslations("status.connect"), getTranslations("common")]);
+  const backHome = { label: tc("backToHome"), href: "/", primary: true };
+
   if (state.kind === "disabled") {
     return (
       <StatusShell
-        label="Connect"
-        title="Guest registration is paused."
-        body={`${state.organizationName} isn't accepting guest registrations online right now. Please speak to a member of the welcome team.`}
-        actions={[{ label: "Back to home", href: "/", primary: true }]}
+        label={t("label")}
+        title={t("pausedTitle")}
+        body={t("pausedBody", { organization: state.organizationName })}
+        actions={[backHome]}
       />
     );
   }
 
   if (state.kind === "offline") {
-    return (
-      <StatusShell
-        label="Connect"
-        title="We'll be right back."
-        body="Guest registration is temporarily unavailable. Please try again in a few minutes."
-        actions={[{ label: "Back to home", href: "/", primary: true }]}
-      />
-    );
+    return <StatusShell label={t("label")} title={t("offlineTitle")} body={t("offlineBody")} actions={[backHome]} />;
   }
 
   return (
     <StatusShell
-      label="Connect"
-      title="Guest registration isn't open yet."
-      body="There is no active guest form at the moment. If you manage this church, activate a guest intake template in ChuFlow."
+      label={t("label")}
+      title={t("emptyTitle")}
+      body={t("emptyBody")}
       actions={[
-        { label: "Sign in", href: "/login", primary: true },
-        { label: "Back to home", href: "/" },
+        { label: tc("signIn"), href: "/login", primary: true },
+        { label: tc("backToHome"), href: "/" },
       ]}
     />
   );

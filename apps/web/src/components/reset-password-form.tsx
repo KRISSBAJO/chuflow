@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Alert, AuthHeading, Field, PasswordInput, Spinner, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 
-function formatExpiry(value: unknown) {
+function formatExpiry(value: unknown, locale: string) {
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function ResetPasswordForm() {
+  const t = useTranslations("auth.reset");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [status, setStatus] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export function ResetPasswordForm() {
 
     async function verifyToken() {
       if (!token) {
-        setStatus("This reset link is missing its token. Request a new link to continue.");
+        setStatus(t("missingToken"));
         setChecking(false);
         return;
       }
@@ -43,15 +46,15 @@ export function ResetPasswordForm() {
         }
 
         if (!response.ok || result.valid === false) {
-          setStatus(result.message || "This reset link is invalid or has expired.");
+          setStatus(result.message || t("invalidLink"));
           setValid(false);
         } else {
           setValid(true);
-          setExpiresAt(formatExpiry(result.expiresAt));
+          setExpiresAt(formatExpiry(result.expiresAt, locale));
         }
       } catch {
         if (mounted) {
-          setStatus("We couldn't verify this reset link. Please try again.");
+          setStatus(t("verifyFailed"));
           setValid(false);
         }
       } finally {
@@ -66,7 +69,7 @@ export function ResetPasswordForm() {
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, [token, locale, t]);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -76,7 +79,7 @@ export function ResetPasswordForm() {
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
     if (newPassword !== confirmPassword) {
-      setStatus("The two passwords don't match.");
+      setStatus(t("mismatch"));
       setLoading(false);
       return;
     }
@@ -90,13 +93,13 @@ export function ResetPasswordForm() {
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to reset password");
+        throw new Error(result.message || t("failed"));
       }
 
       setSucceeded(true);
-      setStatus("Your password has been reset. You can now sign in.");
+      setStatus(null);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to reset password");
+      setStatus(error instanceof Error ? error.message : t("failed"));
     } finally {
       setLoading(false);
     }
@@ -105,9 +108,9 @@ export function ResetPasswordForm() {
   if (succeeded) {
     return (
       <div>
-        <AuthHeading title="You're all set" body="Your password has been reset. Sign in with your new password." />
+        <AuthHeading title={t("doneTitle")} body={t("doneBody")} />
         <Link href="/login" className="lp-pill-dark inline-flex h-12 w-full items-center justify-center rounded-full text-[15px] font-medium">
-          Go to sign in
+          {t("goToSignIn")}
         </Link>
       </div>
     );
@@ -115,29 +118,29 @@ export function ResetPasswordForm() {
 
   return (
     <div>
-      <AuthHeading title="Choose a new password" body="Pick something you haven't used before for this account." />
+      <AuthHeading title={t("title")} body={t("body")} />
 
       {checking ? (
         <div className="mb-6 flex items-center gap-2.5 rounded-2xl bg-[var(--lp-panel)] px-4 py-3.5 text-[14px] text-[var(--lp-muted)]">
           <Spinner />
-          Checking your reset link...
+          {t("checking")}
         </div>
       ) : valid ? (
         <div className="mb-6">
-          <Alert tone="success">Reset link verified{expiresAt ? `. It expires ${expiresAt}.` : "."}</Alert>
+          <Alert tone="success">{expiresAt ? t("verifiedExpires", { expiresAt }) : t("verified")}</Alert>
         </div>
       ) : null}
 
       <form action={handleSubmit} className="space-y-5">
-        <Field label="New password">
-          <PasswordInput name="newPassword" placeholder="New password" autoComplete="new-password" required />
+        <Field label={t("newPassword")}>
+          <PasswordInput name="newPassword" placeholder={t("newPassword")} autoComplete="new-password" required />
         </Field>
-        <Field label="Confirm new password">
-          <PasswordInput name="confirmPassword" placeholder="Repeat new password" autoComplete="new-password" required />
+        <Field label={t("confirmPassword")}>
+          <PasswordInput name="confirmPassword" placeholder={t("repeatPlaceholder")} autoComplete="new-password" required />
         </Field>
         <div className="pt-2">
-          <SubmitButton loading={loading} disabled={!token || !valid || checking} loadingLabel="Saving...">
-            Reset password
+          <SubmitButton loading={loading} disabled={!token || !valid || checking} loadingLabel={t("saving")}>
+            {t("submit")}
           </SubmitButton>
         </div>
       </form>
@@ -149,9 +152,9 @@ export function ResetPasswordForm() {
       ) : null}
 
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
-        Link expired?{" "}
+        {t("linkExpired")}{" "}
         <Link href="/forgot-password" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
-          Request a new one
+          {t("requestNew")}
         </Link>
       </p>
     </div>

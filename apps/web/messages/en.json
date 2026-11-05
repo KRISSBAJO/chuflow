@@ -1,0 +1,281 @@
+{
+  "locale": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "pt": "Português"
+  },
+  "common": {
+    "signIn": "Sign in",
+    "backToHome": "Back to home",
+    "requestWorkspace": "Request a workspace",
+    "openDashboard": "Open dashboard",
+    "myAccount": "My account",
+    "openWorkspace": "Open workspace",
+    "copyright": "© {year} ChuFlow",
+    "email": "Email",
+    "emailPlaceholder": "you@church.org"
+  },
+  "nav": {
+    "howItFlows": "How it flows",
+    "features": "Features",
+    "structure": "Structure",
+    "getStarted": "Get started",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "hero": {
+    "badgeNew": "New",
+    "badgeText": "Weekly and MAAG reports are here",
+    "title": "Every member, every ministry, in one <accent>flow.</accent>",
+    "subtitle": "ChuFlow is the church management platform for guests, follow-up, members, attendance and finance, built for branches, districts and national teams.",
+    "signInToChurch": "Sign in to your church",
+    "tiles": {
+      "sanctuary": "Sanctuary",
+      "community": "Community",
+      "worship": "Worship",
+      "fellowship": "Fellowship",
+      "family": "Family"
+    }
+  },
+  "statement": {
+    "text": "We help churches <p1></p1> welcome every guest, <p2></p2> care for every member and <p3></p3> steward every offering, <muted>from one branch to a whole nation.</muted>",
+    "alt1": "Church members laughing together",
+    "alt2": "Women reading the Bible together",
+    "alt3": "A man reading his Bible"
+  },
+  "flow": {
+    "label": "How it flows",
+    "title": "From first visit to faithful service.",
+    "subtitle": "One continuous journey for every person, so your teams always know what happens next.",
+    "step": "Step {number}",
+    "steps": {
+      "welcome": {
+        "title": "Welcome",
+        "body": "Guests register at the welcome desk or with a QR code in under a minute.",
+        "tag": "Guest intake"
+      },
+      "followUp": {
+        "title": "Follow up",
+        "body": "A care worker is assigned with a clear next step, so nobody slips through.",
+        "tag": "Care workflow"
+      },
+      "belong": {
+        "title": "Belong",
+        "body": "When they are ready, guests become members and keep their full history.",
+        "tag": "Membership"
+      },
+      "grow": {
+        "title": "Grow",
+        "body": "Attendance, service units and reports show every life moving forward.",
+        "tag": "Ministry"
+      }
+    }
+  },
+  "features": {
+    "label": "Features",
+    "title": "Everything your church runs on.",
+    "subtitle": "Six ministry workflows that used to live in notebooks, spreadsheets and group chats, now in one place.",
+    "guests": {
+      "label": "Guests & follow-up",
+      "title": "Guest care that never drops a name.",
+      "point1": "QR code and welcome-desk intake",
+      "point2": "Automatic care assignment",
+      "point3": "Calls, visits and prayer requests logged",
+      "photoAlt": "Church members dressed for Sunday service"
+    },
+    "attendance": {
+      "label": "Attendance",
+      "title": "Every service, counted clearly.",
+      "caption": "Adults, children, first timers and converts, by service."
+    },
+    "members": {
+      "label": "Members",
+      "title": "One record for every person.",
+      "body": "Profiles, branches, service units and history, kept in one shared place instead of scattered sheets."
+    },
+    "finance": {
+      "label": "Finance",
+      "title": "Stewardship you can account for.",
+      "offerings": "Offerings",
+      "recorded": "Recorded",
+      "expenses": "Expenses",
+      "approved": "Approved",
+      "period": "Period",
+      "locked": "Locked"
+    },
+    "reports": {
+      "label": "Reports",
+      "title": "Reports that roll up on their own.",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "maag": "MAAG",
+      "spiritualIndices": "Spiritual indices",
+      "branchToNational": "Branch to national"
+    }
+  },
+  "structure": {
+    "label": "Built for church structure",
+    "title": "The right view for every level.",
+    "body": "Access follows your church's structure. Each person sees what their role needs, and every action is kept on an audit trail.",
+    "levels": {
+      "national": {
+        "name": "National",
+        "body": "See the whole network at once: reports, approvals, settings and the health of every district.",
+        "role1": "National admin",
+        "role2": "National pastor"
+      },
+      "district": {
+        "name": "District",
+        "body": "Coordinate a region, compare branches and step in where a branch needs support.",
+        "role1": "District admin",
+        "role2": "District pastor"
+      },
+      "branch": {
+        "name": "Branch",
+        "body": "Run the day-to-day: guests, members, services, offerings and the teams that serve.",
+        "role1": "Branch admin",
+        "role2": "Resident pastor",
+        "role3": "Associate pastor"
+      },
+      "units": {
+        "name": "Units",
+        "body": "Give follow-up workers and ushers focused tools for exactly the work they do.",
+        "role1": "Follow-up",
+        "role2": "Usher"
+      }
+    }
+  },
+  "cta": {
+    "title": "Ready when your church is.",
+    "body": "Request a workspace for your team, or sign in if your church already uses ChuFlow."
+  },
+  "footer": {
+    "connect": "Connect with us",
+    "requestWorkspace": "Request workspace",
+    "tagline": "Church life, in flow."
+  },
+  "auth": {
+    "newToChuFlow": "New to ChuFlow?",
+    "alreadyHaveWorkspace": "Already have a workspace?",
+    "rememberedIt": "Remembered it?",
+    "knowYourPassword": "Know your password?",
+    "password": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "apiUnavailable": "ChuFlow API is temporarily unavailable. Please try again shortly.",
+    "sessionExpired": "Your session has ended. Please sign in again.",
+    "login": {
+      "asideTitle": "Every member, every ministry, in one flow.",
+      "asideBody": "Pick up where your team left off: guests, care, attendance and finance in one place.",
+      "asideAlt": "A father lifting his child as the congregation worships",
+      "title": "Welcome back",
+      "body": "Sign in to your church's ChuFlow workspace.",
+      "passwordPlaceholder": "Your password",
+      "forgotPassword": "Forgot password?",
+      "signingIn": "Signing in...",
+      "failed": "Login failed",
+      "success": "Signed in. Redirecting..."
+    },
+    "forgot": {
+      "asideTitle": "We'll have you back in a moment.",
+      "asideBody": "Reset links are sent to the email on your account and expire after a short time.",
+      "asideAlt": "A mother and son sitting together in the church pews",
+      "title": "Reset your password",
+      "body": "Enter the email on your account and we'll send you a link to choose a new password.",
+      "sending": "Sending link...",
+      "submit": "Send reset link",
+      "failed": "Unable to start password reset",
+      "emailSent": "Reset email sent. Check your inbox.",
+      "previewNote": "Email delivery isn't set up yet, so here is your link directly.",
+      "openResetPage": "Open reset page",
+      "backToSignIn": "Back to sign in"
+    },
+    "reset": {
+      "asideTitle": "A fresh start for your account.",
+      "asideBody": "Choose a new password and you'll be straight back to ministry work.",
+      "asideAlt": "A mother and son sitting together in the church pews",
+      "title": "Choose a new password",
+      "body": "Pick something you haven't used before for this account.",
+      "missingToken": "This reset link is missing its token. Request a new link to continue.",
+      "invalidLink": "This reset link is invalid or has expired.",
+      "verifyFailed": "We couldn't verify this reset link. Please try again.",
+      "checking": "Checking your reset link...",
+      "verified": "Reset link verified.",
+      "verifiedExpires": "Reset link verified. It expires {expiresAt}.",
+      "mismatch": "The two passwords don't match.",
+      "failed": "Unable to reset password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "repeatPlaceholder": "Repeat new password",
+      "saving": "Saving...",
+      "submit": "Reset password",
+      "doneTitle": "You're all set",
+      "doneBody": "Your password has been reset. Sign in with your new password.",
+      "goToSignIn": "Go to sign in",
+      "linkExpired": "Link expired?",
+      "requestNew": "Request a new one"
+    },
+    "request": {
+      "asideTitle": "Bring your whole church into one flow.",
+      "asideBody": "Guests, members, care, attendance, finance and reports, set up for your branches, districts and national teams.",
+      "asideAlt": "Young church members laughing together with their Bibles",
+      "point1": "Guest intake",
+      "point2": "Follow-up care",
+      "point3": "Members",
+      "point4": "Attendance",
+      "point5": "Finance",
+      "point6": "Reports",
+      "title": "Request a workspace",
+      "body": "Tell us about your church and we'll set up your workspace, structure and first accounts.",
+      "yourChurch": "Your church",
+      "organizationName": "Church or organization name",
+      "organizationPlaceholder": "Grace Community Church",
+      "city": "City",
+      "cityPlaceholder": "Lagos",
+      "state": "State or province",
+      "selectState": "Select state",
+      "branchCount": "How many branches?",
+      "branchCountHint": "An estimate is fine. You can add more later.",
+      "branchCountPlaceholder": "e.g. 5",
+      "mainContact": "Main contact",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Pastor John Smith",
+      "emailPlaceholder": "pastor@church.org",
+      "phone": "Phone",
+      "notes": "Anything we should know?",
+      "notesPlaceholder": "Your church structure, special requirements, timeline...",
+      "sending": "Sending request...",
+      "submit": "Send request",
+      "reviewNote": "We'll review your request and get back to you by email.",
+      "failed": "Unable to send workspace request",
+      "received": "Request received. The admin team will review it and be in touch.",
+      "receivedTitle": "Request received",
+      "backToSignIn": "Back to sign in"
+    }
+  },
+  "status": {
+    "notFound": {
+      "label": "Error 404",
+      "title": "We couldn't find that page.",
+      "body": "The link may be mistyped or out of date, or it may belong to a branch, district or form that has been renamed."
+    },
+    "unauthorized": {
+      "label": "Access restricted",
+      "title": "This area isn't part of your role.",
+      "body": "You're signed in, but this page is outside the permissions assigned to your account. Ask an administrator if you need access.",
+      "openWorkspace": "Open my workspace",
+      "switchAccount": "Switch account"
+    },
+    "connect": {
+      "label": "Connect",
+      "pausedTitle": "Guest registration is paused.",
+      "pausedBody": "{organization} isn't accepting guest registrations online right now. Please speak to a member of the welcome team.",
+      "offlineTitle": "We'll be right back.",
+      "offlineBody": "Guest registration is temporarily unavailable. Please try again in a few minutes.",
+      "emptyTitle": "Guest registration isn't open yet.",
+      "emptyBody": "There is no active guest form at the moment. If you manage this church, activate a guest intake template in ChuFlow."
+    }
+  }
+}

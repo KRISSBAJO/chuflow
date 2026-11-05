@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Wordmark } from "@/components/brand/wordmark";
+import { LanguagePicker } from "@/components/i18n/language-picker";
 import { unsplash } from "@/components/landing/landing-images";
 
 type AuthShellProps = {
@@ -19,20 +21,25 @@ type AuthShellProps = {
   wide?: boolean;
 };
 
-export function AuthShell({ children, switchPrompt, aside, wide = false }: AuthShellProps) {
+export async function AuthShell({ children, switchPrompt, aside, wide = false }: AuthShellProps) {
+  const t = await getTranslations("common");
+
   return (
     <div className="lp-root flex min-h-screen w-full bg-white">
       <div className="flex min-h-screen flex-1 flex-col">
         <header className="flex h-20 items-center justify-between gap-4 px-6 sm:px-10">
           <Wordmark size={22} />
-          {switchPrompt ? (
-            <p className="text-[14px] text-[var(--lp-muted)]">
-              <span className="hidden sm:inline">{switchPrompt.text} </span>
-              <Link href={switchPrompt.href} className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
-                {switchPrompt.label}
-              </Link>
-            </p>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {switchPrompt ? (
+              <p className="text-[14px] text-[var(--lp-muted)]">
+                <span className="hidden sm:inline">{switchPrompt.text} </span>
+                <Link href={switchPrompt.href} className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
+                  {switchPrompt.label}
+                </Link>
+              </p>
+            ) : null}
+            <LanguagePicker />
+          </div>
         </header>
 
         <main className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
@@ -40,9 +47,9 @@ export function AuthShell({ children, switchPrompt, aside, wide = false }: AuthS
         </main>
 
         <footer className="flex items-center justify-between gap-4 px-6 py-6 text-[13px] text-[var(--lp-muted)] sm:px-10">
-          <p>© {new Date().getFullYear()} ChuFlow</p>
+          <p>{t("copyright", { year: new Date().getFullYear() })}</p>
           <Link href="/" className="transition-colors hover:text-[var(--lp-ink)]">
-            Back to home
+            {t("backToHome")}
           </Link>
         </footer>
       </div>
@@ -105,8 +112,9 @@ export function StatusShell({
 }) {
   return (
     <div className="lp-root relative flex min-h-screen w-full flex-col overflow-hidden bg-white">
-      <header className="flex h-20 items-center px-6 sm:px-10">
+      <header className="flex h-20 items-center justify-between px-6 sm:px-10">
         <Wordmark size={22} />
+        <LanguagePicker />
       </header>
 
       <svg viewBox="0 0 1440 300" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 top-[58%] h-48 w-full opacity-80" aria-hidden>

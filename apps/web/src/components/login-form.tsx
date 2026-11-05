@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AuthHeading, Field, PasswordInput, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
@@ -10,20 +11,22 @@ type LoginFormProps = {
   notice?: string | null;
 };
 
-function toFriendlyAuthMessage(error: unknown) {
-  if (error instanceof TypeError) {
-    return "ChuFlow API is temporarily unavailable. Please try again shortly.";
-  }
-  if (error instanceof Error && error.message.toLowerCase().includes("fetch failed")) {
-    return "ChuFlow API is temporarily unavailable. Please try again shortly.";
-  }
-  return error instanceof Error ? error.message : "Login failed";
-}
-
 export function LoginForm({ notice }: LoginFormProps) {
+  const t = useTranslations("auth");
+  const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  function toFriendlyAuthMessage(error: unknown) {
+    if (error instanceof TypeError) {
+      return t("apiUnavailable");
+    }
+    if (error instanceof Error && error.message.toLowerCase().includes("fetch failed")) {
+      return t("apiUnavailable");
+    }
+    return error instanceof Error ? error.message : t("login.failed");
+  }
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -43,13 +46,13 @@ export function LoginForm({ notice }: LoginFormProps) {
 
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || "Login failed");
+        throw new Error(text || t("login.failed"));
       }
 
       const result = (await response.json()) as { user?: { role?: string } };
       const homeHref = result.user?.role ? roleHomeHref(result.user.role) : "/dashboard";
       setIsSuccess(true);
-      setMessage("Signed in. Redirecting...");
+      setMessage(t("login.success"));
       window.setTimeout(() => {
         window.location.href = homeHref;
       }, 600);
@@ -62,7 +65,7 @@ export function LoginForm({ notice }: LoginFormProps) {
 
   return (
     <div>
-      <AuthHeading title="Welcome back" body="Sign in to your church's ChuFlow workspace." />
+      <AuthHeading title={t("login.title")} body={t("login.body")} />
 
       {notice ? (
         <div className="mb-6">
@@ -71,24 +74,24 @@ export function LoginForm({ notice }: LoginFormProps) {
       ) : null}
 
       <form action={handleSubmit} className="space-y-5">
-        <Field label="Email">
-          <input name="email" type="email" placeholder="you@church.org" autoComplete="email" className="lp-input" required />
+        <Field label={tc("email")}>
+          <input name="email" type="email" placeholder={tc("emailPlaceholder")} autoComplete="email" className="lp-input" required />
         </Field>
 
         <Field
-          label="Password"
+          label={t("password")}
           aside={
             <Link href="/forgot-password" className="text-[13px] font-medium text-[var(--lp-muted)] transition-colors hover:text-[var(--lp-ink)]">
-              Forgot password?
+              {t("login.forgotPassword")}
             </Link>
           }
         >
-          <PasswordInput name="password" placeholder="Your password" autoComplete="current-password" required />
+          <PasswordInput name="password" placeholder={t("login.passwordPlaceholder")} autoComplete="current-password" required />
         </Field>
 
         <div className="pt-2">
-          <SubmitButton loading={loading} disabled={isSuccess} loadingLabel="Signing in...">
-            Sign in
+          <SubmitButton loading={loading} disabled={isSuccess} loadingLabel={t("login.signingIn")}>
+            {tc("signIn")}
           </SubmitButton>
         </div>
       </form>
@@ -100,9 +103,9 @@ export function LoginForm({ notice }: LoginFormProps) {
       ) : null}
 
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
-        New to ChuFlow?{" "}
+        {t("newToChuFlow")}{" "}
         <Link href="/request-workspace" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
-          Request a workspace
+          {tc("requestWorkspace")}
         </Link>
       </p>
     </div>

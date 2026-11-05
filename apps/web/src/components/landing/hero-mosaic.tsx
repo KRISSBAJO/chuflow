@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { unsplash } from "./landing-images";
@@ -7,7 +9,7 @@ import { unsplash } from "./landing-images";
 type Photo = { id: string; alt: string };
 
 const TILES: {
-  caption: string;
+  caption: "sanctuary" | "community" | "worship" | "fellowship" | "family";
   photos: Photo[];
   size: string;
   tilt: number;
@@ -17,7 +19,7 @@ const TILES: {
   from: string;
 }[] = [
   {
-    caption: "Sanctuary",
+    caption: "sanctuary",
     size: "lp-tile-outer",
     tilt: -7,
     lift: 70,
@@ -31,7 +33,7 @@ const TILES: {
     ],
   },
   {
-    caption: "Community",
+    caption: "community",
     size: "lp-tile-inner",
     tilt: -3.5,
     lift: 28,
@@ -45,7 +47,7 @@ const TILES: {
     ],
   },
   {
-    caption: "Worship",
+    caption: "worship",
     size: "lp-tile-center",
     tilt: 0,
     lift: 0,
@@ -60,7 +62,7 @@ const TILES: {
     ],
   },
   {
-    caption: "Fellowship",
+    caption: "fellowship",
     size: "lp-tile-inner",
     tilt: 3.5,
     lift: 28,
@@ -75,7 +77,7 @@ const TILES: {
     ],
   },
   {
-    caption: "Family",
+    caption: "family",
     size: "lp-tile-outer",
     tilt: 7,
     lift: 70,
@@ -137,6 +139,7 @@ function TilePhotos({ tile, index, active, previous, preloadNext }: {
  * One rAF loop writes --mx, --my (pointer, -1..1) and --p (scroll, 0..1) onto the container.
  */
 export function HeroMosaic() {
+  const captions = useTranslations("hero.tiles");
   const ref = useRef<HTMLDivElement>(null);
   const [slides, setSlides] = useState(() => TILES.map(() => ({ active: 0, previous: null as number | null })));
   const [ready, setReady] = useState(false);
@@ -320,7 +323,7 @@ export function HeroMosaic() {
                         preloadNext={ready}
                       />
                       <div aria-hidden className="lp-tile-glare" />
-                      <span className="lp-tile-caption">{tile.caption}</span>
+                      <span className="lp-tile-caption">{captions(tile.caption)}</span>
                     </div>
                   </div>
                 </div>
