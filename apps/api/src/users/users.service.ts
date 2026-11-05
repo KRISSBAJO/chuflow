@@ -503,6 +503,28 @@ export class UsersService implements OnModuleInit {
       .lean();
   }
 
+  async assignmentOptions(currentUser: AuthUser, branchId?: string) {
+    return this.userModel
+      .find({
+        ...(await this.accessScopeService.buildBranchFilter(
+          currentUser,
+          branchId,
+        )),
+        isActive: true,
+        role: {
+          $in: [
+            'branch_admin',
+            'resident_pastor',
+            'associate_pastor',
+            'follow_up',
+          ],
+        },
+      })
+      .select('_id firstName lastName role branchId')
+      .sort({ firstName: 1, lastName: 1 })
+      .lean();
+  }
+
   async findUserDirectory(
     currentUser: AuthUser,
     filters: UserDirectoryFilters & {

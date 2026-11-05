@@ -90,11 +90,11 @@ export default async function GuestsPage({
     publicGuestTemplates,
   ] = await Promise.all([
     serverGet<GuestListResponse>(`/guests${query}`),
-    serverGet<BranchSummary[]>("/branches").catch(() => []),
+    serverGet<BranchSummary[]>("/branches/options").catch(() => []),
     serverGet<UserSummary[]>(
       selectedBranchId
-        ? `/users?branchId=${encodeURIComponent(selectedBranchId)}`
-        : "/users",
+        ? `/users/assignment-options?branchId=${encodeURIComponent(selectedBranchId)}`
+        : "/users/assignment-options",
     ).catch(() => []),
     serverGet<GuestDuplicateGroup[]>(
       selectedBranchId

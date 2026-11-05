@@ -33,7 +33,7 @@ export default async function SettingsPage({
       defaultReportDays: 30,
     },
   }));
-  const branches = await serverGet<BranchSummary[]>("/branches").catch(() => []);
+  const branches = await serverGet<BranchSummary[]>("/branches/options").catch(() => []);
   const selectedBranchId =
     typeof resolvedSearchParams.branchId === "string"
       ? resolvedSearchParams.branchId

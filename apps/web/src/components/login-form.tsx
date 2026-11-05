@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Alert, AuthHeading, Field, PasswordInput, SubmitButton } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
+import { roleHomeHref } from "@/lib/permissions";
 
 type LoginFormProps = {
   notice?: string | null;
@@ -45,10 +46,12 @@ export function LoginForm({ notice }: LoginFormProps) {
         throw new Error(text || "Login failed");
       }
 
+      const result = (await response.json()) as { user?: { role?: string } };
+      const homeHref = result.user?.role ? roleHomeHref(result.user.role) : "/dashboard";
       setIsSuccess(true);
       setMessage("Signed in. Redirecting...");
       window.setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = homeHref;
       }, 600);
     } catch (error) {
       setMessage(toFriendlyAuthMessage(error));

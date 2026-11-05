@@ -60,7 +60,7 @@ export default async function NewFollowUpPage({
       : user.district;
   const selectedBranchId = canChooseBranch ? params.branchId?.trim() : user.branchId;
 
-  const branches = await serverGet<BranchSummary[]>("/branches").catch(() => []);
+  const branches = await serverGet<BranchSummary[]>("/branches/options").catch(() => []);
 
   const filteredBranches = branches.filter((branch) => {
     if (requestedOversightRegion && branch.oversightRegion !== requestedOversightRegion) {
@@ -108,7 +108,7 @@ export default async function NewFollowUpPage({
           summary: { todayCount: 0, completionRate: 0, assignedFollowUpCount: 0 },
         }),
     createBranchScopeId
-      ? serverGet<UserSummary[]>(`/users?branchId=${encodeURIComponent(createBranchScopeId)}`).catch(
+      ? serverGet<UserSummary[]>(`/users/assignment-options?branchId=${encodeURIComponent(createBranchScopeId)}`).catch(
           () => [],
         )
       : Promise.resolve([]),

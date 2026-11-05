@@ -7,8 +7,8 @@ export default function UnauthorizedPage() {
       title="This area isn't part of your role."
       body="You're signed in, but this page is outside the permissions assigned to your account. Ask an administrator if you need access."
       actions={[
-        { label: "Go to dashboard", href: "/dashboard", primary: true },
-        { label: "Switch account", href: "/login" },
+        { label: "Open my workspace", href: "/dashboard", primary: true },
+        { label: "Switch account", href: "/login?reason=switch-account" },
       ]}
     />
   );

@@ -406,6 +406,14 @@ export class BranchesService {
       .lean();
   }
 
+  async findOptions(currentUser: AuthUser) {
+    return this.branchModel
+      .find(await this.accessScopeService.getBranchDocumentQuery(currentUser))
+      .select('_id name oversightRegion district')
+      .sort({ name: 1 })
+      .lean();
+  }
+
   async findOverview(currentUser: AuthUser): Promise<BranchOverviewSummary[]> {
     const branches = await this.branchModel
       .find(await this.accessScopeService.getBranchDocumentQuery(currentUser))

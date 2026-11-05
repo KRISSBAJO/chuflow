@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { API_URL } from "./api";
 
 const AUTH_COOKIE_NAME = "cms_access_token";
@@ -28,6 +29,8 @@ export async function serverGet<T>(path: string): Promise<T> {
     throw new Error("ChuFlow API is temporarily unavailable. Please try again shortly.");
   }
 
+  if (response.status === 401) redirect("/login?reason=session-expired");
+  if (response.status === 403) redirect("/unauthorized");
   if (!response.ok) {
     throw new Error(`GET ${path} failed with status ${response.status}`);
   }

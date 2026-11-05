@@ -1,8 +1,9 @@
 import { DashboardScopeFilterBar } from "@/components/dashboard-scope-filter-bar";
+import { redirect } from "next/navigation";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { Shell } from "@/components/shell";
 import { requireServerRole } from "@/lib/auth";
-import { canFilterAcrossBranches, isGlobalRole, isNationalRole } from "@/lib/permissions";
+import { canFilterAcrossBranches, isGlobalRole, isNationalRole, roleHomeHref } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
 import type {
   BranchSummary,
@@ -29,6 +30,9 @@ export default async function DashboardPage({
   searchParams: Promise<DashboardSearchParams>;
 }) {
   const user = await requireServerRole("/dashboard");
+  // Support roles have operational workspaces; reports/dashboard is leadership-only.
+  const homeHref = roleHomeHref(user.role);
+  if (homeHref !== "/dashboard") redirect(homeHref);
   const params = await searchParams;
 
   const requestedDays = Number(params.days);

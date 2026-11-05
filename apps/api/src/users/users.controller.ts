@@ -14,6 +14,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { APP_ROLES } from '../common/constants/roles.constants';
 import { CreateUserDto, UpdateUserDto } from './dto/manage-user.dto';
 
 @ApiTags('Users')
@@ -32,6 +33,15 @@ import { CreateUserDto, UpdateUserDto } from './dto/manage-user.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('assignment-options')
+  @Roles(...APP_ROLES)
+  assignmentOptions(
+    @CurrentUser() user: AuthUser,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.usersService.assignmentOptions(user, branchId);
+  }
 
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateUserDto) {

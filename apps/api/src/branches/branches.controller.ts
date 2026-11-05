@@ -14,6 +14,7 @@ import { CreateBranchDto, UpdateBranchDto } from './dto/create-branch.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { APP_ROLES } from '../common/constants/roles.constants';
 import type {
   BranchOverviewSummary,
   BranchStructureSummary,
@@ -25,6 +26,12 @@ import type {
 @Controller('branches')
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
+
+  @Roles(...APP_ROLES)
+  @Get('options')
+  options(@CurrentUser() user: AuthUser) {
+    return this.branchesService.findOptions(user);
+  }
 
   @Roles('super_admin', 'district_admin')
   @Post()

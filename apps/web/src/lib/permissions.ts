@@ -38,6 +38,12 @@ export const APP_SETTINGS_ROLES: AppRole[] = [
   "branch_admin",
 ];
 
+export function roleHomeHref(role?: string) {
+  if (role === "follow_up") return "/care";
+  if (role === "usher") return "/attendance";
+  return includesRole(LEADERSHIP_ROLES, role) ? "/dashboard" : "/unauthorized";
+}
+
 function includesRole(roles: AppRole[], role?: string): role is AppRole {
   return !!role && roles.includes(role as AppRole);
 }
@@ -309,6 +315,10 @@ export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightReg
 }
 
 export const routePermissions: Record<string, AppRole[]> = {
+  "/care/settings": [...LEADERSHIP_ROLES],
+  "/meetings/groups": [...LEADERSHIP_ROLES],
+  "/branches/new": ["super_admin", "district_admin"],
+  "/branches/staff/new": [...LEADERSHIP_ROLES],
   "/dashboard": [...LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES],
   "/approvals": [...LEADERSHIP_ROLES, "follow_up"],
   "/communications": [...LEADERSHIP_ROLES, "follow_up"],
@@ -343,7 +353,7 @@ export const routePermissions: Record<string, AppRole[]> = {
 };
 
 export function canAccessRoute(role: string | undefined, pathname: string) {
-  const matchedEntry = Object.entries(routePermissions).find(([route]) =>
+  const matchedEntry = Object.entries(routePermissions).sort(([a], [b]) => b.length - a.length).find(([route]) =>
     pathname === route || pathname.startsWith(`${route}/`),
   );
 

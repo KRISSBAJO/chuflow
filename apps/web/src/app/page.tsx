@@ -1,6 +1,7 @@
 import { LandingPage } from "@/components/landing/landing-page";
 import { getServerSessionUser } from "@/lib/auth";
 import { publicServerGet } from "@/lib/server-api";
+import { roleHomeHref } from "@/lib/permissions";
 type PublicSettings = { organizationName: string; organizationTagline: string; publicConnectEnabled?: boolean };
 async function getPublicSettings(): Promise<PublicSettings> {
   try {
@@ -24,6 +25,6 @@ async function getOptionalSessionUser() {
 
 export default async function HomePage() {
  const [settings, user] = await Promise.all([getPublicSettings(), getOptionalSessionUser()]);
- const workspaceHref = user?.role === "follow_up" ? "/follow-up" : user?.role === "usher" ? "/attendance" : "/dashboard";
+ const workspaceHref = roleHomeHref(user?.role);
  return <LandingPage tagline={settings.organizationTagline || "From membership to ministry"} signedIn={!!user} firstName={user?.firstName} workspaceHref={workspaceHref} />;
 }

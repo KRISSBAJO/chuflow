@@ -13,6 +13,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { APP_ROLES } from '../common/constants/roles.constants';
 import {
   CreateServiceTypeDto,
   UpdateServiceTypeDto,
@@ -46,6 +47,7 @@ export class ServiceTypesController {
   }
 
   @Get()
+  @Roles(...APP_ROLES)
   list(
     @CurrentUser() user: AuthUser,
     @Query('branchId') branchId?: string,

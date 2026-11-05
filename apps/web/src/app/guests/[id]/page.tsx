@@ -9,7 +9,7 @@ import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { Badge, EmptyState, formatStatus, Stat, statusTone, TableWrap } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
-import { canConvertGuests } from "@/lib/permissions";
+import { canAccessRoute, canConvertGuests } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
 import type {
   CommunicationItem,
@@ -81,10 +81,14 @@ export default async function GuestDetailPage({
       createdAt?: string;
       convertedToMember?: boolean;
     }>(`/guests/${id}`),
-    serverGet<FollowUpListResponse>(`/follow-ups?guestId=${id}`),
+    canAccessRoute(user.role, "/follow-up")
+      ? serverGet<FollowUpListResponse>(`/follow-ups?guestId=${id}`)
+      : Promise.resolve({ items: [] }),
     serverGet<VisitItem[]>(`/visits?guestId=${id}`),
-    serverGet<CommunicationItem[]>(`/communications?guestId=${id}`).catch(() => []),
-    serverGet<UserSummary[]>("/users").catch(() => []),
+    canAccessRoute(user.role, "/communications")
+      ? serverGet<CommunicationItem[]>(`/communications?guestId=${id}`).catch(() => [])
+      : Promise.resolve([]),
+    serverGet<UserSummary[]>("/users/assignment-options").catch(() => []),
   ]);
 
   const followUps = followUpList.items;

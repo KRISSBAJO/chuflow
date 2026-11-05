@@ -74,7 +74,7 @@ export default async function FollowUpPage({
   followUpQuery.set("limit", "12");
 
   const [branches, oversightRegions, districts] = await Promise.all([
-    serverGet<BranchSummary[]>("/branches").catch(() => []),
+    serverGet<BranchSummary[]>("/branches/options").catch(() => []),
     serverGet<OversightRegionOption[]>("/oversight-regions").catch(() => []),
     serverGet<DistrictOption[]>("/districts").catch(() => []),
   ]);

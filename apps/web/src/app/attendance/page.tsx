@@ -46,7 +46,7 @@ export default async function AttendancePage({
 
   const [records, branches, guestList, members, serviceTypes, serviceSchedules, templates, attendanceSubmissions] = await Promise.all([
     serverGet<AttendanceItem[]>("/attendance"),
-    serverGet<BranchSummary[]>("/branches").catch(() => []),
+    serverGet<BranchSummary[]>("/branches/options").catch(() => []),
     serverGet<GuestListResponse>("/guests?limit=500").catch(() => ({
       items: [],
       pagination: { page: 1, pageSize: 500, total: 0, totalPages: 1 },
