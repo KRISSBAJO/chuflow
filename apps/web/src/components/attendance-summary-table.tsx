@@ -1,4 +1,5 @@
 "use client";
+import { FilterPanel } from "@/components/filter-panel";
 
 import { useMemo, useState } from "react";
 import { ExportTableButtons } from "@/components/table-export";
@@ -137,7 +138,7 @@ export function AttendanceSummaryTable({
   return (
     <>
       <div className="space-y-5">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
+        <FilterPanel><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
           <input
             value={search}
             onChange={(event) => {
@@ -249,7 +250,7 @@ export function AttendanceSummaryTable({
             Reset filters
           </Button>
         </div>
-        <ExportTableButtons
+        </FilterPanel><ExportTableButtons
           resource="attendance"
           rows={filteredRecords}
           label="Download filtered summaries"

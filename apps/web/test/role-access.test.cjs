@@ -24,6 +24,36 @@ function load(file, mocks = {}, globals = {}) {
 const permissions = load('apps/web/src/lib/permissions.ts');
 const constants = load('apps/api/src/common/constants/roles.constants.ts');
 const allRoles = constants.APP_ROLES;
+test('filter panels start closed and expose a native keyboard-accessible toggle', () => {
+  const jsx = (type, props) => ({ type, props });
+  const { FilterPanel } = load('apps/web/src/components/filter-panel.tsx', {
+    'react/jsx-runtime': { jsx, jsxs: jsx }, '@/components/app/icons': {},
+  });
+  const panel = FilterPanel({ children: 'Existing filter fields' });
+  assert.equal(panel.type, 'details');
+  assert.equal(panel.props.open, undefined);
+  assert.equal(panel.props.children[0].type, 'summary');
+  assert.equal(panel.props.children[1].props.children, 'Existing filter fields');
+});
+test('directory and report filter forms stay inside collapsible panels', () => {
+  const files = ['users', 'guests', 'follow-up', 'approvals', 'communications', 'evangelism', 'care', 'maag-reports', 'reports', 'weekly-reports', 'structure', 'search', 'hierarchy'].map(page => `apps/web/src/app/${page}/page.tsx`)
+    .concat(['directory-controls', 'dashboard-scope-filter-bar', 'finance-scope-filter-bar', 'follow-up-scope-filter-bar'].map(component => `apps/web/src/components/${component}.tsx`));
+  for (const file of files) {
+    const ast = ts.createSourceFile(file, fs.readFileSync(path.join(root, file), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    let count = 0;
+    function visit(node) {
+      if (ts.isJsxElement(node) && node.openingElement.tagName.getText(ast) === 'form') {
+        count++;
+        let ancestor = node.parent;
+        while (ancestor && !(ts.isJsxElement(ancestor) && ancestor.openingElement.tagName.getText(ast) === 'FilterPanel')) ancestor = ancestor.parent;
+        assert.ok(ancestor, `${file} exposes its filters by default`);
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(ast);
+    if (!file.endsWith('dashboard-scope-filter-bar.tsx')) assert.ok(count, `${file} has no covered filter form`);
+  }
+});
 
 // Read the real controller decorators, including method overrides of class roles.
 const endpoints = new Map();

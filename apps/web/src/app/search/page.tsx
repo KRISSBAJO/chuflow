@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/app/icons";
 import { PageHeader } from "@/components/page-header";
@@ -100,7 +101,7 @@ export default async function SearchPage({
       />
 
       <Card className="app-rise p-4 sm:p-5">
-        <form className="grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.6fr)_auto]">
+        <FilterPanel><form className="grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.6fr)_auto]">
           <label className="relative block">
             <span className="sr-only">Search</span>
             <Icon
@@ -123,7 +124,7 @@ export default async function SearchPage({
             <option value="followups">Follow-up</option>
           </select>
           <Button type="submit">Search</Button>
-        </form>
+        </form></FilterPanel>
 
         {search ? (
           <div className="mt-4 flex flex-wrap gap-1.5">

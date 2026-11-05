@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
@@ -100,7 +101,7 @@ export default async function EvangelismPage({
         </div>
       </Card>
       <Card className="p-5 sm:p-7">
-        <form
+        <FilterPanel><form
           action="/evangelism"
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
         >
@@ -163,7 +164,7 @@ export default async function EvangelismPage({
           >
             Apply
           </button>
-        </form>
+        </form></FilterPanel>
         <div className="mt-6">
           {data.items.length ? (
             <TableWrap>

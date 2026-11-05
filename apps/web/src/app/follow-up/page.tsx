@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
@@ -229,7 +230,7 @@ export default async function FollowUpPage({
           ))}
         />
 
-        <form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+        <FilterPanel><form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
           {requestedOversightRegion ? (
             <input type="hidden" name="oversightRegion" value={requestedOversightRegion} />
           ) : null}
@@ -258,7 +259,7 @@ export default async function FollowUpPage({
           <Button type="submit" variant="secondary" icon="search">
             Apply
           </Button>
-        </form>
+        </form></FilterPanel>
 
         <div className="mt-6">
           {followUpList.items.length > 0 ? (

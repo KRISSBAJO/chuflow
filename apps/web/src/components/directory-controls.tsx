@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { buttonClass, Pagination } from "@/components/ui/ui";
 import {
@@ -18,7 +19,7 @@ export function DirectoryControls({
   placeholder?: string;
 }) {
   return (
-    <form action={path} className="my-5 flex flex-wrap items-end gap-3">
+    <FilterPanel><form action={path} className="my-5 flex flex-wrap items-end gap-3">
       <label className="min-w-48 flex-1 text-xs text-[#6b6b6b]">
         Search
         <input
@@ -82,7 +83,7 @@ export function DirectoryControls({
       <Link href={path} className={buttonClass("secondary")}>
         Reset
       </Link>
-    </form>
+    </form></FilterPanel>
   );
 }
 

@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
@@ -40,7 +41,7 @@ export default async function Page({
           </div>
         }
       />
-      <form className="flex flex-wrap items-end gap-3">
+      <FilterPanel><form className="flex flex-wrap items-end gap-3">
         <label className="min-w-64 text-sm">
           District
           <select
@@ -56,7 +57,7 @@ export default async function Page({
           </select>
         </label>
         <button className={buttonClass("secondary")}>Open district</button>
-      </form>
+      </form></FilterPanel>
       <HierarchyWorkspace key={data.selectedDistrictId} data={data} />
     </Shell>
   );

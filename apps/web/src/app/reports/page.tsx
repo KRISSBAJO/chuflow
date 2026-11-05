@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { MetricCard } from "@/components/metric-card";
@@ -103,7 +104,7 @@ export default async function ReportsPage({
         }
       />
 
-      <form
+      <FilterPanel><form
         className="app-rise flex flex-col gap-2 rounded-2xl border border-black/[0.06] bg-white p-3 sm:flex-row sm:items-center"
         style={{ animationDelay: "60ms" }}
       >
@@ -127,7 +128,7 @@ export default async function ReportsPage({
         <Button type="submit" variant="secondary" icon="search">
           Apply
         </Button>
-      </form>
+      </form></FilterPanel>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {metrics.map((metric) => (

@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -99,7 +100,7 @@ export default async function MaagReportsPage({
         }
       />
 
-      <form
+      <FilterPanel><form
         className="app-rise grid gap-2 rounded-2xl border border-black/[0.06] bg-white p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center"
         style={{ animationDelay: "60ms" }}
       >
@@ -130,7 +131,7 @@ export default async function MaagReportsPage({
         <Button type="submit" variant="secondary" icon="search">
           Apply
         </Button>
-      </form>
+      </form></FilterPanel>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard label="Reports" value={String(report.totals.reports ?? 0)} delta={`${report.totals.pending ?? 0} pending`} tone="cool" />

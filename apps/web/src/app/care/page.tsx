@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
@@ -125,7 +126,7 @@ export default async function CareHub({
         ))}
       </nav>
       <Card className="p-5">
-        <form className="flex flex-wrap gap-3">
+        <FilterPanel><form className="flex flex-wrap gap-3">
           <input type="hidden" name="view" value={query.get("view") || "all"} />
           <input
             className="ui-input min-w-48 flex-1"
@@ -148,7 +149,7 @@ export default async function CareHub({
             ))}
           </select>
           <button className={buttonClass("secondary")}>Search</button>
-        </form>
+        </form></FilterPanel>
       </Card>
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">

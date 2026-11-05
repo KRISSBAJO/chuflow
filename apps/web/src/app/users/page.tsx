@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -246,7 +247,7 @@ export default async function UsersPage({
         />
       </section>
 
-      <Card className="app-rise p-6 sm:p-7">
+      <FilterPanel className="app-rise p-6 sm:p-7">
         <CardHeader
           label="Filters"
           title="Refine the staff directory"
@@ -388,7 +389,7 @@ export default async function UsersPage({
             </div>
           </div>
         </form>
-      </Card>
+      </FilterPanel>
 
       <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
         <CardHeader

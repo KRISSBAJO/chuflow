@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import { CommunicationTemplateManagementCard } from "@/components/communication-template-management-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -222,7 +223,7 @@ export default async function CommunicationsPage({
             />
           </div>
 
-          <form
+          <FilterPanel><form
             className="mt-6 grid gap-2 rounded-2xl bg-[#f6f5f1] p-3 sm:grid-cols-2 xl:grid-cols-3"
             method="GET"
           >
@@ -300,7 +301,7 @@ export default async function CommunicationsPage({
                 Apply filters
               </Button>
             </div>
-          </form>
+          </form></FilterPanel>
 
           <div className="mt-6">
             {history.items.length === 0 ? (

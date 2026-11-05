@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
@@ -194,7 +195,7 @@ export default async function GuestsPage({
             title="Latest guests"
             action={<Badge>{guestList.pagination.total} total</Badge>}
           />
-          <form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+          <FilterPanel><form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
             <input
               name="search"
               defaultValue={search}
@@ -253,7 +254,7 @@ export default async function GuestsPage({
             <Button type="submit" variant="secondary" icon="search">
               Apply
             </Button>
-          </form>
+          </form></FilterPanel>
           <div className="mt-6">
             {guests.length > 0 ? (
               <TableWrap>

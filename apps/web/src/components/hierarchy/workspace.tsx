@@ -1,4 +1,5 @@
 "use client";
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -219,7 +220,7 @@ export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
               records.
             </p>
           </div>
-          <input
+          <FilterPanel className="w-full p-3 sm:max-w-sm"><input
             className="ui-input max-w-sm"
             aria-label="Search churches"
             placeholder="Search local churches…"
@@ -228,7 +229,7 @@ export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
               setSearch(e.target.value);
               setPage(1);
             }}
-          />
+          /></FilterPanel>
         </div>
         <div className="mt-5 divide-y divide-black/5">
           {visibleChurches

@@ -1,4 +1,5 @@
 "use client";
+import { FilterPanel } from "@/components/filter-panel";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -103,7 +104,7 @@ export function DashboardScopeFilterBar({
   const hasScopeFilter = Boolean(selectedRegion || selectedDistrict || selectedBranchId);
 
   return (
-    <section className="app-rise flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-white p-3 lg:flex-row lg:items-center" style={{ animationDelay: "60ms" }}>
+    <FilterPanel><section className="app-rise flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-white p-3 lg:flex-row lg:items-center" style={{ animationDelay: "60ms" }}>
       <div className="grid flex-1 gap-2 sm:grid-cols-3">
         <label className="block">
           <span className="sr-only">National area</span>
@@ -217,6 +218,6 @@ export function DashboardScopeFilterBar({
           </button>
         ) : null}
       </div>
-    </section>
+    </section></FilterPanel>
   );
 }

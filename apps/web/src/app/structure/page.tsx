@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "@/components/app/icons";
 import { HierarchyCatalogPanel } from "@/components/hierarchy-catalog-panel";
@@ -519,7 +520,7 @@ export default async function StructurePage({
       />
 
       <Card className="app-rise p-4 sm:p-5">
-        <form className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+        <FilterPanel><form className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
           <input
             name="search"
             defaultValue={search || ""}
@@ -567,7 +568,7 @@ export default async function StructurePage({
               </ButtonLink>
             ) : null}
           </div>
-        </form>
+        </form></FilterPanel>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

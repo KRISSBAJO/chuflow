@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { AttendanceSubmissionQueue } from "@/components/attendance-submission-queue";
 import { AuditLogFeed } from "@/components/audit-log-feed";
@@ -298,7 +299,7 @@ export default async function ApprovalsPage({
             description="Review new churches asking for a workspace and record your decision before provisioning."
           />
 
-          <form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+          <FilterPanel><form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
             <input type="hidden" name="tab" value="workspace" />
             <input type="hidden" name="auditSearch" defaultValue={auditSearch} />
             <input type="hidden" name="auditEntityType" defaultValue={auditEntityType} />
@@ -321,7 +322,7 @@ export default async function ApprovalsPage({
             <Button type="submit" variant="secondary" icon="search">
               Filter
             </Button>
-          </form>
+          </form></FilterPanel>
 
           <div className="mt-6">
             <WorkspaceRequestReviewList items={workspaceRequests.items} />
@@ -368,7 +369,7 @@ export default async function ApprovalsPage({
           <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
             <CardHeader label="Audit trail" title="Recent governance activity" description="Search recent changes by person, summary or record type." />
 
-            <form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_auto]">
+            <FilterPanel><form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_auto]">
               <input type="hidden" name="tab" value="governance" />
               <input type="hidden" name="workspaceSearch" defaultValue={workspaceSearch} />
               <input type="hidden" name="workspaceStatus" defaultValue={workspaceStatus} />
@@ -394,7 +395,7 @@ export default async function ApprovalsPage({
               <Button type="submit" variant="secondary" icon="search">
                 Filter
               </Button>
-            </form>
+            </form></FilterPanel>
 
             <div className="mt-6">
               <AuditLogFeed items={auditLogs.items} />

@@ -1,4 +1,5 @@
 "use client";
+import { FilterPanel } from "@/components/filter-panel";
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -159,7 +160,7 @@ export function FinanceScopeFilterBar({
   };
 
   return (
-    <section
+    <FilterPanel><section
       className="app-rise flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-white p-3"
       style={{ animationDelay: "60ms" }}
     >
@@ -334,6 +335,6 @@ export function FinanceScopeFilterBar({
           </span>
         ) : null}
       </div>
-    </section>
+    </section></FilterPanel>
   );
 }
