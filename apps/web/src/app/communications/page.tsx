@@ -151,7 +151,7 @@ export default async function CommunicationsPage({
 
   const [templates, branches, history] = await Promise.all([
     serverGet<CommunicationTemplateItem[]>("/communications/templates").catch(() => []),
-    canFilterAcrossBranches(user.role)
+    canFilterAcrossBranches(user.role, user.hasOversight)
       ? serverGet<BranchSummary[]>("/branches").catch(() => [])
       : Promise.resolve([]),
     serverGet<CommunicationHistoryResponse>(
@@ -180,7 +180,7 @@ export default async function CommunicationsPage({
   ]);
 
 
-  const canFilterBranches = canFilterAcrossBranches(user.role);
+  const canFilterBranches = canFilterAcrossBranches(user.role, user.hasOversight);
   const startItem =
     history.pagination.total === 0
       ? 0

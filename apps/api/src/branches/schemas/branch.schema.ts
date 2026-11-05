@@ -1,10 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type BranchDocument = HydratedDocument<Branch>;
 
 @Schema({ timestamps: true })
 export class Branch {
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'HierarchyUnit', index: true })
+  zoneId?: Types.ObjectId;
+
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'HierarchyUnit', index: true })
+  areaId?: Types.ObjectId;
+
+  @Prop({ default: 0 }) hierarchyRevision!: number;
   @Prop({ required: true, unique: true })
   name!: string;
 

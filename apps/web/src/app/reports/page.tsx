@@ -32,7 +32,7 @@ export default async function ReportsPage({
     settingsOverview.preferences.defaultReportDays ||
     settingsOverview.app.defaultReportDays ||
     30;
-  const branchId = canFilterAcrossBranches(user.role) ? params.branchId?.trim() : user.branchId;
+  const branchId = canFilterAcrossBranches(user.role, user.hasOversight) ? params.branchId?.trim() : user.branchId;
   const query = new URLSearchParams({ days: String(days) });
 
   if (branchId) {
@@ -114,7 +114,7 @@ export default async function ReportsPage({
             </option>
           ))}
         </select>
-        {canFilterAcrossBranches(user.role) ? (
+        {canFilterAcrossBranches(user.role, user.hasOversight) ? (
           <select name="branchId" aria-label="Branch" defaultValue={branchId || ""} className="ui-input sm:max-w-xs sm:flex-1">
             <option value="">All branches</option>
             {branches.map((branch) => (

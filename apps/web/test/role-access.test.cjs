@@ -77,6 +77,7 @@ const pages = {
   '/finance': ['/finance/ledger'],
   '/branches': ['/branches/overview'],
   '/structure': ['/branches/structure'],
+  '/hierarchy': ['/hierarchy'],
   '/users': ['/users/directory'],
   '/templates': ['/intake-templates'],
   '/reports': ['/reports/summary'],
@@ -171,6 +172,52 @@ test('restricted nested routes cannot inherit a broader parent permission', () =
   assert.equal(permissions.canAccessRoute('usher', '/meetings/groups/new'), false);
   assert.equal(permissions.canAccessRoute('branch_admin', '/branches/new'), false);
   assert.equal(permissions.canAccessRoute('super_admin', '/branches/new'), true);
+});
+test('oversight expands church filtering only for an appointed resident pastor', () => {
+  assert.equal(permissions.canFilterAcrossBranches('resident_pastor'), false);
+  assert.equal(permissions.canFilterAcrossBranches('resident_pastor', true), true);
+  assert.equal(permissions.canFilterAcrossBranches('follow_up', true), false);
+  assert.equal(permissions.canFilterAcrossBranches('usher', true), false);
+  assert.equal(writeRoles.get('POST /hierarchy').includes('resident_pastor'), false);
+  assert.equal(writeRoles.get('PATCH /hierarchy/units/:id').includes('resident_pastor'), false);
+});
+test('hierarchy creation, placement and appointment forms have working submit controls', () => {
+  const jsx = (type, props) => ({ type, props });
+  const ui = {
+    Card: props => jsx('section', props), Field: props => jsx('label', props),
+    Button: ({ type = 'button', ...props }) => jsx('button', { ...props, type }),
+  };
+  const { HierarchyWorkspace } = load('apps/web/src/components/hierarchy/workspace.tsx', {
+    react: { useState: initial => [initial, () => {}], useRef: value => ({ current: value }) },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/navigation': { useRouter: () => ({ refresh() {} }) },
+    '@/lib/api': {}, '@/components/ui/ui': ui,
+  });
+  const data = {
+    selectedDistrictId: 'district', canManage: true,
+    context: { assignments: [] },
+    branches: [{ _id: 'church', name: 'Local church', status: 'active', zoneId: 'zone', areaId: 'area' }],
+    units: [
+      { _id: 'district', kind: 'district', name: 'District', isActive: true },
+      { _id: 'zone', parentId: 'district', kind: 'zone', name: 'Zone', isActive: true },
+      { _id: 'area', parentId: 'zone', kind: 'area', name: 'Area', isActive: true },
+    ],
+  };
+  const forms = [];
+  function visit(node, action) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(child => visit(child, action));
+    if (typeof node.type === 'function') return visit(node.type(node.props), action);
+    action(node);
+    visit(node.props?.children, action);
+  }
+  visit(HierarchyWorkspace({ data }), node => { if (node.type === 'form') forms.push(node); });
+  assert.ok(forms.length >= 3);
+  for (const form of forms) {
+    const submits = [];
+    visit(form.props.children, node => { if (node.type === 'button' && node.props.type === 'submit') submits.push(node); });
+    assert.ok(submits.length, 'A hierarchy form has no submit button');
+  }
 });
 for (const [status, destination] of [[401, '/login?reason=session-expired'], [403, '/unauthorized']]) {
   test(`server API ${status} opens a useful page instead of throwing a 500`, async () => {

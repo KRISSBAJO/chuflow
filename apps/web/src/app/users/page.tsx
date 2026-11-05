@@ -99,7 +99,7 @@ export default async function UsersPage({
   const params = await searchParams;
 
   const isSuperAdmin = currentUser.role === "super_admin";
-  const canFilterBranches = canFilterAcrossBranches(currentUser.role);
+  const canFilterBranches = canFilterAcrossBranches(currentUser.role, currentUser.hasOversight);
   const canChooseDistrict = isSuperAdmin || isNationalRole(currentUser.role);
 
   const search = params.search?.trim() || "";

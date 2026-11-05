@@ -50,7 +50,7 @@ export default async function SettingsPage({
       branches={branches}
       selectedBranchId={selectedBranchId}
       overview={branchSettings}
-      canSelectBranch={canFilterAcrossBranches(user.role)}
+      canSelectBranch={canFilterAcrossBranches(user.role, user.hasOversight)}
     />
   );
 

@@ -13,6 +13,7 @@ export type SessionUser = {
   oversightRegion?: string;
   district?: string;
   branchId?: string;
+  hasOversight?: boolean;
   preferences?: {
     interfaceDensity?: string;
     defaultReportDays?: number;
@@ -54,7 +55,14 @@ export async function getServerSessionUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  return (await response.json()) as SessionUser;
+  const user = (await response.json()) as SessionUser;
+  if (user.role === "resident_pastor") {
+    try {
+      const context = await fetch(`${API_URL}/hierarchy/context`, { headers: { Cookie: `${AUTH_COOKIE_NAME}=${token}` }, cache: "no-store" });
+      if (context.ok) user.hasOversight = ((await context.json()) as { hasOversight: boolean }).hasOversight;
+    } catch { user.hasOversight = false; }
+  }
+  return user;
 }
 
 export async function requireServerSession() {

@@ -207,8 +207,12 @@ export class ReportsService {
           ? branchObjectIds[0]
           : { $in: branchObjectIds };
 
+    const hasOversight =
+      (await this.accessScopeService.oversightAssignments(currentUser)).length >
+      0;
     const selectedBranch =
-      requestedBranchId || isBranchScopedRole(currentUser.role)
+      requestedBranchId ||
+      (isBranchScopedRole(currentUser.role) && !hasOversight)
         ? branches[0]
         : undefined;
 
@@ -223,7 +227,11 @@ export class ReportsService {
 
     if (selectedBranch) {
       kind = 'branch';
-    } else if (requestedDistrict || isDistrictRole(currentUser.role)) {
+    } else if (
+      hasOversight ||
+      requestedDistrict ||
+      isDistrictRole(currentUser.role)
+    ) {
       kind = 'district';
     } else if (requestedOversightRegion || isNationalRole(currentUser.role)) {
       kind = 'national';
@@ -237,11 +245,14 @@ export class ReportsService {
       branchLookupMatch,
       scope: {
         kind,
-        label: this.buildScopeLabel(kind, {
-          oversightRegion: effectiveOversightRegion,
-          district: effectiveDistrict,
-          branchName: selectedBranch?.name,
-        }),
+        label:
+          hasOversight && !selectedBranch
+            ? 'Your appointed churches'
+            : this.buildScopeLabel(kind, {
+                oversightRegion: effectiveOversightRegion,
+                district: effectiveDistrict,
+                branchName: selectedBranch?.name,
+              }),
         role: currentUser.role,
         oversightRegion: effectiveOversightRegion,
         district: effectiveDistrict,

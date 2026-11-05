@@ -46,6 +46,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
 
         const data = (await response.json()) as SessionUser;
+        if (data.role === "resident_pastor") {
+          try {
+            const context = await fetch(`${API_URL}/hierarchy/context`, { credentials: "include" });
+            if (context.ok) data.hasOversight = ((await context.json()) as { hasOversight: boolean }).hasOversight;
+          } catch { data.hasOversight = false; }
+        }
+        if (!mounted) return;
         setUser(data);
       } finally {
         if (mounted) {

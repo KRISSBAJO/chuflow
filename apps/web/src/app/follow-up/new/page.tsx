@@ -50,7 +50,7 @@ export default async function NewFollowUpPage({
 }) {
   const user = await requireServerRole("/follow-up/new");
   const params = await searchParams;
-  const canChooseBranch = canFilterAcrossBranches(user.role);
+  const canChooseBranch = canFilterAcrossBranches(user.role, user.hasOversight);
   const requestedOversightRegion = isGlobalRole(user.role)
     ? params.oversightRegion?.trim() || undefined
     : user.oversightRegion;

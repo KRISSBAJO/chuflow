@@ -182,6 +182,8 @@ function arrayFilter(
 }
 
 export const EXPORTS: Record<string, ExportDefinition> = {
+  hierarchy: { title: 'Districts, zones and areas', permission: '/hierarchy', endpoint: '/hierarchy', rowsPath: 'units', filters: ['districtId'], columns: [col('Level', 'kind'), col('Name', 'name'), col('Parent', 'parentName'), col('Headquarters', 'headquartersBranchId.name'), { header: 'Pastor', value: row => person(row, 'pastorUserId.') }, col('Local churches', 'churches'), col('Member records', 'members'), col('Guest records', 'guests'), col('Partial scope', 'partial'), col('Active', 'isActive')] },
+  'hierarchy-churches': { title: 'Local church placement', permission: '/hierarchy', endpoint: '/hierarchy', rowsPath: 'branches', filters: ['districtId'], columns: [col('Church', 'name'), col('Region', 'oversightRegion'), col('District', 'district'), col('Zone', 'zoneName'), col('Area', 'areaName'), col('Status', 'status')] },
  care:{title:'Care records',permission:'/care',endpoint:'/care/cases',paginated:true,filters:['branchId','view','q'],columns:[col('First name','firstName'),col('Last name','lastName'),col('Branch','branchId.name'),col('Journey','journey'),col('Stage','stage'),col('Email','email'),col('Phone','phone'),{header:'Owner',value:row=>person(row,'ownerId.')},col('Next task','nextTask.title'),col('Due (UTC)','nextTask.dueAt','date'),col('Open tasks','openTasks'),col('Email permission','emailAllowed'),col('Contact stopped','stopContact')]},
 
   meetings: {

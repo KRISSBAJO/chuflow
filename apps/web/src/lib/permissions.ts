@@ -68,8 +68,8 @@ export function isBranchScopedRole(role?: string): role is AppRole {
   return includesRole(BRANCH_SCOPED_ROLES, role);
 }
 
-export function canFilterAcrossBranches(role?: string) {
-  return !!role && !isBranchScopedRole(role);
+export function canFilterAcrossBranches(role?: string, hasOversight = false) {
+  return !!role && (!isBranchScopedRole(role) || (role === "resident_pastor" && hasOversight));
 }
 
 export function canManageBranchStructure(role?: string) {
@@ -290,10 +290,11 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
   return role ? [role as AppRole] : [];
 }
 
-export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightRegion" | "district"> | null) {
+export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightRegion" | "district" | "hasOversight"> | null) {
   if (!user?.role) {
     return "";
   }
+  if (user.hasOversight) return "My church & appointed oversight";
 
   if (isGlobalRole(user.role)) {
     return "Overall oversight";
@@ -315,6 +316,7 @@ export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightReg
 }
 
 export const routePermissions: Record<string, AppRole[]> = {
+  "/hierarchy": [...LEADERSHIP_ROLES],
   "/care/settings": [...LEADERSHIP_ROLES],
   "/meetings/groups": [...LEADERSHIP_ROLES],
   "/branches/new": ["super_admin", "district_admin"],

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -660,6 +661,16 @@ export class BranchesService {
     if (!existing) {
       throw new NotFoundException('Branch not found');
     }
+
+    if (
+      (existing.zoneId || existing.areaId) &&
+      ((payload.district && payload.district !== existing.district) ||
+        (payload.oversightRegion &&
+          payload.oversightRegion !== existing.oversightRegion))
+    )
+      throw new BadRequestException(
+        'Remove the church’s zone/area placement before changing its district or region.',
+      );
 
     await this.ensureHierarchyCatalogEntries(
       {

@@ -55,7 +55,7 @@ export default async function WeeklyReportsPage({
 }) {
   const user = await requireServerRole("/weekly-reports");
   const params = await searchParams;
-  const canCrossFilter = canFilterAcrossBranches(user.role);
+  const canCrossFilter = canFilterAcrossBranches(user.role, user.hasOversight);
   const query = new URLSearchParams();
   const branchId = canCrossFilter ? params.branchId?.trim() : user.branchId;
   const oversightRegion = canCrossFilter ? params.oversightRegion?.trim() : user.oversightRegion;

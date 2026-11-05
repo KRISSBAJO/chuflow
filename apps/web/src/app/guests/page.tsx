@@ -57,7 +57,7 @@ export default async function GuestsPage({
 
   const params = await searchParams;
   const search = params.search?.trim();
-  const canChooseBranch = canFilterAcrossBranches(user.role);
+  const canChooseBranch = canFilterAcrossBranches(user.role, user.hasOversight);
   const selectedBranchId = canChooseBranch
     ? params.branchId?.trim()
     : user.branchId;

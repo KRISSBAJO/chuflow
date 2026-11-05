@@ -1,5 +1,7 @@
 import { DashboardScopeFilterBar } from "@/components/dashboard-scope-filter-bar";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { buttonClass } from "@/components/ui/ui";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { Shell } from "@/components/shell";
 import { requireServerRole } from "@/lib/auth";
@@ -48,7 +50,7 @@ export default async function DashboardPage({
     isGlobalRole(user.role) || isNationalRole(user.role)
       ? normalizeParam(params.district)
       : user.district;
-  const requestedBranchId = canFilterAcrossBranches(user.role)
+  const requestedBranchId = canFilterAcrossBranches(user.role, user.hasOversight)
     ? normalizeParam(params.branchId)
     : user.branchId;
 
@@ -75,6 +77,7 @@ export default async function DashboardPage({
 
   return (
     <Shell>
+      {user.hasOversight && <div className="flex flex-wrap gap-3 text-sm"><Link href={`/dashboard?branchId=${user.branchId}`} className={buttonClass("secondary", "sm")}>My church</Link><Link href="/hierarchy" className={buttonClass("secondary", "sm")}>District, zone & area overview</Link></div>}
       <DashboardView
         dashboard={dashboard}
         user={user}
@@ -83,7 +86,7 @@ export default async function DashboardPage({
           <DashboardScopeFilterBar
             canChooseRegion={isGlobalRole(user.role)}
             canChooseDistrict={isGlobalRole(user.role) || isNationalRole(user.role)}
-            canChooseBranch={canFilterAcrossBranches(user.role)}
+            canChooseBranch={canFilterAcrossBranches(user.role, user.hasOversight)}
             days={dashboard.scope.days}
             oversightRegion={dashboard.scope.oversightRegion}
             district={dashboard.scope.district}

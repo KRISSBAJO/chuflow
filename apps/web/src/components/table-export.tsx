@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/ui";
 import { useSession } from "@/components/session-context";
 
 const TABLES: Record<string, [string, string][]> = {
+  "/hierarchy": [["hierarchy", "Oversight structure"], ["hierarchy-churches", "Church placement"]],
  "/care": [["care","Care records"]],
   "/meetings": [["meetings", "Meetings"]],
   "/members": [["members", "Members"]],

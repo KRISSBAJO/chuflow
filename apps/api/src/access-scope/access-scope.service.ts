@@ -4,6 +4,14 @@ import { Model, Types } from 'mongoose';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
+  HierarchyUnit,
+  HierarchyUnitDocument,
+} from '../hierarchy/hierarchy.schema';
+import {
+  District,
+  DistrictDocument,
+} from '../districts/schemas/district.schema';
+import {
   isBranchScopedRole,
   isDistrictRole,
   isGlobalRole,
@@ -15,7 +23,101 @@ export class AccessScopeService {
   constructor(
     @InjectModel(Branch.name)
     private readonly branchModel: Model<BranchDocument>,
+    @InjectModel(HierarchyUnit.name)
+    private readonly units: Model<HierarchyUnitDocument>,
+    @InjectModel(District.name)
+    private readonly districts: Model<DistrictDocument>,
   ) {}
+
+  async unitBranchQuery(id: string): Promise<Record<string, unknown>> {
+    if (!Types.ObjectId.isValid(id))
+      throw new ForbiddenException('Unknown oversight unit.');
+    const unit = await this.units.findOne({ _id: id, isActive: true }).lean();
+    if (!unit)
+      throw new ForbiddenException(
+        'Oversight unit is inactive or unavailable.',
+      );
+    const district = await this.districts
+      .findOne({ _id: unit.districtId, isActive: true })
+      .lean();
+    if (!district)
+      throw new ForbiddenException('District is inactive or unavailable.');
+    if (unit.kind !== 'district') {
+      const parent = await this.units
+        .findOne({
+          _id: unit.parentId,
+          districtId: unit.districtId,
+          isActive: true,
+        })
+        .lean();
+      if (
+        !parent ||
+        parent.kind !== (unit.kind === 'area' ? 'zone' : 'district')
+      )
+        throw new ForbiddenException('The oversight parent is unavailable.');
+      if (
+        unit.kind === 'area' &&
+        !(await this.units.exists({
+          _id: parent.parentId,
+          kind: 'district',
+          districtId: unit.districtId,
+          isActive: true,
+        }))
+      )
+        throw new ForbiddenException('The oversight district is unavailable.');
+    }
+    return {
+      oversightRegion: district.oversightRegion,
+      district: district.name,
+      ...(unit.kind === 'zone' ? { zoneId: unit._id } : {}),
+      ...(unit.kind === 'area'
+        ? { zoneId: unit.parentId, areaId: unit._id }
+        : {}),
+    };
+  }
+
+  async oversightAssignments(u: AuthUser) {
+    if (
+      u.role !== 'resident_pastor' ||
+      !u.branchId ||
+      !Types.ObjectId.isValid(u.sub)
+    )
+      return [];
+    const appointments = await this.units
+      .find({
+        pastorUserId: u.sub,
+        headquartersBranchId: u.branchId,
+        isActive: true,
+      })
+      .lean();
+    const allowed: (HierarchyUnit & {
+      _id: Types.ObjectId;
+      branchQuery: Record<string, unknown>;
+    })[] = [];
+    for (const unit of appointments) {
+      try {
+        const branchQuery = await this.unitBranchQuery(String(unit._id));
+        if (
+          await this.branchModel.exists({
+            ...branchQuery,
+            _id: unit.headquartersBranchId,
+            status: 'active',
+          })
+        )
+          allowed.push({
+            ...unit,
+            name:
+              unit.kind === 'district'
+                ? String(branchQuery.district)
+                : unit.name,
+            branchQuery,
+          });
+      } catch (error) {
+        if (!(error instanceof ForbiddenException)) throw error;
+      }
+    }
+    return allowed;
+  }
 
   private ensureScopeValue(value: string | undefined, label: string) {
     if (!value) {
@@ -95,9 +197,16 @@ export class AccessScopeService {
       this.ensureScopeValue(currentUser.branchId, 'Branch'),
     );
 
-    return {
-      _id: branch._id,
-    };
+    const appointments = await this.oversightAssignments(currentUser);
+    if (!appointments.length) return { _id: branch._id };
+    // Keep authorization in an ID constraint. A caller's search $or must not replace it.
+    const branches = await this.branchModel
+      .find({
+        $or: [{ _id: branch._id }, ...appointments.map((a) => a.branchQuery)],
+      })
+      .select('_id')
+      .lean();
+    return { _id: { $in: branches.map((b) => b._id) } };
   }
 
   async getAccessibleBranchIds(
@@ -107,7 +216,10 @@ export class AccessScopeService {
       return null;
     }
 
-    if (isBranchScopedRole(currentUser.role)) {
+    if (
+      isBranchScopedRole(currentUser.role) &&
+      !(await this.oversightAssignments(currentUser)).length
+    ) {
       const branch = await this.resolveBranchFromScopeValue(
         this.ensureScopeValue(currentUser.branchId, 'Branch'),
       );
@@ -146,19 +258,14 @@ export class AccessScopeService {
     }
 
     if (isBranchScopedRole(currentUser.role)) {
-      const [userBranch, targetBranch] = await Promise.all([
-        this.resolveBranchFromScopeValue(
-          this.ensureScopeValue(currentUser.branchId, 'Branch'),
-        ),
-        this.resolveBranchFromScopeValue(branchId),
-      ]);
-
-      if (String(userBranch._id) !== String(targetBranch._id)) {
+      const query = await this.getBranchDocumentQuery(currentUser);
+      const target = await this.resolveBranchFromScopeValue(branchId);
+      if (
+        !(await this.branchModel.exists({ $and: [query, { _id: target._id }] }))
+      )
         throw new ForbiddenException(
-          'You cannot access records from another branch',
+          'You cannot access records outside your church or appointed oversight.',
         );
-      }
-
       return;
     }
 
@@ -208,6 +315,9 @@ export class AccessScopeService {
 
       if (requestedBranchId && requestedBranchId !== branchId) {
         await this.ensureBranchAccess(currentUser, requestedBranchId);
+        const requested =
+          await this.resolveBranchFromScopeValue(requestedBranchId);
+        return String(requested._id);
       }
 
       return branchId;
