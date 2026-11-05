@@ -36,7 +36,7 @@ export class MeetingsController {
   constructor(private readonly service: MeetingsService) {}
   @Get('participants')
   participants(@CurrentUser() u: AuthUser, @Query() q: MeetingParticipantsDto) {
-    return this.service.participants(u, q.branchId, q.q, q.page);
+    return this.service.participants(u, q.branchId, q.q, q.page, q.kind);
   }
   @Post('audience-preview') previewAudience(
     @CurrentUser() u: AuthUser,
@@ -50,8 +50,11 @@ export class MeetingsController {
   ) {
     return this.service.retryInvitations(u, id);
   }
-  @Get('options') options(@CurrentUser() u: AuthUser) {
-    return this.service.options(u);
+  @Get('options') options(
+    @CurrentUser() u: AuthUser,
+    @Query('mode') mode?: string,
+  ) {
+    return this.service.options(u, mode !== 'form');
   }
   @Get('groups') groups(@CurrentUser() u: AuthUser) {
     return this.service.groups(u);

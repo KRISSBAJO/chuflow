@@ -31,7 +31,7 @@ export default async function MeetingsPage({
     serverGet<{ items: Meeting[]; total: number; page: number; limit: number }>(
       `/meetings?${query}`,
     ),
-    serverGet<MeetingOptions>("/meetings/options"),
+    serverGet<MeetingOptions>("/meetings/options?mode=form"),
   ]);
   const pageLink = (page: number) => {
     const q = new URLSearchParams(query);

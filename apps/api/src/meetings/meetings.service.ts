@@ -50,6 +50,16 @@ export function validateMeetingTimes(start: string | Date, end: string | Date) {
     );
   return { startsAt: a, endsAt: b };
 }
+export function validateFutureMeetingTimes(
+  start?: Date,
+  end?: Date,
+  now = Date.now(),
+) {
+  if (start && +start < now)
+    throw new BadRequestException('Meeting start cannot be in the past.');
+  if (end && +end < now)
+    throw new BadRequestException('Meeting end cannot be in the past.');
+}
 export function minutesOverdue(
   m: {
     minutesRequired: boolean;
@@ -177,37 +187,61 @@ export class MeetingsService {
         'Members must belong to the meeting branch.',
       );
   }
-  async participants(u: AuthUser, branchId: string, q = '', page = '1') {
+  async participants(
+    u: AuthUser,
+    branchId: string,
+    q = '',
+    page = '1',
+    kind: 'members' | 'staff' = 'members',
+  ) {
     this.id(branchId);
     await this.scope.ensureBranchAccess(u, branchId);
-    const search = q.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const limit = 8;
+    if (q.trim().length < 2) return { items: [], total: 0, limit };
+    const search = q
+      .trim()
+      .slice(0, 100)
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const terms = search.split(/\s+/).filter(Boolean).slice(0, 8);
     const filter = {
-      branchId,
-      ...(terms.length
-        ? {
-            $and: terms.map((term) => ({
-              $or: [
-                { firstName: { $regex: term, $options: 'i' } },
-                { lastName: { $regex: term, $options: 'i' } },
-                { email: { $regex: term, $options: 'i' } },
-              ],
-            })),
-          }
-        : {}),
+      $and: [
+        kind === 'staff'
+          ? { isActive: true, $or: [{ branchId }, { _id: u.sub }] }
+          : { branchId },
+        ...terms.map((term) => ({
+          $or: [
+            { firstName: { $regex: term, $options: 'i' } },
+            { lastName: { $regex: term, $options: 'i' } },
+            { email: { $regex: term, $options: 'i' } },
+          ],
+        })),
+      ],
     };
-    const skip = (Math.max(1, Math.min(100000, Number(page) || 1)) - 1) * 50;
+    const skip = (Math.max(1, Math.min(100000, Number(page) || 1)) - 1) * limit;
+    if (kind === 'staff') {
+      const [items, total] = await Promise.all([
+        this.users
+          .find(filter)
+          .select('_id firstName lastName email')
+          .sort({ firstName: 1, _id: 1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        this.users.countDocuments(filter),
+      ]);
+      return { items, total, limit };
+    }
     const [items, total] = await Promise.all([
       this.members
         .find(filter)
         .select('_id firstName lastName email')
         .sort({ firstName: 1, _id: 1 })
         .skip(skip)
-        .limit(50)
+        .limit(limit)
         .lean(),
       this.members.countDocuments(filter),
     ]);
-    return { items, total };
+    return { items, total, limit };
   }
   private async resolveAudience(
     branchId: string,
@@ -289,7 +323,7 @@ export class MeetingsService {
       .sort({ name: 1 })
       .lean();
   }
-  async options(u: AuthUser) {
+  async options(u: AuthUser, includeUsers = true) {
     const branchFilter = await this.scope.getBranchDocumentQuery(u);
     const branches = await this.branches
       .find(branchFilter)
@@ -298,14 +332,16 @@ export class MeetingsService {
       .lean();
     const branchIds = branches.map((b) => b._id);
     const [users, serviceUnits, groups] = await Promise.all([
-      this.users
-        .find({
-          isActive: true,
-          $or: [{ branchId: { $in: branchIds } }, { _id: u.sub }],
-        })
-        .select('_id firstName lastName branchId')
-        .sort({ firstName: 1 })
-        .lean(),
+      includeUsers
+        ? this.users
+            .find({
+              isActive: true,
+              $or: [{ branchId: { $in: branchIds } }, { _id: u.sub }],
+            })
+            .select('_id firstName lastName branchId')
+            .sort({ firstName: 1 })
+            .lean()
+        : Promise.resolve([]),
       this.units
         .find({ branchId: { $in: branchIds }, isActive: true })
         .select('_id name branchId')
@@ -417,6 +453,7 @@ export class MeetingsService {
         'Only the group submitters or leadership can schedule meetings.',
       );
     const times = validateMeetingTimes(dto.startsAt, dto.endsAt);
+    validateFutureMeetingTimes(times.startsAt, times.endsAt);
     await this.validateUsers(dto.attendeeUserIds, String(g.branchId), u);
     const mode = dto.audienceMode || 'individuals';
     const attendeeMemberIds = await this.resolveAudience(
@@ -625,6 +662,14 @@ export class MeetingsService {
       const times = validateMeetingTimes(
         dto.startsAt || m.startsAt,
         dto.endsAt || m.endsAt,
+      );
+      validateFutureMeetingTimes(
+        dto.startsAt !== undefined && +times.startsAt !== +m.startsAt
+          ? times.startsAt
+          : undefined,
+        dto.endsAt !== undefined && +times.endsAt !== +m.endsAt
+          ? times.endsAt
+          : undefined,
       );
       Object.assign(data, times);
       if (+times.endsAt !== +m.endsAt)

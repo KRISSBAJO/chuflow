@@ -13,7 +13,7 @@ export default async function Page({
   const { id } = await params;
   const [meeting, options] = await Promise.all([
     serverGet<Meeting>(`/meetings/${id}`),
-    serverGet<MeetingOptions>("/meetings/options"),
+    serverGet<MeetingOptions>("/meetings/options?mode=form"),
   ]);
   if (!meeting.canManage) redirect(`/meetings/${id}`);
   return (

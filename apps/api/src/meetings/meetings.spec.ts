@@ -25,10 +25,17 @@ import {
 import {
   MeetingsService,
   validateMeetingTimes,
+  validateFutureMeetingTimes,
   validateDocument,
   minutesOverdue,
 } from './meetings.service';
 import { CreateMeetingDto, MeetingListDto } from './meetings.dto';
+beforeEach(() => {
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-04T00:00:00Z'));
+});
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 const id = () => String(new Types.ObjectId());
 const branch = id(),
   groupId = id(),
@@ -89,11 +96,9 @@ function fixture() {
   };
   const groups = {
     findById: jest.fn(() => ({ lean: async () => group })),
-    findOneAndUpdate: jest
-      .fn()
-      .mockResolvedValue({
-        toObject: () => ({ ...group, minutesRequired: false }),
-      }),
+    findOneAndUpdate: jest.fn().mockResolvedValue({
+      toObject: () => ({ ...group, minutesRequired: false }),
+    }),
   };
   const files = {
     create: jest.fn().mockResolvedValue({ _id: fileId }),
@@ -663,6 +668,143 @@ describe('General church meeting scheduling', () => {
       minutesRequired: false,
       invitationsRequested: true,
       invitationsPrepared: false,
+    });
+  });
+});
+
+describe('Future meeting times', () => {
+  it('rejects past starts and past ends even when supplied directly to the API', () => {
+    const now = Date.parse('2026-11-04T12:00:00Z');
+    expect(() =>
+      validateFutureMeetingTimes(
+        new Date('2026-11-03'),
+        new Date('2026-11-05'),
+        now,
+      ),
+    ).toThrow('start cannot');
+    expect(() =>
+      validateFutureMeetingTimes(undefined, new Date('2026-11-03'), now),
+    ).toThrow('end cannot');
+    expect(() =>
+      validateFutureMeetingTimes(
+        new Date('2026-11-05'),
+        new Date('2026-11-06'),
+        now,
+      ),
+    ).not.toThrow();
+  });
+  it('rejects creation of a past meeting', async () => {
+    const f = fixture();
+    await expect(
+      f.service.create(user(), {
+        groupId,
+        title: 'Past meeting',
+        startsAt: '2026-11-01T12:00:00Z',
+        endsAt: '2026-11-01T13:00:00Z',
+        attendeeUserIds: [],
+      }),
+    ).rejects.toThrow('start cannot');
+    expect(f.meetings.create).not.toHaveBeenCalled();
+  });
+  it('allows notes/status changes for historical records without rescheduling them', async () => {
+    const f = fixture();
+    await expect(
+      f.service.update(user(), meetingId, {
+        operation: 'details',
+        agenda: 'Review decisions',
+        expectedRevision: 4,
+      }),
+    ).resolves.toBeDefined();
+  });
+  it('rejects changing an existing meeting to another past time', async () => {
+    const f = fixture();
+    await expect(
+      f.service.update(user(), meetingId, {
+        operation: 'details',
+        startsAt: '2026-11-02T10:00:00Z',
+        endsAt: '2026-11-02T11:00:00Z',
+        expectedRevision: 4,
+      }),
+    ).rejects.toThrow('start cannot');
+  });
+});
+describe('Bounded meeting participant search', () => {
+  it('returns no roster for blank or one-character searches', async () => {
+    const f = fixture();
+    await expect(
+      f.service.participants(user(), branch, '', '1'),
+    ).resolves.toEqual({ items: [], total: 0, limit: 8 });
+    await expect(
+      f.service.participants(user(), branch, 'a', '1'),
+    ).resolves.toEqual({ items: [], total: 0, limit: 8 });
+    expect(f.members.find).not.toHaveBeenCalled();
+    expect(f.users.find).not.toHaveBeenCalled();
+  });
+  it('checks branch access even before an empty search', async () => {
+    const f = fixture();
+    f.scope.ensureBranchAccess.mockRejectedValue(new ForbiddenException());
+    await expect(
+      f.service.participants(user(), branch, '', '1'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+});
+
+describe('Large directory search bounds', () => {
+  it('fetches only eight member matches even when 50,000 match', async () => {
+    const f = fixture();
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      lean: jest
+        .fn()
+        .mockResolvedValue(
+          Array.from({ length: 8 }, (_, i) => ({
+            _id: `m${i}`,
+            firstName: 'Chris',
+            lastName: 'Test',
+          })),
+        ),
+    };
+    f.members.find.mockReturnValueOnce(query);
+    f.members.countDocuments.mockResolvedValue(50000);
+    const result = await f.service.participants(user(), branch, 'Chris', '2');
+    expect(result).toMatchObject({ total: 50000, limit: 8 });
+    expect(result.items).toHaveLength(8);
+    expect(query.limit).toHaveBeenCalledWith(8);
+    expect(query.skip).toHaveBeenCalledWith(8);
+  });
+  it('uses the same bounded search for active staff within the selected scope', async () => {
+    const f = fixture();
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      lean: jest
+        .fn()
+        .mockResolvedValue([
+          { _id: attendee, firstName: 'Chris', lastName: 'Test' },
+        ]),
+    };
+    f.users.find.mockReturnValueOnce(query);
+    const count = jest.fn().mockResolvedValue(300);
+    Object.assign(f.users, { countDocuments: count });
+    const result = await f.service.participants(
+      user(),
+      branch,
+      'Chris',
+      '1',
+      'staff',
+    );
+    expect(result).toMatchObject({ total: 300, limit: 8 });
+    expect(query.limit).toHaveBeenCalledWith(8);
+    expect(f.users.find.mock.calls[0][0]).toMatchObject({
+      $and: [
+        { isActive: true, $or: [{ branchId: branch }, { _id: organizer }] },
+        expect.anything(),
+      ],
     });
   });
 });

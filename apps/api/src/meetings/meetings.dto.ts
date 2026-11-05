@@ -177,6 +177,7 @@ export class MeetingListDto {
   @IsOptional() @IsIn(['due']) actions?: string;
 }
 export class MeetingParticipantsDto {
+  @IsOptional() @IsIn(['members', 'staff']) kind?: 'members' | 'staff';
   @IsMongoId() branchId!: string;
   @IsOptional() @IsString() @MaxLength(100) q?: string;
   @IsOptional() @Matches(/^\d+$/) page?: string;

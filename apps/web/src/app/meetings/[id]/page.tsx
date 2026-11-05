@@ -14,13 +14,15 @@ export default async function Page({
   const { id } = await params;
   const [meeting, options] = await Promise.all([
     serverGet<Meeting>(`/meetings/${id}`),
-    serverGet<MeetingOptions>("/meetings/options"),
+    serverGet<MeetingOptions>("/meetings/options?mode=form"),
   ]);
   return (
     <Shell>
-      <Link className={buttonClass("secondary", "sm")} href="/meetings">
-        ← Back to meetings
-      </Link>
+      <div>
+        <Link className={buttonClass("ghost", "sm")} href="/meetings">
+          ← Back to meetings
+        </Link>
+      </div>
       <MeetingDetails initial={meeting} options={options} />
     </Shell>
   );

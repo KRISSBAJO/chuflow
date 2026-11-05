@@ -16,43 +16,75 @@ export function MemberPicker({
   branchId,
   selected,
   onChange,
+  kind = "members",
 }: {
   branchId: string;
   selected: MeetingPerson[];
   onChange: (people: MeetingPerson[]) => void;
+  kind?: "members" | "staff";
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState<MeetingPerson[]>([]);
-  const [total, setTotal] = useState(0);
+  const [result, setResult] = useState<{
+    query: string;
+    items: MeetingPerson[];
+    total: number;
+  }>({ query: "", items: [], total: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const [selectedQuery, setSelectedQuery] = useState("");
+  const [selectedPage, setSelectedPage] = useState(1);
   const listId = useId();
+  const search = query.trim();
+  const ready = search.length >= 2;
+  const noun = kind === "staff" ? "staff users" : "members";
+  const filtered = selected.filter((p) =>
+    `${meetingName(p)} ${p.email || ""}`
+      .toLowerCase()
+      .includes(selectedQuery.toLowerCase()),
+  );
+  const selectedPages = Math.max(1, Math.ceil(filtered.length / 10));
+  const currentSelectedPage = Math.min(selectedPage, selectedPages);
+  const shownSelected = filtered.slice(
+    (currentSelectedPage - 1) * 10,
+    currentSelectedPage * 10,
+  );
+  const items = result.query === search ? result.items : [];
+  function choose(person: MeetingPerson) {
+    if (!selected.some((p) => p._id === person._id))
+      onChange([...selected, person]);
+    setQuery("");
+    setOpen(false);
+    setPage(1);
+    setHighlight(0);
+    setBusy(false);
+    setError("");
+  }
   useEffect(() => {
+    if (!branchId || search.length < 2) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      if (!branchId) return;
       setBusy(true);
       setError("");
       try {
         const response = await fetch(
-          `${API_URL}/meetings/participants?branchId=${encodeURIComponent(branchId)}&q=${encodeURIComponent(query)}&page=${page}`,
+          `${API_URL}/meetings/participants?branchId=${encodeURIComponent(branchId)}&q=${encodeURIComponent(search)}&page=${page}&kind=${kind}`,
           { credentials: "include", signal: controller.signal },
         );
-        if (!response.ok) throw new Error("Could not load matching members.");
-        const result = (await response.json()) as {
+        if (!response.ok) throw new Error(`Could not search ${noun}.`);
+        const data = (await response.json()) as {
           items: MeetingPerson[];
           total: number;
         };
         if (!controller.signal.aborted) {
-          setItems(result.items);
-          setTotal(result.total);
+          setResult({ query: search, ...data });
+          setHighlight(0);
         }
       } catch (e) {
         if (!controller.signal.aborted)
-          setError(
-            e instanceof Error ? e.message : "Could not search members.",
-          );
+          setError(e instanceof Error ? e.message : "Search failed");
       } finally {
         if (!controller.signal.aborted) setBusy(false);
       }
@@ -61,107 +93,245 @@ export function MemberPicker({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [branchId, query, page]);
+  }, [branchId, search, page, kind, noun]);
   return (
     <div className="space-y-3">
-      <input
-        className="ui-input"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setPage(1);
-        }}
-        placeholder="Start typing a member’s name or email…"
-        aria-label="Search members"
-        aria-controls={listId}
-        role="searchbox"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.preventDefault();
-        }}
-      />
-      {error && (
-        <p role="alert" className="text-red-700">
-          {error}
-        </p>
-      )}
-      <p className="text-sm text-[#6b6b6b]">
-        {selected.length} individual members selected. People already in a
-        selected group are counted once.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {selected.map((p) => (
-          <Button
-            size="sm"
-            variant="secondary"
-            key={p._id}
-            onClick={() => onChange(selected.filter((x) => x._id !== p._id))}
-          >
-            {meetingName(p)} ×
-          </Button>
-        ))}
-      </div>
-      <div
-        id={listId}
-        aria-label="Matching members"
-        aria-busy={busy}
-        className="max-h-64 overflow-y-auto rounded-xl bg-white p-3 space-y-2"
-      >
-        {busy && (
-          <p role="status" className="text-sm">
-            Searching…
-          </p>
-        )}
-        {!busy && !error && items.length === 0 && (
-          <p className="text-sm">No matching members.</p>
-        )}
-        {items.map((p) => (
-          <label
-            className="flex items-start gap-2 rounded-lg px-2 py-1 text-sm"
-            key={p._id}
-          >
-            <input
-              className="mt-1"
-              type="checkbox"
-              checked={selected.some((x) => x._id === p._id)}
-              onChange={(e) =>
-                onChange(
-                  e.target.checked
-                    ? [...selected, p]
-                    : selected.filter((x) => x._id !== p._id),
+      <div className="relative">
+        <input
+          className="ui-input"
+          value={query}
+          autoComplete="off"
+          placeholder={
+            kind === "staff"
+              ? "Search staff by name or email…"
+              : "Search members by name or email…"
+          }
+          role="combobox"
+          aria-label={`Search ${noun}`}
+          aria-autocomplete="list"
+          aria-expanded={open && ready}
+          aria-controls={listId}
+          aria-activedescendant={
+            open && ready && items[highlight]
+              ? `${listId}-${highlight}`
+              : undefined
+          }
+          onFocus={() => setOpen(true)}
+          onBlur={(e) => {
+            if (
+              !e.currentTarget.parentElement?.contains(e.relatedTarget as Node)
+            )
+              setOpen(false);
+          }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+            setHighlight(0);
+            setOpen(true);
+            setError("");
+            setBusy(e.target.value.trim().length >= 2);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setOpen(false);
+              return;
+            }
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setOpen(true);
+              setHighlight((i) =>
+                Math.min(i + 1, Math.max(0, items.length - 1)),
+              );
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setHighlight((i) => Math.max(0, i - 1));
+            }
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (open && ready && !busy && items[highlight])
+                choose(items[highlight]);
+            }
+          }}
+        />
+        {open && ready && (
+          <div
+            className="absolute inset-x-0 top-full z-20 mt-1 rounded-xl border border-black/10 bg-white p-2 shadow-lg"
+            onBlur={(e) => {
+              if (
+                !e.currentTarget.parentElement?.contains(
+                  e.relatedTarget as Node,
                 )
-              }
-            />
-            <span>
-              {meetingName(p)}
-              <span className="block text-xs text-[#6b6b6b]">
-                {p.email || "No email recorded"}
-              </span>
-            </span>
-          </label>
-        ))}
+              )
+                setOpen(false);
+            }}
+          >
+            {busy ? (
+              <p className="p-3 text-sm" role="status">
+                Searching…
+              </p>
+            ) : error ? (
+              <p className="p-3 text-sm text-red-700" role="alert">
+                {error}
+              </p>
+            ) : (
+              <>
+                <div
+                  id={listId}
+                  role="listbox"
+                  aria-label={`Matching ${noun}`}
+                  className="max-h-72 overflow-y-auto"
+                >
+                  {items.length === 0 && (
+                    <p className="p-3 text-sm">
+                      No matching {noun}. Try another name or email.
+                    </p>
+                  )}
+                  {items.map((p, index) => (
+                    <button
+                      id={`${listId}-${index}`}
+                      type="button"
+                      role="option"
+                      aria-selected={selected.some((x) => x._id === p._id)}
+                      key={p._id}
+                      className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${highlight === index ? "bg-[#f6f5f1]" : ""}`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => choose(p)}
+                    >
+                      <span>
+                        {meetingName(p)}
+                        <span className="block text-xs text-[#6b6b6b]">
+                          {p.email || "No email recorded"}
+                        </span>
+                      </span>
+                      <span>
+                        {selected.some((x) => x._id === p._id)
+                          ? "Selected"
+                          : "+"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {result.total > 8 && (
+                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-black/5 pt-2 text-xs">
+                    <span>
+                      {result.total.toLocaleString()} matches · refine your
+                      search
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={page <= 1}
+                        onClick={() => {
+                          setPage(page - 1);
+                          setBusy(true);
+                        }}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={page * 8 >= result.total}
+                        onClick={() => {
+                          setPage(page + 1);
+                          setBusy(true);
+                        }}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
-      {total > 50 && (
-        <div className="flex items-center gap-3 text-sm">
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={page <= 1 || busy}
-            onClick={() => setPage(page - 1)}
-          >
-            Previous
-          </Button>
-          <span>
-            Page {page} of {Math.ceil(total / 50)}
-          </span>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={page * 50 >= total || busy}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-          </Button>
-        </div>
+      <p className="text-xs text-[#6b6b6b]">
+        Type at least 2 characters. Only 8 matching {noun} are loaded at a time.
+      </p>
+      {selected.length > 0 && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            {selected.slice(0, 3).map((p) => (
+              <Button
+                key={p._id}
+                size="sm"
+                variant="secondary"
+                aria-label={`Remove ${meetingName(p)}`}
+                onClick={() =>
+                  onChange(selected.filter((x) => x._id !== p._id))
+                }
+              >
+                {meetingName(p)} ×
+              </Button>
+            ))}
+            {selected.length > 3 && (
+              <span className="text-sm text-[#6b6b6b]">
+                +{(selected.length - 3).toLocaleString()} more
+              </span>
+            )}
+          </div>
+          <details className="text-sm">
+            <summary className="cursor-pointer">
+              Review {selected.length.toLocaleString()} selected {noun}
+            </summary>
+            <div className="mt-3 space-y-3 rounded-xl bg-white p-3">
+              <input
+                className="ui-input"
+                aria-label={`Filter selected ${noun}`}
+                placeholder="Filter selected people…"
+                value={selectedQuery}
+                onChange={(e) => {
+                  setSelectedQuery(e.target.value);
+                  setSelectedPage(1);
+                }}
+              />
+              {shownSelected.map((p) => (
+                <div
+                  className="flex items-center justify-between gap-2"
+                  key={p._id}
+                >
+                  <span>{meetingName(p)}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      onChange(selected.filter((x) => x._id !== p._id))
+                    }
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              {selectedPages > 1 && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={currentSelectedPage <= 1}
+                    onClick={() => setSelectedPage(currentSelectedPage - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <span>
+                    {currentSelectedPage} / {selectedPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={currentSelectedPage >= selectedPages}
+                    onClick={() => setSelectedPage(currentSelectedPage + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
+          </details>
+        </>
       )}
     </div>
   );
@@ -395,18 +565,18 @@ export function MeetingForm({
         : meeting
           ? referenceId(meeting.branchId)
           : "";
-  const users = options.users.filter(
-    (u) => u.branchId === branch || u._id === options.userId,
-  );
   const [audienceMode, setAudienceMode] = useState(
     meeting?.audienceMode || "individuals",
   );
   const [audienceGroups, setAudienceGroups] = useState<string[]>(
     meeting?.audienceServiceUnitIds || [],
   );
-  const [staffIds, setStaffIds] = useState<string[]>(
-    meeting?.attendeeUserIds || [],
+  const [staffPeople, setStaffPeople] = useState<MeetingPerson[]>(
+    (meeting?.attendeeUsers || []).filter((p) =>
+      meeting?.attendeeUserIds.includes(p._id),
+    ),
   );
+  const staffIds = staffPeople.map((p) => p._id);
   const [sendInvitations, setSendInvitations] = useState(
     meeting ? !!meeting.invitationsRequested : true,
   );
@@ -476,9 +646,55 @@ export function MeetingForm({
       .toISOString()
       .slice(0, 16);
   }
+  const [step, setStep] = useState(1);
+  const [nowMin, setNowMin] = useState("");
+  const [startValue, setStartValue] = useState(local(meeting?.startsAt));
+  const [endValue, setEndValue] = useState(local(meeting?.endsAt));
+  useEffect(() => {
+    const update = () =>
+      setNowMin(
+        local(new Date(Math.ceil(Date.now() / 60000) * 60000).toISOString()),
+      );
+    const timer = setTimeout(update, 0);
+    const interval = setInterval(update, 15000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
+  const startMin =
+    meeting && startValue === local(meeting.startsAt) && startValue < nowMin
+      ? startValue
+      : nowMin;
+  const afterStart = startValue
+    ? local(new Date(new Date(startValue).getTime() + 60000).toISOString())
+    : nowMin;
+  const endMin =
+    meeting && endValue === local(meeting.endsAt) && endValue < nowMin
+      ? endValue
+      : afterStart > nowMin
+        ? afterStart
+        : nowMin;
+  function nextStep(form: HTMLFormElement) {
+    for (const input of form.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >(
+      "[data-meeting-details] input,[data-meeting-details] select,[data-meeting-details] textarea",
+    ))
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        input.focus();
+        return;
+      }
+    setStep(2);
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
+    if (step === 1) {
+      nextStep(e.currentTarget);
+      return;
+    }
     const d = new FormData(e.currentTarget);
     setBusy(true);
     setError("");
@@ -515,254 +731,289 @@ export function MeetingForm({
     }
   }
   return (
-    <Card className="p-6">
-      <form onSubmit={submit} className="space-y-5">
-        {!meeting && (
-          <Field label="Meeting group" required>
-            <select
-              className="ui-input"
-              value={groupId}
-              required
-              onChange={(e) => {
-                setGroupId(e.target.value);
-                setMembers([]);
-                setAudienceGroups([]);
-                setStaffIds([]);
-              }}
-            >
-              {options.isAdmin && (
-                <option value="__church__">Church / general meeting</option>
-              )}
-              {available.map((g) => (
-                <option key={g._id} value={g._id}>
-                  {g.name} —{" "}
-                  {typeof g.branchId === "object" ? g.branchId.name : ""}
-                </option>
-              ))}
-            </select>
-            {!available.length && !options.isAdmin && (
-              <p className="text-sm">
-                An admin must enable a meeting group and assign a submitter
-                first.
-              </p>
-            )}
-          </Field>
-        )}
-        {groupId === "__church__" && (
-          <Field label="Church / branch" required>
-            <select
-              className="ui-input"
-              required
-              value={generalBranch}
-              onChange={(e) => {
-                setGeneralBranch(e.target.value);
-                setMembers([]);
-                setStaffIds([]);
-                setAudienceGroups([]);
-              }}
-            >
-              {options.branches.map((b) => (
-                <option value={b._id} key={b._id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
-        <Field label="Meeting title" required>
-          <input
-            className="ui-input"
-            name="title"
-            required
-            minLength={2}
-            maxLength={200}
-            defaultValue={meeting?.title}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Starts (your local time)" required>
-            <input
-              className="ui-input"
-              name="startsAt"
-              type="datetime-local"
-              required
-              defaultValue={local(meeting?.startsAt)}
-            />
-          </Field>
-          <Field label="Ends (your local time)" required>
-            <input
-              className="ui-input"
-              name="endsAt"
-              type="datetime-local"
-              required
-              defaultValue={local(meeting?.endsAt)}
-            />
-          </Field>
+    <Card className="!bg-white border border-black/[0.07] p-6 sm:p-8">
+      <form onSubmit={submit} className="space-y-6">
+        <div className="flex items-center gap-3 border-b border-black/5 pb-5 text-sm">
+          <span
+            className={
+              step === 1 ? "font-semibold text-[#111]" : "text-[#6b6b6b]"
+            }
+          >
+            1. Meeting details
+          </span>
+          <span className="text-[#b5b1aa]">→</span>
+          <span
+            className={
+              step === 2 ? "font-semibold text-[#111]" : "text-[#6b6b6b]"
+            }
+          >
+            2. People & invitations
+          </span>
         </div>
-        <Field label="Venue / location">
-          <input
-            className="ui-input"
-            name="location"
-            maxLength={300}
-            defaultValue={meeting?.location}
-          />
-        </Field>
-        <Field
-          label="Meeting link"
-          hint="Attach a Zoom, Google Meet, Teams, or other meeting URL."
+        <fieldset
+          data-meeting-details
+          hidden={step !== 1}
+          className="space-y-5"
         >
-          <input
-            className="ui-input"
-            name="joinUrl"
-            type="url"
-            maxLength={2000}
-            defaultValue={meeting?.joinUrl}
-            placeholder="https://…"
-          />
-        </Field>
-        <Field label="Agenda">
-          <textarea
-            className="ui-input min-h-36"
-            name="agenda"
-            maxLength={10000}
-            defaultValue={meeting?.agenda}
-          />
-        </Field>
-        <Field label="Who is this meeting for?">
-          <select
-            className="ui-input"
-            value={audienceMode}
-            onChange={(e) => setAudienceMode(e.target.value)}
-          >
-            <option value="individuals">
-              Choose individual church members
-            </option>
-            <option value="service_groups">
-              Members of selected service groups
-            </option>
-            <option value="church">All active church / branch members</option>
-          </select>
-        </Field>
-        {audienceMode === "service_groups" && (
-          <Field
-            label="Service groups"
-            hint="All active members in these groups are included. People belonging to multiple selected groups appear once."
-          >
-            <div className="max-h-56 overflow-auto rounded-xl bg-white p-3 space-y-2">
-              {options.serviceUnits
-                .filter((unit) => unit.branchId === branch)
-                .map((unit) => (
-                  <label className="flex gap-2 text-sm" key={unit._id}>
-                    <input
-                      type="checkbox"
-                      checked={audienceGroups.includes(unit._id)}
-                      onChange={(e) =>
-                        setAudienceGroups(
-                          e.target.checked
-                            ? [...audienceGroups, unit._id]
-                            : audienceGroups.filter((id) => id !== unit._id),
-                        )
-                      }
-                    />
-                    {unit.name}
-                  </label>
+          {!meeting && (
+            <Field label="Meeting group" required>
+              <select
+                className="ui-input"
+                value={groupId}
+                required
+                onChange={(e) => {
+                  setGroupId(e.target.value);
+                  setMembers([]);
+                  setAudienceGroups([]);
+                  setStaffPeople([]);
+                }}
+              >
+                {options.isAdmin && (
+                  <option value="__church__">Church / general meeting</option>
+                )}
+                {available.map((g) => (
+                  <option key={g._id} value={g._id}>
+                    {g.name} —{" "}
+                    {typeof g.branchId === "object" ? g.branchId.name : ""}
+                  </option>
                 ))}
-            </div>
+              </select>
+              {!available.length && !options.isAdmin && (
+                <p className="text-sm">
+                  An admin must enable a meeting group and assign a submitter
+                  first.
+                </p>
+              )}
+            </Field>
+          )}
+          {groupId === "__church__" && (
+            <Field label="Church / branch" required>
+              <select
+                className="ui-input"
+                required
+                value={generalBranch}
+                onChange={(e) => {
+                  setGeneralBranch(e.target.value);
+                  setMembers([]);
+                  setStaffPeople([]);
+                  setAudienceGroups([]);
+                }}
+              >
+                {options.branches.map((b) => (
+                  <option value={b._id} key={b._id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="Meeting title" required>
+            <input
+              className="ui-input"
+              name="title"
+              required
+              minLength={2}
+              maxLength={200}
+              defaultValue={meeting?.title}
+            />
           </Field>
-        )}
-        {audienceMode === "church" && (
-          <p className="text-sm">
-            All active members in this meeting’s church/branch will be included.
-            You can add other members individually below.
-          </p>
-        )}
-        <Field
-          label={
-            audienceMode === "individuals"
-              ? "Choose church members"
-              : "Add other members (optional)"
-          }
-        >
-          <MemberPicker
-            key={branch}
-            branchId={branch}
-            selected={members}
-            onChange={setMembers}
-          />
-        </Field>
-        <Field
-          label="Staff attendees (optional)"
-          hint="Selected users can open this meeting and receive invitations. An email shared with a member record receives only one invitation."
-        >
-          <div className="max-h-52 overflow-y-auto rounded-xl bg-white p-3 space-y-2">
-            {users.map((u) => (
-              <label className="flex gap-2 text-sm" key={u._id}>
-                <input
-                  type="checkbox"
-                  checked={staffIds.includes(u._id)}
-                  onChange={(e) =>
-                    setStaffIds(
-                      e.target.checked
-                        ? [...staffIds, u._id]
-                        : staffIds.filter((id) => id !== u._id),
-                    )
-                  }
-                />
-                {meetingName(u)}
-              </label>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Starts (your local time)" required>
+              <input
+                className="ui-input"
+                name="startsAt"
+                type="datetime-local"
+                required
+                value={startValue}
+                min={startMin}
+                onChange={(e) => setStartValue(e.target.value)}
+              />
+            </Field>
+            <Field label="Ends (your local time)" required>
+              <input
+                className="ui-input"
+                name="endsAt"
+                type="datetime-local"
+                required
+                value={endValue}
+                min={endMin}
+                onChange={(e) => setEndValue(e.target.value)}
+              />
+            </Field>
           </div>
-        </Field>
-        <label className="flex gap-2">
-          <input
-            type="checkbox"
-            checked={sendInvitations}
-            onChange={(e) => setSendInvitations(e.target.checked)}
-          />
-          Send email invitations
-        </label>
-        <p className="text-sm text-[#6b6b6b]">
-          Invitations include the meeting time, location, agenda and join link.
-          Each email address is invited once per meeting, even across several
-          groups or member/staff records. Saving changes emails only new
-          addresses.
-        </p>
-        <div role="status" className="rounded-xl bg-white p-4 text-sm">
-          {previewBusy
-            ? "Checking audience…"
-            : preview
-              ? `${preview.memberCount} unique members · ${preview.staffCount} staff users · ${preview.uniqueEmails} unique email addresses`
-              : audienceMode === "service_groups"
-                ? "Select at least one service group to preview your audience."
-                : "Select a meeting group to preview your audience."}
-          {preview && !previewBusy && preview.missingEmail > 0 && (
-            <p className="mt-2 text-amber-800">
-              {preview.missingEmail} selected records have no valid email. They
-              remain on the attendance list but cannot receive an email
-              invitation.
+          <Field label="Venue / location">
+            <input
+              className="ui-input"
+              name="location"
+              maxLength={300}
+              defaultValue={meeting?.location}
+            />
+          </Field>
+          <Field
+            label="Meeting link"
+            hint="Attach a Zoom, Google Meet, Teams, or other meeting URL."
+          >
+            <input
+              className="ui-input"
+              name="joinUrl"
+              type="url"
+              maxLength={2000}
+              defaultValue={meeting?.joinUrl}
+              placeholder="https://…"
+            />
+          </Field>
+          <Field label="Agenda">
+            <textarea
+              className="ui-input min-h-36"
+              name="agenda"
+              maxLength={10000}
+              defaultValue={meeting?.agenda}
+            />
+          </Field>
+        </fieldset>
+        <fieldset hidden={step !== 2} className="space-y-5">
+          <Field label="Who is this meeting for?">
+            <select
+              className="ui-input"
+              value={audienceMode}
+              onChange={(e) => setAudienceMode(e.target.value)}
+            >
+              <option value="individuals">
+                Choose individual church members
+              </option>
+              <option value="service_groups">
+                Members of selected service groups
+              </option>
+              <option value="church">All active church / branch members</option>
+            </select>
+          </Field>
+          {audienceMode === "service_groups" && (
+            <Field
+              label="Service groups"
+              hint="All active members in these groups are included. People belonging to multiple selected groups appear once."
+            >
+              <div className="max-h-56 overflow-auto rounded-xl bg-white p-3 space-y-2">
+                {options.serviceUnits
+                  .filter((unit) => unit.branchId === branch)
+                  .map((unit) => (
+                    <label className="flex gap-2 text-sm" key={unit._id}>
+                      <input
+                        type="checkbox"
+                        checked={audienceGroups.includes(unit._id)}
+                        onChange={(e) =>
+                          setAudienceGroups(
+                            e.target.checked
+                              ? [...audienceGroups, unit._id]
+                              : audienceGroups.filter((id) => id !== unit._id),
+                          )
+                        }
+                      />
+                      {unit.name}
+                    </label>
+                  ))}
+              </div>
+            </Field>
+          )}
+          {audienceMode === "church" && (
+            <p className="text-sm">
+              All active members in this meeting’s church/branch will be
+              included. You can add other members individually below.
             </p>
           )}
-          {previewError && <p className="text-red-700">{previewError}</p>}
-        </div>
+          <Field
+            label={
+              audienceMode === "individuals"
+                ? "Choose church members"
+                : "Add other members (optional)"
+            }
+          >
+            <MemberPicker
+              key={branch}
+              branchId={branch}
+              selected={members}
+              onChange={setMembers}
+            />
+          </Field>
+          <Field
+            label="Staff attendees (optional)"
+            hint="Selected users can open this meeting and receive invitations. An email shared with a member record receives only one invitation."
+          >
+            <MemberPicker
+              key={`${branch}-staff`}
+              branchId={branch}
+              selected={staffPeople}
+              onChange={setStaffPeople}
+              kind="staff"
+            />
+          </Field>
+          <label className="flex gap-2">
+            <input
+              type="checkbox"
+              checked={sendInvitations}
+              onChange={(e) => setSendInvitations(e.target.checked)}
+            />
+            Send email invitations
+          </label>
+          <p className="text-sm text-[#6b6b6b]">
+            Invitations include the meeting time, location, agenda and join
+            link. Each email address is invited once per meeting, even across
+            several groups or member/staff records. Saving changes emails only
+            new addresses.
+          </p>
+          <div role="status" className="rounded-xl bg-white p-4 text-sm">
+            {previewBusy
+              ? "Checking audience…"
+              : preview
+                ? `${preview.memberCount} unique members · ${preview.staffCount} staff users · ${preview.uniqueEmails} unique email addresses`
+                : audienceMode === "service_groups"
+                  ? "Select at least one service group to preview your audience."
+                  : "Select a meeting group to preview your audience."}
+            {preview && !previewBusy && preview.missingEmail > 0 && (
+              <p className="mt-2 text-amber-800">
+                {preview.missingEmail} selected records have no valid email.
+                They remain on the attendance list but cannot receive an email
+                invitation.
+              </p>
+            )}
+            {previewError && <p className="text-red-700">{previewError}</p>}
+          </div>
+        </fieldset>
         {error && (
           <p role="alert" className="text-red-700">
             {error}
           </p>
         )}
-        <Button
-          type="submit"
-          disabled={
-            busy ||
-            (!meeting && !available.length && !options.isAdmin) ||
-            (audienceMode === "service_groups" && !audienceGroups.length)
-          }
-        >
-          {busy
-            ? "Saving…"
-            : meeting
-              ? "Save meeting changes"
-              : "Schedule meeting"}
-        </Button>
+        <div className="flex items-center justify-between border-t border-black/5 pt-5">
+          {step === 2 ? (
+            <Button variant="secondary" onClick={() => setStep(1)}>
+              ← Details
+            </Button>
+          ) : (
+            <span className="text-xs text-[#6b6b6b]">Step 1 of 2</span>
+          )}
+          {step === 1 ? (
+            <Button onClick={(e) => nextStep(e.currentTarget.form!)}>
+              Continue to people →
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="submit"
+                disabled={
+                  busy ||
+                  (!meeting && !available.length && !options.isAdmin) ||
+                  (audienceMode === "service_groups" && !audienceGroups.length)
+                }
+              >
+                {busy
+                  ? "Saving…"
+                  : meeting
+                    ? "Save meeting changes"
+                    : "Schedule meeting"}
+              </Button>
+            </>
+          )}
+        </div>
       </form>
     </Card>
   );

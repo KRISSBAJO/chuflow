@@ -31,7 +31,7 @@ Unit/schema and HTTP tests cover branch and meeting permissions, disabled groups
 
 ## Meeting audience and email invitations
 
-- Member suggestions appear as you type, with a 250 ms debounce, request cancellation and server pagination. Search accepts name parts or email.
+- Member and staff pickers stay empty until at least two characters are typed. Searches use a 250 ms debounce, request cancellation and server pagination, returning at most eight matches per request. Search accepts name parts or email. Only three selected chips are shown; a searchable, paginated review lists ten selections per page. Scheduling pages do not preload the staff directory.
 - Choose individual members, all active members of selected service groups, or all active church/branch members. Add other members individually. Both current multiple-service-group assignments and legacy single-group placement are supported. Extra individuals can be selected even when inactive.
 - Group and church audiences are expanded to a member snapshot when saved; later group membership changes do not silently add recipients. Saving the meeting again refreshes the selected groups. A maximum of 10,000 members can be selected. All groups and members must be in the meeting branch.
 - Audience preview shows unique member count, staff count, unique email addresses and records missing a valid email. Members without addresses remain on the attendance list.
@@ -39,3 +39,9 @@ Unit/schema and HTTP tests cover branch and meeting permissions, disabled groups
 - Addresses are trimmed and compared case-insensitively. Each member ID is included once; each email address receives at most one application invitation for a meeting, even across member/staff records and selected service groups. Previously sent addresses are not emailed again when the meeting is saved, so edits do not send schedule-update emails to previous recipients.
 - An indexed MongoDB outbox persists pending invitations across restarts. Workers atomically claim queued addresses, recheck the current audience and cancellation state, and send in bounded batches every 15 seconds. The meeting page shows preparation, queue, sending, provider-accepted and failure counts. Provider acceptance is not proof of inbox delivery.
 - Missing SMTP configuration is reported as failed; authorised organisers/submitters can retry those unsent invitations after configuration is corrected. Interrupted or ambiguous SMTP attempts are marked uncertain and are not automatically retried, preventing application retries from causing duplicate emails. Check the mail provider before taking any further action on uncertain attempts.
+
+## Meeting page layout and date rules
+
+Scheduling is divided into Meeting details and People & invitations. Native date/time controls set a minimum to disable past dates/times and require the end to follow the start. The API independently rejects new past meetings and attempts to reschedule dates into the past. Existing historical records retain their dates when updating notes, attendance, minutes or status.
+
+Meeting details use a compact header plus Overview, People, Minutes and Actions sections. Times show the viewer's local timezone, with UTC used during initial server rendering. Attendance is searchable and renders twenty records per page; switching pages retains checked selections. The overview contains the agenda, a short status summary and compact invitation counts. Detailed mail errors and less-used status commands are collapsed.

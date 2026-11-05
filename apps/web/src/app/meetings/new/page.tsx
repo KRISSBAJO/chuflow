@@ -5,7 +5,7 @@ import { serverGet } from "@/lib/server-api";
 import type { MeetingOptions } from "@/lib/meetings";
 export default async function Page() {
   await requireServerRole("/meetings");
-  const options = await serverGet<MeetingOptions>("/meetings/options");
+  const options = await serverGet<MeetingOptions>("/meetings/options?mode=form");
   return (
     <CreatePage title="Schedule meeting" backHref="/meetings">
       <MeetingForm options={options} />
