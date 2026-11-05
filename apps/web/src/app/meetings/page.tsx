@@ -1,3 +1,4 @@
+import { Icon } from "@/components/app/icons";
 import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
@@ -26,13 +27,17 @@ export default async function MeetingsPage({
     "actions",
     "upcoming",
   ])
-    if (typeof raw[key] === "string" && raw[key].trim()) query.set(key, raw[key]);
+    if (typeof raw[key] === "string" && raw[key].trim())
+      query.set(key, raw[key]);
   const [result, options] = await Promise.all([
     serverGet<{ items: Meeting[]; total: number; page: number; limit: number }>(
       `/meetings?${query}`,
     ),
     serverGet<MeetingOptions>("/meetings/options?mode=form"),
   ]);
+  const activeFilters = [...query].filter(
+    ([key, value]) => key !== "page" && (key !== "sort" || value !== "newest"),
+  ).length;
   const pageLink = (page: number) => {
     const q = new URLSearchParams(query);
     q.set("page", String(page));
@@ -61,120 +66,142 @@ export default async function MeetingsPage({
         }
       />
       <Card className="p-5">
-        <form className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <input
-            name="q"
-            className="ui-input"
-            placeholder="Search meetings"
-            aria-label="Search meetings"
-            defaultValue={query.get("q") || ""}
-          />
-          <select
-            name="branchId"
-            className="ui-input"
-            aria-label="Branch"
-            defaultValue={query.get("branchId") || ""}
-          >
-            <option value="">All accessible branches</option>
-            {options.branches.map((b) => (
-              <option value={b._id} key={b._id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-          <select
-            name="groupId"
-            className="ui-input"
-            aria-label="Meeting group"
-            defaultValue={query.get("groupId") || ""}
-          >
-            <option value="">All meeting groups</option>
-            {options.groups.map((g) => (
-              <option value={g._id} key={g._id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-          <select
-            name="status"
-            className="ui-input"
-            aria-label="Meeting status"
-            defaultValue={query.get("status") || ""}
-          >
-            <option value="">All meeting statuses</option>
-            {["scheduled", "ongoing", "completed", "cancelled"].map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-          <select
-            name="minutes"
-            className="ui-input"
-            aria-label="Minutes status"
-            defaultValue={query.get("minutes") || ""}
-          >
-            <option value="">All minutes statuses</option>
-            {[
-              "overdue",
-              "draft",
-              "submitted",
-              "approved",
-              "changes_requested",
-            ].map((s) => (
-              <option value={s} key={s}>
-                {s.replaceAll("_", " ")}
-              </option>
-            ))}
-          </select>
-          <select
-            name="sort"
-            className="ui-input"
-            aria-label="Sort meetings"
-            defaultValue={query.get("sort") || "newest"}
-          >
-            <option value="newest">Latest first</option>
-            <option value="oldest">Earliest first</option>
-          </select>
-          <label className="text-sm">
-            From (UTC)
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-500 [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-2.5 text-sm font-medium">
+              <Icon name="filter" className="h-4 w-4 text-[#df6d13]" />
+              Filters
+              {activeFilters > 0 && (
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-[#b94f0a]">
+                  {activeFilters} active
+                </span>
+              )}
+            </span>
+            <span className="flex items-center gap-3">
+              <span className="hidden text-xs text-[#8a8780] sm:inline">
+                Search, dates and status
+              </span>
+              <Icon
+                name="chevronDown"
+                className="h-4 w-4 text-[#6b6b6b] transition-transform group-open:rotate-180"
+              />
+            </span>
+          </summary>
+          <form className="mt-5 grid gap-3 border-t border-black/5 pt-5 sm:grid-cols-3 lg:grid-cols-4">
             <input
-              name="from"
-              type="date"
+              name="q"
               className="ui-input"
-              defaultValue={query.get("from") || ""}
+              placeholder="Search meetings"
+              aria-label="Search meetings"
+              defaultValue={query.get("q") || ""}
             />
-          </label>
-          <label className="text-sm">
-            To (UTC)
-            <input
-              name="to"
-              type="date"
+            <select
+              name="branchId"
               className="ui-input"
-              defaultValue={query.get("to") || ""}
-            />
-          </label>
-          <select
-            className="ui-input"
-            name="actions"
-            aria-label="Actions"
-            defaultValue={query.get("actions") || ""}
-          >
-            <option value="">All actions</option>
-            <option value="due">My overdue actions</option>
-          </select>
-          <select
-            className="ui-input"
-            name="upcoming"
-            aria-label="Upcoming"
-            defaultValue={query.get("upcoming") || ""}
-          >
-            <option value="">All dates</option>
-            <option value="true">Next 24 hours</option>
-          </select>
-          <button className={buttonClass()}>Apply filters</button>
-          <Link className={buttonClass("secondary")} href="/meetings">
-            Clear filters
-          </Link>
-        </form>
+              aria-label="Branch"
+              defaultValue={query.get("branchId") || ""}
+            >
+              <option value="">All accessible branches</option>
+              {options.branches.map((b) => (
+                <option value={b._id} key={b._id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+            <select
+              name="groupId"
+              className="ui-input"
+              aria-label="Meeting group"
+              defaultValue={query.get("groupId") || ""}
+            >
+              <option value="">All meeting groups</option>
+              {options.groups.map((g) => (
+                <option value={g._id} key={g._id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+            <select
+              name="status"
+              className="ui-input"
+              aria-label="Meeting status"
+              defaultValue={query.get("status") || ""}
+            >
+              <option value="">All meeting statuses</option>
+              {["scheduled", "ongoing", "completed", "cancelled"].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+            <select
+              name="minutes"
+              className="ui-input"
+              aria-label="Minutes status"
+              defaultValue={query.get("minutes") || ""}
+            >
+              <option value="">All minutes statuses</option>
+              {[
+                "overdue",
+                "draft",
+                "submitted",
+                "approved",
+                "changes_requested",
+              ].map((s) => (
+                <option value={s} key={s}>
+                  {s.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
+            <select
+              name="sort"
+              className="ui-input"
+              aria-label="Sort meetings"
+              defaultValue={query.get("sort") || "newest"}
+            >
+              <option value="newest">Latest first</option>
+              <option value="oldest">Earliest first</option>
+            </select>
+            <label className="text-sm">
+              From (UTC)
+              <input
+                name="from"
+                type="date"
+                className="ui-input"
+                defaultValue={query.get("from") || ""}
+              />
+            </label>
+            <label className="text-sm">
+              To (UTC)
+              <input
+                name="to"
+                type="date"
+                className="ui-input"
+                defaultValue={query.get("to") || ""}
+              />
+            </label>
+            <select
+              className="ui-input"
+              name="actions"
+              aria-label="Actions"
+              defaultValue={query.get("actions") || ""}
+            >
+              <option value="">All actions</option>
+              <option value="due">My overdue actions</option>
+            </select>
+            <select
+              className="ui-input"
+              name="upcoming"
+              aria-label="Upcoming"
+              defaultValue={query.get("upcoming") || ""}
+            >
+              <option value="">All dates</option>
+              <option value="true">Next 24 hours</option>
+            </select>
+            <button className={buttonClass()}>Apply filters</button>
+            <Link className={buttonClass("secondary")} href="/meetings">
+              Clear filters
+            </Link>
+          </form>
+        </details>
       </Card>
       <Card className="p-5 overflow-x-auto">
         <p className="mb-4 text-sm">{result.total} meetings</p>
@@ -187,6 +214,9 @@ export default async function MeetingsPage({
               <th>Status</th>
               <th>Minutes</th>
               <th>Actions</th>
+              <th>
+                <span className="sr-only">Open meeting</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -218,6 +248,20 @@ export default async function MeetingsPage({
                 </td>
                 <td>
                   {m.actions.filter((a) => a.status === "open").length} open
+                </td>
+                <td className="text-right">
+                  <Link
+                    href={`/meetings/${m._id}`}
+                    aria-label={`Open meeting: ${m.title}`}
+                    title={`Open ${m.title}`}
+                    className={buttonClass(
+                      "secondary",
+                      "sm",
+                      "h-9 w-9 px-0 text-[#b94f0a] hover:bg-orange-50",
+                    )}
+                  >
+                    <Icon name="arrowUpRight" className="h-4 w-4" />
+                  </Link>
                 </td>
               </tr>
             ))}

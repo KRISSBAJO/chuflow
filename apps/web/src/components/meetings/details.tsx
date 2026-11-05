@@ -378,11 +378,11 @@ export function MeetingDetails({
           {notice}
         </p>
       )}
-      <section className="rounded-2xl border border-black/[0.08] bg-white p-5 sm:p-7">
+      <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <p className="text-xs font-medium uppercase tracking-wider text-[#8a8780]">
+              <p className="lp-label !text-[11px] uppercase tracking-wider">
                 {meeting.group.name}
               </p>
               <span
@@ -510,7 +510,7 @@ export function MeetingDetails({
               type="button"
               aria-current={tab === value ? "page" : undefined}
               onClick={() => setTab(value)}
-              className={`shrink-0 border-b-2 px-4 py-3 text-sm transition-colors ${tab === value ? "border-[#111] font-semibold text-[#111]" : "border-transparent text-[#6b6b6b] hover:text-[#111]"}`}
+              className={`shrink-0 border-b-2 px-4 py-3 text-sm transition-colors ${tab === value ? "border-[#ed7b19] font-semibold text-[#b94f0a]" : "border-transparent text-[#6b6b6b] hover:text-[#111]"}`}
             >
               {value.charAt(0).toUpperCase() + value.slice(1)}
               {value === "people"
@@ -524,7 +524,7 @@ export function MeetingDetails({
       </nav>
       <div hidden={tab !== "overview"} className="space-y-5">
         <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-          <section className="rounded-2xl border border-black/[0.07] bg-white p-6">
+          <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-6">
             <h2 className="text-base font-semibold">Agenda</h2>
             <p
               className={`mt-3 whitespace-pre-wrap text-sm leading-7 ${meeting.agenda ? "text-[#3f3d39]" : "text-[#8a8780]"}`}
@@ -532,7 +532,7 @@ export function MeetingDetails({
               {meeting.agenda || "The organiser hasn’t added an agenda yet."}
             </p>
           </section>
-          <section className="rounded-2xl border border-black/[0.07] bg-white p-6">
+          <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-6">
             <h2 className="text-base font-semibold">At a glance</h2>
             <dl className="mt-3 divide-y divide-black/5 text-sm">
               <div className="flex justify-between gap-4 py-3">
@@ -561,7 +561,7 @@ export function MeetingDetails({
           </section>
         </div>
         {meeting.canManage && meeting.invitationSummary && (
-          <section className="rounded-2xl border border-black/[0.07] bg-white p-6">
+          <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-6">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base font-semibold">Invitations</h2>
               <Button
@@ -651,7 +651,7 @@ export function MeetingDetails({
         )}
       </div>
       <div hidden={tab !== "people"}>
-        <Card className="!bg-white border border-black/[0.07] p-5 sm:p-6 space-y-4">
+        <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
             title="Meeting attendance"
             description="Search attendees and mark who was present."
@@ -668,7 +668,7 @@ export function MeetingDetails({
         </Card>
       </div>
       <div hidden={tab !== "minutes"} className="space-y-5">
-        <Card className="!bg-white border border-black/[0.07] p-5 sm:p-6 space-y-4">
+        <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
             title="Minutes and documents"
             description={`${meeting.minutesRequired ? "Minutes required" : "Minutes optional"} · Due ${stamp(meeting.minutesDueAt)}`}
@@ -834,7 +834,7 @@ export function MeetingDetails({
             </form>
           )}
         </Card>
-        <Card className="!bg-white border border-black/[0.07] p-5 sm:p-6 space-y-4">
+        <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
             title="Minutes revision history"
             description="The latest 30 saved minutes revisions and review decisions are retained."
@@ -865,7 +865,7 @@ export function MeetingDetails({
         </Card>
       </div>
       <div hidden={tab !== "actions"}>
-        <Card className="!bg-white border border-black/[0.07] p-5 sm:p-6 space-y-4">
+        <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
             title="Actions and follow-through"
             description="Assign an owner and deadline to each next step."

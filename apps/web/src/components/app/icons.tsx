@@ -16,6 +16,7 @@ const PATHS = {
   templates: "M4 4h16v6H4zM4 14h7v6H4zM15 14h5v6h-5z",
   reports: "M4 19h16M7 16V10M12 16V5M17 16v-4",
   settings: "M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4",
+  filter: "M4 5h16l-6 7v6l-4 2v-8z",
   search: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-3.5-3.5",
   bell: "M6 9a6 6 0 0112 0c0 6 2.5 8 2.5 8h-17S6 15 6 9zM10.3 20a1.9 1.9 0 003.4 0",
   plus: "M12 5v14M5 12h14",
