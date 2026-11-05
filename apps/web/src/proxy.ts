@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const AUTH_COOKIE_NAME = "cms_access_token";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
-const publicPages = ["/", "/request-workspace", "/connect", "/intake", "/outreach", "/offline"];
+const publicPages = ["/", "/request-workspace", "/connect", "/intake", "/outreach", "/care-check-in", "/offline"];
 
 function matchesRoute(pathname: string, route: string) {
   if (route === "/") {

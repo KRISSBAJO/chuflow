@@ -29,7 +29,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/evangelism", label: "Evangelism", icon: "share" },
       { href: "/guests", label: "Guests", icon: "guests", badge: "firstTimers" },
-      { href: "/follow-up", label: "Follow-up", icon: "care", badge: "followUp" },
+      { href: "/care", label: "Follow-up", icon: "care", badge: "followUp" },
       { href: "/members", label: "Members", icon: "members" },
       { href: "/service-units", label: "Service units", icon: "units" },
     ],
@@ -77,7 +77,7 @@ const QUICK_ACTIONS: { href: string; label: string; hint: string; icon: IconName
 const TAB_CANDIDATES: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
   { href: "/guests", label: "Guests", icon: "guests" },
-  { href: "/follow-up", label: "Follow-up", icon: "care", badge: "followUp" },
+  { href: "/care", label: "Follow-up", icon: "care", badge: "followUp" },
   { href: "/attendance", label: "Attendance", icon: "attendance" },
   { href: "/approvals", label: "Approvals", icon: "approvals", badge: "approvals" },
   { href: "/members", label: "Members", icon: "members" },

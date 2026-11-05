@@ -1,3 +1,4 @@
+import { CareModule } from './care/care.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { Module } from '@nestjs/common';
 import { EvangelismModule } from './evangelism/evangelism.module';
@@ -53,6 +54,7 @@ import { PushModule } from './push/push.module';
     AuthModule,
     EvangelismModule,
     MeetingsModule,
+    CareModule,
     UsersModule,
     BranchesModule,
     GuestsModule,

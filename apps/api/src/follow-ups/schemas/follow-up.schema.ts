@@ -29,3 +29,5 @@ export class FollowUp {
 }
 
 export const FollowUpSchema = SchemaFactory.createForClass(FollowUp);
+
+FollowUpSchema.index({updatedAt:1,_id:1});

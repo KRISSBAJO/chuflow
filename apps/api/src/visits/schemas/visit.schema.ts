@@ -22,3 +22,5 @@ export class Visit {
 }
 
 export const VisitSchema = SchemaFactory.createForClass(Visit);
+
+VisitSchema.index({updatedAt:1,_id:1});

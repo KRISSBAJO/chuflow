@@ -182,6 +182,8 @@ function arrayFilter(
 }
 
 export const EXPORTS: Record<string, ExportDefinition> = {
+ care:{title:'Care records',permission:'/care',endpoint:'/care/cases',paginated:true,filters:['branchId','view','q'],columns:[col('First name','firstName'),col('Last name','lastName'),col('Branch','branchId.name'),col('Journey','journey'),col('Stage','stage'),col('Email','email'),col('Phone','phone'),{header:'Owner',value:row=>person(row,'ownerId.')},col('Next task','nextTask.title'),col('Due (UTC)','nextTask.dueAt','date'),col('Open tasks','openTasks'),col('Email permission','emailAllowed'),col('Contact stopped','stopContact')]},
+
   meetings: {
     title: "Meetings",
     permission: "/meetings",

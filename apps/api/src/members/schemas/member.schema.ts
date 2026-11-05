@@ -94,3 +94,5 @@ MemberSchema.index({ branchId: 1, createdAt: -1, _id: -1 });
 MemberSchema.index({ branchId: 1, membershipStatus: 1 });
 
 MemberSchema.index({ branchId: 1, serviceUnitIds: 1 });
+
+MemberSchema.index({updatedAt:1,_id:1});

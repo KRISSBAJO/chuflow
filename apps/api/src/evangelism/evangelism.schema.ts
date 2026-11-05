@@ -83,3 +83,5 @@ OutreachContactSchema.index(
   { unique: true },
 );
 OutreachContactSchema.index({ branchId: 1, stage: 1, nextActionDate: 1 });
+
+OutreachContactSchema.index({updatedAt:1,_id:1});

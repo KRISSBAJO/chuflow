@@ -73,3 +73,5 @@ export class Guest {
 }
 
 export const GuestSchema = SchemaFactory.createForClass(Guest);
+
+GuestSchema.index({updatedAt:1,_id:1});

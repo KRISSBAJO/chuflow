@@ -68,3 +68,5 @@ export class Attendance {
 }
 
 export const AttendanceSchema = SchemaFactory.createForClass(Attendance);
+
+AttendanceSchema.index({updatedAt:1,_id:1});

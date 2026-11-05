@@ -1,0 +1,12 @@
+import { publicServerGet } from "@/lib/server-api";
+import { CareCheckIn } from "@/components/care/care-check-in";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const info=await publicServerGet<{churchName:string;kind:string}>("/care/public/"+encodeURIComponent(token)).catch(()=>null);
+  if(!info)return <main className="mx-auto max-w-lg px-6 py-20"><h1 className="text-2xl font-semibold">This check-in link is unavailable</h1><p className="mt-4 text-[#6b6b6b]">It may have expired or already been used. Please ask your church for a new private link.</p></main>;
+  return <CareCheckIn token={token} info={info}/>;
+}

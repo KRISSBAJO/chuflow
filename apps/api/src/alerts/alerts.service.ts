@@ -1,3 +1,4 @@
+import { CareService } from '../care/care.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -52,6 +53,7 @@ type AlertItem = {
 @Injectable()
 export class AlertsService {
   constructor(
+    private readonly careService: CareService,
     private readonly meetingsService: MeetingsService,
     @InjectModel(OutreachContact.name)
     private readonly outreachModel: Model<OutreachContactDocument>,
@@ -291,7 +293,33 @@ export class AlertsService {
         assignedTo: { $exists: false },
       }),
     ]);
+    const careSummary = await this.careService.alertSummary(currentUser);
     const items: AlertItem[] = [
+      ...(careSummary.overdue > 0
+        ? [
+            {
+              key: 'care_overdue',
+              label: 'Care commitments overdue',
+              count: careSummary.overdue,
+              tone: 'critical' as const,
+              description:
+                'Review overdue care tasks and confirm the next action.',
+              href: '/care?view=overdue',
+            },
+          ]
+        : []),
+      ...(careSummary.unassigned > 0
+        ? [
+            {
+              key: 'care_unassigned',
+              label: 'People need a care owner',
+              count: careSummary.unassigned,
+              tone: 'warm' as const,
+              description: 'Assign responsibility for the next care step.',
+              href: '/care?view=unassigned',
+            },
+          ]
+        : []),
       overdueOutreach > 0
         ? {
             key: 'overdue_evangelism',
@@ -345,7 +373,7 @@ export class AlertsService {
             href: '/approvals',
           }
         : null,
-      overdueFollowUp > 0
+      careSummary.cases === 0 && overdueFollowUp > 0
         ? {
             key: 'overdue_follow_up',
             label: 'Overdue follow-up',
@@ -392,12 +420,14 @@ export class AlertsService {
       },
       quickStats: {
         firstTimers: firstTimersRows[0]?.total ?? 0,
-        pendingFollowUp,
+        pendingFollowUp:
+          careSummary.cases > 0 ? careSummary.pending : pendingFollowUp,
         pendingApprovals,
         activeAlerts: items.length,
       },
       counts: {
-        overdueFollowUp,
+        overdueFollowUp:
+          careSummary.cases > 0 ? careSummary.overdue : overdueFollowUp,
         pendingAttendanceApprovals,
         pendingExpenseApprovals,
         pendingWorkspaceRequests,

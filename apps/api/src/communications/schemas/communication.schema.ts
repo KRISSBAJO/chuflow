@@ -58,3 +58,5 @@ export class Communication {
 }
 
 export const CommunicationSchema = SchemaFactory.createForClass(Communication);
+
+CommunicationSchema.index({updatedAt:1,_id:1});

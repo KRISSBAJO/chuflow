@@ -168,11 +168,11 @@ export default async function FollowUpPage({
         eyebrow="Follow-up"
         title="Care workflow"
         description="Help every guest move from first contact to return, prayer and next steps, with clear ownership in each branch."
-        action={
+        action={<div className="flex flex-wrap gap-2"><Link href="/care" className={buttonClass("secondary")}>Care & connection hub</Link>
           <a href={buildCreateHref()} className={buttonClass("primary")}>
             <Icon name="plus" className="h-4 w-4" />
             Add follow-up
-          </a>
+          </a></div>
         }
       />
 
