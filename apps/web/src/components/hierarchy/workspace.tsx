@@ -11,7 +11,7 @@ import type {
   HierarchyChurch,
 } from "@/lib/hierarchy";
 type Pastor = { _id: string; firstName: string; lastName: string };
-export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
+export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; unitId?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -35,64 +35,21 @@ export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
       setBusy(false);
     }
   }
-  const visibleChurches = data.branches.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const selected = data.units.find((u) => u._id === unitId);
+  const unitHref = (id: string) => `/hierarchy/${encodeURIComponent(id)}?districtId=${encodeURIComponent(data.selectedDistrictId || "")}`;
+  const scopedChurches = selected ? data.branches.filter((c) =>
+    selected.kind === "district" || (selected.kind === "zone" ? c.zoneId === selected._id : c.areaId === selected._id)
+  ) : [];
+  const visibleChurches = scopedChurches.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
   const [page, setPage] = useState(1);
   const pages = Math.max(1, Math.ceil(visibleChurches.length / 20));
   const currentPage = Math.min(page, pages);
-  const districts = data.units.filter((u) => u.kind === "district");
-  const children = (id: string) => data.units.filter((u) => u.parentId === id);
-  function node(unit: HierarchyUnit) {
-    return (
-      <div key={unit._id} className="space-y-3">
-        <details
-          className="rounded-2xl border border-black/[0.06] bg-white p-5"
-          open={unit.kind === "district"}
-        >
-          <summary className="cursor-pointer">
-            <span className="text-xs uppercase tracking-wide text-[#b95c18]">
-              {unit.kind}
-              {!unit.isActive ? " · Inactive" : ""}
-            </span>
-            <span className="mt-1 block text-lg font-semibold">
-              {unit.name}
-            </span>
-            <span className="mt-2 block text-sm text-[#6b6b6b]">
-              {unit.churches} churches · {unit.members} member records ·{" "}
-              {unit.guests} guest records
-              {unit.partial ? " · Your accessible churches only" : ""}
-            </span>
-          </summary>
-          <div className="mt-4 border-t border-black/5 pt-4 text-sm">
-            <p>
-              Headquarters: {unit.headquartersBranchId?.name || "Not appointed"}
-            </p>
-            <p className="mt-1">
-              Resident & {unit.kind === "zone" ? "zonal" : unit.kind} pastor:{" "}
-              {unit.pastorUserId
-                ? `${unit.pastorUserId.firstName} ${unit.pastorUserId.lastName}`
-                : "Not appointed"}
-            </p>
-            {data.canManage && (
-              <Appointment
-                key={`${unit._id}-${unit.revision}`}
-                unit={unit}
-                churches={data.branches}
-                busy={busy}
-                save={save}
-              />
-            )}
-          </div>
-        </details>
-        {children(unit._id).length > 0 && (
-          <div className="ml-3 space-y-3 border-l-2 border-orange-100 pl-4 sm:ml-6">
-            {children(unit._id).map(node)}
-          </div>
-        )}
-      </div>
-    );
-  }
+  const listedUnits = data.units.filter((u) => selected ? u.parentId === selected._id : u.kind === "district");
+  const [levelSearch, setLevelSearch] = useState("");
+  const [levelPage, setLevelPage] = useState(1);
+  const matchingUnits = listedUnits.filter((u) => u.name.toLowerCase().includes(levelSearch.toLowerCase()));
+  const levelPages = Math.max(1, Math.ceil(matchingUnits.length / 20));
+  const currentLevelPage = Math.min(levelPage, levelPages);
   return (
     <div className="space-y-6">
       {error && (
@@ -110,6 +67,21 @@ export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
         >
           {message}
         </p>
+      )}
+      {selected && (
+        <>
+          <Link className="inline-flex items-center gap-2 text-sm hover:underline" href={selected.parentId ? unitHref(selected.parentId) : `/hierarchy?districtId=${data.selectedDistrictId}`}>
+            ← Back to {data.units.find((u) => u._id === selected.parentId)?.name || "hierarchy"}
+          </Link>
+          <Card className="p-6">
+            <p className="text-xs uppercase tracking-wide text-[#b95c18]">{selected.kind}{!selected.isActive ? " · Inactive" : ""}</p>
+            <h2 className="mt-2 text-2xl font-semibold">{selected.name}</h2>
+            <p className="mt-2 text-sm text-[#6b6b6b]">{selected.churches} churches · {selected.members} member records · {selected.guests} guest records{selected.partial ? " · Your accessible churches only" : ""}</p>
+            <p className="mt-4 text-sm">Headquarters: {selected.headquartersBranchId?.name || "Not appointed"}</p>
+            <p className="mt-1 text-sm">Resident & {selected.kind === "zone" ? "zonal" : selected.kind} pastor: {selected.pastorUserId ? `${selected.pastorUserId.firstName} ${selected.pastorUserId.lastName}` : "Not appointed"}</p>
+            {data.canManage && <details className="mt-5 border-t border-black/5 pt-4"><summary className="cursor-pointer text-sm font-medium">Manage appointment</summary><Appointment key={`${selected._id}-${selected.revision}`} unit={selected} churches={data.branches} busy={busy} save={save} /></details>}
+          </Card>
+        </>
       )}
       <Card className="p-5">
         <p className="text-sm leading-6 text-[#6b6b6b]">
@@ -201,20 +173,29 @@ export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
           </form>
         </details>
       )}
-      <section className="space-y-4" aria-label="Oversight tree">
-        {districts.map(node)}
-        {!data.units.length && (
-          <Card className="p-8 text-sm text-[#6b6b6b]">
-            No oversight levels have been configured. An authorized
-            administrator can add the district headquarters level, then its
-            zones and areas.
-          </Card>
-        )}
+      <section className="space-y-4" aria-label="Oversight levels">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">{selected ? selected.kind === "district" ? "Zones" : selected.kind === "zone" ? "Areas" : "Area churches" : "Districts"}</h2>
+          {listedUnits.length > 0 && <input className="ui-input max-w-sm" aria-label="Search oversight levels" placeholder="Search levels…" value={levelSearch} onChange={(e) => { setLevelSearch(e.target.value); setLevelPage(1); }} />}
+        </div>
+        {matchingUnits.slice((currentLevelPage - 1) * 20, currentLevelPage * 20).map((unit) => (
+          <Link key={unit._id} href={unitHref(unit._id)} className="flex items-center justify-between gap-4 rounded-2xl border border-black/[0.06] bg-white p-5 transition hover:border-orange-300">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#b95c18]">{unit.kind}{!unit.isActive ? " · Inactive" : ""}</p>
+              <h3 className="mt-1 text-lg font-semibold">{unit.name}</h3>
+              <p className="mt-2 text-sm text-[#6b6b6b]">{unit.churches} churches · {unit.members} member records · {unit.guests} guest records{unit.partial ? " · Your accessible churches only" : ""}</p>
+            </div>
+            <span aria-hidden="true" className="text-xl text-[#b95c18]">→</span>
+          </Link>
+        ))}
+        {!matchingUnits.length && selected?.kind !== "area" && <p className="text-sm text-[#6b6b6b]">{levelSearch ? "No matching levels." : "No oversight levels configured here. Churches awaiting placement remain in their district."}</p>}
+        {levelPages > 1 && <div className="flex items-center justify-between text-sm"><span>Page {currentLevelPage} of {levelPages}</span><div className="flex gap-2"><Button variant="secondary" disabled={currentLevelPage === 1} onClick={() => setLevelPage(currentLevelPage - 1)}>Previous</Button><Button variant="secondary" disabled={currentLevelPage === levelPages} onClick={() => setLevelPage(currentLevelPage + 1)}>Next</Button></div></div>}
       </section>
+      {selected && (
       <Card className="p-5">
         <div className="flex flex-wrap justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Local church placement</h2>
+            <h2 className="text-lg font-semibold">Local churches · {selected.name}</h2>
             <p className="mt-1 text-sm text-[#6b6b6b]">
               Assign existing churches without recreating or moving their
               records.
@@ -288,6 +269,7 @@ export function HierarchyWorkspace({ data }: { data: HierarchyOverview }) {
           </div>
         </div>
       </Card>
+      )}
     </div>
   );
 }

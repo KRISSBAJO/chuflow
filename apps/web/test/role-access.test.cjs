@@ -270,7 +270,7 @@ test('hierarchy creation, placement and appointment forms have working submit co
     action(node);
     visit(node.props?.children, action);
   }
-  visit(HierarchyWorkspace({ data }), node => { if (node.type === 'form') forms.push(node); });
+  visit(HierarchyWorkspace({ data, unitId: 'district' }), node => { if (node.type === 'form') forms.push(node); });
   assert.ok(forms.length >= 3);
   for (const form of forms) {
     const submits = [];
@@ -288,3 +288,34 @@ for (const [status, destination] of [[401, '/login?reason=session-expired'], [40
     await assert.rejects(api.serverGet('/restricted'), { message: 'REDIRECT:' + destination });
   });
 }
+
+test('hierarchy pages show only immediate levels and paginate 120 churches', () => {
+  const jsx = (type, props) => ({ type, props });
+  const { HierarchyWorkspace } = load('apps/web/src/components/hierarchy/workspace.tsx', {
+    react: { useState: value => [value, () => {}], useRef: value => ({ current: value }) },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/navigation': { useRouter: () => ({}) }, '@/lib/api': {},
+  });
+  const data = { selectedDistrictId: 'district-record', canManage: false, context: { assignments: [] },
+    units: [{ _id: 'd', kind: 'district', name: 'Atlanta' }, { _id: 'z', parentId: 'd', kind: 'zone', name: 'Orlando' }, { _id: 'a', parentId: 'z', kind: 'area', name: 'Nashville' }],
+    branches: Array.from({ length: 120 }, (_, i) => ({ _id: String(i), name: `Church ${i}`, zoneId: i < 30 ? 'z' : undefined, areaId: i < 3 ? 'a' : undefined })) };
+  function propsFor(unitId) {
+    const result = [];
+    function visit(node) {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (node.props) result.push(node.props);
+      visit(node.props?.children);
+    }
+    visit(HierarchyWorkspace({ data, unitId }));
+    return result;
+  }
+  const hrefs = id => propsFor(id).map(p => p.href).filter(Boolean);
+  assert.deepEqual(hrefs(undefined), ['/hierarchy/d?districtId=district-record']);
+  assert.ok(hrefs('d').includes('/hierarchy/z?districtId=district-record'));
+  assert.ok(!hrefs('d').includes('/hierarchy/a?districtId=district-record'));
+  assert.equal(hrefs('d').filter(h => h.startsWith('/dashboard?')).length, 20);
+  assert.equal(hrefs('z').filter(h => h.startsWith('/dashboard?')).length, 20);
+  assert.equal(hrefs('a').filter(h => h.startsWith('/dashboard?')).length, 3);
+  assert.ok(hrefs('a').includes('/hierarchy/z?districtId=district-record'));
+});
