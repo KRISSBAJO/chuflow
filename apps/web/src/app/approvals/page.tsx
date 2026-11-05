@@ -203,6 +203,7 @@ export default async function ApprovalsPage({
         eyebrow="Approvals"
         title="Approvals and governance"
         description="Review attendance, finance, onboarding, and operational oversight in one place."
+        action={<Link href="/approvals/requests" className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-3 text-sm font-medium text-white">General requests →</Link>}
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
