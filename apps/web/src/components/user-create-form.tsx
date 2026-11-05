@@ -58,7 +58,9 @@ export function UserCreateForm({
   const roleOptions = allowedRoles
     ? manageableRoles.filter((role) => allowedRoles.includes(role))
     : manageableRoles;
-  const [selectedRole, setSelectedRole] = useState<string>(roleOptions[0] || "follow_up");
+  const [selectedRole, setSelectedRole] = useState<string>(
+    roleOptions.includes("usher") ? "usher" : roleOptions.includes("follow_up") ? "follow_up" : "",
+  );
   const [selectedOversightRegion, setSelectedOversightRegion] = useState(
     defaultOversightRegion || oversightRegions[0]?.name || "",
   );
@@ -175,13 +177,15 @@ export function UserCreateForm({
             <Field label="Temporary password" required hint="They can change it after signing in.">
               <input name="password" type="password" placeholder="Temporary password" className="ui-input" required />
             </Field>
-            <Field label="Role" required>
+            <Field label="Role" required hint="Choose only the access this person needs.">
               <select
                 name="role"
                 value={selectedRole}
                 onChange={(event) => setSelectedRole(event.target.value)}
                 className="ui-input"
+                required
               >
+                <option value="" disabled>Choose a role</option>
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
                     {formatRoleLabel(role)}

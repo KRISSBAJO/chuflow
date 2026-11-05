@@ -24,6 +24,35 @@ function load(file, mocks = {}, globals = {}) {
 const permissions = load('apps/web/src/lib/permissions.ts');
 const constants = load('apps/api/src/common/constants/roles.constants.ts');
 const allRoles = constants.APP_ROLES;
+function initialCreateRole(role, allowedRoles) {
+  const jsx = (type, props) => ({ type, props });
+  const { UserCreateForm } = load('apps/web/src/components/user-create-form.tsx', {
+    react: { useState: value => [value, () => {}], useMemo: fn => fn() },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/directory': {}, '@/lib/api': {}, '@/lib/permissions': permissions,
+  });
+  let selected;
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(visit);
+    if (node.type === 'select' && node.props.name === 'role') selected = node.props;
+    visit(node.props?.children);
+  }
+  visit(UserCreateForm({ branches: [], currentUserRole: role, oversightRegions: [], districts: [], allowedRoles }));
+  return selected;
+}
+for (const role of ['super_admin', 'national_admin', 'district_admin', 'branch_admin']) {
+  test(role + ': general and branch staff creation default to Usher', () => {
+    assert.equal(initialCreateRole(role).value, 'usher');
+    assert.equal(initialCreateRole(role, ['branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher']).value, 'usher');
+  });
+}
+test('leadership-only creation requires an explicit role choice', () => {
+  const role = initialCreateRole('super_admin', ['branch_admin', 'resident_pastor']);
+  assert.equal(role.value, '');
+  assert.equal(role.required, true);
+});
 test('filter panels start closed and expose a native keyboard-accessible toggle', () => {
   const jsx = (type, props) => ({ type, props });
   const { FilterPanel } = load('apps/web/src/components/filter-panel.tsx', {
