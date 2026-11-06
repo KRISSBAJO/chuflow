@@ -110,6 +110,10 @@ export function canCreateFinanceEntries(role?: string) {
   return includesRole(["resident_pastor", "associate_pastor", "usher"], role);
 }
 
+export function canCreateAttendanceEntries(role?: string) {
+  return includesRole(["branch_admin", "resident_pastor", "associate_pastor", "usher"], role);
+}
+
 export function canManageFinanceSettings(role?: string) {
   return includesRole(["super_admin"], role);
 }
@@ -117,11 +121,6 @@ export function canManageFinanceSettings(role?: string) {
 export function canCreateExpenseEntries(role?: string) {
   return includesRole(
     [
-      "super_admin",
-      "national_admin",
-      "national_pastor",
-      "district_admin",
-      "district_pastor",
       "branch_admin",
       "resident_pastor",
       "associate_pastor",

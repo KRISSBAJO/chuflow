@@ -14,12 +14,14 @@ import {
 } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 import { roleHomeHref } from "@/lib/permissions";
+import { safeReturnTo } from "@/lib/return-to";
 
 type LoginFormProps = {
   notice?: string | null;
+  returnTo?: string;
 };
 
-export function LoginForm({ notice }: LoginFormProps) {
+export function LoginForm({ notice, returnTo }: LoginFormProps) {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
@@ -63,7 +65,7 @@ export function LoginForm({ notice }: LoginFormProps) {
       setMessage(t("login.success"));
       toast.success(t("login.success"), { id: "login-feedback" });
       window.setTimeout(() => {
-        window.location.href = homeHref;
+        window.location.href = safeReturnTo(returnTo, homeHref);
       }, 600);
     } catch (error) {
       const key =

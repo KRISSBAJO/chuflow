@@ -21,6 +21,7 @@ export const MESSAGE_PARTS = [
   "children",
   "childrenDesk",
   "childrenRecords",
+  "recording",
 ] as const;
 
 export type MessagePart = (typeof MESSAGE_PARTS)[number];

@@ -2,6 +2,7 @@ import type imports from "../../messages/en/imports.json";
 import type children from "../../messages/en/children.json";
 import type childrenDesk from "../../messages/en/childrenDesk.json";
 import type childrenRecords from "../../messages/en/childrenRecords.json";
+import type recording from "../../messages/en/recording.json";
 import type workspace from "../../messages/en/workspace.json";
 import type admin from "../../messages/en/admin.json";
 import type auth from "../../messages/en/auth.json";
@@ -33,6 +34,7 @@ declare module "next-intl" {
       typeof imports &
       typeof children &
       typeof childrenDesk &
-      typeof childrenRecords;
+      typeof childrenRecords &
+      typeof recording;
   }
 }

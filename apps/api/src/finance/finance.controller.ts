@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JsonSubmissionGuard } from '../common/guards/json-submission.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
   CreateExpenseCategoryDto,
@@ -37,13 +38,17 @@ import {
   UpdateOfferingTypeDto,
 } from './dto/create-offering-type.dto';
 import { FinanceService } from './finance.service';
+import { AccessScopeService } from '../access-scope/access-scope.service';
 
 @ApiTags('Finance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('finance')
 export class FinanceController {
-  constructor(private readonly financeService: FinanceService) {}
+  constructor(
+    private readonly financeService: FinanceService,
+    private readonly scope: AccessScopeService,
+  ) {}
 
   @Get('accounts')
   @Roles(
@@ -249,21 +254,17 @@ export class FinanceController {
   }
 
   @Post('expenses')
-  @Roles(
-    'super_admin',
-    'national_admin',
-    'national_pastor',
-    'district_admin',
-    'district_pastor',
-    'branch_admin',
-    'resident_pastor',
-    'associate_pastor',
-  )
-  createExpense(
+  @UseGuards(JsonSubmissionGuard)
+  @Roles('branch_admin', 'resident_pastor', 'associate_pastor')
+  async createExpense(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateExpenseEntryDto,
   ) {
-    return this.financeService.createExpenseEntry(dto, user);
+    const branch = await this.scope.localReportingBranch(user, dto.branchId);
+    return this.financeService.createExpenseEntry(
+      { ...dto, branchId: String(branch._id) },
+      user,
+    );
   }
 
   @Patch('expenses/:id')
@@ -431,6 +432,7 @@ export class FinanceController {
   }
 
   @Post('offerings')
+  @UseGuards(JsonSubmissionGuard)
   @Roles('resident_pastor', 'associate_pastor', 'usher')
   createOffering(
     @CurrentUser() user: AuthUser,

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChurchRecordingLinks } from "@/components/church-recording-links";
 import { WorkspaceTabs } from "@/components/workspace-tabs";
 import { AttendanceReviewList } from "@/components/attendance-review-list";
 import { getTranslations } from "next-intl/server";
@@ -13,7 +14,7 @@ import { Shell } from "@/components/shell";
 import { Badge, Card, CardHeader, Stat, buttonClass } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
-import { canManageServiceSchedules } from "@/lib/permissions";
+import { canManageServiceSchedules, canCreateAttendanceEntries } from "@/lib/permissions";
 import type {
   AttendanceSubmissionListResponse,
   AttendanceItem,
@@ -39,6 +40,7 @@ export default async function AttendancePage({
     periodQuery.set("dateTo", params.dateTo + "T23:59:59.999Z");
   const t = await getTranslations("services.attendance.page");
   const canDirectEditAttendance = user.role !== "follow_up";
+  const canCreateAttendance = canCreateAttendanceEntries(user.role);
   const canApproveAttendance = [
     "super_admin",
     "national_admin",
@@ -161,7 +163,7 @@ export default async function AttendancePage({
         description={t("description")}
         action={
           <div className="flex flex-wrap gap-2">
-            {canDirectEditAttendance ? (
+            {canCreateAttendance ? (
               <Link href="/attendance/new" className={buttonClass("primary")}>
                 {tw("recordAttendance")}
               </Link>
@@ -170,6 +172,7 @@ export default async function AttendancePage({
         }
       />
 
+      <ChurchRecordingLinks branches={branches} defaultBranchId={user.branchId} kind="attendance" />
       <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-black/5 bg-white p-4">
         <input type="hidden" name="tab" value={params.tab || "summaries"} />
         <label className="text-xs text-[#6b6b6b]">
