@@ -1,3 +1,20 @@
 {
-  "approvals": {}
+  "approvals": {
+    "title": "Approvals",
+    "rejectTitle": "Reject this?",
+    "rejectBody": "The branch will need to send it again.",
+    "emptyTitle": "Nothing waiting",
+    "emptyBody": "Attendance reports and expenses that need your approval show up here.",
+    "attendanceReports": "Attendance reports",
+    "expenses": "Expenses",
+    "otherAlerts": "Other alerts",
+    "sent": "sent {time}",
+    "alertCount": "{count} {label}",
+    "counts": {
+      "men": "Men",
+      "women": "Women",
+      "children": "Children",
+      "firstTimers": "First-timers"
+    }
+  }
 }

@@ -1,3 +1,71 @@
 {
-  "home": {}
+  "home": {
+    "friend": "amigo",
+    "alertsLabel": "Alertas, {count} ativos",
+    "allNetwork": "Toda a rede",
+    "offline": "Está sem ligação. A presença que contar é guardada e enviada mais tarde.",
+    "metrics": {
+      "guests": "Visitantes",
+      "attendance": "Presença",
+      "members": "Membros",
+      "followUp": "Acompanhamento"
+    },
+    "shortcuts": {
+      "newGuest": "Novo visitante",
+      "attendance": "Presença",
+      "followUp": "Acompanhamento",
+      "approvals": "Aprovações",
+      "members": "Membros",
+      "kids": "Crianças",
+      "finance": "Finanças",
+      "meetings": "Reuniões",
+      "reports": "Relatórios"
+    },
+    "needsYou": {
+      "title": "Pendente",
+      "caughtUp": "Está tudo em dia."
+    },
+    "overview": {
+      "title": "Visão geral",
+      "days": "{count} d"
+    },
+    "watchlist": {
+      "title": "Em observação",
+      "noRecentAttendance": "Sem presença recente",
+      "last": "Último {when}",
+      "neverReported": "Nunca reportou",
+      "allReported": "Todas as filiais reportaram recentemente.",
+      "backlog": "Acompanhamentos em atraso",
+      "pending": "{count} pendentes",
+      "noBacklog": "Não há atrasos de acompanhamento a acumular-se."
+    },
+    "health": {
+      "title": "Saúde das filiais",
+      "leaders": "Líderes de crescimento",
+      "attention": "Precisa de atenção",
+      "score": "Pontuação de crescimento {score}",
+      "detail": "{guests} visitantes · {members} membros · {converts} convertidos",
+      "noGrowth": "Ainda não foi registada atividade de crescimento neste período.",
+      "noLow": "Nenhuma filial deste âmbito mostra atividade baixa."
+    },
+    "pipeline": {
+      "title": "Percurso de acompanhamento",
+      "inCare": "{count, plural, one {# pessoa} other {# pessoas}} em cuidado",
+      "empty": "Ninguém está no percurso de acompanhamento neste âmbito neste momento."
+    },
+    "attendance": {
+      "title": "Presença por culto",
+      "summary": "{firstTimers} novos · {converts} convertidos · {reports} relatórios",
+      "empty": "Ainda não foi registada presença neste período."
+    },
+    "recentGuests": {
+      "title": "Visitantes recentes",
+      "empty": "Ainda sem visitantes",
+      "emptyBody": "Os novos visitantes que registar aparecem aqui."
+    },
+    "newestMembers": {
+      "title": "Membros mais recentes",
+      "empty": "Ainda não foram adicionados novos membros neste âmbito."
+    }
+  }
 }

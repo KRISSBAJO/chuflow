@@ -1,3 +1,20 @@
 {
-  "approvals": {}
+  "approvals": {
+    "title": "Approbations",
+    "rejectTitle": "Refuser ceci ?",
+    "rejectBody": "L’église locale devra l’envoyer à nouveau.",
+    "emptyTitle": "Rien en attente",
+    "emptyBody": "Les rapports de présence et les dépenses qui attendent votre approbation apparaissent ici.",
+    "attendanceReports": "Rapports de présence",
+    "expenses": "Dépenses",
+    "otherAlerts": "Autres alertes",
+    "sent": "envoyé {time}",
+    "alertCount": "{count} {label}",
+    "counts": {
+      "men": "Hommes",
+      "women": "Femmes",
+      "children": "Enfants",
+      "firstTimers": "Nouveaux venus"
+    }
+  }
 }

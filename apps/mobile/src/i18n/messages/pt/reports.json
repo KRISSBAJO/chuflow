@@ -1,3 +1,65 @@
 {
-  "reports": {}
+  "reports": {
+    "title": "Relatórios",
+    "description": "Captação, acompanhamento, conversão e presença dos últimos {days} dias.",
+    "exportCsv": "Transferir CSV",
+    "exportHint": "Abre o site, onde o ficheiro é transferido.",
+    "days": "{count} d",
+    "branch": "Filial",
+    "allBranches": "Todas as filiais",
+    "locked": {
+      "title": "Os relatórios são para líderes",
+      "body": "Peça a um pastor ou administrador se precisar destes números."
+    },
+    "metrics": {
+      "guestTotal": "Visitantes",
+      "guestTotalHint": "Registos no âmbito",
+      "memberTotal": "Membros",
+      "memberTotalHint": "Registos no âmbito",
+      "attendanceTotal": "Presença",
+      "attendanceTotalHint": "Últimos {days} dias",
+      "firstTimers": "Primeira vez",
+      "firstTimersHint": "Dos resumos de presença",
+      "newConverts": "Novos convertidos",
+      "newConvertsHint": "Nos cultos registados",
+      "conversionRate": "Taxa de conversão",
+      "returnRate": "Taxa de regresso {rate}%"
+    },
+    "range": {
+      "title": "Janela do relatório",
+      "dates": "Datas",
+      "datesValue": "{from} a {to}",
+      "summarySubmissions": "Resumos submetidos",
+      "adultsChildren": "Adultos / crianças"
+    },
+    "daily": {
+      "title": "Tendência diária",
+      "subtitle": "Últimos 10 dias",
+      "date": "Data",
+      "guests": "Visitantes",
+      "attendance": "Presença",
+      "firstTimers": "Novos",
+      "empty": "Não foi registada atividade diária neste intervalo."
+    },
+    "followUp": {
+      "title": "Distribuição do acompanhamento",
+      "empty": "Ninguém está em acompanhamento neste intervalo."
+    },
+    "serviceMix": {
+      "title": "Presença por culto",
+      "summary": "{firstTimers} novos · {converts} convertidos · {reports} resumos",
+      "empty": "Não foi registada presença em cultos neste intervalo."
+    },
+    "comparison": {
+      "title": "Comparação de filiais",
+      "hint": "Resumos em falta não contam como presença zero.",
+      "search": "Pesquisar filiais",
+      "reports": "{count, plural, one {# relatório} other {# relatórios}}",
+      "missing": "Nenhum relatório submetido",
+      "attendance": "{count} presentes",
+      "growth": "Crescimento {value}",
+      "empty": "Ainda não há filiais neste âmbito.",
+      "noMatches": "Nenhuma filial corresponde."
+    }
+  }
 }

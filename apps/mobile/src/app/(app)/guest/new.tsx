@@ -1,9 +1,10 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useRef, useState, type ComponentRef } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { toast } from '@/components/toast';
 import { Button, Caption, Chip, Field, Notice, Screen, Section, tap } from '@/components/ui';
 import { colors, space, type } from '@/constants/theme';
+import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
 import { api, errorMessage, NetworkError } from '@/lib/api';
 import { can } from '@/lib/permissions';
@@ -16,6 +17,8 @@ type VisitStatus = 'first_time' | 'returned';
 export default function NewGuestScreen() {
   const { user } = useSession();
   const { refresh: refreshAlerts } = useAlerts();
+  const t = useT('guests.new');
+  const common = useT('common');
   const pickBranch = can.pickBranch(user?.role);
   const branches = useApi<BranchSummary[]>(pickBranch ? '/branches' : null);
 
@@ -41,11 +44,11 @@ export default function NewGuestScreen() {
 
   async function save() {
     const nextErrors: Record<string, string> = {};
-    if (!firstName.trim()) nextErrors.firstName = 'Add a first name.';
-    if (!lastName.trim()) nextErrors.lastName = 'Add a last name.';
-    if (phone.replace(/\D/g, '').length < 7) nextErrors.phone = 'Add a phone number so the team can follow up.';
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = 'That email doesn’t look right.';
-    if (pickBranch && !effectiveBranchId) nextErrors.branch = 'Choose the branch they visited.';
+    if (!firstName.trim()) nextErrors.firstName = t('firstNameRequired');
+    if (!lastName.trim()) nextErrors.lastName = t('lastNameRequired');
+    if (phone.replace(/\D/g, '').length < 7) nextErrors.phone = t('phoneRequired');
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = t('emailInvalid');
+    if (pickBranch && !effectiveBranchId) nextErrors.branch = t('branchRequired');
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
@@ -64,34 +67,31 @@ export default function NewGuestScreen() {
         ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
       });
       void refreshAlerts();
-      toast.success(`${guest.firstName} is registered. Follow-up has started.`);
+      toast.success(t('registered', { name: guest.firstName }));
       router.replace(`/guest/${guest._id}`);
     } catch (error) {
-      setFormError(
-        error instanceof NetworkError
-          ? 'No connection. Guests need a connection to register, so the team is alerted straight away.'
-          : errorMessage(error),
-      );
+      setFormError(error instanceof NetworkError ? t('offline') : errorMessage(error));
       setSaving(false);
     }
   }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen safeTop={false} footer={<Button label="Register guest" size="lg" loading={saving} onPress={() => void save()} />}>
-        <Caption>Their follow-up starts as soon as you save, and the branch team gets an alert.</Caption>
+      <Screen safeTop={false} footer={<Button label={t('submit')} size="lg" loading={saving} onPress={() => void save()} />}>
+        <Stack.Screen options={{ title: t('title') }} />
+        <Caption>{t('intro')}</Caption>
 
         {formError ? <Notice tone="danger">{formError}</Notice> : null}
 
         <View style={styles.chips}>
-          <Chip label="First time here" selected={visitStatus === 'first_time'} onPress={() => setVisitStatus('first_time')} />
-          <Chip label="Been here before" selected={visitStatus === 'returned'} onPress={() => setVisitStatus('returned')} />
+          <Chip label={t('firstTime')} selected={visitStatus === 'first_time'} onPress={() => setVisitStatus('first_time')} />
+          <Chip label={t('beenBefore')} selected={visitStatus === 'returned'} onPress={() => setVisitStatus('returned')} />
         </View>
 
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
             <Field
-              label="First name"
+              label={common('fields.firstName')}
               required
               value={firstName}
               onChangeText={setFirstName}
@@ -105,7 +105,7 @@ export default function NewGuestScreen() {
           <View style={{ flex: 1 }}>
             <Field
               ref={lastRef}
-              label="Last name"
+              label={common('fields.lastName')}
               required
               value={lastName}
               onChangeText={setLastName}
@@ -120,21 +120,21 @@ export default function NewGuestScreen() {
 
         <Field
           ref={phoneRef}
-          label="Phone"
+          label={common('fields.phone')}
           required
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
           autoComplete="tel"
-          placeholder="+1 713 555 0101"
+          placeholder={t('phonePlaceholder')}
           returnKeyType="next"
           onSubmitEditing={() => emailRef.current?.focus()}
           error={errors.phone}
-          hint="Used for calls, texts and WhatsApp follow-up."
+          hint={t('phoneHint')}
         />
         <Field
           ref={emailRef}
-          label="Email"
+          label={common('fields.email')}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -145,30 +145,24 @@ export default function NewGuestScreen() {
 
         {pickBranch ? (
           <View style={{ gap: space.sm }}>
-            <Section title="Branch" />
+            <Section title={common('fields.branch')} />
             {errors.branch ? <Text style={[type.small, { color: colors.danger }]}>{errors.branch}</Text> : null}
             <View style={styles.chips}>
               {branchList.map((branch) => (
                 <Chip key={branch._id} label={branch.name} selected={effectiveBranchId === branch._id} onPress={() => setBranchId(branch._id)} />
               ))}
-              {branches.loading ? <Caption>Loading branches…</Caption> : null}
+              {branches.loading ? <Caption>{t('loadingBranches')}</Caption> : null}
             </View>
           </View>
         ) : null}
 
-        <Field label="Invited by" value={invitedBy} onChangeText={setInvitedBy} placeholder="Who brought them?" autoCapitalize="words" />
-        <Field
-          label="Prayer request"
-          value={prayerRequest}
-          onChangeText={setPrayerRequest}
-          placeholder="Anything they'd like the church to pray about"
-          multiline
-        />
+        <Field label={t('invitedBy')} value={invitedBy} onChangeText={setInvitedBy} placeholder={t('invitedByPlaceholder')} autoCapitalize="words" />
+        <Field label={t('prayerRequest')} value={prayerRequest} onChangeText={setPrayerRequest} placeholder={t('prayerRequestPlaceholder')} multiline />
 
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
-            <Text style={type.label}>Would like a call from a pastor</Text>
-            <Caption>The pastors see this on their follow-up list.</Caption>
+            <Text style={type.label}>{t('wantsCall')}</Text>
+            <Caption>{t('wantsCallHint')}</Caption>
           </View>
           <Switch
             value={wantsPastoralCall}

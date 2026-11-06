@@ -1,0 +1,60 @@
+{
+  "attendanceHistory": {
+    "title": "Attendance history",
+    "noAccess": "Your role can’t see attendance history.",
+    "countNow": "Count now",
+    "range": {
+      "week": "This week",
+      "days30": "30 days",
+      "days90": "90 days"
+    },
+    "branch": {
+      "label": "Branch",
+      "all": "All branches"
+    },
+    "tiles": {
+      "people": "People",
+      "services": "{count, plural, one {# service} other {# services}}",
+      "adults": "Adults",
+      "children": "Children",
+      "firstTimers": "First-timers",
+      "newConverts": "New converts"
+    },
+    "row": {
+      "people": "{count, plural, one {# person} other {# people}}",
+      "firstTimers": "{count, plural, one {# first-timer} other {# first-timers}}"
+    },
+    "empty": {
+      "title": "No services recorded",
+      "body": "Service counts saved in this period show up here."
+    },
+    "detail": {
+      "title": "Service summary",
+      "service": "Service",
+      "counts": "Counts",
+      "headcount": "Headcount",
+      "ofThose": "Of those",
+      "men": "Men",
+      "women": "Women",
+      "children": "Children",
+      "adults": "Adults",
+      "firstTimers": "First-timers",
+      "newConverts": "New converts",
+      "holySpirit": "Holy Spirit baptism",
+      "total": "Total",
+      "date": "Date",
+      "branch": "Branch",
+      "recordedBy": "Recorded by",
+      "recordedAt": "Recorded",
+      "updatedAt": "Last updated",
+      "edit": "Edit counts",
+      "save": "Save changes",
+      "saved": "Attendance updated",
+      "removeOne": "Remove one from {label}",
+      "addOne": "Add one to {label}",
+      "holdForTen": "Hold to add ten",
+      "countFor": "{label} count",
+      "notFound": "This service summary is no longer available."
+    }
+  }
+}

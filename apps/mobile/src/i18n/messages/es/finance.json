@@ -1,3 +1,143 @@
 {
-  "finance": {}
+  "finance": {
+    "title": "Finanzas",
+    "noAccess": "Tu rol no puede ver finanzas.",
+    "tabs": {
+      "offerings": "Ofrendas",
+      "expenses": "Gastos",
+      "ledger": "Libro mayor"
+    },
+    "range": {
+      "month": "Este mes",
+      "days90": "90 días",
+      "year": "Este año",
+      "all": "Todo"
+    },
+    "branch": {
+      "label": "Sede",
+      "all": "Todas las sedes"
+    },
+    "add": {
+      "offering": "Registrar una ofrenda",
+      "expense": "Registrar un gasto"
+    },
+    "tiles": {
+      "offerings": "Ofrendas",
+      "entries": "{count, plural, one {# registro} other {# registros}}",
+      "thisMonth": "Este mes",
+      "expenses": "Gastos",
+      "pending": "En espera de aprobación",
+      "pendingCount": "{count, plural, one {# gasto} other {# gastos}}",
+      "credits": "Créditos",
+      "debits": "Débitos",
+      "net": "Saldo neto",
+      "creditsLessDebits": "Créditos menos débitos",
+      "pendingApprovals": "Aprobaciones pendientes",
+      "byAccount": "Por cuenta",
+      "inOut": "{credits} entran · {debits} salen"
+    },
+    "direction": {
+      "credit": "Crédito",
+      "debit": "Débito"
+    },
+    "source": {
+      "offering": "Ofrenda",
+      "expense": "Gasto"
+    },
+    "balanceAfter": "Saldo {amount}",
+    "empty": {
+      "offerings": {
+        "title": "No hay ofrendas",
+        "body": "Las ofrendas registradas en este período aparecen aquí."
+      },
+      "expenses": {
+        "title": "No hay gastos",
+        "body": "Los gastos registrados en este período aparecen aquí."
+      },
+      "ledger": {
+        "title": "Sin movimientos",
+        "body": "Las ofrendas y gastos aprobados se registran aquí."
+      }
+    },
+    "endOfList": "Eso es todo",
+    "fields": {
+      "serviceDate": "Fecha del servicio",
+      "expenseDate": "Fecha del gasto",
+      "service": "Servicio",
+      "offeringType": "Tipo de ofrenda",
+      "account": "Cuenta o fondo",
+      "category": "Categoría",
+      "payee": "Beneficiario o proveedor",
+      "description": "Descripción",
+      "amount": "Monto",
+      "currency": "Moneda",
+      "notes": "Notas",
+      "branch": "Sede",
+      "status": "Estado",
+      "receipt": "Recibo",
+      "enteredBy": "Registrado por",
+      "recordedAt": "Registrado",
+      "reviewedAt": "Revisado",
+      "reviewNotes": "Nota de revisión"
+    },
+    "offeringForm": {
+      "title": "Registrar ofrenda",
+      "intro": "Los ujieres y pastores de sede registran las ofrendas de su sede. Los registros se pueden corregir durante 24 horas.",
+      "selectService": "Elige un servicio",
+      "selectOfferingType": "Elige un tipo de ofrenda",
+      "defaultAccount": "Cuenta predeterminada de este tipo de ofrenda",
+      "notesPlaceholder": "Una colecta especial, una corrección…",
+      "noServiceTypes": "Tu sede aún no tiene servicios configurados. Agrégalos en el sitio web.",
+      "save": "Registrar ofrenda",
+      "saved": "Ofrenda registrada",
+      "errors": {
+        "service": "Elige el servicio.",
+        "offeringType": "Elige el tipo de ofrenda.",
+        "amount": "Ingresa un monto mayor que cero."
+      }
+    },
+    "expenseForm": {
+      "title": "Registrar gasto",
+      "intro": "Los líderes de sede envían los gastos para aprobación. Los roles de supervisión los registran directamente.",
+      "selectCategory": "Elige una categoría",
+      "selectAccount": "Elige una cuenta",
+      "selectBranch": "Elige una sede",
+      "payeePlaceholder": "¿Quién recibió el pago?",
+      "descriptionPlaceholder": "Mantenimiento de sonido, combustible, ayuda social…",
+      "notesPlaceholder": "Una nota para la aprobación o la conciliación",
+      "save": "Registrar gasto",
+      "saved": "Gasto registrado",
+      "errors": {
+        "category": "Elige la categoría.",
+        "account": "Elige la cuenta.",
+        "description": "Describe el gasto.",
+        "amount": "Ingresa un monto mayor que cero.",
+        "branch": "Elige la sede."
+      }
+    },
+    "offering": {
+      "title": "Ofrenda",
+      "edit": "Corregir monto o notas",
+      "save": "Guardar cambios",
+      "saved": "Ofrenda actualizada",
+      "notFound": "Esta ofrenda ya no está disponible."
+    },
+    "expense": {
+      "title": "Gasto",
+      "edit": "Corregir monto o notas",
+      "save": "Guardar cambios",
+      "saved": "Gasto actualizado",
+      "notFound": "Este gasto ya no está disponible.",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "approved": "Gasto aprobado",
+      "rejected": "Gasto rechazado",
+      "reviewNote": "Nota para la sede",
+      "reviewNotePlaceholder": "Nota opcional de aprobación o rechazo",
+      "confirmRejectTitle": "¿Rechazar este gasto?",
+      "confirmRejectBody": "La sede tendrá que enviarlo de nuevo.",
+      "openReceipt": "Abrir recibo",
+      "pendingHint": "En espera de aprobación antes de pasar al libro mayor."
+    }
+  }
 }

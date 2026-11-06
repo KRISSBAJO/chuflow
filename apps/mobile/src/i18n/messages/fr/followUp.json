@@ -1,3 +1,50 @@
 {
-  "followUp": {}
+  "followUp": {
+    "list": {
+      "subtitle": "Prenez contact, puis touchez un nom pour noter comment ça s’est passé.",
+      "assignedToMe": "Attribués à moi",
+      "returned": "Revenus",
+      "notStarted": "Non commencés",
+      "mine": "Les miens",
+      "all": "Tous",
+      "emptyTitle": "Vous êtes à jour",
+      "emptyBody": "Les nouveaux invités apparaissent ici dès leur inscription.",
+      "logHint": "Noter comment ce suivi s’est passé",
+      "call": "Appeler {name}",
+      "whatsapp": "WhatsApp {name}"
+    },
+    "log": {
+      "title": "Noter le suivi",
+      "chooseOutcome": "Choisissez d’abord comment ça s’est passé.",
+      "saved": "Enregistré pour {name}",
+      "thisGuest": "cet invité",
+      "submit": "Enregistrer le suivi",
+      "howDidItGo": "Comment ça s’est passé ?",
+      "howReached": "Comment vous l’avez contacté",
+      "note": "Note",
+      "notePlaceholder": "De quoi avez-vous parlé ? Des besoins de prière ?",
+      "remindMe": "Me rappeler",
+      "autoNote": "{outcome} par {method}.",
+      "outcomes": {
+        "contacted": { "label": "Contacté", "hint": "Échange ou message laissé" },
+        "prayed_with": { "label": "Prière partagée", "hint": "Vous avez prié ensemble" },
+        "invited_back": { "label": "Réinvité", "hint": "Il compte revenir" },
+        "returned": { "label": "Revenu", "hint": "A assisté à un autre culte" },
+        "converted": { "label": "Devenu membre", "hint": "A rejoint l’église" }
+      },
+      "methods": {
+        "phone_call": "Appel",
+        "whatsapp": "WhatsApp",
+        "text_message": "SMS",
+        "in_person": "En personne",
+        "email": "E-mail"
+      },
+      "reminders": {
+        "none": "Pas de rappel",
+        "tomorrow": "Demain",
+        "threeDays": "Dans 3 jours",
+        "nextWeek": "La semaine prochaine"
+      }
+    }
+  }
 }

@@ -1,3 +1,20 @@
 {
-  "approvals": {}
+  "approvals": {
+    "title": "Aprobaciones",
+    "rejectTitle": "¿Rechazar esto?",
+    "rejectBody": "La iglesia local tendrá que enviarlo de nuevo.",
+    "emptyTitle": "Nada pendiente",
+    "emptyBody": "Los informes de asistencia y los gastos que necesitan tu aprobación aparecen aquí.",
+    "attendanceReports": "Informes de asistencia",
+    "expenses": "Gastos",
+    "otherAlerts": "Otras alertas",
+    "sent": "enviado {time}",
+    "alertCount": "{count} {label}",
+    "counts": {
+      "men": "Hombres",
+      "women": "Mujeres",
+      "children": "Niños",
+      "firstTimers": "Primera vez"
+    }
+  }
 }

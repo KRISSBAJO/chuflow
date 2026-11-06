@@ -1,3 +1,143 @@
 {
-  "finance": {}
+  "finance": {
+    "title": "Finances",
+    "noAccess": "Votre rôle ne permet pas de voir les finances.",
+    "tabs": {
+      "offerings": "Offrandes",
+      "expenses": "Dépenses",
+      "ledger": "Grand livre"
+    },
+    "range": {
+      "month": "Ce mois-ci",
+      "days90": "90 jours",
+      "year": "Cette année",
+      "all": "Tout"
+    },
+    "branch": {
+      "label": "Église locale",
+      "all": "Toutes les églises"
+    },
+    "add": {
+      "offering": "Enregistrer une offrande",
+      "expense": "Enregistrer une dépense"
+    },
+    "tiles": {
+      "offerings": "Offrandes",
+      "entries": "{count, plural, one {# écriture} other {# écritures}}",
+      "thisMonth": "Ce mois-ci",
+      "expenses": "Dépenses",
+      "pending": "En attente d’approbation",
+      "pendingCount": "{count, plural, one {# dépense} other {# dépenses}}",
+      "credits": "Crédits",
+      "debits": "Débits",
+      "net": "Solde net",
+      "creditsLessDebits": "Crédits moins débits",
+      "pendingApprovals": "Approbations en attente",
+      "byAccount": "Par compte",
+      "inOut": "{credits} entrés · {debits} sortis"
+    },
+    "direction": {
+      "credit": "Crédit",
+      "debit": "Débit"
+    },
+    "source": {
+      "offering": "Offrande",
+      "expense": "Dépense"
+    },
+    "balanceAfter": "Solde {amount}",
+    "empty": {
+      "offerings": {
+        "title": "Aucune offrande",
+        "body": "Les offrandes enregistrées sur cette période apparaissent ici."
+      },
+      "expenses": {
+        "title": "Aucune dépense",
+        "body": "Les dépenses enregistrées sur cette période apparaissent ici."
+      },
+      "ledger": {
+        "title": "Aucun mouvement",
+        "body": "Les offrandes et dépenses approuvées s’inscrivent ici."
+      }
+    },
+    "endOfList": "C’est tout",
+    "fields": {
+      "serviceDate": "Date du culte",
+      "expenseDate": "Date de la dépense",
+      "service": "Culte",
+      "offeringType": "Type d’offrande",
+      "account": "Compte ou fonds",
+      "category": "Catégorie",
+      "payee": "Bénéficiaire ou fournisseur",
+      "description": "Description",
+      "amount": "Montant",
+      "currency": "Devise",
+      "notes": "Notes",
+      "branch": "Église locale",
+      "status": "Statut",
+      "receipt": "Reçu",
+      "enteredBy": "Saisi par",
+      "recordedAt": "Enregistré",
+      "reviewedAt": "Examiné",
+      "reviewNotes": "Note d’examen"
+    },
+    "offeringForm": {
+      "title": "Enregistrer une offrande",
+      "intro": "Les placeurs et les pasteurs d’église locale enregistrent les offrandes de leur église. Les écritures peuvent être corrigées pendant 24 heures.",
+      "selectService": "Choisir un culte",
+      "selectOfferingType": "Choisir un type d’offrande",
+      "defaultAccount": "Compte par défaut de ce type d’offrande",
+      "notesPlaceholder": "Une collecte spéciale, une correction…",
+      "noServiceTypes": "Aucun culte n’est encore configuré pour votre église. Ajoutez-les sur le site web.",
+      "save": "Enregistrer l’offrande",
+      "saved": "Offrande enregistrée",
+      "errors": {
+        "service": "Choisissez le culte.",
+        "offeringType": "Choisissez le type d’offrande.",
+        "amount": "Saisissez un montant supérieur à zéro."
+      }
+    },
+    "expenseForm": {
+      "title": "Enregistrer une dépense",
+      "intro": "Les responsables d’église locale soumettent les dépenses pour approbation. Les rôles de supervision les enregistrent directement.",
+      "selectCategory": "Choisir une catégorie",
+      "selectAccount": "Choisir un compte",
+      "selectBranch": "Choisir une église",
+      "payeePlaceholder": "Qui a reçu le paiement ?",
+      "descriptionPlaceholder": "Entretien de la sono, carburant, aide sociale…",
+      "notesPlaceholder": "Une note pour l’approbation ou le rapprochement",
+      "save": "Enregistrer la dépense",
+      "saved": "Dépense enregistrée",
+      "errors": {
+        "category": "Choisissez la catégorie.",
+        "account": "Choisissez le compte.",
+        "description": "Décrivez la dépense.",
+        "amount": "Saisissez un montant supérieur à zéro.",
+        "branch": "Choisissez l’église."
+      }
+    },
+    "offering": {
+      "title": "Offrande",
+      "edit": "Corriger le montant ou les notes",
+      "save": "Enregistrer les modifications",
+      "saved": "Offrande mise à jour",
+      "notFound": "Cette offrande n’est plus disponible."
+    },
+    "expense": {
+      "title": "Dépense",
+      "edit": "Corriger le montant ou les notes",
+      "save": "Enregistrer les modifications",
+      "saved": "Dépense mise à jour",
+      "notFound": "Cette dépense n’est plus disponible.",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "approved": "Dépense approuvée",
+      "rejected": "Dépense refusée",
+      "reviewNote": "Note pour l’église",
+      "reviewNotePlaceholder": "Note facultative d’approbation ou de refus",
+      "confirmRejectTitle": "Refuser cette dépense ?",
+      "confirmRejectBody": "L’église devra la soumettre à nouveau.",
+      "openReceipt": "Ouvrir le reçu",
+      "pendingHint": "En attente d’approbation avant inscription au grand livre."
+    }
+  }
 }

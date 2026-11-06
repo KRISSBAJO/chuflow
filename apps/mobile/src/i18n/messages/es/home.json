@@ -1,3 +1,71 @@
 {
-  "home": {}
+  "home": {
+    "friend": "amigo",
+    "alertsLabel": "Alertas, {count} activas",
+    "allNetwork": "Toda la red",
+    "offline": "Estás sin conexión. La asistencia que cuentes se guarda y se envía después.",
+    "metrics": {
+      "guests": "Invitados",
+      "attendance": "Asistencia",
+      "members": "Miembros",
+      "followUp": "Seguimiento"
+    },
+    "shortcuts": {
+      "newGuest": "Nuevo invitado",
+      "attendance": "Asistencia",
+      "followUp": "Seguimiento",
+      "approvals": "Aprobaciones",
+      "members": "Miembros",
+      "kids": "Niños",
+      "finance": "Finanzas",
+      "meetings": "Reuniones",
+      "reports": "Informes"
+    },
+    "needsYou": {
+      "title": "Pendiente",
+      "caughtUp": "Estás al día."
+    },
+    "overview": {
+      "title": "Resumen",
+      "days": "{count} d"
+    },
+    "watchlist": {
+      "title": "En observación",
+      "noRecentAttendance": "Sin asistencia reciente",
+      "last": "Último {when}",
+      "neverReported": "Nunca ha informado",
+      "allReported": "Todas las sedes han informado recientemente.",
+      "backlog": "Seguimientos atrasados",
+      "pending": "{count} pendientes",
+      "noBacklog": "No se está acumulando ningún retraso de seguimiento."
+    },
+    "health": {
+      "title": "Salud de las sedes",
+      "leaders": "Líderes de crecimiento",
+      "attention": "Requiere atención",
+      "score": "Puntuación de crecimiento {score}",
+      "detail": "{guests} invitados · {members} miembros · {converts} convertidos",
+      "noGrowth": "Aún no se ha registrado actividad de crecimiento en este rango.",
+      "noLow": "Ninguna sede de este ámbito muestra baja actividad."
+    },
+    "pipeline": {
+      "title": "Proceso de seguimiento",
+      "inCare": "{count, plural, one {# persona} other {# personas}} en cuidado",
+      "empty": "Nadie está en el proceso de seguimiento en este ámbito ahora mismo."
+    },
+    "attendance": {
+      "title": "Asistencia por servicio",
+      "summary": "{firstTimers} nuevos · {converts} convertidos · {reports} informes",
+      "empty": "Aún no se ha registrado asistencia en este rango."
+    },
+    "recentGuests": {
+      "title": "Invitados recientes",
+      "empty": "Aún no hay invitados",
+      "emptyBody": "Los nuevos invitados que registres aparecen aquí."
+    },
+    "newestMembers": {
+      "title": "Miembros más recientes",
+      "empty": "Aún no se han añadido miembros nuevos en este ámbito."
+    }
+  }
 }

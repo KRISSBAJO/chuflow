@@ -1,0 +1,60 @@
+{
+  "attendanceHistory": {
+    "title": "Historique de présence",
+    "noAccess": "Votre rôle ne permet pas de voir l’historique de présence.",
+    "countNow": "Compter maintenant",
+    "range": {
+      "week": "Cette semaine",
+      "days30": "30 jours",
+      "days90": "90 jours"
+    },
+    "branch": {
+      "label": "Église locale",
+      "all": "Toutes les églises"
+    },
+    "tiles": {
+      "people": "Personnes",
+      "services": "{count, plural, one {# culte} other {# cultes}}",
+      "adults": "Adultes",
+      "children": "Enfants",
+      "firstTimers": "Nouveaux venus",
+      "newConverts": "Nouveaux convertis"
+    },
+    "row": {
+      "people": "{count, plural, one {# personne} other {# personnes}}",
+      "firstTimers": "{count, plural, one {# nouveau venu} other {# nouveaux venus}}"
+    },
+    "empty": {
+      "title": "Aucun culte enregistré",
+      "body": "Les comptages de culte enregistrés sur cette période apparaissent ici."
+    },
+    "detail": {
+      "title": "Résumé du culte",
+      "service": "Culte",
+      "counts": "Comptages",
+      "headcount": "Effectif",
+      "ofThose": "Dont",
+      "men": "Hommes",
+      "women": "Femmes",
+      "children": "Enfants",
+      "adults": "Adultes",
+      "firstTimers": "Nouveaux venus",
+      "newConverts": "Nouveaux convertis",
+      "holySpirit": "Baptême du Saint-Esprit",
+      "total": "Total",
+      "date": "Date",
+      "branch": "Église locale",
+      "recordedBy": "Enregistré par",
+      "recordedAt": "Enregistré",
+      "updatedAt": "Dernière modification",
+      "edit": "Modifier les comptages",
+      "save": "Enregistrer les modifications",
+      "saved": "Présence mise à jour",
+      "removeOne": "Retirer un de {label}",
+      "addOne": "Ajouter un à {label}",
+      "holdForTen": "Maintenir pour ajouter dix",
+      "countFor": "Comptage {label}",
+      "notFound": "Ce résumé de culte n’est plus disponible."
+    }
+  }
+}

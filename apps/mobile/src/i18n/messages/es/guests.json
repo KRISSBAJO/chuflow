@@ -1,3 +1,54 @@
 {
-  "guests": {}
+  "guests": {
+    "list": {
+      "inScope": "{count} en tu ámbito",
+      "matching": "{count} coinciden",
+      "today": "{count} hoy",
+      "register": "Registrar un invitado",
+      "searchPlaceholder": "Buscar por nombre, teléfono o correo",
+      "emptyTitle": "Aún no hay invitados",
+      "emptyBody": "Registra a tu primer invitado y su seguimiento empieza automáticamente."
+    },
+    "new": {
+      "title": "Nuevo invitado",
+      "intro": "El seguimiento empieza en cuanto guardes, y el equipo de la iglesia local recibe una alerta.",
+      "firstTime": "Primera vez aquí",
+      "beenBefore": "Ya había venido",
+      "firstNameRequired": "Añade un nombre.",
+      "lastNameRequired": "Añade un apellido.",
+      "phoneRequired": "Añade un número de teléfono para que el equipo pueda hacer el seguimiento.",
+      "emailInvalid": "Ese correo no parece válido.",
+      "branchRequired": "Elige la iglesia local que visitó.",
+      "phonePlaceholder": "+34 612 345 678",
+      "phoneHint": "Se usa para llamadas, mensajes y seguimiento por WhatsApp.",
+      "loadingBranches": "Cargando iglesias locales…",
+      "invitedBy": "Invitado por",
+      "invitedByPlaceholder": "¿Quién lo trajo?",
+      "prayerRequest": "Petición de oración",
+      "prayerRequestPlaceholder": "Cualquier cosa por la que quiera que la iglesia ore",
+      "wantsCall": "Quiere que lo llame un pastor",
+      "wantsCallHint": "Los pastores lo ven en su lista de seguimiento.",
+      "submit": "Registrar invitado",
+      "registered": "{name} está registrado. El seguimiento ha empezado.",
+      "offline": "Sin conexión. Registrar un invitado necesita conexión para que el equipo reciba la alerta de inmediato."
+    },
+    "profile": {
+      "notFound": "Invitado no encontrado",
+      "wantsCall": "Quiere la llamada de un pastor",
+      "registered": "Registrado el {date}",
+      "followUp": "Seguimiento",
+      "with": "Con {name}",
+      "notAssigned": "Aún sin asignar",
+      "log": "Registrar",
+      "details": "Detalles",
+      "phoneHold": "Teléfono · mantén pulsado para copiar",
+      "email": "Correo electrónico",
+      "invitedBy": "Invitado por",
+      "heardAbout": "Cómo supo de nosotros",
+      "address": "Dirección",
+      "prayerRequest": "Petición de oración",
+      "phoneCopied": "Número de teléfono copiado",
+      "convertToMember": "Convertir en miembro"
+    }
+  }
 }

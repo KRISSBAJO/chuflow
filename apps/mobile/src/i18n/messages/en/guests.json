@@ -1,3 +1,54 @@
 {
-  "guests": {}
+  "guests": {
+    "list": {
+      "inScope": "{count} in your scope",
+      "matching": "{count} matching",
+      "today": "{count} today",
+      "register": "Register a guest",
+      "searchPlaceholder": "Search name, phone or email",
+      "emptyTitle": "No guests yet",
+      "emptyBody": "Register your first guest and their follow-up starts automatically."
+    },
+    "new": {
+      "title": "New guest",
+      "intro": "Their follow-up starts as soon as you save, and the branch team gets an alert.",
+      "firstTime": "First time here",
+      "beenBefore": "Been here before",
+      "firstNameRequired": "Add a first name.",
+      "lastNameRequired": "Add a last name.",
+      "phoneRequired": "Add a phone number so the team can follow up.",
+      "emailInvalid": "That email doesn’t look right.",
+      "branchRequired": "Choose the branch they visited.",
+      "phonePlaceholder": "+1 713 555 0101",
+      "phoneHint": "Used for calls, texts and WhatsApp follow-up.",
+      "loadingBranches": "Loading branches…",
+      "invitedBy": "Invited by",
+      "invitedByPlaceholder": "Who brought them?",
+      "prayerRequest": "Prayer request",
+      "prayerRequestPlaceholder": "Anything they’d like the church to pray about",
+      "wantsCall": "Would like a call from a pastor",
+      "wantsCallHint": "The pastors see this on their follow-up list.",
+      "submit": "Register guest",
+      "registered": "{name} is registered. Follow-up has started.",
+      "offline": "No connection. Guests need a connection to register, so the team is alerted straight away."
+    },
+    "profile": {
+      "notFound": "Guest not found",
+      "wantsCall": "Wants a pastor’s call",
+      "registered": "Registered {date}",
+      "followUp": "Follow-up",
+      "with": "With {name}",
+      "notAssigned": "Not assigned yet",
+      "log": "Log",
+      "details": "Details",
+      "phoneHold": "Phone · hold to copy",
+      "email": "Email",
+      "invitedBy": "Invited by",
+      "heardAbout": "Heard about us",
+      "address": "Address",
+      "prayerRequest": "Prayer request",
+      "phoneCopied": "Phone number copied",
+      "convertToMember": "Convert to member"
+    }
+  }
 }

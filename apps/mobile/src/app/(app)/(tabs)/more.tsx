@@ -1,70 +1,68 @@
 import * as WebBrowser from 'expo-web-browser';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { canUseAppLock, isAppLockEnabled, setAppLock } from '@/components/app-lock';
 import { Icon, type IconName } from '@/components/icon';
+import { ActionTile, SwitchRow } from '@/components/kit';
+import { LanguageRow } from '@/components/language-picker';
 import { toast } from '@/components/toast';
-import { Avatar, Badge, Caption, ListRow, Screen, ScreenHeader, Section, tap } from '@/components/ui';
+import { Avatar, Badge, Caption, ListRow, Screen, ScreenHeader, Section } from '@/components/ui';
 import { AppMark } from '@/components/wordmark';
 import { colors, fonts, space, type } from '@/constants/theme';
+import { useAppFormat } from '@/i18n/format';
+import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
 import { api, errorMessage } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
-import { fullName } from '@/lib/format';
 import { disablePush, enablePush, pushStatus, type PushStatus } from '@/lib/notifications';
-import { can, roleLabel } from '@/lib/permissions';
+import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 
-const PUSH_COPY: Record<PushStatus, string> = {
-  on: 'New first-timers, your follow-ups and approvals.',
-  off: 'Get alerts for first-timers, follow-ups and approvals.',
-  denied: 'Blocked in your phone settings. Allow notifications for ChuFlow there.',
-  'expo-go': 'Alerts need the installed ChuFlow app; Expo Go on Android can’t receive them.',
-  unsupported: 'This device can’t receive phone alerts.',
-};
+/*
+ * The hub of the app: the website's navigation groups at a phone's scale. Areas the person's
+ * role can use open in the app; the admin-only screens open on the website.
+ */
+
+type AreaKey = 'members' | 'kids' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports' | 'search';
+
+const AREAS: { key: AreaKey; icon: IconName; href: Href; show: (role?: string) => boolean }[] = [
+  { key: 'members', icon: 'members', href: '/members' as Href, show: can.members },
+  { key: 'kids', icon: 'smile', href: '/kids' as Href, show: (role) => can.kids(role) && !can.kidsOnly(role) },
+  { key: 'finance', icon: 'finance', href: '/finance' as Href, show: can.finance },
+  { key: 'meetings', icon: 'calendar', href: '/meetings' as Href, show: can.meetings },
+  { key: 'careCases', icon: 'care', href: '/care-cases' as Href, show: can.careCases },
+  { key: 'attendanceHistory', icon: 'history', href: '/attendance-history' as Href, show: can.attendance },
+  { key: 'reports', icon: 'reports', href: '/reports' as Href, show: can.reports },
+  { key: 'search', icon: 'search', href: '/search' as Href, show: can.search },
+];
+
+type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings';
+
+/** Website-only screens, gated like apps/web/src/lib/permissions.ts. */
+const WEB_LINKS: { key: LinkKey; icon: IconName; path: string; show: (role?: string) => boolean }[] = [
+  { key: 'branches', icon: 'building', path: '/branches', show: can.lead },
+  { key: 'users', icon: 'user', path: '/users', show: can.lead },
+  { key: 'templates', icon: 'clipboard', path: '/templates', show: can.lead },
+  { key: 'structure', icon: 'grid', path: '/hierarchy', show: can.lead },
+  { key: 'settings', icon: 'settings', path: '/settings', show: can.dashboard },
+];
 
 function RowIcon({ name }: { name: IconName }) {
   return <Icon name={name} size={18} color={colors.muted} />;
 }
 
-function SettingRow({ icon, title, body, value, onChange, disabled, divider }: {
-  icon: IconName;
-  title: string;
-  body: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-  disabled?: boolean;
-  divider?: boolean;
-}) {
-  return (
-    <View style={[styles.setting, divider && styles.divider]}>
-      <RowIcon name={icon} />
-      <View style={{ flex: 1 }}>
-        <Text style={type.label}>{title}</Text>
-        <Caption>{body}</Caption>
-      </View>
-      <Switch
-        value={value}
-        disabled={disabled}
-        onValueChange={(next) => {
-          tap();
-          onChange(next);
-        }}
-        trackColor={{ true: colors.flame, false: '#dedbd4' }}
-        thumbColor="#ffffff"
-      />
-    </View>
-  );
-}
-
 export default function MoreScreen() {
   const { user, signOut } = useSession();
   const { summary } = useAlerts();
+  const t = useT('more');
+  const common = useT('common');
+  const format = useAppFormat();
   const [push, setPush] = useState<PushStatus | null>(null);
   const [lockAvailable, setLockAvailable] = useState(false);
   const [lockOn, setLockOn] = useState(false);
   const [busy, setBusy] = useState(false);
+  const role = user?.role;
 
   useFocusEffect(
     useCallback(() => {
@@ -80,13 +78,13 @@ export default function MoreScreen() {
       if (next) {
         const status = await enablePush(true);
         setPush(status);
-        if (status === 'on') toast.success('Alerts are on for this phone');
+        if (status === 'on') toast.success(t('push.enabled'));
       } else {
         await disablePush();
         setPush('off');
       }
     } catch (error) {
-      toast.error(errorMessage(error, "Couldn't change alerts."));
+      toast.error(errorMessage(error, t('push.changeFailed')));
     } finally {
       setBusy(false);
     }
@@ -95,8 +93,8 @@ export default function MoreScreen() {
   async function sendTest() {
     try {
       const { delivered } = await api.post<{ delivered: number }>('/push/test');
-      if (delivered) toast.success('Test sent. It should arrive in a few seconds.');
-      else toast.error('No device received it. Turn alerts off and on again.');
+      if (delivered) toast.success(t('push.testSent'));
+      else toast.error(t('push.testFailed'));
     } catch (error) {
       toast.error(errorMessage(error));
     }
@@ -106,97 +104,102 @@ export default function MoreScreen() {
     const changed = await setAppLock(next);
     if (changed) {
       setLockOn(next);
-      toast.success(next ? 'App lock is on' : 'App lock is off');
+      toast.success(next ? t('appLockOn') : t('appLockOff'));
     }
   }
 
   function confirmSignOut() {
     const run = () => void signOut();
     if (Platform.OS === 'web') {
-      if (window.confirm('Sign out of ChuFlow?')) run();
+      if (window.confirm(t('signOutConfirm'))) run();
       return;
     }
-    Alert.alert('Sign out?', 'You can sign back in any time.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: run },
+    Alert.alert(t('signOutTitle'), t('signOutBody'), [
+      { text: common('actions.cancel'), style: 'cancel' },
+      { text: t('signOut'), style: 'destructive', onPress: run },
     ]);
   }
 
   const pending = summary?.quickStats.pendingApprovals ?? 0;
+  const areas = AREAS.filter((area) => area.show(role));
+  const links = WEB_LINKS.filter((link) => link.show(role));
+  const pushKey = push === 'expo-go' ? 'expoGo' : push;
 
   return (
     <Screen contentStyle={{ gap: space.xl }}>
-      <ScreenHeader title="More" />
+      <ScreenHeader title={common('tabs.more')} />
 
       <View style={styles.profile}>
         <Avatar person={user} size={44} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={type.title} numberOfLines={1}>
-            {fullName(user)}
+            {format.fullName(user)}
           </Text>
           <Caption numberOfLines={1}>{user?.email}</Caption>
         </View>
-        <Badge label={roleLabel(user?.role)} tone="flame" />
+        <Badge label={format.role(role)} tone="flame" />
       </View>
 
-      {can.approvals(user?.role) ? (
+      {can.approvals(role) ? (
         <ListRow
-          title="Approvals"
-          subtitle={pending ? `${pending} waiting for you` : 'Nothing waiting'}
+          title={common('areas.approvals')}
+          subtitle={pending ? t('approvalsWaiting', { count: pending }) : t('nothingWaiting')}
           left={<RowIcon name="approvals" />}
-          right={pending ? <Badge label={String(pending)} tone="flame" /> : undefined}
+          right={pending ? <Badge label={format.number(pending)} tone="flame" /> : undefined}
           onPress={() => router.push('/approvals')}
         />
       ) : null}
 
+      {areas.length ? (
+        <View style={styles.grid}>
+          {areas.map((area) => (
+            <ActionTile key={area.key} icon={area.icon} label={common(`areas.${area.key}`)} hint={t(`hints.${area.key}`)} onPress={() => router.push(area.href)} />
+          ))}
+          {areas.length % 2 ? <View style={styles.gridSpacer} /> : null}
+        </View>
+      ) : null}
+
       <View>
-        <Section title="This phone" />
-        <SettingRow
+        <Section title={t('thisPhone')} />
+        <SwitchRow
           icon="bell"
-          title="Alerts"
-          body={push ? PUSH_COPY[push] : 'Checking…'}
+          title={t('alerts')}
+          body={pushKey ? t(`push.${pushKey}`) : common('state.checking')}
           value={push === 'on'}
           disabled={busy || !push || ['unsupported', 'expo-go'].includes(push)}
           onChange={(value) => void togglePush(value)}
         />
-        {push === 'on' ? <ListRow divider title="Send a test alert" left={<RowIcon name="sparkle" />} onPress={() => void sendTest()} /> : null}
+        {push === 'on' ? <ListRow divider title={t('testAlert')} left={<RowIcon name="sparkle" />} onPress={() => void sendTest()} /> : null}
         {lockAvailable ? (
-          <SettingRow
-            divider
-            icon="lock"
-            title="App lock"
-            body="Ask for Face ID or fingerprint when opening ChuFlow."
-            value={lockOn}
-            onChange={(value) => void toggleLock(value)}
-          />
+          <SwitchRow divider icon="lock" title={t('appLock')} body={t('appLockHint')} value={lockOn} onChange={(value) => void toggleLock(value)} />
         ) : null}
+        <LanguageRow divider />
       </View>
 
-      <View>
-        <Section title="On the website" />
-        {[
-          { title: 'Members', path: '/members', icon: 'members' as const },
-          { title: 'Finance', path: '/finance', icon: 'finance' as const },
-          { title: 'Reports', path: '/reports', icon: 'reports' as const },
-          { title: 'Settings', path: '/settings', icon: 'settings' as const },
-        ].map((link, index) => (
-          <ListRow
-            key={link.path}
-            divider={index > 0}
-            title={link.title}
-            left={<RowIcon name={link.icon} />}
-            right={<Icon name="arrowUpRight" size={14} color={colors.faint} />}
-            chevron={false}
-            onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}${link.path}`)}
-          />
-        ))}
-      </View>
+      {links.length ? (
+        <View>
+          <Section title={t('website')} />
+          {links.map((link, index) => (
+            <ListRow
+              key={link.key}
+              divider={index > 0}
+              title={link.key === 'settings' ? common('areas.settings') : t(`links.${link.key}`)}
+              left={<RowIcon name={link.icon} />}
+              right={<Icon name="arrowUpRight" size={14} color={colors.faint} />}
+              chevron={false}
+              onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}${link.path}`)}
+            />
+          ))}
+        </View>
+      ) : null}
 
-      <ListRow title="Sign out" left={<Icon name="logout" size={18} color={colors.danger} />} chevron={false} onPress={confirmSignOut} />
+      <ListRow title={t('signOut')} left={<Icon name="logout" size={18} color={colors.danger} />} chevron={false} onPress={confirmSignOut} />
 
       <View style={styles.footer}>
         <AppMark size={22} />
-        <Text style={styles.footerText}>ChuFlow · From Membership to Ministry</Text>
+        <Text style={styles.footerText}>
+          {common('appName')} · {common('tagline')}
+        </Text>
       </View>
     </Screen>
   );
@@ -204,8 +207,8 @@ export default function MoreScreen() {
 
 const styles = StyleSheet.create({
   profile: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  setting: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 11 },
-  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairlineStrong },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
+  gridSpacer: { flexGrow: 1, flexBasis: '45%', minWidth: 0 },
   footer: { alignItems: 'center', gap: space.sm, paddingVertical: space.lg },
   footerText: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.faint },
 });

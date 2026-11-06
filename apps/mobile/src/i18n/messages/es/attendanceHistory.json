@@ -1,0 +1,60 @@
+{
+  "attendanceHistory": {
+    "title": "Historial de asistencia",
+    "noAccess": "Tu rol no puede ver el historial de asistencia.",
+    "countNow": "Contar ahora",
+    "range": {
+      "week": "Esta semana",
+      "days30": "30 días",
+      "days90": "90 días"
+    },
+    "branch": {
+      "label": "Sede",
+      "all": "Todas las sedes"
+    },
+    "tiles": {
+      "people": "Personas",
+      "services": "{count, plural, one {# servicio} other {# servicios}}",
+      "adults": "Adultos",
+      "children": "Niños",
+      "firstTimers": "Primera vez",
+      "newConverts": "Nuevos convertidos"
+    },
+    "row": {
+      "people": "{count, plural, one {# persona} other {# personas}}",
+      "firstTimers": "{count, plural, one {# de primera vez} other {# de primera vez}}"
+    },
+    "empty": {
+      "title": "No hay servicios registrados",
+      "body": "Los conteos de servicio guardados en este período aparecen aquí."
+    },
+    "detail": {
+      "title": "Resumen del servicio",
+      "service": "Servicio",
+      "counts": "Conteos",
+      "headcount": "Asistencia",
+      "ofThose": "De ellos",
+      "men": "Hombres",
+      "women": "Mujeres",
+      "children": "Niños",
+      "adults": "Adultos",
+      "firstTimers": "Primera vez",
+      "newConverts": "Nuevos convertidos",
+      "holySpirit": "Bautismo del Espíritu Santo",
+      "total": "Total",
+      "date": "Fecha",
+      "branch": "Sede",
+      "recordedBy": "Registrado por",
+      "recordedAt": "Registrado",
+      "updatedAt": "Última actualización",
+      "edit": "Editar conteos",
+      "save": "Guardar cambios",
+      "saved": "Asistencia actualizada",
+      "removeOne": "Quitar uno de {label}",
+      "addOne": "Agregar uno a {label}",
+      "holdForTen": "Mantén presionado para agregar diez",
+      "countFor": "Conteo de {label}",
+      "notFound": "Este resumen de servicio ya no está disponible."
+    }
+  }
+}

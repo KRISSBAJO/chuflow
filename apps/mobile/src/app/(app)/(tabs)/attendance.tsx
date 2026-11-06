@@ -5,8 +5,10 @@ import { Icon } from '@/components/icon';
 import { toast } from '@/components/toast';
 import { Button, Caption, Chip, ListRow, Notice, Screen, ScreenHeader, Section, tap } from '@/components/ui';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
+import { useAppFormat } from '@/i18n/format';
+import { useT } from '@/i18n/provider';
 import { api, errorMessage, NetworkError } from '@/lib/api';
-import { branchName, formatNumber, isoDay, shortDate } from '@/lib/format';
+import { branchName, isoDay } from '@/lib/format';
 import { discardQueued, flushAttendance, queueAttendance, useAttendanceOutbox, useOnline } from '@/lib/offline-queue';
 import { can } from '@/lib/permissions';
 import { useSession, userBranchId } from '@/lib/session';
@@ -15,18 +17,10 @@ import { useApi } from '@/lib/use-api';
 
 type CountKey = 'menCount' | 'womenCount' | 'childrenCount' | 'firstTimersCount' | 'newConvertsCount' | 'holySpiritBaptismCount';
 
-const HEADCOUNT: { key: CountKey; label: string }[] = [
-  { key: 'menCount', label: 'Men' },
-  { key: 'womenCount', label: 'Women' },
-  { key: 'childrenCount', label: 'Children' },
-];
+const HEADCOUNT: CountKey[] = ['menCount', 'womenCount', 'childrenCount'];
 
 /** Already part of the headcount above; recorded separately for reports. */
-const OF_THOSE: { key: CountKey; label: string }[] = [
-  { key: 'firstTimersCount', label: 'First-timers' },
-  { key: 'newConvertsCount', label: 'New converts' },
-  { key: 'holySpiritBaptismCount', label: 'Holy Spirit baptism' },
-];
+const OF_THOSE: CountKey[] = ['firstTimersCount', 'newConvertsCount', 'holySpiritBaptismCount'];
 
 const EMPTY: Record<CountKey, number> = {
   menCount: 0,
@@ -52,6 +46,7 @@ function Counter({
   onSet: (value: number) => void;
   divider: boolean;
 }) {
+  const t = useT('attendance.count');
   // Steps go through a functional update so fast taps at the door never drop a count.
   const step = (delta: number) => {
     tap();
@@ -64,7 +59,7 @@ function Counter({
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Remove one from ${label}`}
+        accessibilityLabel={t('removeOne', { label })}
         onPress={() => step(-1)}
         onLongPress={() => step(-10)}
         disabled={value === 0}
@@ -74,7 +69,7 @@ function Counter({
         <Icon name="minus" size={16} color={colors.ink} strokeWidth={2} />
       </Pressable>
       <TextInput
-        accessibilityLabel={`${label} count`}
+        accessibilityLabel={t('countOf', { label })}
         value={String(value)}
         onChangeText={(text) => onSet(Math.max(0, Number(text.replace(/\D/g, '')) || 0))}
         keyboardType="number-pad"
@@ -83,8 +78,8 @@ function Counter({
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Add one to ${label}`}
-        accessibilityHint="Hold to add ten"
+        accessibilityLabel={t('addOne', { label })}
+        accessibilityHint={t('holdTen')}
         onPress={() => step(1)}
         onLongPress={() => step(10)}
         style={({ pressed }) => [styles.stepper, styles.stepperPlus, pressed && { opacity: 0.8 }]}
@@ -98,6 +93,9 @@ function Counter({
 
 export default function AttendanceScreen() {
   const { user } = useSession();
+  const t = useT('attendance.count');
+  const common = useT('common');
+  const format = useAppFormat();
   const online = useOnline();
   const outbox = useAttendanceOutbox();
   const pickBranch = can.pickBranch(user?.role);
@@ -140,11 +138,11 @@ export default function AttendanceScreen() {
 
   async function save() {
     if (!selectedType) {
-      toast.error('Choose a service first.');
+      toast.error(t('chooseService'));
       return;
     }
     if (total === 0) {
-      toast.error('Add at least one person.');
+      toast.error(t('addSomeone'));
       return;
     }
 
@@ -157,19 +155,19 @@ export default function AttendanceScreen() {
       ...counts,
       adultsCount: counts.menCount + counts.womenCount,
     };
-    const label = `${selectedType.name} · ${shortDate(serviceDate)} · ${formatNumber(total)} people`;
+    const label = t('queued', { service: selectedType.name, date: format.shortDate(serviceDate), count: total });
 
     setSaving(true);
     try {
       if (!online) throw new NetworkError();
       await api.post('/attendance', body);
-      toast.success(`Saved: ${formatNumber(total)} at ${selectedType.name}`);
+      toast.success(t('saved', { count: format.number(total), service: selectedType.name }));
       setCounts(EMPTY);
       void recent.reload();
     } catch (error) {
       if (error instanceof NetworkError) {
         await queueAttendance(label, body);
-        toast.info("Saved on this phone. It'll send when you're back online.");
+        toast.info(t('savedOffline'));
         setCounts(EMPTY);
       } else {
         toast.error(errorMessage(error));
@@ -192,11 +190,11 @@ export default function AttendanceScreen() {
       footer={
         <View style={styles.footerRow}>
           <View style={{ minWidth: 64 }}>
-            <Text style={type.micro}>TOTAL</Text>
-            <Text style={type.number}>{formatNumber(total)}</Text>
+            <Text style={[type.micro, { textTransform: 'uppercase' }]}>{t('total')}</Text>
+            <Text style={type.number}>{format.number(total)}</Text>
           </View>
           <Button
-            label={online ? 'Save count' : 'Save offline'}
+            label={online ? t('saveCount') : t('saveOffline')}
             icon={online ? 'check' : 'cloudOff'}
             size="lg"
             loading={saving}
@@ -207,11 +205,11 @@ export default function AttendanceScreen() {
         </View>
       }
     >
-      <ScreenHeader title="Attendance" subtitle="Count as people come in. With no signal it saves on your phone." />
+      <ScreenHeader title={common('areas.attendance')} subtitle={t('subtitle')} />
 
       {!online ? (
         <Notice tone="warning" icon="cloudOff">
-          You&apos;re offline. Counts are kept on this phone.
+          {t('offline')}
         </Notice>
       ) : null}
 
@@ -219,17 +217,17 @@ export default function AttendanceScreen() {
         <View style={styles.outbox}>
           <Icon name="clock" size={15} color={colors.warning} />
           <Text style={styles.outboxText} numberOfLines={2}>
-            {waiting.length} {waiting.length === 1 ? 'count' : 'counts'} waiting to send
+            {t('waiting', { count: waiting.length })}
           </Text>
           <Button
-            label="Send now"
+            label={common('actions.sendNow')}
             size="sm"
             variant="secondary"
             disabled={!online}
             onPress={() =>
               void flushAttendance().then((sent) => {
                 if (sent) {
-                  toast.success(`${sent} sent`);
+                  toast.success(t('sent', { count: sent }));
                   void recent.reload();
                 }
               })
@@ -242,17 +240,17 @@ export default function AttendanceScreen() {
         <View key={item.id} style={styles.failed}>
           <View style={{ flex: 1 }}>
             <Text style={[type.label, { color: colors.danger }]} numberOfLines={1}>
-              Couldn&apos;t send {item.label}
+              {t('failed', { label: item.label })}
             </Text>
             <Caption numberOfLines={2}>{item.error}</Caption>
           </View>
-          <Button label="Remove" size="sm" variant="secondary" onPress={() => void discardQueued(item.id)} />
+          <Button label={common('actions.remove')} size="sm" variant="secondary" onPress={() => void discardQueued(item.id)} />
         </View>
       ))}
 
       {pickBranch && (branches.data?.length ?? 0) > 1 ? (
         <View style={styles.group}>
-          <Section title="Branch" />
+          <Section title={common('fields.branch')} />
           <View style={styles.chips}>
             {branches.data!.map((branch) => (
               <Chip
@@ -270,7 +268,7 @@ export default function AttendanceScreen() {
       ) : null}
 
       <View style={styles.group}>
-        <Section title="Service" />
+        <Section title={common('fields.service')} />
         {types.length ? (
           <View style={styles.chips}>
             {types.map((item) => (
@@ -278,20 +276,20 @@ export default function AttendanceScreen() {
             ))}
           </View>
         ) : (
-          <Caption>{serviceTypes.loading ? 'Loading services…' : 'No services set up for this branch yet. Add them on the website.'}</Caption>
+          <Caption>{serviceTypes.loading ? t('loadingServices') : t('noServices')}</Caption>
         )}
       </View>
 
       <View style={styles.dateRow}>
-        <Pressable accessibilityLabel="Previous day" onPress={() => setDayOffset((value) => value + 1)} style={styles.dateButton} hitSlop={8}>
+        <Pressable accessibilityLabel={t('previousDay')} onPress={() => setDayOffset((value) => value + 1)} style={styles.dateButton} hitSlop={8}>
           <Icon name="chevronLeft" size={16} color={colors.ink} />
         </Pressable>
         <Text style={[type.label, { flex: 1, textAlign: 'center' }]} numberOfLines={1}>
-          {shortDate(serviceDate)}
-          <Text style={type.small}>{`  ·  ${serviceDate.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}`}</Text>
+          {format.shortDate(serviceDate)}
+          <Text style={type.small}>{`  ·  ${format.date(serviceDate, { weekday: 'short', day: 'numeric', month: 'short' })}`}</Text>
         </Text>
         <Pressable
-          accessibilityLabel="Next day"
+          accessibilityLabel={t('nextDay')}
           disabled={dayOffset === 0}
           onPress={() => setDayOffset((value) => Math.max(0, value - 1))}
           style={[styles.dateButton, dayOffset === 0 && { opacity: 0.3 }]}
@@ -302,22 +300,22 @@ export default function AttendanceScreen() {
       </View>
 
       <View>
-        <Section title="Headcount" />
-        {HEADCOUNT.map((counter, index) => (
-          <Counter key={counter.key} label={counter.label} value={counts[counter.key]} divider={index > 0} {...stepper(counter.key)} />
+        <Section title={t('headcount')} />
+        {HEADCOUNT.map((key, index) => (
+          <Counter key={key} label={t(`counters.${key}`)} value={counts[key]} divider={index > 0} {...stepper(key)} />
         ))}
       </View>
 
       <View>
-        <Section title="Of those" />
-        {OF_THOSE.map((counter, index) => (
-          <Counter key={counter.key} label={counter.label} value={counts[counter.key]} divider={index > 0} {...stepper(counter.key)} />
+        <Section title={t('ofThose')} />
+        {OF_THOSE.map((key, index) => (
+          <Counter key={key} label={t(`counters.${key}`)} value={counts[key]} divider={index > 0} {...stepper(key)} />
         ))}
       </View>
 
       {recent.data?.length ? (
         <View>
-          <Section title="Recently recorded" />
+          <Section title={t('recentlyRecorded')} />
           {recent.data.slice(0, 6).map((item, index) => {
             const people =
               (item.adultsCount ?? 0) + (item.childrenCount ?? 0) || (item.menCount ?? 0) + (item.womenCount ?? 0) + (item.childrenCount ?? 0);
@@ -325,9 +323,9 @@ export default function AttendanceScreen() {
               <ListRow
                 key={item._id}
                 divider={index > 0}
-                title={item.serviceTypeId?.name || item.serviceTypeLabel || item.serviceName || 'Service'}
-                subtitle={[shortDate(item.serviceDate), typeof item.branchId === 'object' ? branchName(item.branchId) : ''].filter(Boolean).join(' · ')}
-                right={<Text style={[type.label, { fontVariant: ['tabular-nums'] }]}>{formatNumber(people)}</Text>}
+                title={item.serviceTypeId?.name || item.serviceTypeLabel || item.serviceName || t('serviceFallback')}
+                subtitle={[format.shortDate(item.serviceDate), typeof item.branchId === 'object' ? branchName(item.branchId) : ''].filter(Boolean).join(' · ')}
+                right={<Text style={[type.label, { fontVariant: ['tabular-nums'] }]}>{format.number(people)}</Text>}
               />
             );
           })}

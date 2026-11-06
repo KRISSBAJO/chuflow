@@ -1,3 +1,125 @@
 {
-  "members": {}
+  "members": {
+    "noAccess": "Tu rol no puede abrir el directorio de miembros.",
+    "list": {
+      "title": "Miembros",
+      "count": "{count, plural, one {# miembro} other {# miembros}}",
+      "matching": "{count, plural, one {# coincidencia} other {# coincidencias}}",
+      "searchPlaceholder": "Nombre, teléfono o correo",
+      "add": "Agregar miembro",
+      "allStatuses": "Todos",
+      "allBranches": "Todas las iglesias",
+      "stats": {
+        "active": "Activos",
+        "pendingConversion": "Invitados por convertir",
+        "foundation": "Fundamentos pendientes"
+      },
+      "emptyTitle": "Aún no hay miembros",
+      "emptyBody": "Agrega un miembro o convierte a un invitado que esté listo para unirse.",
+      "noMatches": "Nadie coincide con eso",
+      "noMatchesHint": "Prueba con otro nombre, teléfono o correo.",
+      "endOfList": "Eso es todo",
+      "child": "Niño"
+    },
+    "profile": {
+      "title": "Miembro",
+      "notFound": "Miembro no encontrado",
+      "added": "Agregado {date}",
+      "details": "Detalles",
+      "formation": "Formación",
+      "serviceGroups": "Grupos de servicio",
+      "family": "Datos familiares",
+      "membershipStatus": "Estado de membresía",
+      "memberTitle": "Título",
+      "dateJoined": "Fecha de ingreso",
+      "branch": "Iglesia",
+      "originGuest": "Invitado de origen",
+      "directRecord": "Registro directo de miembro",
+      "holyGhostBaptism": "Bautismo del Espíritu Santo",
+      "waterBaptism": "Bautismo en agua",
+      "courseDate": "Fecha",
+      "courseLocation": "Lugar",
+      "noGroups": "Todavía no está en ningún grupo de servicio.",
+      "noFamily": "Aún no hay datos familiares registrados.",
+      "childRecord": "Este es un registro de niño. Actualízalo en el espacio del ministerio infantil para mantener los vínculos con los tutores.",
+      "holdToCopy": "Teléfono · mantén pulsado para copiar",
+      "copiedPhone": "Número copiado",
+      "openCare": "Cuidado pastoral",
+      "editTitle": "Editar miembro",
+      "saved": "Miembro actualizado",
+      "memberId": "ID del miembro"
+    },
+    "form": {
+      "newTitle": "Nuevo miembro",
+      "convertTitle": "Convertir invitado",
+      "intro": "El registro se crea en la iglesia que elijas y queda vinculado al recorrido del invitado.",
+      "convertIntro": "Úsalo cuando el invitado haya regresado y esté listo para ser miembro. Su nombre y datos de contacto se conservan.",
+      "guest": "Invitado",
+      "guestNotFound": "Invitado no encontrado",
+      "alreadyMember": "Este invitado ya es miembro.",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "memberTitle": "Título",
+      "noTitle": "Sin título",
+      "membershipStatus": "Estado de membresía",
+      "dateJoined": "Fecha de ingreso a la iglesia",
+      "dateHint": "AAAA-MM-DD, no puede ser futura.",
+      "today": "Hoy",
+      "serviceUnits": "Grupos de servicio",
+      "serviceUnitsHint": "Un miembro puede servir en más de un grupo.",
+      "serviceUnitsEmpty": "Todavía no hay grupos de servicio activos en esta iglesia.",
+      "serviceUnitsPlaceholder": "Elegir grupos",
+      "serviceUnitsCount": "{count, plural, one {# grupo} other {# grupos}}",
+      "inactiveSuffix": " (inactivo)",
+      "familyDetails": "Datos familiares",
+      "familyPlaceholder": "Familia, dependientes o notas pastorales",
+      "branch": "Iglesia",
+      "chooseBranch": "Elige una iglesia",
+      "save": "Guardar miembro",
+      "convert": "Convertir en miembro",
+      "created": "{name} ya es miembro.",
+      "converted": "{name} ya es miembro.",
+      "offline": "Sin conexión. Para guardar un miembro se necesita conexión.",
+      "errors": {
+        "firstName": "Agrega un nombre.",
+        "lastName": "Agrega un apellido.",
+        "phone": "Ese número de teléfono no parece correcto.",
+        "email": "Ese correo no parece correcto.",
+        "date": "Usa AAAA-MM-DD y una fecha que no sea futura.",
+        "branch": "Elige la iglesia del miembro."
+      }
+    },
+    "options": {
+      "notRecorded": "Sin registrar",
+      "membershipStatus": {
+        "active": "Activo",
+        "new_member": "Miembro nuevo",
+        "worker": "Obrero",
+        "inactive": "Inactivo"
+      },
+      "title": {
+        "bro": "Hermano",
+        "sister": "Hermana",
+        "pastor": "Pastor",
+        "resident_pastor": "Pastor residente",
+        "associate_pastor": "Pastor asociado",
+        "deacon": "Diácono",
+        "deaconess": "Diaconisa",
+        "apostle": "Apóstol",
+        "other": "Otro"
+      },
+      "yesNo": {
+        "yes": "Sí",
+        "no": "No"
+      },
+      "courses": {
+        "believerFoundationClass": "Clase de fundamentos del creyente",
+        "bcc": "BCC",
+        "lcc": "LCC",
+        "lcd": "LCD"
+      }
+    }
+  }
 }

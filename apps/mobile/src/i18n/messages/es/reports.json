@@ -1,3 +1,65 @@
 {
-  "reports": {}
+  "reports": {
+    "title": "Informes",
+    "description": "Captación, seguimiento, conversión y asistencia de los últimos {days} días.",
+    "exportCsv": "Descargar CSV",
+    "exportHint": "Abre el sitio web, desde donde se descarga el archivo.",
+    "days": "{count} d",
+    "branch": "Sede",
+    "allBranches": "Todas las sedes",
+    "locked": {
+      "title": "Los informes son para líderes",
+      "body": "Pide a un pastor o administrador si necesitas estas cifras."
+    },
+    "metrics": {
+      "guestTotal": "Invitados",
+      "guestTotalHint": "Registros en el alcance",
+      "memberTotal": "Miembros",
+      "memberTotalHint": "Registros en el alcance",
+      "attendanceTotal": "Asistencia",
+      "attendanceTotalHint": "Últimos {days} días",
+      "firstTimers": "Primera vez",
+      "firstTimersHint": "De los resúmenes de asistencia",
+      "newConverts": "Nuevos convertidos",
+      "newConvertsHint": "En los servicios registrados",
+      "conversionRate": "Tasa de conversión",
+      "returnRate": "Tasa de retorno {rate}%"
+    },
+    "range": {
+      "title": "Ventana del informe",
+      "dates": "Fechas",
+      "datesValue": "{from} a {to}",
+      "summarySubmissions": "Resúmenes enviados",
+      "adultsChildren": "Adultos / niños"
+    },
+    "daily": {
+      "title": "Tendencia diaria",
+      "subtitle": "Últimos 10 días",
+      "date": "Fecha",
+      "guests": "Invitados",
+      "attendance": "Asist.",
+      "firstTimers": "Nuevos",
+      "empty": "No se ha registrado actividad diaria en este rango."
+    },
+    "followUp": {
+      "title": "Desglose del seguimiento",
+      "empty": "Nadie está en seguimiento en este rango."
+    },
+    "serviceMix": {
+      "title": "Asistencia por servicio",
+      "summary": "{firstTimers} nuevos · {converts} convertidos · {reports} resúmenes",
+      "empty": "No se ha registrado asistencia a servicios en este rango."
+    },
+    "comparison": {
+      "title": "Comparación de sedes",
+      "hint": "Los resúmenes que faltan no cuentan como asistencia cero.",
+      "search": "Buscar sedes",
+      "reports": "{count, plural, one {# informe} other {# informes}}",
+      "missing": "Sin informe enviado",
+      "attendance": "{count} asistentes",
+      "growth": "Crecimiento {value}",
+      "empty": "Aún no hay sedes en este alcance.",
+      "noMatches": "Ninguna sede coincide."
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useState } from 'react';
+import { translate } from '@/i18n/provider';
 import { api, ApiError, NetworkError } from './api';
 
 /*
@@ -65,7 +66,7 @@ export async function flushAttendance() {
           remaining.push(...items.slice(index));
           break;
         }
-        remaining.push({ ...item, error: error instanceof ApiError ? error.message : 'Could not send' });
+        remaining.push({ ...item, error: error instanceof ApiError ? error.message : translate('attendance.outbox.couldNotSend') });
       }
     }
     await write(remaining);

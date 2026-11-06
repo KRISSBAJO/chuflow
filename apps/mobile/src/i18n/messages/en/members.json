@@ -1,3 +1,125 @@
 {
-  "members": {}
+  "members": {
+    "noAccess": "Your role can’t open the members directory.",
+    "list": {
+      "title": "Members",
+      "count": "{count, plural, one {# member} other {# members}}",
+      "matching": "{count, plural, one {# matching} other {# matching}}",
+      "searchPlaceholder": "Name, phone or email",
+      "add": "Add member",
+      "allStatuses": "All",
+      "allBranches": "All branches",
+      "stats": {
+        "active": "Active",
+        "pendingConversion": "Guests to convert",
+        "foundation": "Foundation pending"
+      },
+      "emptyTitle": "No members yet",
+      "emptyBody": "Add a member, or convert a guest who is ready to join.",
+      "noMatches": "No one matches that",
+      "noMatchesHint": "Try a different name, phone or email.",
+      "endOfList": "That’s everyone",
+      "child": "Child"
+    },
+    "profile": {
+      "title": "Member",
+      "notFound": "Member not found",
+      "added": "Added {date}",
+      "details": "Details",
+      "formation": "Formation",
+      "serviceGroups": "Service groups",
+      "family": "Family details",
+      "membershipStatus": "Membership status",
+      "memberTitle": "Title",
+      "dateJoined": "Date joined",
+      "branch": "Branch",
+      "originGuest": "Origin guest",
+      "directRecord": "Direct member record",
+      "holyGhostBaptism": "Holy Ghost baptism",
+      "waterBaptism": "Water baptism",
+      "courseDate": "Date",
+      "courseLocation": "Location",
+      "noGroups": "Not in any service group yet.",
+      "noFamily": "No family details recorded yet.",
+      "childRecord": "This is a child record. Update it in the Kids ministry workspace to keep guardian links in step.",
+      "holdToCopy": "Phone · hold to copy",
+      "copiedPhone": "Phone number copied",
+      "openCare": "Pastoral care",
+      "editTitle": "Edit member",
+      "saved": "Member updated",
+      "memberId": "Member ID"
+    },
+    "form": {
+      "newTitle": "New member",
+      "convertTitle": "Convert guest",
+      "intro": "The record is created in the branch you choose and stays linked to any guest journey.",
+      "convertIntro": "Use this when the guest has returned and is ready to become a member. Their name and contact details carry over.",
+      "guest": "Guest",
+      "guestNotFound": "Guest not found",
+      "alreadyMember": "This guest is already a member.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Phone",
+      "email": "Email",
+      "memberTitle": "Title",
+      "noTitle": "No title",
+      "membershipStatus": "Membership status",
+      "dateJoined": "Date joined church",
+      "dateHint": "YYYY-MM-DD, not in the future.",
+      "today": "Today",
+      "serviceUnits": "Service groups",
+      "serviceUnitsHint": "A member can serve in more than one group.",
+      "serviceUnitsEmpty": "No active service groups in this branch yet.",
+      "serviceUnitsPlaceholder": "Choose groups",
+      "serviceUnitsCount": "{count, plural, one {# group} other {# groups}}",
+      "inactiveSuffix": " (inactive)",
+      "familyDetails": "Family details",
+      "familyPlaceholder": "Family details, dependants or pastoral notes",
+      "branch": "Branch",
+      "chooseBranch": "Choose a branch",
+      "save": "Save member",
+      "convert": "Convert to member",
+      "created": "{name} is now a member.",
+      "converted": "{name} is now a member.",
+      "offline": "No connection. Members need a connection to save.",
+      "errors": {
+        "firstName": "Add a first name.",
+        "lastName": "Add a last name.",
+        "phone": "That phone number doesn’t look right.",
+        "email": "That email doesn’t look right.",
+        "date": "Use YYYY-MM-DD and a date that isn’t in the future.",
+        "branch": "Choose the member’s branch."
+      }
+    },
+    "options": {
+      "notRecorded": "Not recorded",
+      "membershipStatus": {
+        "active": "Active",
+        "new_member": "New member",
+        "worker": "Worker",
+        "inactive": "Inactive"
+      },
+      "title": {
+        "bro": "Bro",
+        "sister": "Sister",
+        "pastor": "Pastor",
+        "resident_pastor": "Resident Pastor",
+        "associate_pastor": "Associate Pastor",
+        "deacon": "Deacon",
+        "deaconess": "Deaconess",
+        "apostle": "Apostle",
+        "other": "Other"
+      },
+      "yesNo": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "courses": {
+        "believerFoundationClass": "Believers Foundation Class",
+        "bcc": "BCC",
+        "lcc": "LCC",
+        "lcd": "LCD"
+      }
+    }
+  }
 }

@@ -1,3 +1,27 @@
 {
-  "search": {}
+  "search": {
+    "title": "Recherche",
+    "placeholder": "Nom, téléphone, e-mail, branche ou note",
+    "start": {
+      "title": "Commencez votre recherche",
+      "body": "Saisissez au moins deux caractères pour rechercher dans votre périmètre."
+    },
+    "noMatches": {
+      "title": "Aucun résultat",
+      "body": "Rien ne correspond à « {query} » dans votre périmètre."
+    },
+    "locked": {
+      "title": "La recherche n’est pas disponible pour votre rôle"
+    },
+    "results": "{count, plural, one {# résultat} other {# résultats}}",
+    "showing": "{shown} sur {total}",
+    "types": {
+      "guests": "Invités",
+      "members": "Membres",
+      "branches": "Branches",
+      "users": "Utilisateurs",
+      "followups": "Suivi"
+    },
+    "opensWebsite": "S’ouvre sur le site web"
+  }
 }

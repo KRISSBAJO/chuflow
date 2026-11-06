@@ -1,3 +1,42 @@
 {
-  "attendance": {}
+  "attendance": {
+    "count": {
+      "subtitle": "Count as people come in. With no signal it saves on your phone.",
+      "offline": "You’re offline. Counts are kept on this phone.",
+      "waiting": "{count, plural, one {# count waiting to send} other {# counts waiting to send}}",
+      "sent": "{count, plural, one {# sent} other {# sent}}",
+      "failed": "Couldn’t send {label}",
+      "loadingServices": "Loading services…",
+      "noServices": "No services set up for this branch yet. Add them on the website.",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "headcount": "Headcount",
+      "ofThose": "Of those",
+      "recentlyRecorded": "Recently recorded",
+      "serviceFallback": "Service",
+      "total": "Total",
+      "saveCount": "Save count",
+      "saveOffline": "Save offline",
+      "chooseService": "Choose a service first.",
+      "addSomeone": "Add at least one person.",
+      "saved": "Saved: {count} at {service}",
+      "savedOffline": "Saved on this phone. It’ll send when you’re back online.",
+      "queued": "{service} · {date} · {count, plural, one {# person} other {# people}}",
+      "removeOne": "Remove one from {label}",
+      "addOne": "Add one to {label}",
+      "holdTen": "Hold to add ten",
+      "countOf": "{label} count",
+      "counters": {
+        "menCount": "Men",
+        "womenCount": "Women",
+        "childrenCount": "Children",
+        "firstTimersCount": "First-timers",
+        "newConvertsCount": "New converts",
+        "holySpiritBaptismCount": "Holy Spirit baptism"
+      }
+    },
+    "outbox": {
+      "couldNotSend": "Could not send"
+    }
+  }
 }

@@ -1,3 +1,54 @@
 {
-  "more": {}
+  "more": {
+    "approvalsWaiting": "{count, plural, one {# en attente de votre décision} other {# en attente de votre décision}}",
+    "nothingWaiting": "Rien en attente",
+    "hints": {
+      "members": "Annuaire et profils",
+      "kids": "Accueil et classes",
+      "finance": "Offrandes et dépenses",
+      "meetings": "Agenda et comptes rendus",
+      "careCases": "Visites et dossiers d’accompagnement",
+      "attendanceHistory": "Cultes passés",
+      "reports": "Totaux et tendances",
+      "search": "Trouver quelqu’un, vite"
+    },
+    "thisPhone": "Ce téléphone",
+    "alerts": "Alertes",
+    "testAlert": "Envoyer une alerte de test",
+    "appLock": "Verrouillage de l’app",
+    "appLockHint": "Demander Face ID ou l’empreinte à l’ouverture de ChuFlow.",
+    "appLockOn": "Verrouillage de l’app activé",
+    "appLockOff": "Verrouillage de l’app désactivé",
+    "push": {
+      "on": "Nouveaux venus, vos suivis et les approbations.",
+      "off": "Recevez des alertes pour les nouveaux venus, les suivis et les approbations.",
+      "denied": "Bloquées dans les réglages du téléphone. Autorisez-y les notifications pour ChuFlow.",
+      "expoGo": "Les alertes nécessitent l’app ChuFlow installée ; Expo Go sur Android ne peut pas les recevoir.",
+      "unsupported": "Cet appareil ne peut pas recevoir d’alertes.",
+      "channel": "Alertes ChuFlow",
+      "enabled": "Les alertes sont activées sur ce téléphone",
+      "changeFailed": "Impossible de modifier les alertes.",
+      "testSent": "Test envoyé. Il devrait arriver dans quelques secondes.",
+      "testFailed": "Aucun appareil ne l’a reçu. Désactivez puis réactivez les alertes."
+    },
+    "website": "Sur le site web",
+    "links": {
+      "branches": "Églises locales",
+      "users": "Utilisateurs",
+      "templates": "Modèles",
+      "structure": "Structure"
+    },
+    "signOut": "Se déconnecter",
+    "signOutTitle": "Se déconnecter ?",
+    "signOutBody": "Vous pourrez vous reconnecter à tout moment.",
+    "signOutConfirm": "Se déconnecter de ChuFlow ?",
+    "lock": {
+      "enablePrompt": "Activer le verrouillage de l’app",
+      "unlockPrompt": "Déverrouiller ChuFlow",
+      "fallback": "Utiliser le code",
+      "lockedTitle": "ChuFlow est verrouillé",
+      "lockedBody": "Déverrouillez avec Face ID, l’empreinte ou le code de votre téléphone.",
+      "unlock": "Déverrouiller"
+    }
+  }
 }

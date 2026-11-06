@@ -1,3 +1,27 @@
 {
-  "search": {}
+  "search": {
+    "title": "Pesquisar",
+    "placeholder": "Nome, telefone, email, filial ou nota",
+    "start": {
+      "title": "Comece a pesquisar",
+      "body": "Escreva pelo menos dois caracteres para pesquisar no seu âmbito."
+    },
+    "noMatches": {
+      "title": "Sem correspondências",
+      "body": "Nada corresponde a “{query}” no seu âmbito."
+    },
+    "locked": {
+      "title": "A pesquisa não está disponível para a sua função"
+    },
+    "results": "{count, plural, one {# resultado} other {# resultados}}",
+    "showing": "{shown} de {total}",
+    "types": {
+      "guests": "Visitantes",
+      "members": "Membros",
+      "branches": "Filiais",
+      "users": "Utilizadores",
+      "followups": "Acompanhamento"
+    },
+    "opensWebsite": "Abre no site"
+  }
 }

@@ -1,3 +1,42 @@
 {
-  "attendance": {}
+  "attendance": {
+    "count": {
+      "subtitle": "Comptez à mesure que les gens arrivent. Sans réseau, tout reste sur votre téléphone.",
+      "offline": "Vous êtes hors ligne. Les comptages sont conservés sur ce téléphone.",
+      "waiting": "{count, plural, one {# comptage en attente d’envoi} other {# comptages en attente d’envoi}}",
+      "sent": "{count, plural, one {# envoyé} other {# envoyés}}",
+      "failed": "Impossible d’envoyer {label}",
+      "loadingServices": "Chargement des cultes…",
+      "noServices": "Aucun culte n’est encore configuré pour cette église locale. Ajoutez-les sur le site web.",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "headcount": "Comptage",
+      "ofThose": "Dont",
+      "recentlyRecorded": "Enregistrés récemment",
+      "serviceFallback": "Culte",
+      "total": "Total",
+      "saveCount": "Enregistrer le comptage",
+      "saveOffline": "Enregistrer hors ligne",
+      "chooseService": "Choisissez d’abord un culte.",
+      "addSomeone": "Ajoutez au moins une personne.",
+      "saved": "Enregistré : {count} au culte {service}",
+      "savedOffline": "Enregistré sur ce téléphone. L’envoi se fera dès le retour du réseau.",
+      "queued": "{service} · {date} · {count, plural, one {# personne} other {# personnes}}",
+      "removeOne": "Retirer un de {label}",
+      "addOne": "Ajouter un à {label}",
+      "holdTen": "Maintenir pour ajouter dix",
+      "countOf": "Nombre de {label}",
+      "counters": {
+        "menCount": "Hommes",
+        "womenCount": "Femmes",
+        "childrenCount": "Enfants",
+        "firstTimersCount": "Nouveaux venus",
+        "newConvertsCount": "Nouveaux convertis",
+        "holySpiritBaptismCount": "Baptême du Saint-Esprit"
+      }
+    },
+    "outbox": {
+      "couldNotSend": "Envoi impossible"
+    }
+  }
 }

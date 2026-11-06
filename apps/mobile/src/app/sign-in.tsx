@@ -2,9 +2,11 @@ import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState, type ComponentRef } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LanguageButton } from '@/components/language-picker';
 import { Body, Button, Field, Notice, Title } from '@/components/ui';
 import { Wordmark } from '@/components/wordmark';
 import { colors, fonts, space } from '@/constants/theme';
+import { useT } from '@/i18n/provider';
 import { errorMessage } from '@/lib/api';
 import { WEB_URL } from '@/lib/config';
 import { useSession } from '@/lib/session';
@@ -12,6 +14,8 @@ import { useSession } from '@/lib/session';
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const { signIn } = useSession();
+  const t = useT('auth.signIn');
+  const common = useT('common');
   const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +25,7 @@ export default function SignInScreen() {
 
   async function submit() {
     if (!email.trim() || !password) {
-      setError('Enter your email and password.');
+      setError(t('missing'));
       return;
     }
     setLoading(true);
@@ -29,7 +33,7 @@ export default function SignInScreen() {
     try {
       await signIn(email, password);
     } catch (caught) {
-      setError(errorMessage(caught, "Couldn't sign you in."));
+      setError(errorMessage(caught, t('failed')));
       setLoading(false);
     }
   }
@@ -40,20 +44,23 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxl }]}
       >
-        <Wordmark size={24} />
+        <View style={styles.topRow}>
+          <Wordmark size={24} />
+          <LanguageButton />
+        </View>
 
         <View style={styles.hero}>
-          <Title style={styles.title}>Welcome back</Title>
-          <Body style={styles.lead}>Sign in to your church&apos;s ChuFlow workspace.</Body>
+          <Title style={styles.title}>{t('title')}</Title>
+          <Body style={styles.lead}>{t('lead')}</Body>
         </View>
 
         <View style={styles.form}>
           {error ? <Notice tone="danger">{error}</Notice> : null}
           <Field
-            label="Email"
+            label={t('email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="you@church.org"
+            placeholder={t('emailPlaceholder')}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -64,42 +71,42 @@ export default function SignInScreen() {
           <View>
             <Field
               ref={passwordRef}
-              label="Password"
+              label={t('password')}
               value={password}
               onChangeText={setPassword}
-              placeholder="Your password"
+              placeholder={t('passwordPlaceholder')}
               secureTextEntry={!showPassword}
               autoComplete="password"
               textContentType="password"
               returnKeyType="go"
               onSubmitEditing={() => void submit()}
-              style={{ paddingRight: 64 }}
+              style={{ paddingRight: 72 }}
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              accessibilityLabel={showPassword ? t('hidePassword') : t('showPassword')}
               onPress={() => setShowPassword((value) => !value)}
               style={styles.reveal}
               hitSlop={8}
             >
-              <Text style={styles.revealText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              <Text style={styles.revealText}>{showPassword ? t('hide') : t('show')}</Text>
             </Pressable>
           </View>
 
-          <Button label="Sign in" size="lg" loading={loading} onPress={() => void submit()} style={styles.submit} />
+          <Button label={t('submit')} size="lg" loading={loading} onPress={() => void submit()} style={styles.submit} />
 
           <Pressable
             accessibilityRole="link"
             onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/forgot-password`)}
             style={styles.forgot}
           >
-            <Text style={styles.forgotText}>Forgot password?</Text>
+            <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
           </Pressable>
         </View>
 
         <View style={styles.footer}>
           <View style={styles.flameLine} />
-          <Text style={styles.footerText}>From Membership to Ministry</Text>
+          <Text style={styles.footerText}>{common('tagline')}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -109,6 +116,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.page },
   content: { flexGrow: 1, paddingHorizontal: space.page + 4, maxWidth: 480, width: '100%', alignSelf: 'center' },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   hero: { marginTop: 48 },
   title: { fontSize: 28, lineHeight: 33, letterSpacing: -0.8 },
   lead: { marginTop: 6, color: colors.muted },

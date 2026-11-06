@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { AndroidImportance } from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { Platform } from 'react-native';
+import { translate } from '@/i18n/provider';
 import { api } from './api';
 
 const TOKEN_KEY = 'chuflow.pushToken';
@@ -50,7 +51,7 @@ export async function enablePush(prompt: boolean): Promise<PushStatus> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'ChuFlow alerts',
+      name: translate('more.push.channel'),
       importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 120, 200],
       lightColor: '#ea580c',

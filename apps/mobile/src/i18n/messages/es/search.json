@@ -1,3 +1,27 @@
 {
-  "search": {}
+  "search": {
+    "title": "Buscar",
+    "placeholder": "Nombre, teléfono, correo, sede o nota",
+    "start": {
+      "title": "Comienza a buscar",
+      "body": "Escribe al menos dos caracteres para buscar en tu alcance."
+    },
+    "noMatches": {
+      "title": "Sin coincidencias",
+      "body": "Nada coincide con «{query}» en tu alcance."
+    },
+    "locked": {
+      "title": "La búsqueda no está disponible para tu rol"
+    },
+    "results": "{count, plural, one {# resultado} other {# resultados}}",
+    "showing": "{shown} de {total}",
+    "types": {
+      "guests": "Invitados",
+      "members": "Miembros",
+      "branches": "Sedes",
+      "users": "Usuarios",
+      "followups": "Seguimiento"
+    },
+    "opensWebsite": "Se abre en el sitio web"
+  }
 }

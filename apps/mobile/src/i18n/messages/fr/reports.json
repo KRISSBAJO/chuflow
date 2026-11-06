@@ -1,3 +1,65 @@
 {
-  "reports": {}
+  "reports": {
+    "title": "Rapports",
+    "description": "Saisie, suivi, conversion et présence des {days} derniers jours.",
+    "exportCsv": "Télécharger le CSV",
+    "exportHint": "Ouvre le site web, d’où le fichier se télécharge.",
+    "days": "{count} j",
+    "branch": "Branche",
+    "allBranches": "Toutes les branches",
+    "locked": {
+      "title": "Les rapports sont réservés aux responsables",
+      "body": "Demandez à un pasteur ou un administrateur si vous avez besoin de ces chiffres."
+    },
+    "metrics": {
+      "guestTotal": "Invités",
+      "guestTotalHint": "Fiches du périmètre",
+      "memberTotal": "Membres",
+      "memberTotalHint": "Fiches du périmètre",
+      "attendanceTotal": "Présence",
+      "attendanceTotalHint": "{days} derniers jours",
+      "firstTimers": "Nouveaux venus",
+      "firstTimersHint": "Issus des résumés de présence",
+      "newConverts": "Nouveaux convertis",
+      "newConvertsHint": "Sur les cultes enregistrés",
+      "conversionRate": "Taux de conversion",
+      "returnRate": "Taux de retour {rate} %"
+    },
+    "range": {
+      "title": "Fenêtre de rapport",
+      "dates": "Dates",
+      "datesValue": "Du {from} au {to}",
+      "summarySubmissions": "Résumés soumis",
+      "adultsChildren": "Adultes / enfants"
+    },
+    "daily": {
+      "title": "Tendance quotidienne",
+      "subtitle": "10 derniers jours",
+      "date": "Date",
+      "guests": "Invités",
+      "attendance": "Présence",
+      "firstTimers": "Nouveaux",
+      "empty": "Aucune activité quotidienne n’a été enregistrée sur cette période."
+    },
+    "followUp": {
+      "title": "Répartition du suivi",
+      "empty": "Personne n’est en suivi sur cette période."
+    },
+    "serviceMix": {
+      "title": "Présence par culte",
+      "summary": "{firstTimers} nouveaux venus · {converts} convertis · {reports} résumés",
+      "empty": "Aucune présence au culte n’a été enregistrée sur cette période."
+    },
+    "comparison": {
+      "title": "Comparaison des branches",
+      "hint": "Les résumés manquants ne comptent pas comme une présence nulle.",
+      "search": "Rechercher une branche",
+      "reports": "{count, plural, one {# rapport} other {# rapports}}",
+      "missing": "Aucun rapport soumis",
+      "attendance": "{count} présents",
+      "growth": "Croissance {value}",
+      "empty": "Aucune branche dans ce périmètre pour le moment.",
+      "noMatches": "Aucune branche ne correspond."
+    }
+  }
 }

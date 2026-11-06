@@ -1,3 +1,54 @@
 {
-  "guests": {}
+  "guests": {
+    "list": {
+      "inScope": "{count} dans votre périmètre",
+      "matching": "{count} correspondant",
+      "today": "{count} aujourd’hui",
+      "register": "Inscrire un invité",
+      "searchPlaceholder": "Rechercher un nom, un téléphone ou un e-mail",
+      "emptyTitle": "Pas encore d’invités",
+      "emptyBody": "Inscrivez votre premier invité : son suivi démarre automatiquement."
+    },
+    "new": {
+      "title": "Nouvel invité",
+      "intro": "Le suivi démarre dès l’enregistrement, et l’équipe de l’église locale reçoit une alerte.",
+      "firstTime": "Première visite",
+      "beenBefore": "Déjà venu",
+      "firstNameRequired": "Ajoutez un prénom.",
+      "lastNameRequired": "Ajoutez un nom.",
+      "phoneRequired": "Ajoutez un numéro de téléphone pour que l’équipe puisse assurer le suivi.",
+      "emailInvalid": "Cet e-mail ne semble pas valide.",
+      "branchRequired": "Choisissez l’église locale visitée.",
+      "phonePlaceholder": "+33 6 12 34 56 78",
+      "phoneHint": "Utilisé pour les appels, les SMS et le suivi WhatsApp.",
+      "loadingBranches": "Chargement des églises locales…",
+      "invitedBy": "Invité par",
+      "invitedByPlaceholder": "Qui l’a amené ?",
+      "prayerRequest": "Sujet de prière",
+      "prayerRequestPlaceholder": "Tout ce pour quoi l’église pourrait prier",
+      "wantsCall": "Souhaite un appel d’un pasteur",
+      "wantsCallHint": "Les pasteurs le voient dans leur liste de suivi.",
+      "submit": "Inscrire l’invité",
+      "registered": "{name} est inscrit. Le suivi a commencé.",
+      "offline": "Pas de connexion. L’inscription d’un invité nécessite une connexion pour que l’équipe soit alertée immédiatement."
+    },
+    "profile": {
+      "notFound": "Invité introuvable",
+      "wantsCall": "Souhaite l’appel d’un pasteur",
+      "registered": "Inscrit le {date}",
+      "followUp": "Suivi",
+      "with": "Avec {name}",
+      "notAssigned": "Pas encore attribué",
+      "log": "Noter",
+      "details": "Détails",
+      "phoneHold": "Téléphone · maintenir pour copier",
+      "email": "E-mail",
+      "invitedBy": "Invité par",
+      "heardAbout": "Nous a connus par",
+      "address": "Adresse",
+      "prayerRequest": "Sujet de prière",
+      "phoneCopied": "Numéro de téléphone copié",
+      "convertToMember": "Convertir en membre"
+    }
+  }
 }

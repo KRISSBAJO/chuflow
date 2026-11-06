@@ -1,3 +1,125 @@
 {
-  "members": {}
+  "members": {
+    "noAccess": "Votre rôle ne permet pas d’ouvrir l’annuaire des membres.",
+    "list": {
+      "title": "Membres",
+      "count": "{count, plural, one {# membre} other {# membres}}",
+      "matching": "{count, plural, one {# correspondant} other {# correspondants}}",
+      "searchPlaceholder": "Nom, téléphone ou e-mail",
+      "add": "Ajouter un membre",
+      "allStatuses": "Tous",
+      "allBranches": "Toutes les églises",
+      "stats": {
+        "active": "Actifs",
+        "pendingConversion": "Invités à convertir",
+        "foundation": "Fondation en attente"
+      },
+      "emptyTitle": "Pas encore de membres",
+      "emptyBody": "Ajoutez un membre ou convertissez un invité prêt à rejoindre l’église.",
+      "noMatches": "Personne ne correspond",
+      "noMatchesHint": "Essayez un autre nom, téléphone ou e-mail.",
+      "endOfList": "C’est tout le monde",
+      "child": "Enfant"
+    },
+    "profile": {
+      "title": "Membre",
+      "notFound": "Membre introuvable",
+      "added": "Ajouté {date}",
+      "details": "Détails",
+      "formation": "Formation",
+      "serviceGroups": "Groupes de service",
+      "family": "Situation familiale",
+      "membershipStatus": "Statut de membre",
+      "memberTitle": "Titre",
+      "dateJoined": "Date d’arrivée",
+      "branch": "Église",
+      "originGuest": "Invité d’origine",
+      "directRecord": "Fiche membre directe",
+      "holyGhostBaptism": "Baptême du Saint-Esprit",
+      "waterBaptism": "Baptême d’eau",
+      "courseDate": "Date",
+      "courseLocation": "Lieu",
+      "noGroups": "Dans aucun groupe de service pour le moment.",
+      "noFamily": "Aucune information familiale enregistrée.",
+      "childRecord": "Ceci est une fiche d’enfant. Modifiez-la dans l’espace du ministère des enfants pour garder les liens avec les tuteurs à jour.",
+      "holdToCopy": "Téléphone · maintenir pour copier",
+      "copiedPhone": "Numéro copié",
+      "openCare": "Suivi pastoral",
+      "editTitle": "Modifier le membre",
+      "saved": "Membre mis à jour",
+      "memberId": "ID du membre"
+    },
+    "form": {
+      "newTitle": "Nouveau membre",
+      "convertTitle": "Convertir l’invité",
+      "intro": "La fiche est créée dans l’église choisie et reste liée au parcours d’invité.",
+      "convertIntro": "À utiliser quand l’invité est revenu et prêt à devenir membre. Son nom et ses coordonnées sont repris.",
+      "guest": "Invité",
+      "guestNotFound": "Invité introuvable",
+      "alreadyMember": "Cet invité est déjà membre.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "memberTitle": "Titre",
+      "noTitle": "Sans titre",
+      "membershipStatus": "Statut de membre",
+      "dateJoined": "Date d’arrivée dans l’église",
+      "dateHint": "AAAA-MM-JJ, pas dans le futur.",
+      "today": "Aujourd’hui",
+      "serviceUnits": "Groupes de service",
+      "serviceUnitsHint": "Un membre peut servir dans plusieurs groupes.",
+      "serviceUnitsEmpty": "Aucun groupe de service actif dans cette église pour le moment.",
+      "serviceUnitsPlaceholder": "Choisir des groupes",
+      "serviceUnitsCount": "{count, plural, one {# groupe} other {# groupes}}",
+      "inactiveSuffix": " (inactif)",
+      "familyDetails": "Situation familiale",
+      "familyPlaceholder": "Famille, personnes à charge ou notes pastorales",
+      "branch": "Église",
+      "chooseBranch": "Choisir une église",
+      "save": "Enregistrer le membre",
+      "convert": "Convertir en membre",
+      "created": "{name} est maintenant membre.",
+      "converted": "{name} est maintenant membre.",
+      "offline": "Pas de connexion. L’enregistrement d’un membre nécessite une connexion.",
+      "errors": {
+        "firstName": "Ajoutez un prénom.",
+        "lastName": "Ajoutez un nom.",
+        "phone": "Ce numéro de téléphone semble incorrect.",
+        "email": "Cet e-mail semble incorrect.",
+        "date": "Utilisez AAAA-MM-JJ et une date qui n’est pas dans le futur.",
+        "branch": "Choisissez l’église du membre."
+      }
+    },
+    "options": {
+      "notRecorded": "Non renseigné",
+      "membershipStatus": {
+        "active": "Actif",
+        "new_member": "Nouveau membre",
+        "worker": "Ouvrier",
+        "inactive": "Inactif"
+      },
+      "title": {
+        "bro": "Frère",
+        "sister": "Sœur",
+        "pastor": "Pasteur",
+        "resident_pastor": "Pasteur résident",
+        "associate_pastor": "Pasteur associé",
+        "deacon": "Diacre",
+        "deaconess": "Diaconesse",
+        "apostle": "Apôtre",
+        "other": "Autre"
+      },
+      "yesNo": {
+        "yes": "Oui",
+        "no": "Non"
+      },
+      "courses": {
+        "believerFoundationClass": "Classe de fondation des croyants",
+        "bcc": "BCC",
+        "lcc": "LCC",
+        "lcd": "LCD"
+      }
+    }
+  }
 }

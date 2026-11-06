@@ -1,3 +1,71 @@
 {
-  "home": {}
+  "home": {
+    "friend": "friend",
+    "alertsLabel": "Alerts, {count} active",
+    "allNetwork": "All network",
+    "offline": "You’re offline. Attendance you count is saved and sent later.",
+    "metrics": {
+      "guests": "Guests",
+      "attendance": "Attendance",
+      "members": "Members",
+      "followUp": "Follow-up"
+    },
+    "shortcuts": {
+      "newGuest": "New guest",
+      "attendance": "Attendance",
+      "followUp": "Follow-up",
+      "approvals": "Approvals",
+      "members": "Members",
+      "kids": "Kids",
+      "finance": "Finance",
+      "meetings": "Meetings",
+      "reports": "Reports"
+    },
+    "needsYou": {
+      "title": "Needs you",
+      "caughtUp": "You’re all caught up."
+    },
+    "overview": {
+      "title": "Overview",
+      "days": "{count}d"
+    },
+    "watchlist": {
+      "title": "Watchlist",
+      "noRecentAttendance": "No recent attendance",
+      "last": "Last {when}",
+      "neverReported": "Never reported",
+      "allReported": "Every branch has reported recently.",
+      "backlog": "Follow-up backlog",
+      "pending": "{count} pending",
+      "noBacklog": "No follow-up backlog is building up."
+    },
+    "health": {
+      "title": "Branch health",
+      "leaders": "Growth leaders",
+      "attention": "Needs attention",
+      "score": "Growth score {score}",
+      "detail": "{guests} guests · {members} members · {converts} converts",
+      "noGrowth": "No growth activity has been recorded in this range yet.",
+      "noLow": "No branches in this scope are showing low activity."
+    },
+    "pipeline": {
+      "title": "Follow-up pipeline",
+      "inCare": "{count, plural, one {# person} other {# people}} in care",
+      "empty": "Nobody is in the follow-up pipeline in this scope right now."
+    },
+    "attendance": {
+      "title": "Attendance by service",
+      "summary": "{firstTimers} first timers · {converts} converts · {reports} reports",
+      "empty": "No attendance has been recorded in this range yet."
+    },
+    "recentGuests": {
+      "title": "Recent guests",
+      "empty": "No guests yet",
+      "emptyBody": "New guests you register show up here."
+    },
+    "newestMembers": {
+      "title": "Newest members",
+      "empty": "No new members have been added in this scope yet."
+    }
+  }
 }

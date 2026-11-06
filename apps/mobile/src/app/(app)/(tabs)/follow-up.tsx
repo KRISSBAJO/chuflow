@@ -4,8 +4,10 @@ import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, EmptyState, ErrorState, Loading, RoundAction, ScreenHeader, Segmented, tap } from '@/components/ui';
 import { colors, space, type } from '@/constants/theme';
+import { useAppFormat } from '@/i18n/format';
+import { useT } from '@/i18n/provider';
 import { api, query } from '@/lib/api';
-import { dialable, fullName, relativeTime, statusLabel, statusTone } from '@/lib/format';
+import { dialable, statusTone } from '@/lib/format';
 import { useSession, userId } from '@/lib/session';
 import type { FollowUpItem, FollowUpListResponse } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
@@ -33,6 +35,8 @@ const PAGE_SIZE = 30;
 export default function FollowUpScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useSession();
+  const t = useT('followUp.list');
+  const common = useT('common');
   const isWorker = user?.role === 'follow_up';
   const [filter, setFilter] = useState<Filter>(isWorker ? 'mine' : 'todo');
   // Later pages belong to the first page they extend; a new filter or refresh drops them.
@@ -67,14 +71,14 @@ export default function FollowUpScreen() {
 
   const filters: { value: Filter; label: string; count?: number }[] = isWorker
     ? [
-        { value: 'mine', label: 'Assigned to me', count: counts?.total },
-        { value: 'done', label: 'Returned' },
+        { value: 'mine', label: t('assignedToMe'), count: counts?.total },
+        { value: 'done', label: t('returned') },
       ]
     : [
-        { value: 'todo', label: 'Not started', count: counts?.new },
-        { value: 'mine', label: 'Mine' },
-        { value: 'all', label: 'All' },
-        { value: 'done', label: 'Returned' },
+        { value: 'todo', label: t('notStarted'), count: counts?.new },
+        { value: 'mine', label: t('mine') },
+        { value: 'all', label: t('all') },
+        { value: 'done', label: t('returned') },
       ];
 
   return (
@@ -88,7 +92,7 @@ export default function FollowUpScreen() {
         onEndReached={() => void loadMore()}
         ListHeaderComponent={
           <View style={styles.header}>
-            <ScreenHeader title="Follow-up" subtitle="Reach out, then tap a name to log how it went." />
+            <ScreenHeader title={common('areas.followUp')} subtitle={t('subtitle')} />
             <Segmented options={filters} value={filter} onChange={setFilter} />
           </View>
         }
@@ -99,7 +103,7 @@ export default function FollowUpScreen() {
           ) : first.error ? (
             <ErrorState message={first.error} onRetry={() => void first.refresh()} />
           ) : (
-            <EmptyState icon="care" title="You're all caught up" body="New guests appear here as soon as they register." />
+            <EmptyState icon="care" title={t('emptyTitle')} body={t('emptyBody')} />
           )
         }
         ListFooterComponent={loadingMore ? <Loading /> : undefined}
@@ -109,15 +113,19 @@ export default function FollowUpScreen() {
 }
 
 function FollowUpRow({ item, divider }: { item: FollowUpItem; divider: boolean }) {
+  const t = useT('followUp.list');
+  const common = useT('common');
+  const format = useAppFormat();
   const guest = item.guestId;
   const phone = dialable(guest?.phone);
   const tone = statusTone(item.status);
+  const firstName = guest?.firstName ?? '';
 
   return (
     <View style={[styles.row, divider && styles.divider]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityHint="Log how this follow-up went"
+        accessibilityHint={t('logHint')}
         onPress={() => {
           tap();
           router.push(`/care/${item._id}`);
@@ -127,20 +135,22 @@ function FollowUpRow({ item, divider }: { item: FollowUpItem; divider: boolean }
         <Avatar person={guest} size={36} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={type.label} numberOfLines={1}>
-            {fullName(guest)}
+            {format.fullName(guest)}
           </Text>
           <View style={styles.meta}>
             <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[tone] }]} />
             <Text style={[type.small, { flexShrink: 1 }]} numberOfLines={1}>
-              {[statusLabel(item.status), item.assignedTo ? item.assignedTo.firstName : 'Unassigned', relativeTime(item.updatedAt)].filter(Boolean).join(' · ')}
+              {[format.status(item.status), item.assignedTo ? item.assignedTo.firstName : common('state.unassigned'), format.relativeTime(item.updatedAt)]
+                .filter(Boolean)
+                .join(' · ')}
             </Text>
           </View>
         </View>
       </Pressable>
       {phone ? (
         <View style={styles.actions}>
-          <RoundAction icon="phone" label={`Call ${guest?.firstName ?? ''}`} onPress={() => void Linking.openURL(`tel:${phone}`)} />
-          <RoundAction icon="whatsapp" label={`WhatsApp ${guest?.firstName ?? ''}`} onPress={() => void Linking.openURL(`https://wa.me/${phone.replace('+', '')}`)} />
+          <RoundAction icon="phone" label={t('call', { name: firstName })} onPress={() => void Linking.openURL(`tel:${phone}`)} />
+          <RoundAction icon="whatsapp" label={t('whatsapp', { name: firstName })} onPress={() => void Linking.openURL(`https://wa.me/${phone.replace('+', '')}`)} />
         </View>
       ) : null}
     </View>

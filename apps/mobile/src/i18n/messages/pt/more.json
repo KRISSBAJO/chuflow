@@ -1,3 +1,54 @@
 {
-  "more": {}
+  "more": {
+    "approvalsWaiting": "{count, plural, one {# aguardando sua decisão} other {# aguardando sua decisão}}",
+    "nothingWaiting": "Nada pendente",
+    "hints": {
+      "members": "Diretório e perfis",
+      "kids": "Check-in e turmas",
+      "finance": "Ofertas e despesas",
+      "meetings": "Agenda e atas",
+      "careCases": "Visitas e casos de cuidado",
+      "attendanceHistory": "Cultos anteriores",
+      "reports": "Totais e tendências",
+      "search": "Encontre qualquer pessoa, rápido"
+    },
+    "thisPhone": "Este telefone",
+    "alerts": "Alertas",
+    "testAlert": "Enviar um alerta de teste",
+    "appLock": "Bloqueio do app",
+    "appLockHint": "Pedir Face ID ou digital ao abrir o ChuFlow.",
+    "appLockOn": "Bloqueio do app ativado",
+    "appLockOff": "Bloqueio do app desativado",
+    "push": {
+      "on": "Novos visitantes, seus acompanhamentos e aprovações.",
+      "off": "Receba alertas de novos visitantes, acompanhamentos e aprovações.",
+      "denied": "Bloqueados nas configurações do telefone. Permita lá as notificações do ChuFlow.",
+      "expoGo": "Os alertas precisam do app ChuFlow instalado; o Expo Go no Android não consegue recebê-los.",
+      "unsupported": "Este aparelho não pode receber alertas.",
+      "channel": "Alertas do ChuFlow",
+      "enabled": "Os alertas estão ativados neste telefone",
+      "changeFailed": "Não foi possível alterar os alertas.",
+      "testSent": "Teste enviado. Deve chegar em alguns segundos.",
+      "testFailed": "Nenhum aparelho o recebeu. Desative e reative os alertas."
+    },
+    "website": "No site",
+    "links": {
+      "branches": "Igrejas locais",
+      "users": "Usuários",
+      "templates": "Modelos",
+      "structure": "Estrutura"
+    },
+    "signOut": "Sair",
+    "signOutTitle": "Sair?",
+    "signOutBody": "Você pode entrar de novo quando quiser.",
+    "signOutConfirm": "Sair do ChuFlow?",
+    "lock": {
+      "enablePrompt": "Ativar o bloqueio do app",
+      "unlockPrompt": "Desbloquear o ChuFlow",
+      "fallback": "Usar o código",
+      "lockedTitle": "O ChuFlow está bloqueado",
+      "lockedBody": "Desbloqueie com Face ID, digital ou o código do seu telefone.",
+      "unlock": "Desbloquear"
+    }
+  }
 }

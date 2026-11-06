@@ -1,3 +1,65 @@
 {
-  "reports": {}
+  "reports": {
+    "title": "Reports",
+    "description": "Capture, follow-up, conversion and attendance for the last {days} days.",
+    "exportCsv": "Download CSV",
+    "exportHint": "Opens the website, where the file downloads.",
+    "days": "{count}d",
+    "branch": "Branch",
+    "allBranches": "All branches",
+    "locked": {
+      "title": "Reports are for leaders",
+      "body": "Ask a pastor or admin if you need these numbers."
+    },
+    "metrics": {
+      "guestTotal": "Guests",
+      "guestTotalHint": "Records in scope",
+      "memberTotal": "Members",
+      "memberTotalHint": "Records in scope",
+      "attendanceTotal": "Attendance",
+      "attendanceTotalHint": "Last {days} days",
+      "firstTimers": "First timers",
+      "firstTimersHint": "From attendance summaries",
+      "newConverts": "New converts",
+      "newConvertsHint": "Across recorded services",
+      "conversionRate": "Conversion rate",
+      "returnRate": "Return rate {rate}%"
+    },
+    "range": {
+      "title": "Reporting window",
+      "dates": "Dates",
+      "datesValue": "{from} to {to}",
+      "summarySubmissions": "Summary submissions",
+      "adultsChildren": "Adults / children"
+    },
+    "daily": {
+      "title": "Daily trend",
+      "subtitle": "Last 10 days",
+      "date": "Date",
+      "guests": "Guests",
+      "attendance": "Attend.",
+      "firstTimers": "First",
+      "empty": "No daily activity has been recorded in this range."
+    },
+    "followUp": {
+      "title": "Follow-up breakdown",
+      "empty": "Nobody is in follow-up in this range."
+    },
+    "serviceMix": {
+      "title": "Attendance by service",
+      "summary": "{firstTimers} first timers · {converts} converts · {reports} summaries",
+      "empty": "No service attendance has been recorded in this range."
+    },
+    "comparison": {
+      "title": "Branch comparison",
+      "hint": "Missing submissions are not counted as zero attendance.",
+      "search": "Search branches",
+      "reports": "{count, plural, one {# report} other {# reports}}",
+      "missing": "No report submitted",
+      "attendance": "{count} attendance",
+      "growth": "Growth {value}",
+      "empty": "No branches in this scope yet.",
+      "noMatches": "No branch matches that."
+    }
+  }
 }

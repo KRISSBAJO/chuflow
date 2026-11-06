@@ -1,3 +1,27 @@
 {
-  "search": {}
+  "search": {
+    "title": "Search",
+    "placeholder": "Name, phone, email, branch or note",
+    "start": {
+      "title": "Start searching",
+      "body": "Type at least two characters to search across your scope."
+    },
+    "noMatches": {
+      "title": "No matches",
+      "body": "Nothing matched “{query}” in your scope."
+    },
+    "locked": {
+      "title": "Search isn’t available for your role"
+    },
+    "results": "{count, plural, one {# result} other {# results}}",
+    "showing": "{shown} of {total}",
+    "types": {
+      "guests": "Guests",
+      "members": "Members",
+      "branches": "Branches",
+      "users": "Users",
+      "followups": "Follow-up"
+    },
+    "opensWebsite": "Opens on the website"
+  }
 }

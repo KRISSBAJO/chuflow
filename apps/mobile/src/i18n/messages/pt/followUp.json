@@ -1,3 +1,50 @@
 {
-  "followUp": {}
+  "followUp": {
+    "list": {
+      "subtitle": "Entre em contato e depois toque em um nome para registrar como foi.",
+      "assignedToMe": "Atribuídos a mim",
+      "returned": "Voltaram",
+      "notStarted": "Não iniciados",
+      "mine": "Meus",
+      "all": "Todos",
+      "emptyTitle": "Você está em dia",
+      "emptyBody": "Os novos visitantes aparecem aqui assim que se registram.",
+      "logHint": "Registrar como foi este acompanhamento",
+      "call": "Ligar para {name}",
+      "whatsapp": "WhatsApp para {name}"
+    },
+    "log": {
+      "title": "Registrar acompanhamento",
+      "chooseOutcome": "Primeiro escolha como foi.",
+      "saved": "Salvo para {name}",
+      "thisGuest": "este visitante",
+      "submit": "Salvar acompanhamento",
+      "howDidItGo": "Como foi?",
+      "howReached": "Como você entrou em contato",
+      "note": "Nota",
+      "notePlaceholder": "Sobre o que conversaram? Algum pedido de oração?",
+      "remindMe": "Lembrar-me",
+      "autoNote": "{outcome} por {method}.",
+      "outcomes": {
+        "contacted": { "label": "Contatado", "hint": "Conversaram ou deixou uma mensagem" },
+        "prayed_with": { "label": "Oraram juntos", "hint": "Compartilharam uma oração" },
+        "invited_back": { "label": "Convidado de novo", "hint": "Pretende voltar" },
+        "returned": { "label": "Voltou", "hint": "Participou de outro culto" },
+        "converted": { "label": "Tornou-se membro", "hint": "Juntou-se à igreja" }
+      },
+      "methods": {
+        "phone_call": "Ligação",
+        "whatsapp": "WhatsApp",
+        "text_message": "Mensagem",
+        "in_person": "Pessoalmente",
+        "email": "E-mail"
+      },
+      "reminders": {
+        "none": "Sem lembrete",
+        "tomorrow": "Amanhã",
+        "threeDays": "Em 3 dias",
+        "nextWeek": "Na próxima semana"
+      }
+    }
+  }
 }

@@ -5,8 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { Avatar, Badge, Caption, EmptyState, ErrorState, ListRow, Loading, RoundAction, ScreenHeader } from '@/components/ui';
 import { colors, fonts, radius, space } from '@/constants/theme';
+import { useAppFormat } from '@/i18n/format';
+import { useT } from '@/i18n/provider';
 import { api, query } from '@/lib/api';
-import { formatNumber, fullName, relativeTime, statusLabel, statusTone } from '@/lib/format';
+import { statusTone } from '@/lib/format';
 import type { GuestListItem, GuestListResponse } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
@@ -14,6 +16,9 @@ const PAGE_SIZE = 25;
 
 export default function GuestsScreen() {
   const insets = useSafeAreaInsets();
+  const t = useT('guests.list');
+  const common = useT('common');
+  const format = useAppFormat();
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   // Later pages belong to the first page they extend; a new search or refresh drops them.
@@ -46,7 +51,10 @@ export default function GuestsScreen() {
   }
 
   const subtitle = first.data
-    ? `${formatNumber(first.data.pagination.total)} ${debounced ? 'matching' : 'in your scope'} · ${formatNumber(first.data.summary.todayCount)} today`
+    ? [
+        t(debounced ? 'matching' : 'inScope', { count: format.number(first.data.pagination.total) }),
+        t('today', { count: format.number(first.data.summary.todayCount) }),
+      ].join(' · ')
     : ' ';
 
   return (
@@ -63,16 +71,16 @@ export default function GuestsScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <ScreenHeader
-              title="Guests"
+              title={common('areas.guests')}
               subtitle={subtitle}
-              right={<RoundAction icon="plus" label="Register a guest" tone="dark" onPress={() => router.push('/guest/new')} />}
+              right={<RoundAction icon="plus" label={t('register')} tone="dark" onPress={() => router.push('/guest/new')} />}
             />
             <View style={styles.search}>
               <Icon name="search" size={16} color={colors.faint} />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search name, phone or email"
+                placeholder={t('searchPlaceholder')}
                 placeholderTextColor="#b0ada6"
                 style={styles.searchInput}
                 returnKeyType="search"
@@ -87,10 +95,10 @@ export default function GuestsScreen() {
           return (
             <ListRow
               divider={index > 0}
-              title={fullName(item)}
-              subtitle={[item.phone, relativeTime(item.createdAt)].filter(Boolean).join(' · ')}
+              title={format.fullName(item)}
+              subtitle={[item.phone, format.relativeTime(item.createdAt)].filter(Boolean).join(' · ')}
               left={<Avatar person={item} size={34} />}
-              right={status ? <Badge label={statusLabel(status)} tone={statusTone(status)} /> : undefined}
+              right={status ? <Badge label={format.status(status)} tone={statusTone(status)} /> : undefined}
               chevron={false}
               onPress={() => router.push(`/guest/${item._id}`)}
             />
@@ -104,13 +112,13 @@ export default function GuestsScreen() {
           ) : (
             <EmptyState
               icon="guests"
-              title={debounced ? 'No one matches that' : 'No guests yet'}
-              body={debounced ? 'Try a different name or phone number.' : 'Register your first guest and their follow-up starts automatically.'}
+              title={debounced ? common('state.noMatches') : t('emptyTitle')}
+              body={debounced ? common('state.noMatchesHint') : t('emptyBody')}
             />
           )
         }
         ListFooterComponent={
-          loadingMore ? <Loading /> : first.data && page >= totalPages && items.length > 8 ? <Caption style={styles.end}>That&apos;s everyone</Caption> : undefined
+          loadingMore ? <Loading /> : first.data && page >= totalPages && items.length > 8 ? <Caption style={styles.end}>{common('state.endOfList')}</Caption> : undefined
         }
       />
     </View>

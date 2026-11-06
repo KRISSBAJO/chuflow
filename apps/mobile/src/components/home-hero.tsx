@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
 import { colors, fonts, radius, space } from '@/constants/theme';
-import { formatNumber } from '@/lib/format';
 import { Icon } from './icon';
 import { tap } from './ui';
 
@@ -21,19 +20,24 @@ function photoOfTheDay(date: Date) {
   return `https://images.unsplash.com/photo-${PHOTOS[day % PHOTOS.length]}?auto=format&fit=crop&w=900&q=70`;
 }
 
-export type HeroMetric = { label: string; value: number | undefined; onPress?: () => void };
+/** One number under the greeting; `value` arrives already formatted in the app's language. */
+export type HeroMetric = { key: string; label: string; value: string; onPress?: () => void };
 
 type Props = {
   date: Date;
+  /** The date already written out in the app's language. */
+  dateLabel: string;
   greeting: string;
   name: string;
   scope: string;
   alerts: number;
+  /** Accessibility label for the bell, e.g. "Alerts, 3 active". */
+  alertsLabel: string;
   onAlerts: () => void;
   metrics: HeroMetric[];
 };
 
-export function HomeHero({ date, greeting, name, scope, alerts, onAlerts, metrics }: Props) {
+export function HomeHero({ date, dateLabel, greeting, name, scope, alerts, alertsLabel, onAlerts, metrics }: Props) {
   return (
     <View style={styles.hero}>
       <Image source={{ uri: photoOfTheDay(date) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} cachePolicy="memory-disk" />
@@ -44,10 +48,12 @@ export function HomeHero({ date, greeting, name, scope, alerts, onAlerts, metric
       />
 
       <View style={styles.top}>
-        <Text style={styles.date}>{date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+        <Text style={styles.date} numberOfLines={1}>
+          {dateLabel}
+        </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Alerts, ${alerts} active`}
+          accessibilityLabel={alertsLabel}
           hitSlop={8}
           onPress={() => {
             tap();
@@ -66,7 +72,7 @@ export function HomeHero({ date, greeting, name, scope, alerts, onAlerts, metric
 
       <View style={styles.bottom}>
         <Text style={styles.greeting}>{greeting},</Text>
-        <View style={{ alignSelf: 'flex-start' }}>
+        <View style={{ alignSelf: 'flex-start', maxWidth: '100%' }}>
           <Text style={styles.name} numberOfLines={1}>
             {name}
           </Text>
@@ -87,7 +93,9 @@ export function HomeHero({ date, greeting, name, scope, alerts, onAlerts, metric
         <View style={styles.metrics}>
           {metrics.map((metric, index) => (
             <Pressable
-              key={metric.label}
+              key={metric.key}
+              accessibilityRole={metric.onPress ? 'button' : undefined}
+              accessibilityLabel={`${metric.label}, ${metric.value}`}
               disabled={!metric.onPress}
               onPress={() => {
                 tap();
@@ -96,7 +104,7 @@ export function HomeHero({ date, greeting, name, scope, alerts, onAlerts, metric
               style={({ pressed }) => [styles.metric, index === 0 ? { paddingLeft: 0 } : styles.metricDivider, pressed && { opacity: 0.6 }]}
             >
               <Text style={styles.metricValue} numberOfLines={1} adjustsFontSizeToFit>
-                {formatNumber(metric.value)}
+                {metric.value}
               </Text>
               <Text style={styles.metricLabel} numberOfLines={1}>
                 {metric.label}
@@ -118,8 +126,8 @@ const styles = StyleSheet.create({
     padding: space.lg,
     justifyContent: 'space-between',
   },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  date: { fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,0.85)' },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+  date: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,0.85)' },
   bell: {
     width: 34,
     height: 34,

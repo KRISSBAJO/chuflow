@@ -1,41 +1,40 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { type IconName } from '@/components/icon';
 import { toast } from '@/components/toast';
 import { Avatar, Button, Caption, Chip, ErrorState, Field, Loading, RoundAction, Screen, Section, tap } from '@/components/ui';
 import { colors, space, type } from '@/constants/theme';
+import { useAppFormat } from '@/i18n/format';
+import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
 import { api, errorMessage } from '@/lib/api';
-import { dialable, fullName, statusLabel } from '@/lib/format';
+import { dialable } from '@/lib/format';
 import type { FollowUpItem } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
-const OUTCOMES: { value: string; label: string; hint: string }[] = [
-  { value: 'contacted', label: 'Reached them', hint: 'Spoke or left a message' },
-  { value: 'prayed_with', label: 'Prayed together', hint: 'Shared a prayer' },
-  { value: 'invited_back', label: 'Invited back', hint: 'They plan to come again' },
-  { value: 'returned', label: 'Came back', hint: 'Attended another service' },
-  { value: 'converted', label: 'Became a member', hint: 'Joined the church' },
+const OUTCOMES = ['contacted', 'prayed_with', 'invited_back', 'returned', 'converted'] as const;
+
+const METHODS: { value: string; icon: IconName }[] = [
+  { value: 'phone_call', icon: 'phone' },
+  { value: 'whatsapp', icon: 'whatsapp' },
+  { value: 'text_message', icon: 'message' },
+  { value: 'in_person', icon: 'user' },
+  { value: 'email', icon: 'mail' },
 ];
 
-const METHODS: { value: string; label: string; icon: IconName }[] = [
-  { value: 'phone_call', label: 'Call', icon: 'phone' },
-  { value: 'whatsapp', label: 'WhatsApp', icon: 'whatsapp' },
-  { value: 'text_message', label: 'Text', icon: 'message' },
-  { value: 'in_person', label: 'In person', icon: 'user' },
-  { value: 'email', label: 'Email', icon: 'mail' },
-];
-
-const NEXT: { label: string; days: number | null }[] = [
-  { label: 'No reminder', days: null },
-  { label: 'Tomorrow', days: 1 },
-  { label: 'In 3 days', days: 3 },
-  { label: 'Next week', days: 7 },
+const NEXT: { key: 'none' | 'tomorrow' | 'threeDays' | 'nextWeek'; days: number | null }[] = [
+  { key: 'none', days: null },
+  { key: 'tomorrow', days: 1 },
+  { key: 'threeDays', days: 3 },
+  { key: 'nextWeek', days: 7 },
 ];
 
 export default function LogFollowUpScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const t = useT('followUp.log');
+  const common = useT('common');
+  const format = useAppFormat();
   const followUp = useApi<FollowUpItem>(`/follow-ups/${id}`);
   const { refresh: refreshAlerts } = useAlerts();
   const [outcome, setOutcome] = useState<string | null>(null);
@@ -48,7 +47,8 @@ export default function LogFollowUpScreen() {
   if (followUp.error || !followUp.data) {
     return (
       <Screen safeTop={false}>
-        <ErrorState message={followUp.error ?? 'Not found'} onRetry={() => void followUp.refresh()} />
+        <Stack.Screen options={{ title: t('title') }} />
+        <ErrorState message={followUp.error ?? common('state.notFound')} onRetry={() => void followUp.refresh()} />
       </Screen>
     );
   }
@@ -64,7 +64,7 @@ export default function LogFollowUpScreen() {
 
   async function save() {
     if (!outcome) {
-      toast.error('Choose how it went first.');
+      toast.error(t('chooseOutcome'));
       return;
     }
     setSaving(true);
@@ -73,13 +73,11 @@ export default function LogFollowUpScreen() {
       await api.patch(`/follow-ups/${item._id}`, {
         status: outcome,
         contactMethod: method,
-        note:
-          note.trim() ||
-          `${OUTCOMES.find((option) => option.value === outcome)?.label} by ${METHODS.find((option) => option.value === method)?.label.toLowerCase()}.`,
+        note: note.trim() || t('autoNote', { outcome: t(`outcomes.${outcome}.label`), method: t(`methods.${method}`).toLocaleLowerCase() }),
         ...(nextActionDate ? { nextActionDate } : {}),
       });
       void refreshAlerts();
-      toast.success(`Saved for ${guest?.firstName ?? 'this guest'}`);
+      toast.success(t('saved', { name: guest?.firstName || t('thisGuest') }));
       router.back();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -88,43 +86,44 @@ export default function LogFollowUpScreen() {
   }
 
   return (
-    <Screen safeTop={false} footer={<Button label="Save follow-up" size="lg" loading={saving} disabled={!outcome} onPress={() => void save()} />} contentStyle={{ gap: space.xl }}>
+    <Screen safeTop={false} footer={<Button label={t('submit')} size="lg" loading={saving} disabled={!outcome} onPress={() => void save()} />} contentStyle={{ gap: space.xl }}>
+      <Stack.Screen options={{ title: t('title') }} />
       <View style={styles.person}>
         <Avatar person={guest} size={40} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={type.title} numberOfLines={1}>
-            {fullName(guest)}
+            {format.fullName(guest)}
           </Text>
-          <Caption numberOfLines={1}>{[guest?.phone, statusLabel(item.status)].filter(Boolean).join(' · ')}</Caption>
+          <Caption numberOfLines={1}>{[guest?.phone, format.status(item.status)].filter(Boolean).join(' · ')}</Caption>
         </View>
         {phone ? (
           <View style={styles.reach}>
-            <RoundAction icon="phone" label="Call" onPress={() => reach('phone_call', `tel:${phone}`)} />
-            <RoundAction icon="whatsapp" label="WhatsApp" onPress={() => reach('whatsapp', `https://wa.me/${phone.replace('+', '')}`)} />
-            <RoundAction icon="message" label="Text" onPress={() => reach('text_message', `sms:${phone}`)} />
+            <RoundAction icon="phone" label={common('actions.call')} onPress={() => reach('phone_call', `tel:${phone}`)} />
+            <RoundAction icon="whatsapp" label={common('actions.whatsapp')} onPress={() => reach('whatsapp', `https://wa.me/${phone.replace('+', '')}`)} />
+            <RoundAction icon="message" label={common('actions.text')} onPress={() => reach('text_message', `sms:${phone}`)} />
           </View>
         ) : null}
       </View>
 
       <View>
-        <Section title="How did it go?" />
-        {OUTCOMES.map((option, index) => {
-          const selected = outcome === option.value;
+        <Section title={t('howDidItGo')} />
+        {OUTCOMES.map((value, index) => {
+          const selected = outcome === value;
           return (
             <Pressable
-              key={option.value}
+              key={value}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               onPress={() => {
                 tap();
-                setOutcome(option.value);
+                setOutcome(value);
               }}
               style={[styles.option, index > 0 && styles.divider]}
             >
               <View style={[styles.radio, selected && styles.radioOn]}>{selected ? <View style={styles.radioDot} /> : null}</View>
               <View style={{ flex: 1 }}>
-                <Text style={type.label}>{option.label}</Text>
-                <Caption>{option.hint}</Caption>
+                <Text style={type.label}>{t(`outcomes.${value}.label`)}</Text>
+                <Caption>{t(`outcomes.${value}.hint`)}</Caption>
               </View>
             </Pressable>
           );
@@ -132,21 +131,21 @@ export default function LogFollowUpScreen() {
       </View>
 
       <View style={styles.group}>
-        <Section title="How you reached them" />
+        <Section title={t('howReached')} />
         <View style={styles.chips}>
           {METHODS.map((option) => (
-            <Chip key={option.value} label={option.label} icon={option.icon} selected={method === option.value} onPress={() => setMethod(option.value)} />
+            <Chip key={option.value} label={t(`methods.${option.value}`)} icon={option.icon} selected={method === option.value} onPress={() => setMethod(option.value)} />
           ))}
         </View>
       </View>
 
-      <Field label="Note" value={note} onChangeText={setNote} placeholder="What did you talk about? Any prayer needs?" multiline />
+      <Field label={t('note')} value={note} onChangeText={setNote} placeholder={t('notePlaceholder')} multiline />
 
       <View style={styles.group}>
-        <Section title="Remind me" />
+        <Section title={t('remindMe')} />
         <View style={styles.chips}>
           {NEXT.map((option) => (
-            <Chip key={option.label} label={option.label} selected={next === option.days} onPress={() => setNext(option.days)} />
+            <Chip key={option.key} label={t(`reminders.${option.key}`)} selected={next === option.days} onPress={() => setNext(option.days)} />
           ))}
         </View>
       </View>

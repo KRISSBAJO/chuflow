@@ -30,7 +30,7 @@ export function CancelButton() {
   );
 }
 
-const MODALS = ['guest/new', 'care/[id]', 'members/new', 'finance/offerings/new', 'finance/expenses/new', 'meetings/new', 'kids/scan', 'search'];
+const MODALS = ['guest/new', 'care/[id]', 'members/new', 'members/convert', 'finance/offerings/new', 'finance/expenses/new', 'meetings/new', 'kids/sessions/new', 'kids/scan', 'search'];
 
 export default function SignedInLayout() {
   const { user } = useSession();

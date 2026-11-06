@@ -1,3 +1,71 @@
 {
-  "home": {}
+  "home": {
+    "friend": "ami",
+    "alertsLabel": "Alertes, {count} actives",
+    "allNetwork": "Tout le réseau",
+    "offline": "Vous êtes hors ligne. Les présences que vous comptez sont enregistrées et envoyées plus tard.",
+    "metrics": {
+      "guests": "Invités",
+      "attendance": "Présence",
+      "members": "Membres",
+      "followUp": "Suivi"
+    },
+    "shortcuts": {
+      "newGuest": "Nouvel invité",
+      "attendance": "Présence",
+      "followUp": "Suivi",
+      "approvals": "Validations",
+      "members": "Membres",
+      "kids": "Enfants",
+      "finance": "Finances",
+      "meetings": "Réunions",
+      "reports": "Rapports"
+    },
+    "needsYou": {
+      "title": "À faire",
+      "caughtUp": "Vous êtes à jour."
+    },
+    "overview": {
+      "title": "Vue d’ensemble",
+      "days": "{count} j"
+    },
+    "watchlist": {
+      "title": "À surveiller",
+      "noRecentAttendance": "Pas de présence récente",
+      "last": "Dernier {when}",
+      "neverReported": "Jamais rapporté",
+      "allReported": "Toutes les branches ont rapporté récemment.",
+      "backlog": "Suivis en retard",
+      "pending": "{count} en attente",
+      "noBacklog": "Aucun retard de suivi ne s’accumule."
+    },
+    "health": {
+      "title": "Santé des branches",
+      "leaders": "Moteurs de croissance",
+      "attention": "À traiter",
+      "score": "Score de croissance {score}",
+      "detail": "{guests} invités · {members} membres · {converts} convertis",
+      "noGrowth": "Aucune activité de croissance n’a encore été enregistrée sur cette période.",
+      "noLow": "Aucune branche de ce périmètre ne montre une activité faible."
+    },
+    "pipeline": {
+      "title": "Parcours de suivi",
+      "inCare": "{count, plural, one {# personne} other {# personnes}} en accompagnement",
+      "empty": "Personne n’est dans le parcours de suivi de ce périmètre pour le moment."
+    },
+    "attendance": {
+      "title": "Présence par culte",
+      "summary": "{firstTimers} nouveaux venus · {converts} convertis · {reports} rapports",
+      "empty": "Aucune présence n’a encore été enregistrée sur cette période."
+    },
+    "recentGuests": {
+      "title": "Invités récents",
+      "empty": "Pas encore d’invités",
+      "emptyBody": "Les nouveaux invités que vous enregistrez apparaissent ici."
+    },
+    "newestMembers": {
+      "title": "Nouveaux membres",
+      "empty": "Aucun nouveau membre n’a encore été ajouté dans ce périmètre."
+    }
+  }
 }

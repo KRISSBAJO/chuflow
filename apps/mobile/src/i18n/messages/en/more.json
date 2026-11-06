@@ -1,3 +1,54 @@
 {
-  "more": {}
+  "more": {
+    "approvalsWaiting": "{count, plural, one {# waiting for you} other {# waiting for you}}",
+    "nothingWaiting": "Nothing waiting",
+    "hints": {
+      "members": "Directory and profiles",
+      "kids": "Check-in and classes",
+      "finance": "Offerings and expenses",
+      "meetings": "Schedule and minutes",
+      "careCases": "Visits and care cases",
+      "attendanceHistory": "Past services",
+      "reports": "Totals and trends",
+      "search": "Find anyone, fast"
+    },
+    "thisPhone": "This phone",
+    "alerts": "Alerts",
+    "testAlert": "Send a test alert",
+    "appLock": "App lock",
+    "appLockHint": "Ask for Face ID or fingerprint when opening ChuFlow.",
+    "appLockOn": "App lock is on",
+    "appLockOff": "App lock is off",
+    "push": {
+      "on": "New first-timers, your follow-ups and approvals.",
+      "off": "Get alerts for first-timers, follow-ups and approvals.",
+      "denied": "Blocked in your phone settings. Allow notifications for ChuFlow there.",
+      "expoGo": "Alerts need the installed ChuFlow app; Expo Go on Android can’t receive them.",
+      "unsupported": "This device can’t receive phone alerts.",
+      "channel": "ChuFlow alerts",
+      "enabled": "Alerts are on for this phone",
+      "changeFailed": "Couldn’t change alerts.",
+      "testSent": "Test sent. It should arrive in a few seconds.",
+      "testFailed": "No device received it. Turn alerts off and on again."
+    },
+    "website": "On the website",
+    "links": {
+      "branches": "Branches",
+      "users": "Users",
+      "templates": "Templates",
+      "structure": "Structure"
+    },
+    "signOut": "Sign out",
+    "signOutTitle": "Sign out?",
+    "signOutBody": "You can sign back in any time.",
+    "signOutConfirm": "Sign out of ChuFlow?",
+    "lock": {
+      "enablePrompt": "Turn on App lock",
+      "unlockPrompt": "Unlock ChuFlow",
+      "fallback": "Use passcode",
+      "lockedTitle": "ChuFlow is locked",
+      "lockedBody": "Unlock with Face ID, fingerprint or your phone passcode.",
+      "unlock": "Unlock"
+    }
+  }
 }

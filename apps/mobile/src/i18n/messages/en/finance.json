@@ -1,3 +1,143 @@
 {
-  "finance": {}
+  "finance": {
+    "title": "Finance",
+    "noAccess": "Your role can’t see finance.",
+    "tabs": {
+      "offerings": "Offerings",
+      "expenses": "Expenses",
+      "ledger": "Ledger"
+    },
+    "range": {
+      "month": "This month",
+      "days90": "90 days",
+      "year": "This year",
+      "all": "All time"
+    },
+    "branch": {
+      "label": "Branch",
+      "all": "All branches"
+    },
+    "add": {
+      "offering": "Record an offering",
+      "expense": "Record an expense"
+    },
+    "tiles": {
+      "offerings": "Offerings",
+      "entries": "{count, plural, one {# entry} other {# entries}}",
+      "thisMonth": "This month",
+      "expenses": "Expenses",
+      "pending": "Awaiting approval",
+      "pendingCount": "{count, plural, one {# expense} other {# expenses}}",
+      "credits": "Credits",
+      "debits": "Debits",
+      "net": "Net balance",
+      "creditsLessDebits": "Credits less debits",
+      "pendingApprovals": "Pending approvals",
+      "byAccount": "By account",
+      "inOut": "{credits} in · {debits} out"
+    },
+    "direction": {
+      "credit": "Credit",
+      "debit": "Debit"
+    },
+    "source": {
+      "offering": "Offering",
+      "expense": "Expense"
+    },
+    "balanceAfter": "Balance {amount}",
+    "empty": {
+      "offerings": {
+        "title": "No offerings",
+        "body": "Offerings recorded in this period show up here."
+      },
+      "expenses": {
+        "title": "No expenses",
+        "body": "Expenses recorded in this period show up here."
+      },
+      "ledger": {
+        "title": "No ledger activity",
+        "body": "Approved offerings and expenses post here."
+      }
+    },
+    "endOfList": "That’s everything",
+    "fields": {
+      "serviceDate": "Service date",
+      "expenseDate": "Expense date",
+      "service": "Service",
+      "offeringType": "Offering type",
+      "account": "Account or fund",
+      "category": "Category",
+      "payee": "Payee or vendor",
+      "description": "Description",
+      "amount": "Amount",
+      "currency": "Currency",
+      "notes": "Notes",
+      "branch": "Branch",
+      "status": "Status",
+      "receipt": "Receipt",
+      "enteredBy": "Entered by",
+      "recordedAt": "Recorded",
+      "reviewedAt": "Reviewed",
+      "reviewNotes": "Review note"
+    },
+    "offeringForm": {
+      "title": "Record offering",
+      "intro": "Ushers and branch pastors record offerings for their branch. Entries can be corrected for 24 hours.",
+      "selectService": "Choose a service",
+      "selectOfferingType": "Choose an offering type",
+      "defaultAccount": "Default account for this offering type",
+      "notesPlaceholder": "A special collection, a correction…",
+      "noServiceTypes": "No services are set up for your branch yet. Add them on the website.",
+      "save": "Record offering",
+      "saved": "Offering recorded",
+      "errors": {
+        "service": "Choose the service.",
+        "offeringType": "Choose the offering type.",
+        "amount": "Enter an amount above zero."
+      }
+    },
+    "expenseForm": {
+      "title": "Record expense",
+      "intro": "Branch leaders submit expenses for approval. Oversight roles post directly.",
+      "selectCategory": "Choose a category",
+      "selectAccount": "Choose an account",
+      "selectBranch": "Choose a branch",
+      "payeePlaceholder": "Who received the payment?",
+      "descriptionPlaceholder": "Sound maintenance, diesel, welfare support…",
+      "notesPlaceholder": "A note for approval or reconciliation",
+      "save": "Record expense",
+      "saved": "Expense recorded",
+      "errors": {
+        "category": "Choose the category.",
+        "account": "Choose the account.",
+        "description": "Describe the expense.",
+        "amount": "Enter an amount above zero.",
+        "branch": "Choose the branch."
+      }
+    },
+    "offering": {
+      "title": "Offering",
+      "edit": "Correct amount or notes",
+      "save": "Save changes",
+      "saved": "Offering updated",
+      "notFound": "This offering is no longer available."
+    },
+    "expense": {
+      "title": "Expense",
+      "edit": "Correct amount or notes",
+      "save": "Save changes",
+      "saved": "Expense updated",
+      "notFound": "This expense is no longer available.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Expense approved",
+      "rejected": "Expense rejected",
+      "reviewNote": "Note for the branch",
+      "reviewNotePlaceholder": "Optional approval or rejection note",
+      "confirmRejectTitle": "Reject this expense?",
+      "confirmRejectBody": "The branch will need to submit it again.",
+      "openReceipt": "Open receipt",
+      "pendingHint": "Waiting for approval before it posts to the ledger."
+    }
+  }
 }

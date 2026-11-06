@@ -10,8 +10,8 @@ import { useSession } from '@/lib/session';
 
 /*
  * The tab bar follows the website's phone tabs: Home, Guests, Follow-up, Attendance, More, each
- * shown only to roles that can use it. Children's ministry staff get Home (their Kids board),
- * Kids and More instead.
+ * shown only to roles that can use it. Children's ministry staff get Home (their Kids board)
+ * and More.
  */
 
 function tabIcon(name: IconName) {
@@ -35,7 +35,6 @@ export default function TabsLayout() {
   const { summary } = useAlerts();
   const t = useT('common.tabs');
   const role = user?.role;
-  const kidsOnly = can.kidsOnly(role);
   const insets = useSafeAreaInsets();
   const bottom = Math.max(insets.bottom, 8);
 
@@ -68,7 +67,6 @@ export default function TabsLayout() {
         name="attendance"
         options={{ title: t('attendance'), tabBarIcon: tabIcon('attendance'), href: can.attendance(role) ? undefined : null }}
       />
-      <Tabs.Screen name="kids" options={{ title: t('kids'), tabBarIcon: tabIcon('smile'), href: kidsOnly ? undefined : null }} />
       <Tabs.Screen
         name="more"
         options={{ title: t('more'), tabBarIcon: tabIcon('more'), tabBarBadge: badge(summary?.quickStats.pendingApprovals) }}

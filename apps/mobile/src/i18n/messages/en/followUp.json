@@ -1,3 +1,50 @@
 {
-  "followUp": {}
+  "followUp": {
+    "list": {
+      "subtitle": "Reach out, then tap a name to log how it went.",
+      "assignedToMe": "Assigned to me",
+      "returned": "Returned",
+      "notStarted": "Not started",
+      "mine": "Mine",
+      "all": "All",
+      "emptyTitle": "You’re all caught up",
+      "emptyBody": "New guests appear here as soon as they register.",
+      "logHint": "Log how this follow-up went",
+      "call": "Call {name}",
+      "whatsapp": "WhatsApp {name}"
+    },
+    "log": {
+      "title": "Log follow-up",
+      "chooseOutcome": "Choose how it went first.",
+      "saved": "Saved for {name}",
+      "thisGuest": "this guest",
+      "submit": "Save follow-up",
+      "howDidItGo": "How did it go?",
+      "howReached": "How you reached them",
+      "note": "Note",
+      "notePlaceholder": "What did you talk about? Any prayer needs?",
+      "remindMe": "Remind me",
+      "autoNote": "{outcome} by {method}.",
+      "outcomes": {
+        "contacted": { "label": "Reached them", "hint": "Spoke or left a message" },
+        "prayed_with": { "label": "Prayed together", "hint": "Shared a prayer" },
+        "invited_back": { "label": "Invited back", "hint": "They plan to come again" },
+        "returned": { "label": "Came back", "hint": "Attended another service" },
+        "converted": { "label": "Became a member", "hint": "Joined the church" }
+      },
+      "methods": {
+        "phone_call": "Call",
+        "whatsapp": "WhatsApp",
+        "text_message": "Text",
+        "in_person": "In person",
+        "email": "Email"
+      },
+      "reminders": {
+        "none": "No reminder",
+        "tomorrow": "Tomorrow",
+        "threeDays": "In 3 days",
+        "nextWeek": "Next week"
+      }
+    }
+  }
 }

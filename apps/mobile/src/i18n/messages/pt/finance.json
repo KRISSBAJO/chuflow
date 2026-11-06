@@ -1,3 +1,143 @@
 {
-  "finance": {}
+  "finance": {
+    "title": "Finanças",
+    "noAccess": "O seu perfil não pode ver as finanças.",
+    "tabs": {
+      "offerings": "Ofertas",
+      "expenses": "Despesas",
+      "ledger": "Razão"
+    },
+    "range": {
+      "month": "Este mês",
+      "days90": "90 dias",
+      "year": "Este ano",
+      "all": "Tudo"
+    },
+    "branch": {
+      "label": "Igreja local",
+      "all": "Todas as igrejas"
+    },
+    "add": {
+      "offering": "Registar uma oferta",
+      "expense": "Registar uma despesa"
+    },
+    "tiles": {
+      "offerings": "Ofertas",
+      "entries": "{count, plural, one {# lançamento} other {# lançamentos}}",
+      "thisMonth": "Este mês",
+      "expenses": "Despesas",
+      "pending": "A aguardar aprovação",
+      "pendingCount": "{count, plural, one {# despesa} other {# despesas}}",
+      "credits": "Créditos",
+      "debits": "Débitos",
+      "net": "Saldo líquido",
+      "creditsLessDebits": "Créditos menos débitos",
+      "pendingApprovals": "Aprovações pendentes",
+      "byAccount": "Por conta",
+      "inOut": "{credits} entradas · {debits} saídas"
+    },
+    "direction": {
+      "credit": "Crédito",
+      "debit": "Débito"
+    },
+    "source": {
+      "offering": "Oferta",
+      "expense": "Despesa"
+    },
+    "balanceAfter": "Saldo {amount}",
+    "empty": {
+      "offerings": {
+        "title": "Sem ofertas",
+        "body": "As ofertas registadas neste período aparecem aqui."
+      },
+      "expenses": {
+        "title": "Sem despesas",
+        "body": "As despesas registadas neste período aparecem aqui."
+      },
+      "ledger": {
+        "title": "Sem movimentos",
+        "body": "As ofertas e despesas aprovadas são lançadas aqui."
+      }
+    },
+    "endOfList": "É tudo",
+    "fields": {
+      "serviceDate": "Data do culto",
+      "expenseDate": "Data da despesa",
+      "service": "Culto",
+      "offeringType": "Tipo de oferta",
+      "account": "Conta ou fundo",
+      "category": "Categoria",
+      "payee": "Beneficiário ou fornecedor",
+      "description": "Descrição",
+      "amount": "Valor",
+      "currency": "Moeda",
+      "notes": "Notas",
+      "branch": "Igreja local",
+      "status": "Estado",
+      "receipt": "Recibo",
+      "enteredBy": "Registado por",
+      "recordedAt": "Registado",
+      "reviewedAt": "Revisto",
+      "reviewNotes": "Nota de revisão"
+    },
+    "offeringForm": {
+      "title": "Registar oferta",
+      "intro": "Os obreiros e pastores locais registam as ofertas da sua igreja. Os lançamentos podem ser corrigidos durante 24 horas.",
+      "selectService": "Escolha um culto",
+      "selectOfferingType": "Escolha um tipo de oferta",
+      "defaultAccount": "Conta predefinida deste tipo de oferta",
+      "notesPlaceholder": "Uma coleta especial, uma correção…",
+      "noServiceTypes": "A sua igreja ainda não tem cultos configurados. Adicione-os no site.",
+      "save": "Registar oferta",
+      "saved": "Oferta registada",
+      "errors": {
+        "service": "Escolha o culto.",
+        "offeringType": "Escolha o tipo de oferta.",
+        "amount": "Introduza um valor acima de zero."
+      }
+    },
+    "expenseForm": {
+      "title": "Registar despesa",
+      "intro": "Os líderes locais submetem as despesas para aprovação. Os perfis de supervisão lançam diretamente.",
+      "selectCategory": "Escolha uma categoria",
+      "selectAccount": "Escolha uma conta",
+      "selectBranch": "Escolha uma igreja",
+      "payeePlaceholder": "Quem recebeu o pagamento?",
+      "descriptionPlaceholder": "Manutenção do som, combustível, apoio social…",
+      "notesPlaceholder": "Uma nota para a aprovação ou a reconciliação",
+      "save": "Registar despesa",
+      "saved": "Despesa registada",
+      "errors": {
+        "category": "Escolha a categoria.",
+        "account": "Escolha a conta.",
+        "description": "Descreva a despesa.",
+        "amount": "Introduza um valor acima de zero.",
+        "branch": "Escolha a igreja."
+      }
+    },
+    "offering": {
+      "title": "Oferta",
+      "edit": "Corrigir valor ou notas",
+      "save": "Guardar alterações",
+      "saved": "Oferta atualizada",
+      "notFound": "Esta oferta já não está disponível."
+    },
+    "expense": {
+      "title": "Despesa",
+      "edit": "Corrigir valor ou notas",
+      "save": "Guardar alterações",
+      "saved": "Despesa atualizada",
+      "notFound": "Esta despesa já não está disponível.",
+      "approve": "Aprovar",
+      "reject": "Rejeitar",
+      "approved": "Despesa aprovada",
+      "rejected": "Despesa rejeitada",
+      "reviewNote": "Nota para a igreja",
+      "reviewNotePlaceholder": "Nota opcional de aprovação ou rejeição",
+      "confirmRejectTitle": "Rejeitar esta despesa?",
+      "confirmRejectBody": "A igreja terá de a submeter novamente.",
+      "openReceipt": "Abrir recibo",
+      "pendingHint": "A aguardar aprovação antes de ser lançada no razão."
+    }
+  }
 }

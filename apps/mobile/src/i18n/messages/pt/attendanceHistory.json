@@ -1,0 +1,60 @@
+{
+  "attendanceHistory": {
+    "title": "Histórico de presença",
+    "noAccess": "O seu perfil não pode ver o histórico de presença.",
+    "countNow": "Contar agora",
+    "range": {
+      "week": "Esta semana",
+      "days30": "30 dias",
+      "days90": "90 dias"
+    },
+    "branch": {
+      "label": "Igreja local",
+      "all": "Todas as igrejas"
+    },
+    "tiles": {
+      "people": "Pessoas",
+      "services": "{count, plural, one {# culto} other {# cultos}}",
+      "adults": "Adultos",
+      "children": "Crianças",
+      "firstTimers": "Primeira vez",
+      "newConverts": "Novos convertidos"
+    },
+    "row": {
+      "people": "{count, plural, one {# pessoa} other {# pessoas}}",
+      "firstTimers": "{count, plural, one {# de primeira vez} other {# de primeira vez}}"
+    },
+    "empty": {
+      "title": "Nenhum culto registado",
+      "body": "As contagens de culto guardadas neste período aparecem aqui."
+    },
+    "detail": {
+      "title": "Resumo do culto",
+      "service": "Culto",
+      "counts": "Contagens",
+      "headcount": "Presenças",
+      "ofThose": "Destes",
+      "men": "Homens",
+      "women": "Mulheres",
+      "children": "Crianças",
+      "adults": "Adultos",
+      "firstTimers": "Primeira vez",
+      "newConverts": "Novos convertidos",
+      "holySpirit": "Batismo no Espírito Santo",
+      "total": "Total",
+      "date": "Data",
+      "branch": "Igreja local",
+      "recordedBy": "Registado por",
+      "recordedAt": "Registado",
+      "updatedAt": "Última atualização",
+      "edit": "Editar contagens",
+      "save": "Guardar alterações",
+      "saved": "Presença atualizada",
+      "removeOne": "Retirar um de {label}",
+      "addOne": "Adicionar um a {label}",
+      "holdForTen": "Mantenha premido para adicionar dez",
+      "countFor": "Contagem de {label}",
+      "notFound": "Este resumo de culto já não está disponível."
+    }
+  }
+}

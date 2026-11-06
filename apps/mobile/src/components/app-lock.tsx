@@ -3,6 +3,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Platform, StyleSheet, View } from 'react-native';
 import { colors, space } from '@/constants/theme';
+import { translate, useT } from '@/i18n/provider';
 import { Body, Button, Title } from './ui';
 import { AppMark } from './wordmark';
 
@@ -22,7 +23,7 @@ export async function canUseAppLock() {
 /** Turns the lock on only after the person proves they can unlock it. */
 export async function setAppLock(enabled: boolean) {
   if (enabled) {
-    const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Turn on App lock' });
+    const result = await LocalAuthentication.authenticateAsync({ promptMessage: translate('more.lock.enablePrompt') });
     if (!result.success) return false;
   }
   await AsyncStorage.setItem(LOCK_KEY, enabled ? 'on' : 'off');
@@ -31,13 +32,14 @@ export async function setAppLock(enabled: boolean) {
 
 /** Hides the signed-in app behind Face ID / fingerprint when App lock is on. */
 export function AppLockGate({ children }: { children: ReactNode }) {
+  const t = useT('more.lock');
   const [locked, setLocked] = useState<boolean | null>(null);
   const backgroundedAt = useRef<number | null>(null);
 
   const unlock = useCallback(async () => {
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Unlock ChuFlow',
-      fallbackLabel: 'Use passcode',
+      promptMessage: translate('more.lock.unlockPrompt'),
+      fallbackLabel: translate('more.lock.fallback'),
     });
     if (result.success) setLocked(false);
   }, []);
@@ -74,9 +76,9 @@ export function AppLockGate({ children }: { children: ReactNode }) {
   return (
     <View style={styles.cover}>
       <AppMark size={64} />
-      <Title style={styles.title}>ChuFlow is locked</Title>
-      <Body style={styles.body}>Unlock with Face ID, fingerprint or your phone passcode.</Body>
-      <Button label="Unlock" icon="lock" size="lg" onPress={() => void unlock()} style={styles.button} />
+      <Title style={styles.title}>{t('lockedTitle')}</Title>
+      <Body style={styles.body}>{t('lockedBody')}</Body>
+      <Button label={t('unlock')} icon="lock" size="lg" onPress={() => void unlock()} style={styles.button} />
     </View>
   );
 }

@@ -1,3 +1,125 @@
 {
-  "members": {}
+  "members": {
+    "noAccess": "O seu perfil não pode abrir o diretório de membros.",
+    "list": {
+      "title": "Membros",
+      "count": "{count, plural, one {# membro} other {# membros}}",
+      "matching": "{count, plural, one {# correspondência} other {# correspondências}}",
+      "searchPlaceholder": "Nome, telefone ou e-mail",
+      "add": "Adicionar membro",
+      "allStatuses": "Todos",
+      "allBranches": "Todas as igrejas",
+      "stats": {
+        "active": "Ativos",
+        "pendingConversion": "Visitantes a converter",
+        "foundation": "Fundamentos pendentes"
+      },
+      "emptyTitle": "Ainda não há membros",
+      "emptyBody": "Adicione um membro ou converta um visitante pronto para se juntar.",
+      "noMatches": "Ninguém corresponde a isso",
+      "noMatchesHint": "Tente outro nome, telefone ou e-mail.",
+      "endOfList": "É toda a gente",
+      "child": "Criança"
+    },
+    "profile": {
+      "title": "Membro",
+      "notFound": "Membro não encontrado",
+      "added": "Adicionado {date}",
+      "details": "Detalhes",
+      "formation": "Formação",
+      "serviceGroups": "Grupos de serviço",
+      "family": "Dados familiares",
+      "membershipStatus": "Estado de membro",
+      "memberTitle": "Título",
+      "dateJoined": "Data de entrada",
+      "branch": "Igreja",
+      "originGuest": "Visitante de origem",
+      "directRecord": "Registo direto de membro",
+      "holyGhostBaptism": "Batismo no Espírito Santo",
+      "waterBaptism": "Batismo nas águas",
+      "courseDate": "Data",
+      "courseLocation": "Local",
+      "noGroups": "Ainda não está em nenhum grupo de serviço.",
+      "noFamily": "Ainda não há dados familiares registados.",
+      "childRecord": "Este é um registo de criança. Atualize-o no espaço do ministério infantil para manter as ligações aos responsáveis.",
+      "holdToCopy": "Telefone · mantenha premido para copiar",
+      "copiedPhone": "Número copiado",
+      "openCare": "Cuidado pastoral",
+      "editTitle": "Editar membro",
+      "saved": "Membro atualizado",
+      "memberId": "ID do membro"
+    },
+    "form": {
+      "newTitle": "Novo membro",
+      "convertTitle": "Converter visitante",
+      "intro": "O registo é criado na igreja escolhida e fica ligado ao percurso do visitante.",
+      "convertIntro": "Use quando o visitante regressou e está pronto para se tornar membro. O nome e os contactos são mantidos.",
+      "guest": "Visitante",
+      "guestNotFound": "Visitante não encontrado",
+      "alreadyMember": "Este visitante já é membro.",
+      "firstName": "Nome",
+      "lastName": "Apelido",
+      "phone": "Telefone",
+      "email": "E-mail",
+      "memberTitle": "Título",
+      "noTitle": "Sem título",
+      "membershipStatus": "Estado de membro",
+      "dateJoined": "Data de entrada na igreja",
+      "dateHint": "AAAA-MM-DD, não pode ser no futuro.",
+      "today": "Hoje",
+      "serviceUnits": "Grupos de serviço",
+      "serviceUnitsHint": "Um membro pode servir em mais do que um grupo.",
+      "serviceUnitsEmpty": "Ainda não há grupos de serviço ativos nesta igreja.",
+      "serviceUnitsPlaceholder": "Escolher grupos",
+      "serviceUnitsCount": "{count, plural, one {# grupo} other {# grupos}}",
+      "inactiveSuffix": " (inativo)",
+      "familyDetails": "Dados familiares",
+      "familyPlaceholder": "Família, dependentes ou notas pastorais",
+      "branch": "Igreja",
+      "chooseBranch": "Escolha uma igreja",
+      "save": "Guardar membro",
+      "convert": "Converter em membro",
+      "created": "{name} é agora membro.",
+      "converted": "{name} é agora membro.",
+      "offline": "Sem ligação. Guardar um membro precisa de ligação.",
+      "errors": {
+        "firstName": "Adicione um nome.",
+        "lastName": "Adicione um apelido.",
+        "phone": "Esse número de telefone não parece correto.",
+        "email": "Esse e-mail não parece correto.",
+        "date": "Use AAAA-MM-DD e uma data que não seja no futuro.",
+        "branch": "Escolha a igreja do membro."
+      }
+    },
+    "options": {
+      "notRecorded": "Não registado",
+      "membershipStatus": {
+        "active": "Ativo",
+        "new_member": "Novo membro",
+        "worker": "Obreiro",
+        "inactive": "Inativo"
+      },
+      "title": {
+        "bro": "Irmão",
+        "sister": "Irmã",
+        "pastor": "Pastor",
+        "resident_pastor": "Pastor residente",
+        "associate_pastor": "Pastor associado",
+        "deacon": "Diácono",
+        "deaconess": "Diaconisa",
+        "apostle": "Apóstolo",
+        "other": "Outro"
+      },
+      "yesNo": {
+        "yes": "Sim",
+        "no": "Não"
+      },
+      "courses": {
+        "believerFoundationClass": "Classe de fundamentos do crente",
+        "bcc": "BCC",
+        "lcc": "LCC",
+        "lcd": "LCD"
+      }
+    }
+  }
 }
