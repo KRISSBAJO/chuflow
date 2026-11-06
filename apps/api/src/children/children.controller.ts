@@ -101,6 +101,12 @@ export class ChildrenController {
   ) {
     return this.service.rotateCard(u, 'child', id);
   }
+  @Get('sessions/latest-rooms') latestRooms(
+    @CurrentUser() u: AuthUser,
+    @Query('branchId') branchId: string,
+  ) {
+    return this.service.latestRooms(u, branchId);
+  }
   @Post('sessions') session(@CurrentUser() u: AuthUser, @Body() d: SessionDto) {
     return this.service.createSession(u, d);
   }

@@ -1,0 +1,203 @@
+{
+  "children": {
+    "layout": {
+      "brand": "ChuFlow",
+      "kids": "Kids",
+      "team": "Equipe infantil",
+      "leadership": "Liderança da igreja",
+      "mainApp": "Aplicativo principal",
+      "footer": "ChuFlow Kids · Cada criança conhecida. Cada entrega registrada.",
+      "refreshing": "Atualizando seu acesso ao espaço infantil…",
+      "workspace": "Espaço infantil"
+    },
+    "nav": {
+      "home": "Início",
+      "registerFamily": "Cadastrar uma família",
+      "openSession": "Abrir uma sessão",
+      "registrations": "Cadastro de pais",
+      "account": "Minha conta"
+    },
+    "phase": {
+      "live": "Em andamento",
+      "upcoming": "Abre em breve",
+      "ending": "Encerrando",
+      "overdue": "Crianças ainda presentes",
+      "closed": "Encerrada",
+      "open": "Aberta"
+    },
+    "home": {
+      "kicker": "ChuFlow Kids",
+      "title": "Pequenas pessoas. Uma grande recepção.",
+      "description": "Um lugar alegre para pertencer. Um jeito claro de cuidar de cada criança.",
+      "tags": {
+        "welcome": "Acolher",
+        "belong": "Pertencer",
+        "grow": "Crescer"
+      },
+      "church": "Igreja",
+      "switchChurch": "Trocar de igreja",
+      "noAccess": "Peça ao administrador da sua igreja para liberar seu acesso ao ministério infantil.",
+      "live": {
+        "eyebrow": "Culto de hoje",
+        "hereNow": "Presentes",
+        "attended": "Atendidas",
+        "collected": "Retiradas",
+        "rooms": "Salas",
+        "kiosks": "{count, plural, =0 {Nenhum link de quiosque} one {# link de quiosque} other {# links de quiosque}}",
+        "window": "{start} – {end}",
+        "startsIn": "Portas abrem {time}",
+        "endsIn": "Termina {time}",
+        "endedAgo": "Terminou {time}",
+        "overdue": "{count, plural, one {# criança ainda não foi retirada} other {# crianças ainda não foram retiradas}}.",
+        "allHome": "Todas as crianças foram retiradas. O supervisor pode encerrar a sessão.",
+        "desk": "Abrir o balcão de entrada",
+        "pickup": "Balcão de retirada",
+        "roomsLink": "Painel das salas",
+        "supervisor": "Ferramentas do supervisor",
+        "capacity": "{present} de {capacity}",
+        "full": "Lotada",
+        "spaces": "{count, plural, one {# vaga} other {# vagas}}",
+        "ageRange": "{min}–{max}",
+        "activity": "Atividade recente",
+        "noActivity": "Nenhuma entrada ainda. A primeira família a chegar aparecerá aqui.",
+        "updated": "Atualizado às {time}",
+        "refresh": "Atualizar",
+        "byKiosk": "Quiosque de recepção",
+        "byStaff": "Equipe de recepção",
+        "events": {
+          "session_created": "Sessão aberta",
+          "check_in": "{count, plural, one {# criança registrada} other {# crianças registradas}}",
+          "check_out": "{count, plural, one {# criança retirada} other {# crianças retiradas}}",
+          "checkout_exception": "Retirada aprovada pelo supervisor",
+          "transfer": "Troca de sala",
+          "reissue": "Comprovante de retirada substituído",
+          "session_closed": "Sessão encerrada",
+          "other": "Atividade"
+        },
+        "months": "{count} m",
+        "years": "{count} a"
+      },
+      "scan": {
+        "title": "Ler um cartão",
+        "hint": "Aponte um leitor USB ou Bluetooth para o cartão da família ou digite o código.",
+        "placeholder": "Leia o cartão da família ou da criança…",
+        "go": "Encontrar família",
+        "needsSession": "Abra uma sessão para começar a ler cartões."
+      },
+      "quiet": {
+        "title": "Nenhuma sessão aberta no momento",
+        "worker": "Um supervisor abre uma sessão antes de cada culto. O balcão de entrada aparecerá aqui assim que ela começar.",
+        "manager": "Abra uma sessão antes do início do culto, configure suas salas e receba a primeira família.",
+        "cta": "Abrir uma sessão"
+      },
+      "stats": {
+        "title": "Seu ministério em um olhar",
+        "children": "Crianças cadastradas",
+        "families": "Famílias",
+        "newChildren": "Novas neste mês",
+        "visiting": "Crianças visitantes",
+        "birthdays": "Aniversários nesta semana",
+        "pending": "Aguardando revisão",
+        "pendingHint": "Cadastros de pais",
+        "childrenHint": "Registros ativos",
+        "familiesHint": "Com um responsável vinculado",
+        "newHint": "Últimos 30 dias",
+        "visitingHint": "Ainda não são membros"
+      },
+      "trend": {
+        "title": "Presença por sessão",
+        "subtitle": "Crianças únicas por sessão, últimas dez.",
+        "empty": "A presença aparecerá aqui após a sua primeira sessão.",
+        "average": "Média {value}",
+        "best": "Recorde {value}",
+        "latest": "Última {value}",
+        "table": "Ver como tabela",
+        "session": "Sessão",
+        "date": "Data",
+        "attended": "Crianças",
+        "capacity": "Capacidade",
+        "tooltip": "{name} · {date} · {count, plural, one {# criança} other {# crianças}}"
+      },
+      "ages": {
+        "title": "Faixas etárias",
+        "subtitle": "Crianças cadastradas por idade, para dimensionar suas salas.",
+        "under3": "Menos de 3 anos",
+        "3to5": "3–5 anos",
+        "6to9": "6–9 anos",
+        "10to12": "10–12 anos",
+        "teens": "13 anos ou mais",
+        "empty": "Cadastre crianças para ver as faixas etárias."
+      },
+      "birthdays": {
+        "title": "Aniversários nesta semana",
+        "turning": "Faz {age} anos",
+        "empty": "Nenhum aniversário nos próximos sete dias.",
+        "card": "Enviar um cartão"
+      },
+      "alerts": {
+        "pending": "{count, plural, one {# cadastro de pais aguarda} other {# cadastros de pais aguardam}} revisão.",
+        "review": "Revisar agora",
+        "overdue": "A sessão terminou, mas ainda há crianças registradas.",
+        "goPickup": "Ir para a retirada",
+        "full": "{room} está lotada.",
+        "nearFull": "{room} está quase lotada ({present}/{capacity})."
+      },
+      "actions": {
+        "title": "Ações rápidas",
+        "registerFamily": "Cadastrar uma família",
+        "registerFamilyHint": "Adicione responsáveis, crianças e permissões de retirada.",
+        "openSession": "Abrir uma sessão",
+        "openSessionHint": "Configure as salas para o próximo culto.",
+        "registrations": "Cadastro de pais",
+        "registrationsHint": "Compartilhe o link de inscrição e revise os envios.",
+        "kiosk": "Quiosque de recepção",
+        "kioskHint": "Deixe as famílias fazerem o registro sozinhas em um tablet.",
+        "families": "Diretório de famílias",
+        "familiesHint": "Encontre uma família, imprima cartões, atualize responsáveis.",
+        "desk": "Balcão de entrada",
+        "deskHint": "Leia cartões e imprima comprovantes de retirada."
+      },
+      "steps": {
+        "title": "Como funciona",
+        "a": "Um olá amigável",
+        "aText": "Encontre uma família ou leia o cartão QR dela em uma sessão aberta.",
+        "b": "Um lugar para pertencer",
+        "bText": "Escolha a sala certa e entregue ao responsável o comprovante de retirada.",
+        "c": "Uma despedida cuidadosa",
+        "cText": "Confira o comprovante e o adulto autorizado antes de confirmar a retirada."
+      },
+      "sessions": {
+        "title": "Sessões",
+        "subtitle": "{count, plural, =0 {Nenhuma sessão ainda} one {# sessão} other {# sessões}}",
+        "new": "Abrir sessão",
+        "hereNow": "Presentes",
+        "attended": "Atendidas",
+        "rooms": "{count, plural, one {# sala} other {# salas}}",
+        "empty": "Nenhuma sessão ainda. Um supervisor pode abrir um culto e configurar as salas.",
+        "page": "Página de sessões {page} de {total}",
+        "newer": "Sessões mais recentes",
+        "older": "Sessões anteriores",
+        "open": "Abrir"
+      },
+      "families": {
+        "title": "Famílias",
+        "registered": "{count, plural, one {# cadastrada} other {# cadastradas}}",
+        "search": "Encontrar uma família",
+        "placeholder": "Nome da família ou do responsável",
+        "children": "{count, plural, =0 {Nenhuma criança ainda} one {# criança} other {# crianças}}",
+        "guardians": "{count, plural, one {# responsável} other {# responsáveis}}",
+        "empty": "Nenhuma família encontrada. Cadastre primeiro um pai, mãe ou responsável e depois adicione as crianças.",
+        "page": "Página {page} de {total}",
+        "open": "Abrir"
+      }
+    },
+    "summary": {
+      "title": "Ministério infantil",
+      "registered": "Crianças cadastradas",
+      "present": "Presentes agora",
+      "attended": "Presenças infantis",
+      "open": "Abrir espaço infantil",
+      "note": "O registro infantil é separado da contagem geral do culto."
+    }
+  }
+}

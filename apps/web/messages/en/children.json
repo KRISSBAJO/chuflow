@@ -1,0 +1,203 @@
+{
+  "children": {
+    "layout": {
+      "brand": "ChuFlow",
+      "kids": "Kids",
+      "team": "Children’s team",
+      "leadership": "Church leadership",
+      "mainApp": "Main app",
+      "footer": "ChuFlow Kids · Every child known. Every handover recorded.",
+      "refreshing": "Refreshing your children’s workspace access…",
+      "workspace": "Children’s workspace"
+    },
+    "nav": {
+      "home": "Home",
+      "registerFamily": "Register a family",
+      "openSession": "Open a session",
+      "registrations": "Parent registration",
+      "account": "My account"
+    },
+    "phase": {
+      "live": "Live now",
+      "upcoming": "Opens soon",
+      "ending": "Wrapping up",
+      "overdue": "Children still here",
+      "closed": "Closed",
+      "open": "Open"
+    },
+    "home": {
+      "kicker": "ChuFlow Kids",
+      "title": "Little people. A big welcome.",
+      "description": "A joyful place to belong. A clear way to care for every child.",
+      "tags": {
+        "welcome": "Welcome",
+        "belong": "Belong",
+        "grow": "Grow"
+      },
+      "church": "Church",
+      "switchChurch": "Switch church",
+      "noAccess": "Ask your church administrator to assign children’s ministry access.",
+      "live": {
+        "eyebrow": "Today’s service",
+        "hereNow": "Here now",
+        "attended": "Attended",
+        "collected": "Collected",
+        "rooms": "Rooms",
+        "kiosks": "{count, plural, =0 {No kiosk links} one {# kiosk link} other {# kiosk links}}",
+        "window": "{start} – {end}",
+        "startsIn": "Doors open {time}",
+        "endsIn": "Ends {time}",
+        "endedAgo": "Ended {time}",
+        "overdue": "{count, plural, one {# child has} other {# children have}} not been collected yet.",
+        "allHome": "Every child has been collected. The supervisor can close the session.",
+        "desk": "Open the check-in desk",
+        "pickup": "Pickup desk",
+        "roomsLink": "Room board",
+        "supervisor": "Supervisor tools",
+        "capacity": "{present} of {capacity}",
+        "full": "Full",
+        "spaces": "{count, plural, one {# space} other {# spaces}}",
+        "ageRange": "{min}–{max}",
+        "activity": "Latest activity",
+        "noActivity": "No check-ins yet. The first family to arrive will appear here.",
+        "updated": "Updated {time}",
+        "refresh": "Refresh",
+        "byKiosk": "Welcome kiosk",
+        "byStaff": "Welcome team",
+        "events": {
+          "session_created": "Session opened",
+          "check_in": "{count, plural, one {# child checked in} other {# children checked in}}",
+          "check_out": "{count, plural, one {# child collected} other {# children collected}}",
+          "checkout_exception": "Supervisor-approved pickup",
+          "transfer": "Classroom transfer",
+          "reissue": "Pickup receipt replaced",
+          "session_closed": "Session closed",
+          "other": "Activity"
+        },
+        "months": "{count} mo",
+        "years": "{count} y"
+      },
+      "scan": {
+        "title": "Scan a card",
+        "hint": "Point a USB or Bluetooth scanner at the family card, or type the code.",
+        "placeholder": "Scan family or child card…",
+        "go": "Find family",
+        "needsSession": "Open a session to start scanning cards."
+      },
+      "quiet": {
+        "title": "No session is open right now",
+        "worker": "A supervisor opens a session before each service. You will see the check-in desk here as soon as it starts.",
+        "manager": "Open a session before the service starts, set up your classrooms, then welcome the first family.",
+        "cta": "Open a session"
+      },
+      "stats": {
+        "title": "Your ministry at a glance",
+        "children": "Registered children",
+        "families": "Families",
+        "newChildren": "New this month",
+        "visiting": "Visiting children",
+        "birthdays": "Birthdays this week",
+        "pending": "Awaiting review",
+        "pendingHint": "Parent registrations",
+        "childrenHint": "Active records",
+        "familiesHint": "With a linked guardian",
+        "newHint": "Last 30 days",
+        "visitingHint": "Not yet members"
+      },
+      "trend": {
+        "title": "Attendance by session",
+        "subtitle": "Unique children per session, latest ten.",
+        "empty": "Attendance will chart here after your first session.",
+        "average": "Average {value}",
+        "best": "Best {value}",
+        "latest": "Latest {value}",
+        "table": "View as a table",
+        "session": "Session",
+        "date": "Date",
+        "attended": "Children",
+        "capacity": "Capacity",
+        "tooltip": "{name} · {date} · {count, plural, one {# child} other {# children}}"
+      },
+      "ages": {
+        "title": "Age mix",
+        "subtitle": "Registered children by age, to size your classrooms.",
+        "under3": "Under 3",
+        "3to5": "3–5 years",
+        "6to9": "6–9 years",
+        "10to12": "10–12 years",
+        "teens": "13 and over",
+        "empty": "Register children to see the age mix."
+      },
+      "birthdays": {
+        "title": "Birthdays this week",
+        "turning": "Turning {age}",
+        "empty": "No birthdays in the next seven days.",
+        "card": "Send a card"
+      },
+      "alerts": {
+        "pending": "{count, plural, one {# parent registration is} other {# parent registrations are}} waiting for review.",
+        "review": "Review now",
+        "overdue": "The session has ended but children are still checked in.",
+        "goPickup": "Go to pickup",
+        "full": "{room} is full.",
+        "nearFull": "{room} is nearly full ({present}/{capacity})."
+      },
+      "actions": {
+        "title": "Quick actions",
+        "registerFamily": "Register a family",
+        "registerFamilyHint": "Add guardians, children and pickup permissions.",
+        "openSession": "Open a session",
+        "openSessionHint": "Set up classrooms for the next service.",
+        "registrations": "Parent registration",
+        "registrationsHint": "Share the sign-up link and review submissions.",
+        "kiosk": "Welcome kiosk",
+        "kioskHint": "Let families check themselves in on a tablet.",
+        "families": "Family directory",
+        "familiesHint": "Find a family, print cards, update guardians.",
+        "desk": "Check-in desk",
+        "deskHint": "Scan cards and print pickup receipts."
+      },
+      "steps": {
+        "title": "How it works",
+        "a": "A friendly hello",
+        "aText": "Find a family or scan their QR card at an open session.",
+        "b": "A place to belong",
+        "bText": "Choose the right room and give the guardian their pickup receipt.",
+        "c": "A careful goodbye",
+        "cText": "Check the receipt and authorized adult before confirming pickup."
+      },
+      "sessions": {
+        "title": "Sessions",
+        "subtitle": "{count, plural, =0 {No sessions yet} one {# session} other {# sessions}}",
+        "new": "Open session",
+        "hereNow": "Here now",
+        "attended": "Attended",
+        "rooms": "{count, plural, one {# room} other {# rooms}}",
+        "empty": "No sessions yet. A supervisor can open a service and set up classrooms.",
+        "page": "Session page {page} of {total}",
+        "newer": "Newer sessions",
+        "older": "Older sessions",
+        "open": "Open"
+      },
+      "families": {
+        "title": "Families",
+        "registered": "{count, plural, one {# registered} other {# registered}}",
+        "search": "Find a family",
+        "placeholder": "Family or guardian name",
+        "children": "{count, plural, =0 {No children yet} one {# child} other {# children}}",
+        "guardians": "{count, plural, one {# guardian} other {# guardians}}",
+        "empty": "No matching families. Register a parent or guardian first, then add their children.",
+        "page": "Page {page} of {total}",
+        "open": "Open"
+      }
+    },
+    "summary": {
+      "title": "Children’s ministry",
+      "registered": "Registered children",
+      "present": "Here now",
+      "attended": "Child service visits",
+      "open": "Open children’s workspace",
+      "note": "Children’s roster tracked separately from the general service headcount."
+    }
+  }
+}

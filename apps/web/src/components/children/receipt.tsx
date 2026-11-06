@@ -2,9 +2,20 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import Image from "next/image";
-import { flowCopy, type ChildrenFlowText } from "./flow-copy";
+import { useTranslations } from "next-intl";
+import { useFlowText } from "./flow-copy";
 import type { ReceiptData } from "@/lib/children";
-export function ChildrenQr({ code }: { code: string }) {
+/** QR image for a card, receipt or kiosk link. */
+export function ChildrenQr({
+  code,
+  size = 160,
+  alt,
+}: {
+  code: string;
+  size?: number;
+  alt?: string;
+}) {
+  const t = useTranslations("childrenDesk.flow");
   const [src, setSrc] = useState("");
   useEffect(() => {
     let active = true;
@@ -21,28 +32,34 @@ export function ChildrenQr({ code }: { code: string }) {
   }, [code]);
   return src ? (
     <Image
-      width={160}
-      height={160}
+      width={size}
+      height={size}
       unoptimized
       className="children-card-qr"
+      style={{ width: size, height: size }}
       src={src}
-      alt="Scannable identification code"
+      alt={alt || t("qrAlt")}
     />
   ) : (
-    <span>Preparing QR code…</span>
+    <span
+      className="children-muted inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      {t("qrPreparing")}
+    </span>
   );
 }
+/** Printable pickup receipt + one label per child. */
 export function ChildrenReceipt({
   data,
   onDone,
-  text = flowCopy.en,
 }: {
   data: ReceiptData;
   onDone?: () => void;
-  text?: ChildrenFlowText;
 }) {
+  const text = useFlowText();
   return (
-    <div className="children-panel">
+    <div className="children-panel kids-fade-in">
       <div data-children-labels>
         <section className="children-print-label">
           <p className="children-kicker">{text.receipt}</p>
@@ -71,23 +88,26 @@ export function ChildrenReceipt({
               <p className="text-2xl font-bold">{c.name}</p>
               <p className="mt-2 text-lg">{c.room}</p>
               <p className="mt-3 font-mono text-xl">{data.display}</p>
-              {c.careAlert && <p className="mt-2 text-sm">{text.care}</p>}
+              {c.careAlert && (
+                <p className="children-badge rose mt-2">{text.care}</p>
+              )}
             </section>
           ))}
         </div>
       </div>
-      <div data-no-print className="mt-5 flex gap-3">
+      <div data-no-print className="mt-5 flex flex-wrap gap-3">
         <button
           className="children-button"
           type="button"
           onClick={() => window.print()}
         >
-          {text.print}
+          <span aria-hidden="true">🖨</span> {text.print}
         </button>
         {onDone && (
           <button
             className="children-button secondary"
             type="button"
+            autoFocus
             onClick={onDone}
           >
             {text.done}
@@ -97,6 +117,7 @@ export function ChildrenReceipt({
     </div>
   );
 }
+/** Issues (or replaces) a permanent family / child identification card. */
 export function ChildrenCardButton({
   kind,
   id,
@@ -104,6 +125,7 @@ export function ChildrenCardButton({
   kind: "family" | "child";
   id: string;
 }) {
+  const t = useTranslations("childrenDesk.card");
   const [card, setCard] = useState<{ code: string; name: string } | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -119,7 +141,7 @@ export function ChildrenCardButton({
         ),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create card.");
+      setError(e instanceof Error ? e.message : t("failed"));
     } finally {
       setBusy(false);
     }
@@ -132,12 +154,13 @@ export function ChildrenCardButton({
         disabled={busy}
         onClick={generate}
       >
-        {busy ? "Preparing…" : `Issue / replace ${kind} QR card`}
+        {busy
+          ? t("preparing")
+          : kind === "family"
+            ? t("issueFamily")
+            : t("issueChild")}
       </button>
-      <p className="children-muted mt-2">
-        Replacing a card disables the previous card. Print the new card before
-        closing.
-      </p>
+      <p className="children-muted mt-2">{t("note")}</p>
       {error && (
         <p role="alert" className="children-error">
           {error}
@@ -146,12 +169,10 @@ export function ChildrenCardButton({
       {card && (
         <div className="children-panel mt-4">
           <div data-children-labels className="children-print-label">
-            <p className="children-kicker">ChuFlow Kids · Identification</p>
+            <p className="children-kicker">{t("kicker")}</p>
             <p className="mt-2 text-xl font-semibold">{card.name}</p>
             <ChildrenQr code={card.code} />
-            <p className="children-muted">
-              For check-in only. This is not a pickup receipt.
-            </p>
+            <p className="children-muted">{t("checkInOnly")}</p>
           </div>
           <button
             data-no-print
@@ -159,7 +180,7 @@ export function ChildrenCardButton({
             type="button"
             onClick={() => window.print()}
           >
-            Print identification card
+            {t("print")}
           </button>
         </div>
       )}

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,6 +13,8 @@ import { AccessScopeService } from '../access-scope/access-scope.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Branch } from '../branches/schemas/branch.schema';
 import { Member } from '../members/schemas/member.schema';
+import { ChildrenRegistration } from './registration.schema';
+import { User } from '../users/schemas/user.schema';
 import {
   ChildFamily,
   ChildProfile,
@@ -53,6 +56,12 @@ export class ChildrenService {
     @InjectModel(Branch.name) private readonly branches: Model<Branch>,
     @InjectModel(Member.name) private readonly members: Model<Member>,
     private readonly scope: AccessScopeService,
+    @Optional()
+    @InjectModel(ChildrenRegistration.name)
+    private readonly registrations?: Model<ChildrenRegistration>,
+    @Optional()
+    @InjectModel(User.name)
+    private readonly users?: Model<User>,
   ) {}
   private id(v: string) {
     if (!Types.ObjectId.isValid(v))
@@ -193,6 +202,79 @@ export class ChildrenService {
       days,
     };
   }
+  /** Age bucket in completed months; invalid dates fall into the last bucket so one bad record never breaks the page. */
+  private ageBucket(birthDate: string, at: Date) {
+    try {
+      const months = ageMonths(birthDate, at);
+      if (months < 36) return 'under3';
+      if (months < 72) return '3to5';
+      if (months < 120) return '6to9';
+      if (months < 156) return '10to12';
+      return 'teens';
+    } catch {
+      return 'teens';
+    }
+  }
+  private liveSnapshot(
+    s: (ChildSession & { _id: Types.ObjectId }) | null,
+    now: Date,
+    kiosks: number,
+  ) {
+    if (!s) return null;
+    const present = s.visits.filter((v) => v.status === 'checked_in');
+    return {
+      _id: s._id,
+      name: s.name,
+      startsAt: s.startsAt,
+      endsAt: s.endsAt,
+      status: s.status,
+      phase:
+        s.startsAt > now
+          ? 'upcoming'
+          : s.endsAt < now && present.length > 0
+            ? 'overdue'
+            : s.endsAt < now
+              ? 'ending'
+              : 'live',
+      present: present.length,
+      attended: s.visits.length,
+      collected: s.visits.length - present.length,
+      kiosks,
+      rooms: s.rooms.map((r) => ({
+        ...r,
+        present: present.filter((v) => v.roomId === r.id).length,
+      })),
+      recent: s.events
+        .slice(-8)
+        .reverse()
+        .map((e) => ({
+          action: e.action,
+          at: e.at,
+          count: e.childIds?.length || 0,
+          kiosk: String(e.actorId).startsWith('kiosk:'),
+        })),
+    };
+  }
+  async latestRooms(u: AuthUser, branchId: string) {
+    await this.access(u, branchId, true);
+    const last = await this.sessions
+      .findOne({ branchId: this.id(branchId) })
+      .sort({ startsAt: -1 })
+      .select('name rooms startsAt endsAt')
+      .lean();
+    if (!last) return null;
+    return {
+      name: last.name,
+      startsAt: last.startsAt,
+      endsAt: last.endsAt,
+      rooms: last.rooms.map(({ name, minMonths, maxMonths, capacity }) => ({
+        name,
+        minMonths,
+        maxMonths,
+        capacity,
+      })),
+    };
+  }
   async overview(u: AuthUser, q: ChildrenQueryDto) {
     const opts = await this.options(u);
     const branchId = q.branchId || String(opts.branches[0]?._id || '');
@@ -202,14 +284,17 @@ export class ChildrenService {
         branchId: null,
         families: [],
         sessions: [],
+        live: null,
+        trend: [],
+        stats: null,
         pagination: { page: 1, total: 0, totalPages: 1 },
         sessionPagination: { page: 1, total: 0, totalPages: 1 },
       };
     await this.access(u, branchId);
-    const filter: Record<string, unknown> = {
-      branchId: this.id(branchId),
-      isActive: true,
-    };
+    const bid = this.id(branchId),
+      now = new Date(),
+      manage = this.manager(u);
+    const filter: Record<string, unknown> = { branchId: bid, isActive: true };
     if (q.search?.trim())
       filter.name = {
         $regex: q.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
@@ -218,21 +303,29 @@ export class ChildrenService {
     const page = Math.max(1, Number(q.page) || 1),
       limit = 20;
     const sessionPage = Math.max(1, Number(q.sessionPage) || 1);
-    const sessionFilter = {
-      branchId: this.id(branchId),
-      ...(this.manager(u) ? {} : { status: 'open' }),
-    };
-    const [families, total, sessions, sessionTotal] = await Promise.all([
-      this.manager(u)
+    const sessionFilter = { branchId: bid, ...(manage ? {} : { status: 'open' }) };
+    const [
+      families,
+      total,
+      sessions,
+      sessionTotal,
+      open,
+      recentSessions,
+      roster,
+      familyTotal,
+      newChildren,
+      pendingRegistrations,
+    ] = await Promise.all([
+      manage
         ? this.families
             .find(filter)
-            .select('_id name revision')
+            .select('_id name guardians revision updatedAt')
             .sort({ name: 1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .lean()
         : [],
-      this.manager(u) ? this.families.countDocuments(filter) : 0,
+      manage ? this.families.countDocuments(filter) : 0,
       this.sessions
         .find(sessionFilter)
         .sort({ startsAt: -1 })
@@ -240,20 +333,115 @@ export class ChildrenService {
         .limit(20)
         .lean(),
       this.sessions.countDocuments(sessionFilter),
+      this.sessions.findOne({ branchId: bid, status: 'open' }).lean(),
+      this.sessions
+        .find({ branchId: bid, startsAt: { $lte: now } })
+        .sort({ startsAt: -1 })
+        .limit(10)
+        .select('_id name startsAt status visits rooms')
+        .lean(),
+      this.children
+        .find({ branchId: bid, isActive: true })
+        .select('_id firstName lastName birthDate isMember familyId')
+        .lean(),
+      this.families.countDocuments({ branchId: bid, isActive: true }),
+      this.children.countDocuments({
+        branchId: bid,
+        isActive: true,
+        createdAt: { $gte: new Date(now.getTime() - 30 * 86400000) },
+      }),
+      manage && this.registrations
+        ? this.registrations.countDocuments({
+            branchId: bid,
+            status: { $in: ['pending', 'processing'] },
+          })
+        : 0,
     ]);
+    const kiosks = open
+      ? await this.kiosks.countDocuments({
+          sessionId: open._id,
+          revoked: false,
+          expiresAt: { $gt: now },
+        })
+      : 0;
+    const perFamily = new Map<string, number>();
+    const ageMix: Record<string, number> = {
+      under3: 0,
+      '3to5': 0,
+      '6to9': 0,
+      '10to12': 0,
+      teens: 0,
+    };
+    const birthdays: {
+      _id: Types.ObjectId;
+      name: string;
+      familyId: Types.ObjectId;
+      date: string;
+      turning: number;
+    }[] = [];
+    const weekAhead = new Date(now.getTime() + 7 * 86400000);
+    for (const c of roster) {
+      const key = String(c.familyId);
+      perFamily.set(key, (perFamily.get(key) || 0) + 1);
+      ageMix[this.ageBucket(c.birthDate, now)]++;
+      const born = new Date(c.birthDate + 'T00:00:00Z');
+      if (Number.isFinite(born.getTime())) {
+        const next = new Date(
+          Date.UTC(now.getUTCFullYear(), born.getUTCMonth(), born.getUTCDate()),
+        );
+        if (next < new Date(now.toDateString()))
+          next.setUTCFullYear(next.getUTCFullYear() + 1);
+        if (next <= weekAhead)
+          birthdays.push({
+            _id: c._id,
+            name: `${c.firstName} ${c.lastName}`,
+            familyId: c.familyId,
+            date: next.toISOString().slice(0, 10),
+            turning: next.getUTCFullYear() - born.getUTCFullYear(),
+          });
+      }
+    }
+    birthdays.sort((a, b) => a.date.localeCompare(b.date));
     return {
       ...opts,
       branchId,
-      families,
+      families: families.map((f) => ({
+        _id: f._id,
+        name: f.name,
+        childCount: perFamily.get(String(f._id)) || 0,
+        guardianCount: f.guardians?.length || 0,
+      })),
       sessions: sessions.map((s) => ({
         _id: s._id,
         name: s.name,
         startsAt: s.startsAt,
         endsAt: s.endsAt,
         status: s.status,
+        rooms: s.rooms.length,
         present: s.visits.filter((v) => v.status === 'checked_in').length,
         attended: s.visits.length,
       })),
+      live: this.liveSnapshot(open, now, kiosks),
+      trend: recentSessions
+        .slice()
+        .reverse()
+        .map((s) => ({
+          _id: s._id,
+          name: s.name,
+          startsAt: s.startsAt,
+          status: s.status,
+          attended: s.visits.length,
+          capacity: s.rooms.reduce((sum, r) => sum + r.capacity, 0),
+        })),
+      stats: {
+        children: roster.length,
+        families: familyTotal,
+        visiting: roster.filter((c) => !c.isMember).length,
+        newChildren,
+        ageMix,
+        birthdays: manage ? birthdays.slice(0, 12) : [],
+        pendingRegistrations,
+      },
       sessionPagination: {
         page: sessionPage,
         total: sessionTotal,
@@ -603,8 +791,30 @@ export class ChildrenService {
       })
       .select('_id guardians')
       .lean();
+    const actorIds = [
+      ...new Set(
+        s.events
+          .map((e) => String(e.actorId))
+          .filter((id) => Types.ObjectId.isValid(id)),
+      ),
+    ];
+    const staff =
+      this.users && actorIds.length
+        ? await this.users
+            .find({ _id: { $in: actorIds.map((id) => new Types.ObjectId(id)) } })
+            .select('_id firstName lastName')
+            .lean()
+        : [];
+    const actorName = (id: string) => {
+      const u = staff.find((row) => String(row._id) === id);
+      return u ? `${u.firstName} ${u.lastName}`.trim() : undefined;
+    };
     return {
       ...s,
+      events: s.events.map((e) => ({
+        ...e,
+        actorName: actorName(String(e.actorId)),
+      })),
       visits: s.visits.map((v) => {
         const child = children.find((c) => String(c._id) === v.childId);
         const family = families.find((f) => String(f._id) === v.familyId);

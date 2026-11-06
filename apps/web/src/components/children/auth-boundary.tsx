@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 export function ChildrenAuthBoundary({
   userId,
@@ -12,6 +13,7 @@ export function ChildrenAuthBoundary({
   scopeKey: string;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("children.layout");
   const [locked, setLocked] = useState(false);
   useEffect(() => {
     let active = true;
@@ -64,7 +66,7 @@ export function ChildrenAuthBoundary({
   }, [userId, role, scopeKey]);
   return locked ? (
     <p role="status" className="children-panel">
-      Refreshing your children’s workspace access…
+      {t("refreshing")}
     </p>
   ) : (
     <>{children}</>

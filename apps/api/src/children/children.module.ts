@@ -14,6 +14,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
 import { Branch, BranchSchema } from '../branches/schemas/branch.schema';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import {
   ChildFamily,
   ChildFamilySchema,
@@ -35,6 +36,7 @@ import {
     MongooseModule.forFeature([
       { name: Branch.name, schema: BranchSchema },
       { name: Member.name, schema: MemberSchema },
+      { name: User.name, schema: UserSchema },
       { name: ChildFamily.name, schema: ChildFamilySchema },
       { name: ChildProfile.name, schema: ChildProfileSchema },
       { name: ChildSession.name, schema: ChildSessionSchema },

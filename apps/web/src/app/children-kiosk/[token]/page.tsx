@@ -1,10 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import { ChildrenKiosk } from "@/components/children/kiosk";
 import "@/components/children/children.css";
-export const metadata = {
-  title: "Welcome · ChuFlow Kids",
-  robots: { index: false, follow: false },
-  referrer: "no-referrer",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("childrenDesk.kiosk");
+  return {
+    title: `${t("tabTitle")} · ${t("brand")} ${t("brandAccent")}`,
+    robots: { index: false, follow: false },
+    referrer: "no-referrer",
+  };
+}
 export default async function Page({
   params,
 }: {

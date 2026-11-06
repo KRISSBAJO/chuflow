@@ -1,86 +1,60 @@
-export const flowCopy = {
-  en: {
-    family: "Your family",
-    heading: "B · Choose children",
-    adult: "Who is bringing the children?",
-    room: "Classroom",
-    spaces: "spaces",
-    already:
-      "Already registered for this session. Ask staff to check the roster.",
-    linked: "Ask a linked guardian or the welcome team.",
-    noRoom: "No age-appropriate room — ask a supervisor",
-    confirm: "I am the selected adult and I am bringing these children.",
-    checking: "Checking in…",
-    submit: "Check in & prepare pickup receipt",
-    receipt: "Guardian pickup receipt",
-    keep: "Keep this until pickup",
-    present: "Present this receipt to the welcome team.",
-    authorized: "Only an authorized adult can collect a child.",
-    care: "Care alert — see classroom record",
-    print: "Print labels & receipt",
-    done: "Done · Next family",
-  },
-  es: {
-    family: "Tu familia",
-    heading: "B · Elige a los niños",
-    adult: "¿Quién trae a los niños?",
-    room: "Salón",
-    spaces: "plazas",
-    already: "Ya está registrado para esta sesión. Consulta con el equipo.",
-    linked: "Consulta con un tutor vinculado o con el equipo de bienvenida.",
-    noRoom:
-      "No hay un salón adecuado para la edad. Consulta con un supervisor.",
-    confirm: "Soy el adulto seleccionado y traigo a estos niños.",
-    checking: "Registrando…",
-    submit: "Registrar entrada y preparar comprobante",
-    receipt: "Comprobante de recogida",
-    keep: "Guárdalo hasta la recogida",
-    present: "Presenta este comprobante al equipo de bienvenida.",
-    authorized: "Solo un adulto autorizado puede recoger al niño.",
-    care: "Aviso de cuidado: consultar el registro del salón",
-    print: "Imprimir etiquetas y comprobante",
-    done: "Listo · Siguiente familia",
-  },
-  fr: {
-    family: "Votre famille",
-    heading: "B · Choisissez les enfants",
-    adult: "Qui accompagne les enfants ?",
-    room: "Salle",
-    spaces: "places",
-    already: "Déjà inscrit pour cette séance. Consultez l’équipe.",
-    linked:
-      "Adressez-vous à un responsable lié à cet enfant ou à l’équipe d’accueil.",
-    noRoom: "Aucune salle adaptée à cet âge. Consultez un responsable.",
-    confirm: "Je suis l’adulte sélectionné et j’accompagne ces enfants.",
-    checking: "Enregistrement…",
-    submit: "Enregistrer l’arrivée et préparer le reçu",
-    receipt: "Reçu pour récupérer les enfants",
-    keep: "Gardez-le jusqu’au départ",
-    present: "Présentez ce reçu à l’équipe d’accueil.",
-    authorized: "Seul un adulte autorisé peut récupérer un enfant.",
-    care: "Consigne particulière : consulter le dossier de la salle",
-    print: "Imprimer les étiquettes et le reçu",
-    done: "Terminé · Famille suivante",
-  },
-  pt: {
-    family: "Sua família",
-    heading: "B · Escolha as crianças",
-    adult: "Quem está trazendo as crianças?",
-    room: "Sala",
-    spaces: "vagas",
-    already: "Já está registrada nesta sessão. Consulte a equipe.",
-    linked: "Procure um responsável vinculado ou a equipe de recepção.",
-    noRoom: "Nenhuma sala adequada para a idade. Consulte um supervisor.",
-    confirm: "Sou o adulto selecionado e estou trazendo estas crianças.",
-    checking: "Registrando…",
-    submit: "Registrar entrada e preparar comprovante",
-    receipt: "Comprovante de retirada",
-    keep: "Guarde até a retirada",
-    present: "Apresente este comprovante à equipe de recepção.",
-    authorized: "Somente um adulto autorizado pode retirar a criança.",
-    care: "Aviso de cuidado: consultar o registro da sala",
-    print: "Imprimir etiquetas e comprovante",
-    done: "Pronto · Próxima família",
-  },
+"use client";
+import { useTranslations } from "next-intl";
+
+/**
+ * Shared wording for the check-in flow (family selection + pickup receipt).
+ * Strings live in `messages/<locale>/childrenDesk.json` under `childrenDesk.flow`;
+ * this hook keeps the old `ChildrenFlowText` shape so callers can still pass it around.
+ */
+export type ChildrenFlowText = {
+  family: string;
+  heading: string;
+  adult: string;
+  room: string;
+  spaces: (count: number) => string;
+  already: string;
+  linked: string;
+  noRoom: string;
+  confirm: string;
+  staffConfirm: string;
+  checking: string;
+  submit: string;
+  failed: string;
+  receipt: string;
+  keep: string;
+  present: string;
+  authorized: string;
+  care: string;
+  print: string;
+  done: string;
+  qrAlt: string;
+  qrPreparing: string;
 };
-export type ChildrenFlowText = typeof flowCopy.en;
+
+export function useFlowText(): ChildrenFlowText {
+  const t = useTranslations("childrenDesk.flow");
+  return {
+    family: t("family"),
+    heading: t("heading"),
+    adult: t("adult"),
+    room: t("room"),
+    spaces: (count) => t("spaces", { count }),
+    already: t("already"),
+    linked: t("linked"),
+    noRoom: t("noRoom"),
+    confirm: t("confirm"),
+    staffConfirm: t("staffConfirm"),
+    checking: t("checking"),
+    submit: t("submit"),
+    failed: t("failed"),
+    receipt: t("receipt"),
+    keep: t("keep"),
+    present: t("present"),
+    authorized: t("authorized"),
+    care: t("care"),
+    print: t("print"),
+    done: t("done"),
+    qrAlt: t("qrAlt"),
+    qrPreparing: t("qrPreparing"),
+  };
+}

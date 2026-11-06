@@ -1,15 +1,23 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 type Detector = {
   detect: (video: HTMLVideoElement) => Promise<{ rawValue: string }[]>;
 };
+/**
+ * Optional camera QR reader built on the browser BarcodeDetector API.
+ * Falls back gracefully (with a translated hint) where the API is missing.
+ */
 export function CameraScan({
   onCode,
-  label = "Scan with camera",
+  label,
+  className = "children-button secondary",
 }: {
   onCode: (code: string) => void;
   label?: string;
+  className?: string;
 }) {
+  const t = useTranslations("childrenDesk.camera");
   const video = useRef<HTMLVideoElement>(null),
     [stream, setStream] = useState<MediaStream | null>(null),
     [error, setError] = useState("");
@@ -30,7 +38,7 @@ export function CameraScan({
       working = false;
     const current = video.current;
     current.srcObject = stream;
-    void current.play().catch(() => setError("Unable to start camera."));
+    void current.play().catch(() => setError(t("startFailed")));
     const ctor = (
       window as unknown as {
         BarcodeDetector?: new (options: { formats: string[] }) => Detector;
@@ -57,16 +65,14 @@ export function CameraScan({
     return () => {
       active = false;
       clearInterval(timer);
-      stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((track) => track.stop());
       current.srcObject = null;
     };
-  }, [stream]);
+  }, [stream, t]);
   async function start() {
     setError("");
     if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
-      setError(
-        "Camera scanning is unavailable in this browser. Use a 2D USB / Bluetooth scanner.",
-      );
+      setError(t("unavailable"));
       return;
     }
     try {
@@ -75,32 +81,32 @@ export function CameraScan({
         audio: false,
       });
       if (!mounted.current) {
-        result.getTracks().forEach((t) => t.stop());
+        result.getTracks().forEach((track) => track.stop());
         return;
       }
       setStream(result);
     } catch {
-      setError(
-        "Camera permission was not granted. You can still use an external scanner.",
-      );
+      setError(t("denied"));
     }
   }
   return (
     <div>
       <button
         type="button"
-        className="children-button secondary"
+        className={className}
+        aria-pressed={!!stream}
         onClick={() => (stream ? setStream(null) : void start())}
       >
-        {stream ? "Stop camera" : label}
+        <span aria-hidden="true">{stream ? "■" : "📷"}</span>
+        {stream ? t("stop") : label || t("start")}
       </button>
       {stream && (
         <video
           ref={video}
           muted
           playsInline
-          className="mt-3 max-h-72 w-full rounded-xl bg-black"
-          aria-label="QR camera preview"
+          className="kids-fade-in mt-3 max-h-72 w-full rounded-2xl bg-black"
+          aria-label={t("preview")}
         />
       )}
       {error && (

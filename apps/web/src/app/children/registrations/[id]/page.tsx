@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { serverGet } from "@/lib/server-api";
 import {
   ParentRegistrationReview,
@@ -10,16 +11,19 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const row = await serverGet<ParentSubmission>(
-    `/children/registrations/${encodeURIComponent(id)}`,
-  );
+  const [row, t] = await Promise.all([
+    serverGet<ParentSubmission>(
+      `/children/registrations/${encodeURIComponent(id)}`,
+    ),
+    getTranslations("childrenRecords"),
+  ]);
   return (
     <>
       <Link
-        className="text-sm"
+        className="kids-chip"
         href={`/children/registrations?branchId=${row.branchId}`}
       >
-        ← Back to registration queue
+        {t("back.queue")}
       </Link>
       <ParentRegistrationReview key={row.revision} row={row} />
     </>

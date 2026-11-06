@@ -1,27 +1,34 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import { ChildrenWelcome } from "./welcome";
-const adult = () => ({
+import { RELATIONSHIP_KEYS, ageInMonths, initials, localDateValue, splitMonths } from "./records-utils";
+
+const newAdult = (relationship: string) => ({
   firstName: "",
   lastName: "",
   phone: "",
   email: "",
-  relationship: "Parent / guardian",
+  relationship,
 });
-const child = () => ({
+const newChild = () => ({
   firstName: "",
   lastName: "",
   birthDate: "",
   pickupAdults: [0],
   careNotes: "",
 });
+const STEPS = [1, 2, 3] as const;
+
 export function ParentRegistrationForm({ token }: { token: string }) {
+  const t = useTranslations("childrenRecords");
+  const defaultRelationship = t("parent.relationshipDefault");
   const [church, setChurch] = useState(""),
     [familyName, setFamilyName] = useState(""),
-    [adults, setAdults] = useState([adult()]),
-    [children, setChildren] = useState([child()]),
-    [step, setStep] = useState(1),
+    [adults, setAdults] = useState([newAdult(defaultRelationship)]),
+    [children, setChildren] = useState([newChild()]),
+    [step, setStep] = useState<1 | 2 | 3>(1),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [received, setReceived] = useState(false),
@@ -36,10 +43,7 @@ export function ParentRegistrationForm({ token }: { token: string }) {
       cache: "no-store",
     })
       .then(async (r) => {
-        if (!r.ok)
-          throw new Error(
-            "This form is unavailable. Please contact the church.",
-          );
+        if (!r.ok) throw new Error(t("parent.unavailable"));
         return (await r.json()) as { churchName: string };
       })
       .then((r) => {
@@ -47,12 +51,12 @@ export function ParentRegistrationForm({ token }: { token: string }) {
       })
       .catch((e) => {
         if (active)
-          setError(e instanceof Error ? e.message : "Form unavailable.");
+          setError(e instanceof Error ? e.message : t("parent.unavailable"));
       });
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, t]);
   function removeAdult(index: number) {
     setAdults((rows) => rows.filter((_, i) => i !== index));
     setChildren((rows) =>
@@ -64,10 +68,23 @@ export function ParentRegistrationForm({ token }: { token: string }) {
       }),
     );
   }
+  function goTo(next: 1 | 2 | 3) {
+    setStep(next);
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (step === 1) {
-      setStep(2);
+      goTo(2);
+      return;
+    }
+    if (step === 2) {
+      if (children.some((c) => !c.pickupAdults.length)) {
+        setError(t("parent.pickupRequired"));
+        return;
+      }
+      goTo(3);
       return;
     }
     setBusy(true);
@@ -96,40 +113,55 @@ export function ParentRegistrationForm({ token }: { token: string }) {
         throw new Error(
           Array.isArray(result.message)
             ? result.message.join(", ")
-            : result.message || "Could not submit. Please try again.",
+            : result.message || t("parent.submitError"),
         );
       setReceived(true);
-      setAdults([adult()]);
-      setChildren([child()]);
+      setAdults([newAdult(defaultRelationship)]);
+      setChildren([newChild()]);
       setFamilyName("");
+      setConsent(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not submit.");
+      setError(e instanceof Error ? e.message : t("parent.submitError"));
     } finally {
       setBusy(false);
     }
   }
+  const age = (birthDate: string) => {
+    const m = ageInMonths(birthDate);
+    if (m === null) return "";
+    if (m === 0) return t("age.newborn");
+    const { years, months } = splitMonths(m);
+    if (years === 0) return t("age.months", { months });
+    if (months === 0) return t("age.years", { years });
+    return t("age.yearsMonths", { years, months });
+  };
+  const stepTitle = { 1: t("parent.step1"), 2: t("parent.step2"), 3: t("parent.step3") };
+  const input = "children-input min-h-[52px] text-base";
   return (
     <div className="space-y-6">
       <ChildrenWelcome
-        title={
-          church ? `Welcome to ${church}` : "A warm welcome for your family"
-        }
-        description="Register your family before your visit. Our children’s team will review the details and help you get ready for check-in."
+        title={church ? t("parent.welcomeChurch", { church }) : t("parent.welcome")}
+        description={t("parent.welcomeDescription")}
       />
       {received ? (
-        <section className="children-panel text-center">
-          <p className="text-5xl" aria-hidden="true">
+        <section className="children-panel kids-fade-in text-center">
+          <p className="text-6xl" aria-hidden="true">
             ☀
           </p>
-          <h2 className="mt-4 text-3xl font-bold">
-            Thank you. Your registration is received.
-          </h2>
-          <p className="children-muted mx-auto mt-4 max-w-xl">
-            The children’s team will review your details and confirm guardian
-            and pickup arrangements. At your visit, ask the welcome team for
-            your identification cards. This form does not check a child into a
-            service.
-          </p>
+          <h2 className="mt-4 text-3xl font-bold">{t("parent.receivedTitle")}</h2>
+          <p className="children-muted mx-auto mt-4 max-w-xl">{t("parent.receivedBody")}</p>
+          <button
+            type="button"
+            className="children-button secondary mt-6"
+            onClick={() => {
+              setReceived(false);
+              setStep(1);
+              requestKey.current = "";
+            }}
+          >
+            {t("parent.registerAnother")}
+          </button>
         </section>
       ) : (
         <form
@@ -137,14 +169,33 @@ export function ParentRegistrationForm({ token }: { token: string }) {
           onSubmit={submit}
           className="mx-auto max-w-3xl space-y-5"
         >
-          <div className="flex gap-3" aria-label="Registration progress">
-            <span className={`children-badge ${step === 1 ? "font-bold" : ""}`}>
-              1 · Family & adults
-            </span>
-            <span className={`children-badge ${step === 2 ? "font-bold" : ""}`}>
-              2 · Children & permissions
-            </span>
-          </div>
+          <ol
+            className="children-panel flex items-center justify-between gap-2 !p-3 sm:!p-4"
+            aria-label={t("parent.progress")}
+          >
+            {STEPS.map((n) => (
+              <li
+                key={n}
+                className="flex flex-1 items-center gap-2 text-sm font-semibold"
+                aria-current={step === n ? "step" : undefined}
+              >
+                <span
+                  className={`kids-avatar !h-9 !w-9 !text-sm ${
+                    n < step ? "green" : n === step ? "" : "opacity-50"
+                  }`}
+                >
+                  {n < step ? "✓" : n}
+                </span>
+                <span className={n === step ? "" : "hidden text-[#8a9589] sm:inline"}>
+                  {stepTitle[n]}
+                </span>
+                {n < 3 && <span className="mx-1 hidden flex-1 border-t border-dashed border-[#d8dccd] sm:block" />}
+              </li>
+            ))}
+          </ol>
+          <p className="children-muted -mt-2 text-center text-xs">
+            {t("common.stepOf", { step, total: 3 })}
+          </p>
           <div
             aria-hidden="true"
             style={{ position: "absolute", left: "-10000px" }}
@@ -154,107 +205,122 @@ export function ParentRegistrationForm({ token }: { token: string }) {
               <input name="website" tabIndex={-1} autoComplete="off" />
             </label>
           </div>
-          {step === 1 ? (
-            <>
+
+          {step === 1 && (
+            <div className="space-y-5 kids-fade-in">
               <section className="children-panel">
-                <h2 className="text-2xl font-bold">
-                  Tell us about your family
-                </h2>
+                <h2 className="text-2xl font-bold">{t("parent.familyTitle")}</h2>
                 <label className="mt-5 block">
-                  <span className="children-label">Family name</span>
+                  <span className="children-label">{t("parent.familyName")}</span>
                   <input
-                    className="children-input"
+                    className="children-input lg"
                     value={familyName}
                     onChange={(e) => setFamilyName(e.target.value)}
                     minLength={2}
                     maxLength={120}
-                    placeholder="For example, the Adebajo family"
+                    placeholder={t("parent.familyNamePlaceholder")}
+                    autoComplete="family-name"
                     required
                   />
                 </label>
-                <p className="children-muted mt-3">
-                  Please list yourself first as the parent or authorized
-                  guardian. You can add other responsible adults and choose
-                  pickup permissions separately for each child.
-                </p>
+                <p className="children-muted mt-3">{t("parent.familyIntro")}</p>
               </section>
               {adults.map((a, index) => (
                 <section className="children-panel space-y-4" key={index}>
-                  <div className="flex justify-between">
-                    <h3 className="text-lg font-bold">
-                      {index === 0
-                        ? "Parent / authorized guardian"
-                        : `Additional adult ${index}`}
-                    </h3>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className={`kids-avatar ${index === 0 ? "green" : ""}`}>
+                        {initials(`${a.firstName} ${a.lastName}`.trim() || String(index + 1))}
+                      </span>
+                      <h3 className="text-lg font-bold">
+                        {index === 0
+                          ? t("parent.primaryAdult")
+                          : t("parent.additionalAdult", { n: index })}
+                      </h3>
+                    </div>
                     {index > 0 && (
                       <button
                         type="button"
                         onClick={() => removeAdult(index)}
-                        className="text-sm underline"
+                        className="kids-chip"
                       >
-                        Remove adult
+                        ✕ {t("parent.removeAdult")}
                       </button>
                     )}
                   </div>
                   <div className="children-grid">
-                    {(
-                      [
-                        "firstName",
-                        "lastName",
-                        "phone",
-                        "email",
-                        "relationship",
-                      ] as const
-                    ).map((field) => (
-                      <label key={field}>
+                    {(["firstName", "lastName", "phone", "email"] as const).map((field) => (
+                      <label key={field} className="block">
                         <span className="children-label">
                           {
                             {
-                              firstName: "First name",
-                              lastName: "Last name",
-                              phone: "Contact phone",
-                              email: "Email (optional)",
-                              relationship: "Relationship to child",
+                              firstName: t("common.firstName"),
+                              lastName: t("common.lastName"),
+                              phone: t("parent.contactPhone"),
+                              email: t("common.email"),
                             }[field]
                           }
                         </span>
                         <input
-                          className="children-input"
-                          type={
-                            field === "email"
-                              ? "email"
-                              : field === "phone"
-                                ? "tel"
-                                : "text"
+                          className={input}
+                          type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
+                          inputMode={field === "phone" ? "tel" : undefined}
+                          autoComplete={
+                            { firstName: "given-name", lastName: "family-name", phone: "tel", email: "email" }[field]
                           }
                           value={a[field]}
                           onChange={(e) =>
                             setAdults((rows) =>
                               rows.map((row, i) =>
-                                i === index
-                                  ? { ...row, [field]: e.target.value }
-                                  : row,
+                                i === index ? { ...row, [field]: e.target.value } : row,
                               ),
                             )
                           }
-                          maxLength={
-                            field === "phone"
-                              ? 40
-                              : field === "email"
-                                ? 254
-                                : 80
-                          }
-                          minLength={
-                            field === "phone"
-                              ? 5
-                              : field === "relationship"
-                                ? 2
-                                : undefined
-                          }
+                          maxLength={field === "phone" ? 40 : field === "email" ? 254 : 80}
+                          minLength={field === "phone" ? 5 : undefined}
                           required={field !== "email"}
                         />
                       </label>
                     ))}
+                  </div>
+                  <div className="space-y-2">
+                    <span className="children-label">{t("parent.relationship")}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {RELATIONSHIP_KEYS.map((k) => {
+                        const label = t(`relationships.${k}`);
+                        return (
+                          <button
+                            key={k}
+                            type="button"
+                            className="kids-chip"
+                            aria-pressed={a.relationship === label}
+                            onClick={() =>
+                              setAdults((rows) =>
+                                rows.map((row, i) =>
+                                  i === index ? { ...row, relationship: label } : row,
+                                ),
+                              )
+                            }
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input
+                      className={input}
+                      value={a.relationship}
+                      onChange={(e) =>
+                        setAdults((rows) =>
+                          rows.map((row, i) =>
+                            i === index ? { ...row, relationship: e.target.value } : row,
+                          ),
+                        )
+                      }
+                      minLength={2}
+                      maxLength={80}
+                      required
+                    />
                   </div>
                 </section>
               ))}
@@ -262,120 +328,121 @@ export function ParentRegistrationForm({ token }: { token: string }) {
                 type="button"
                 className="children-button secondary"
                 disabled={adults.length >= 4}
-                onClick={() => setAdults([...adults, adult()])}
+                onClick={() => setAdults([...adults, newAdult(defaultRelationship)])}
               >
-                + Add another adult
+                {t("parent.addAdult")}
               </button>
-            </>
-          ) : (
-            <>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-5 kids-fade-in">
+              <section className="children-panel">
+                <h2 className="text-2xl font-bold">{t("parent.childrenTitle")}</h2>
+                <p className="children-muted mt-2">{t("parent.childrenIntro")}</p>
+              </section>
               {children.map((c, index) => (
                 <section className="children-panel space-y-4" key={index}>
-                  <div className="flex justify-between">
-                    <h2 className="text-xl font-bold">Child {index + 1}</h2>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="kids-avatar plum">
+                        {initials(`${c.firstName} ${c.lastName}`.trim() || String(index + 1))}
+                      </span>
+                      <h2 className="text-xl font-bold">{t("parent.child", { n: index + 1 })}</h2>
+                      {c.birthDate && (
+                        <span className="children-badge amber">{age(c.birthDate)}</span>
+                      )}
+                    </div>
                     {children.length > 1 && (
                       <button
                         type="button"
-                        className="text-sm underline"
+                        className="kids-chip"
                         onClick={() =>
-                          setChildren((rows) =>
-                            rows.filter((_, i) => i !== index),
-                          )
+                          setChildren((rows) => rows.filter((_, i) => i !== index))
                         }
                       >
-                        Remove child
+                        ✕ {t("parent.removeChild")}
                       </button>
                     )}
                   </div>
                   <div className="children-grid">
-                    {(["firstName", "lastName", "birthDate"] as const).map(
-                      (field) => (
-                        <label key={field}>
-                          <span className="children-label">
+                    {(["firstName", "lastName", "birthDate"] as const).map((field) => (
+                      <label key={field} className="block">
+                        <span className="children-label">
+                          {
                             {
-                              {
-                                firstName: "First name",
-                                lastName: "Last name",
-                                birthDate: "Date of birth",
-                              }[field]
-                            }
-                          </span>
-                          <input
-                            className="children-input"
-                            type={field === "birthDate" ? "date" : "text"}
-                            value={c[field]}
-                            onChange={(e) =>
+                              firstName: t("common.firstName"),
+                              lastName: t("common.lastName"),
+                              birthDate: t("parent.birthDate"),
+                            }[field]
+                          }
+                        </span>
+                        <input
+                          className={input}
+                          type={field === "birthDate" ? "date" : "text"}
+                          value={c[field]}
+                          onChange={(e) =>
+                            setChildren((rows) =>
+                              rows.map((row, i) =>
+                                i === index ? { ...row, [field]: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          max={field === "birthDate" ? localDateValue(new Date()) : undefined}
+                          maxLength={80}
+                          required
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <fieldset className="rounded-xl bg-[#f6f7ed] p-4">
+                    <legend className="text-sm font-semibold">{t("parent.pickupTitle")}</legend>
+                    <p className="children-muted mb-3">{t("parent.pickupHint")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {adults.map((a, i) => {
+                        const on = c.pickupAdults.includes(i);
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            className="kids-chip !px-4 !py-3 !text-sm"
+                            aria-pressed={on}
+                            onClick={() =>
                               setChildren((rows) =>
-                                rows.map((row, i) =>
-                                  i === index
-                                    ? { ...row, [field]: e.target.value }
+                                rows.map((row, n) =>
+                                  n === index
+                                    ? {
+                                        ...row,
+                                        pickupAdults: on
+                                          ? row.pickupAdults.filter((v) => v !== i)
+                                          : [...row.pickupAdults, i],
+                                      }
                                     : row,
                                 ),
                               )
                             }
-                            max={
-                              field === "birthDate"
-                                ? new Date().toISOString().slice(0, 10)
-                                : undefined
-                            }
-                            maxLength={80}
-                            required
-                          />
-                        </label>
-                      ),
+                          >
+                            {on ? "🔑 " : ""}
+                            {`${a.firstName} ${a.lastName}`.trim() || t("parent.additionalAdult", { n: i })}
+                            <span className="opacity-70"> · {a.relationship}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {!c.pickupAdults.length && (
+                      <p className="mt-3 text-sm text-[#953c2e]">{t("parent.pickupRequired")}</p>
                     )}
-                  </div>
-                  <fieldset className="rounded-xl bg-[#f6f7ed] p-4">
-                    <legend className="text-sm font-semibold">
-                      Who may collect this child?
-                    </legend>
-                    <p className="children-muted mb-3">
-                      Select the authorized adults. The church will verify these
-                      arrangements before issuing cards.
-                    </p>
-                    {adults.map((a, i) => (
-                      <label
-                        key={i}
-                        className="my-3 flex items-center gap-3 text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={c.pickupAdults.includes(i)}
-                          onChange={(e) =>
-                            setChildren((rows) =>
-                              rows.map((row, n) =>
-                                n === index
-                                  ? {
-                                      ...row,
-                                      pickupAdults: e.target.checked
-                                        ? [...row.pickupAdults, i]
-                                        : row.pickupAdults.filter(
-                                            (v) => v !== i,
-                                          ),
-                                    }
-                                  : row,
-                              ),
-                            )
-                          }
-                        />
-                        {a.firstName} {a.lastName} · {a.relationship}
-                      </label>
-                    ))}
                   </fieldset>
                   <label className="block">
-                    <span className="children-label">
-                      Allergies, additional needs or care instructions
-                      (optional)
-                    </span>
+                    <span className="children-label">{t("parent.careNotes")}</span>
                     <textarea
-                      className="children-input min-h-24"
+                      className="children-input min-h-24 text-base"
                       value={c.careNotes}
+                      placeholder={t("parent.careNotesPlaceholder")}
                       onChange={(e) =>
                         setChildren((rows) =>
                           rows.map((row, i) =>
-                            i === index
-                              ? { ...row, careNotes: e.target.value }
-                              : row,
+                            i === index ? { ...row, careNotes: e.target.value } : row,
                           ),
                         )
                       }
@@ -388,64 +455,91 @@ export function ParentRegistrationForm({ token }: { token: string }) {
                 type="button"
                 className="children-button secondary"
                 disabled={children.length >= 6}
-                onClick={() => setChildren([...children, child()])}
+                onClick={() => setChildren([...children, newChild()])}
               >
-                + Add another child
+                {t("parent.addChild")}
               </button>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-5 kids-fade-in">
+              <section className="children-panel space-y-4">
+                <h2 className="text-2xl font-bold">{t("parent.consentTitle")}</h2>
+                <p className="children-muted">{t("parent.consentIntro")}</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="children-badge">{familyName}</span>
+                  <span className="children-badge neutral">
+                    {t("parent.summaryAdults", { count: adults.length })}
+                  </span>
+                  <span className="children-badge neutral">
+                    {t("parent.summaryChildren", { count: children.length })}
+                  </span>
+                </div>
+                <ul className="space-y-2">
+                  {children.map((c, i) => (
+                    <li key={i} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#f7f7f0] p-3 text-sm">
+                      <span className="kids-avatar plum !h-8 !w-8 !text-xs">
+                        {initials(`${c.firstName} ${c.lastName}`)}
+                      </span>
+                      <strong>
+                        {c.firstName} {c.lastName}
+                      </strong>
+                      {c.birthDate && <span className="children-muted">· {age(c.birthDate)}</span>}
+                      <span className="children-muted">
+                        · 🔑{" "}
+                        {c.pickupAdults
+                          .map((n) => `${adults[n]?.firstName ?? ""} ${adults[n]?.lastName ?? ""}`.trim())
+                          .join(", ")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
               <section className="children-panel">
-                <label className="flex items-start gap-3 text-sm leading-6">
+                <label className="flex items-start gap-3 text-base leading-7">
                   <input
-                    className="mt-1"
+                    className="mt-2 h-5 w-5"
                     type="checkbox"
                     checked={consent}
                     onChange={(e) => setConsent(e.target.checked)}
                     required
                   />
-                  I am a parent or authorized guardian of these children. I
-                  confirm the details and pickup choices are accurate, and give{" "}
-                  {church || "the church"} permission to use these details for
-                  children’s registration, care and related contact.
+                  <span>{t("parent.consent", { church: church || t("parent.theChurch") })}</span>
                 </label>
-                <p className="children-muted mt-3">
-                  Only the authorized church team can review these details.
-                  Please share only the information needed to care for your
-                  children. Staff must approve the registration before cards are
-                  issued.
-                </p>
+                <p className="children-muted mt-3">🔒 {t("parent.privacy")}</p>
               </section>
-            </>
+            </div>
           )}
+
           {error && (
             <p role="alert" className="children-error">
               {error}
             </p>
           )}
-          <div className="flex gap-3">
-            {step === 2 && (
+          <div className="flex flex-wrap gap-3">
+            {step > 1 && (
               <button
-                className="children-button secondary"
+                className="children-button secondary lg"
                 type="button"
                 disabled={busy}
-                onClick={() => setStep(1)}
+                onClick={() => goTo(step === 3 ? 2 : 1)}
               >
-                ← Family details
+                {step === 3 ? t("parent.backChildren") : t("parent.backAdults")}
               </button>
             )}
             <button
-              className="children-button flex-1"
+              className="children-button lg flex-1"
               type="submit"
-              disabled={
-                busy ||
-                !church ||
-                (step === 2 &&
-                  (!consent || children.some((c) => !c.pickupAdults.length)))
-              }
+              disabled={busy || !church || (step === 3 && !consent)}
             >
               {busy
-                ? "Sending…"
+                ? t("parent.sending")
                 : step === 1
-                  ? "Continue to children →"
-                  : "Send registration for review"}
+                  ? t("parent.continueChildren")
+                  : step === 2
+                    ? t("parent.continueConsent")
+                    : t("parent.send")}
             </button>
           </div>
         </form>

@@ -18,6 +18,9 @@ export const MESSAGE_PARTS = [
   "admin",
   "workspace",
   "imports",
+  "children",
+  "childrenDesk",
+  "childrenRecords",
 ] as const;
 
 export type MessagePart = (typeof MESSAGE_PARTS)[number];
