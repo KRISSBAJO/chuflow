@@ -11,10 +11,14 @@ function fixture(rows: Record<string, unknown>[]) {
     exec: jest.fn().mockResolvedValue(rows),
   };
   const users = {
-    find: jest.fn((_filter: { email: RegExp }) => query),
-    findOne: jest.fn((_filter: { email: RegExp; _id?: { $ne: string } }) => ({
-      lean: jest.fn().mockResolvedValue(rows[0] || null),
-    })),
+    find: jest.fn((filter: { email: RegExp }) => {
+      void filter;
+      return query;
+    }),
+    findOne: jest.fn((filter: { email: RegExp; _id?: { $ne: string } }) => {
+      void filter;
+      return { lean: jest.fn().mockResolvedValue(rows[0] || null) };
+    }),
   };
   const service = new UsersService(
     users as never,
