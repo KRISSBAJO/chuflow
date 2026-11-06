@@ -156,6 +156,7 @@ export class AuditLogsService {
     currentUser: AuthUser,
     filters: {
       entityType?: string;
+      entityId?: string;
       search?: string;
       branchId?: string;
       page?: number;
@@ -175,6 +176,8 @@ export class AuditLogsService {
     if (normalizedEntityType) {
       query.entityType = normalizedEntityType;
     }
+
+    if (filters.entityId) query.entityId = filters.entityId;
 
     if (normalizedSearch) {
       query.$or = [

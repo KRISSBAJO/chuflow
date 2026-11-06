@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { careEventFilters, type CareEventFilters } from './event-filters';
 import { ConfigService } from '@nestjs/config';
 import { Model, Types } from 'mongoose';
 import { randomBytes, createHash, randomUUID } from 'node:crypto';
@@ -688,12 +689,14 @@ export class CareService {
     u: AuthUser,
     id: string,
     page = '1',
+    filters: CareEventFilters = {},
   ): Promise<Record<string, unknown>> {
     let c = await this.context(u, id);
     await this.flush(c);
     c = await this.context(u, id);
     const currentPage = Math.max(1, Math.min(100000, Number(page) || 1));
     const eventFilter = {
+      ...careEventFilters(filters),
       caseId: c._id,
       ...(!careAdmin(u) ? { visibility: 'team' } : {}),
     };
@@ -1050,6 +1053,17 @@ export class CareService {
         };
       text =
         text || 'Task completed: ' + dto.outcome.replaceAll('_', ' ') + '.';
+    }
+    if (['note', 'contact'].includes(dto.operation) && dto.nextActionAt) {
+      data.nextActionAt = dto.nextActionAt;
+      if (dto.operation === 'note')
+        effects.newTask = {
+          key: 'next:' + eventKey,
+          title: 'Follow up on the care note',
+          kind: 'care_action',
+          dueAt: new Date(dto.nextActionAt),
+          assignedTo: c.ownerId,
+        };
     }
     data.effects = effects;
     const intent: Intent = {

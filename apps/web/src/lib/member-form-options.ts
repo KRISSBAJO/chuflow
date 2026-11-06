@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 export type SelectOption = {
   value: string;
   label: string;
@@ -55,7 +57,8 @@ export const MEMBER_COURSE_GROUPS: MemberCourseFieldGroup[] = [
     dateName: "believerFoundationClassDate",
     locationName: "believerFoundationClassLocation",
     question: "Have you attended Believers Foundation Class?",
-    helperText: "Record whether the member has attended, plus the date and location when known.",
+    helperText:
+      "Record whether the member has attended, plus the date and location when known.",
   },
   {
     key: "bcc",
@@ -64,7 +67,8 @@ export const MEMBER_COURSE_GROUPS: MemberCourseFieldGroup[] = [
     dateName: "bccDate",
     locationName: "bccLocation",
     question: "Have you attended BCC?",
-    helperText: "Treat BCC as a Bible school course record with attendance, date, and location.",
+    helperText:
+      "Treat BCC as a Bible school course record with attendance, date, and location.",
   },
   {
     key: "lcc",
@@ -73,7 +77,8 @@ export const MEMBER_COURSE_GROUPS: MemberCourseFieldGroup[] = [
     dateName: "lccDate",
     locationName: "lccLocation",
     question: "Have you attended LCC?",
-    helperText: "Treat LCC as a Bible school course record with attendance, date, and location.",
+    helperText:
+      "Treat LCC as a Bible school course record with attendance, date, and location.",
   },
   {
     key: "lcd",
@@ -82,7 +87,8 @@ export const MEMBER_COURSE_GROUPS: MemberCourseFieldGroup[] = [
     dateName: "lcdDate",
     locationName: "lcdLocation",
     question: "Have you attended LCD?",
-    helperText: "Treat LCD as a Bible school course record with attendance, date, and location.",
+    helperText:
+      "Treat LCD as a Bible school course record with attendance, date, and location.",
   },
 ];
 
@@ -142,10 +148,59 @@ export function formatMemberTitle(value?: string) {
   }
 
   return (
-    MEMBER_TITLE_OPTIONS.find((option) => option.value === value.toLowerCase())?.label ||
+    MEMBER_TITLE_OPTIONS.find((option) => option.value === value.toLowerCase())
+      ?.label ||
     value
       .split("_")
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(" ")
   );
+}
+
+type MemberOptionKey = Parameters<
+  ReturnType<typeof useTranslations<"org.memberOptions">>
+>[0];
+
+/**
+ * Translated versions of the option labels and formatters above. Values stay as the API strings;
+ * unknown values fall back to the English formatters.
+ */
+export function useMemberFormLabels() {
+  const t = useTranslations("org.memberOptions");
+  const has = (key: string) => t.has(key as MemberOptionKey);
+  const get = (key: string) => t(key as MemberOptionKey);
+
+  return {
+    membershipStatus: (value?: string) => {
+      if (!value) return t("notRecorded");
+      const key = `membershipStatus.${value.toLowerCase()}`;
+      return has(key) ? get(key) : formatMembershipStatus(value);
+    },
+    membershipStatusOption: (value: string) => {
+      const key = `membershipStatus.${value}`;
+      return has(key) ? get(key) : formatMembershipStatus(value);
+    },
+    title: (value?: string) => {
+      if (!value) return "";
+      const key = `title.${value.toLowerCase()}`;
+      return has(key) ? get(key) : formatMemberTitle(value);
+    },
+    yesNo: (value?: string) => {
+      const normalized = normalizeYesNoValue(value);
+      if (!normalized) return t("notRecorded");
+      if (normalized === "yes") return t("yesNo.yes");
+      if (normalized === "no") return t("yesNo.no");
+      return formatYesNoStatus(value);
+    },
+    weekday: (value?: string) => {
+      if (!value) return "";
+      const key = `weekday.${value.toLowerCase()}`;
+      return has(key) ? get(key) : value;
+    },
+    course: (group: MemberCourseFieldGroup) => ({
+      title: get(`courses.${group.key}.title`),
+      question: get(`courses.${group.key}.question`),
+      helperText: get(`courses.${group.key}.helperText`),
+    }),
+  };
 }

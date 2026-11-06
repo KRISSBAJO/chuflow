@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { ServiceUnitSummary } from "@/lib/types";
 
 export function MemberServiceGroups({
@@ -7,19 +8,15 @@ export function MemberServiceGroups({
   units: ServiceUnitSummary[];
   selected?: string[];
 }) {
+  const t = useTranslations("org.memberGroups");
   const chosen = new Set(selected);
   const available = units.filter(
     (unit) => unit.isActive || chosen.has(unit._id),
   );
   return (
     <fieldset className="mt-4">
-      <legend className="text-sm font-medium">
-        Service groups — select all that apply
-      </legend>
-      <p className="mb-3 mt-1 text-xs text-[#8a8780]">
-        A member can serve in more than one group. Uncheck every group to leave
-        the member unassigned.
-      </p>
+      <legend className="text-sm font-medium">{t("legend")}</legend>
+      <p className="mb-3 mt-1 text-xs text-[#8a8780]">{t("hint")}</p>
       <div className="grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
         {available.map((unit) => (
           <label
@@ -35,14 +32,14 @@ export function MemberServiceGroups({
             />
             <span>
               {unit.name}
-              {!unit.isActive ? " (inactive)" : ""}
+              {!unit.isActive ? t("inactiveSuffix") : ""}
             </span>
           </label>
         ))}
       </div>
       {!available.length && (
         <p className="rounded-xl bg-white p-3 text-sm text-[#8a8780]">
-          No active service groups are available in this branch yet.
+          {t("empty")}
         </p>
       )}
     </fieldset>

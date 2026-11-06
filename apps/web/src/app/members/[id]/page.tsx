@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { memberGroupNames } from "@/lib/member-service-groups";
 import { CommunicationPanel } from "@/components/communication-panel";
 import { MemberProfileForm } from "@/components/member-profile-form";
+import { WorkspaceTabs } from "@/components/workspace-tabs";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -8,13 +11,15 @@ import {
   Badge,
   Card,
   CardHeader,
+  buttonClass,
   statusTone,
 } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
-  formatMembershipStatus,
-  formatYesNoStatus,
+  MEMBER_COURSE_GROUPS,
+  normalizeYesNoValue,
 } from "@/lib/member-form-options";
+import { safeReturnTo } from "@/lib/workspace-navigation";
 import { serverGet } from "@/lib/server-api";
 import type {
   CommunicationItem,
@@ -22,201 +27,306 @@ import type {
   ServiceUnitSummary,
 } from "@/lib/types";
 
+type MemberDetail = MemberListItem & {
+  recordType?: string;
+  phone?: string;
+  email?: string;
+  familyDetails?: string;
+  guestId?: { _id?: string; firstName?: string; lastName?: string };
+};
+
 export default async function MemberDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireServerRole("/members");
   const { id } = await params;
-
+  const query = await searchParams;
+  const [t, tw, tc, options] = await Promise.all([
+    getTranslations("org.memberDetail"),
+    getTranslations("workspace"),
+    getTranslations("common"),
+    getTranslations("org.memberOptions"),
+  ]);
   const [member, communications, serviceUnits] = await Promise.all([
-    serverGet<
-      MemberListItem & {
-        phone?: string;
-        email?: string;
-        familyDetails?: string;
-        guestId?: {
-          _id?: string;
-          firstName?: string;
-          lastName?: string;
-        };
-      }
-    >(`/members/${id}`),
+    serverGet<MemberDetail>(`/members/${id}`),
     serverGet<CommunicationItem[]>(`/communications?memberId=${id}`).catch(
       () => [],
     ),
     serverGet<ServiceUnitSummary[]>("/service-units").catch(() => []),
   ]);
-
-  const serviceUnitName = memberGroupNames(member) || "Not set";
-  const courseCards = [
-    {
-      label: "Believers Foundation Class",
-      status: formatYesNoStatus(member.believerFoundationClassStatus),
-      date: member.believerFoundationClassDate || "Not recorded",
-      location: member.believerFoundationClassLocation || "Not recorded",
-    },
-    {
-      label: "BCC",
-      status: formatYesNoStatus(member.bccStatus),
-      date: member.bccDate || "Not recorded",
-      location: member.bccLocation || "Not recorded",
-    },
-    {
-      label: "LCC",
-      status: formatYesNoStatus(member.lccStatus),
-      date: member.lccDate || "Not recorded",
-      location: member.lccLocation || "Not recorded",
-    },
-    {
-      label: "LCD",
-      status: formatYesNoStatus(member.lcdStatus),
-      date: member.lcdDate || "Not recorded",
-      location: member.lcdLocation || "Not recorded",
-    },
-  ];
-
+  const familyLinks = [
+    "super_admin",
+    "national_admin",
+    "district_admin",
+    "branch_admin",
+    "resident_pastor",
+  ].includes(user.role)
+    ? await serverGet<{
+        families: { _id: string; name: string }[];
+        children: {
+          _id: string;
+          firstName: string;
+          lastName: string;
+          familyId: string;
+        }[];
+      }>(`/children/member-families/${id}`).catch(() => null)
+    : null;
+  const back = safeReturnTo(query.returnTo, "/members");
+  const href = (tab: string, edit = false) =>
+    `/members/${id}?${new URLSearchParams({ tab, returnTo: back, ...(edit ? { edit: "1" } : {}) })}`;
+  const edit = (tab: string) => member.recordType === "child" ? null : (
+    <Link
+      href={href(tab, true)}
+      scroll={false}
+      className={buttonClass("secondary", "sm")}
+    >
+      {tw("edit")}
+    </Link>
+  );
+  const editing = (section: "profile" | "growth" | "groups") =>
+    member.recordType !== "child" && query.edit === "1" && query.tab === section ? (
+      <MemberProfileForm
+        member={member}
+        defaultBranchId={user.branchId}
+        serviceUnits={serviceUnits}
+        section={section}
+        returnHref={href(section)}
+      />
+    ) : null;
+  const yesNo = (v?: string) =>
+    normalizeYesNoValue(v) === "yes"
+      ? tc("yes")
+      : normalizeYesNoValue(v) === "no"
+        ? tc("no")
+        : options("notRecorded");
+  const summary = (
+    <Card className="p-6">
+      <div className="flex items-center gap-4">
+        <Avatar name={`${member.firstName} ${member.lastName}`} />
+        <h2 className="text-lg font-semibold">
+          {member.firstName} {member.lastName}
+        </h2>
+      </div>
+      <dl className="mt-5 divide-y divide-black/5">
+        {[
+          [tc("email"), member.email || t("notProvided")],
+          [tc("phone"), member.phone || t("notProvided")],
+          [tc("branch"), member.branchId?.name || t("unassigned")],
+          [
+            t("originGuest"),
+            member.guestId
+              ? `${member.guestId.firstName} ${member.guestId.lastName}`
+              : t("directRecord"),
+          ],
+        ].map(([label, value]) => (
+          <div key={label} className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr]">
+            <dt className="text-sm text-[#8a8780]">{label}</dt>
+            <dd className="break-words text-sm">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 break-all text-xs text-[#8a8780]">
+        {t("memberId")}: {id}
+      </p>
+    </Card>
+  );
+  const formation = (
+    <Card className="p-6">
+      <CardHeader title={t("formationTitle")} />
+      <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+        {[
+          [t("dateJoined"), member.dateJoinedChurch || options("notRecorded")],
+          [
+            t("membershipStatus"),
+            options(
+              `membershipStatus.${member.membershipStatus === "new_member" ? "new_member" : member.membershipStatus === "inactive" ? "inactive" : member.membershipStatus === "worker" ? "worker" : "active"}`,
+            ),
+          ],
+          [t("holyGhostBaptism"), yesNo(member.holySpiritBaptismStatus)],
+          [t("waterBaptism"), yesNo(member.waterBaptismStatus)],
+          [t("serviceGroups"), memberGroupNames(member) || t("notSet")],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl bg-white p-3">
+            <dt className="text-xs text-[#8a8780]">{label}</dt>
+            <dd className="mt-1 text-sm font-medium">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </Card>
+  );
+  const values = member as unknown as Record<string, string | undefined>;
   return (
     <Shell>
+      <Link
+        href={back}
+        className="text-sm text-[#6b6b6b] hover:text-orange-700"
+      >
+        ← {tw("backMembers")}
+      </Link>
       <PageHeader
-        eyebrow="Member"
+        eyebrow={t("eyebrow")}
         title={`${member.firstName} ${member.lastName}`}
-        description="Membership status, class progress, baptism and service-unit placement in one place."
+        description={member.branchId?.name || t("unassigned")}
+        action={
+          <div className="flex items-center gap-3">
+            <Badge tone={statusTone(member.membershipStatus)}>
+              {member.membershipStatus}
+            </Badge>
+            {edit(
+              ["profile", "growth", "groups"].includes(query.tab || "")
+                ? query.tab!
+                : "profile",
+            )}
+          </div>
+        }
       />
-      <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card className="app-rise p-6 sm:p-7">
-            <div className="flex items-center gap-4">
-              <Avatar
-                name={`${member.firstName} ${member.lastName}`}
-                className="h-12 w-12 text-[14px]"
-              />
-              <div className="min-w-0">
-                <p className="lp-heading truncate text-[20px] leading-tight">
-                  {member.firstName} {member.lastName}
-                </p>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  <Badge tone={statusTone(member.membershipStatus)} dot>
-                    {formatMembershipStatus(member.membershipStatus)}
-                  </Badge>
-                </div>
+      <WorkspaceTabs
+        defaultTab="overview"
+        tabs={[
+          {
+            id: "overview",
+            label: tw("overview"),
+            content: (
+              <div className="grid gap-5 xl:grid-cols-2">
+                {summary}
+                {formation}
               </div>
-            </div>
-            <dl className="mt-5 divide-y divide-black/[0.05]">
-              {[
-                ["Email", member.email || "Not provided"],
-                ["Phone", member.phone || "Not provided"],
-                ["Branch", member.branchId?.name || "Unassigned"],
-                [
-                  "Origin guest",
-                  member.guestId
-                    ? `${member.guestId.firstName} ${member.guestId.lastName}`
-                    : "Direct member record",
-                ],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4"
-                >
-                  <dt className="text-[13px] text-[#8a8780]">{label}</dt>
-                  <dd className="break-words text-[14px] font-medium text-[#111111]">
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="mt-4 rounded-2xl border border-black/[0.06] px-4 py-3">
-              <p className="text-[12px] text-[#8a8780]">Member ID</p>
-              <p className="mt-0.5 break-all font-mono text-[13px] text-[#55534e]">
-                {id}
-              </p>
-            </div>
-          </Card>
-          <Card
-            className="app-rise p-6 sm:p-7"
-            style={{ animationDelay: "60ms" }}
-          >
-            <CardHeader label="Formation" title="Formation snapshot" />
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {[
-                ["Date joined", member.dateJoinedChurch || "Not recorded"],
-                [
-                  "Membership status",
-                  formatMembershipStatus(member.membershipStatus),
-                ],
-                [
-                  "Holy Ghost baptism",
-                  formatYesNoStatus(member.holySpiritBaptismStatus),
-                ],
-                ["Water baptism", formatYesNoStatus(member.waterBaptismStatus)],
-                ["Service groups", serviceUnitName],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-[#f6f5f1] px-4 py-3">
-                  <p className="text-[12px] text-[#6b6b6b]">{label}</p>
-                  <p className="mt-0.5 text-[14px] font-medium text-[#111111]">
-                    {value}
+            ),
+          },
+          {
+            id: "profile",
+            label: tw("profile"),
+            content: editing("profile") || (
+              <div className="grid gap-5 xl:grid-cols-2">
+                {summary}
+                <Card className="p-6">
+                  <CardHeader
+                    title={t("familyDetails")}
+                    action={edit("profile")}
+                  />
+                  <p className="mt-5 whitespace-pre-wrap text-sm">
+                    {member.familyDetails || t("noFamilyDetails")}
                   </p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">
-              Classes
-            </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {courseCards.map((course) => (
-                <div
-                  key={course.label}
-                  className="rounded-2xl border border-black/[0.06] p-4"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[14px] font-medium text-[#111111]">
-                      {course.label}
-                    </p>
-                    <Badge
-                      tone={course.status === "Yes" ? "success" : "neutral"}
-                    >
-                      {course.status}
-                    </Badge>
-                  </div>
-                  <dl className="mt-2 space-y-0.5 text-[13px] text-[#6b6b6b]">
-                    <div className="flex gap-1.5">
-                      <dt className="text-[#8a8780]">Date:</dt>
-                      <dd>{course.date}</dd>
+                  {familyLinks && (
+                    <div className="mt-6 border-t border-black/5 pt-4">
+                      <h3 className="text-sm font-medium">{tw("children")}</h3>
+                      {familyLinks.children.length ? (
+                        <ul className="mt-3 space-y-2">
+                          {familyLinks.children.map((child) => (
+                            <li key={child._id}>
+                              <Link
+                                className="text-sm text-orange-700"
+                                href={`/children/families/${child.familyId}/children/${child._id}`}
+                              >
+                                {child.firstName} {child.lastName} ↗
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-[#8a8780]">
+                          {tw("noChildren")}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex gap-1.5">
-                      <dt className="text-[#8a8780]">Location:</dt>
-                      <dd>{course.location}</dd>
-                    </div>
-                  </dl>
+                  )}
+                </Card>
+              </div>
+            ),
+          },
+          {
+            id: "growth",
+            label: tw("growth"),
+            content: editing("growth") || (
+              <>
+                <div className="flex justify-end">{edit("growth")}</div>
+                {formation}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {MEMBER_COURSE_GROUPS.map((group) => (
+                    <Card key={group.key} className="p-5">
+                      <CardHeader
+                        title={options(
+                          `courses.${group.key}.title` as Parameters<
+                            typeof options
+                          >[0],
+                        )}
+                        action={
+                          <Badge
+                            tone={
+                              normalizeYesNoValue(values[group.statusName]) ===
+                              "yes"
+                                ? "success"
+                                : "neutral"
+                            }
+                          >
+                            {yesNo(values[group.statusName])}
+                          </Badge>
+                        }
+                      />
+                      <dl className="mt-4 space-y-2 text-sm">
+                        <div>
+                          <dt className="text-[#8a8780]">{t("dateLabel")}</dt>
+                          <dd>
+                            {values[group.dateName] || options("notRecorded")}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[#8a8780]">
+                            {t("locationLabel")}
+                          </dt>
+                          <dd>
+                            {values[group.locationName] ||
+                              options("notRecorded")}
+                          </dd>
+                        </div>
+                      </dl>
+                    </Card>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-2xl bg-[#f6f5f1] px-4 py-3">
-              <p className="text-[12px] text-[#6b6b6b]">Family details</p>
-              <p className="mt-0.5 text-[14px] leading-[1.6] text-[#111111]">
-                {member.familyDetails || "No family details recorded yet."}
-              </p>
-            </div>
-          </Card>
-        </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          <MemberProfileForm
-            member={member}
-            defaultBranchId={user.branchId}
-            serviceUnits={serviceUnits}
-          />
-          <Card className="p-6 sm:p-7">
-            <CommunicationPanel
-              recipientType="member"
-              recipientId={id}
-              recipient={member.email || member.phone || ""}
-              communications={communications}
-              title="Member care and communication history"
-            />
-          </Card>
-        </div>
-      </section>
+              </>
+            ),
+          },
+          {
+            id: "groups",
+            label: tw("groups"),
+            content: editing("groups") || (
+              <Card className="p-6">
+                <CardHeader title={tw("groups")} action={edit("groups")} />
+                <p className="mt-5 text-sm">
+                  {memberGroupNames(member) || tw("noGroup")}
+                </p>
+              </Card>
+            ),
+          },
+          {
+            id: "care",
+            label: tw("care"),
+            content: (
+              <Card className="p-6">
+                <div className="mb-5">
+                  <Link
+                    href={`/care?q=${encodeURIComponent(`${member.firstName} ${member.lastName}`)}`}
+                    className={buttonClass("secondary", "sm")}
+                  >
+                    {tw("careLink")} ↗
+                  </Link>
+                </div>
+                <CommunicationPanel
+                  recipientType="member"
+                  recipientId={id}
+                  recipient={member.email || member.phone || ""}
+                  communications={communications}
+                  title={t("communicationTitle")}
+                />
+              </Card>
+            ),
+          },
+        ]}
+      />
     </Shell>
   );
 }

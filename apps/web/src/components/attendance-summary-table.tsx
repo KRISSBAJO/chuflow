@@ -1,60 +1,27 @@
 "use client";
-import { FilterPanel } from "@/components/filter-panel";
-
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ExportTableButtons } from "@/components/table-export";
-import { AttendanceCreateForm } from "@/components/attendance-create-form";
-import { ModalShell } from "@/components/modal-shell";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useAppFormat } from "@/i18n/labels";
+import { FilterPanel } from "@/components/filter-panel";
+import { ExportMenu } from "@/components/export-menu";
 import { Badge, Button, EmptyState, TableWrap } from "@/components/ui/ui";
+import { detailHref } from "@/lib/workspace-navigation";
 import type {
   AttendanceItem,
   BranchSummary,
-  ServiceScheduleSummary,
   ServiceTypeSummary,
+  ServiceScheduleSummary,
 } from "@/lib/types";
-
-const NUMBER_COLUMNS = [
-  "Men",
-  "Women",
-  "Children",
-  "Adults",
-  "First timers",
-  "New converts",
-  "Holy Spirit",
-];
-
-function getBranchId(value: AttendanceItem["branchId"]) {
-  return typeof value === "string" ? value : value?._id;
+function branchId(r: AttendanceItem) {
+  return typeof r.branchId === "string" ? r.branchId : r.branchId?._id;
 }
-
-function getBranchName(
-  value: AttendanceItem["branchId"],
-  branches: BranchSummary[],
-) {
-  if (typeof value === "string") {
-    return branches.find((branch) => branch._id === value)?.name || "Branch";
-  }
-
-  if (value?.name) {
-    return value.name;
-  }
-
-  if (value?._id) {
-    return (
-      branches.find((branch) => branch._id === value._id)?.name || "Branch"
-    );
-  }
-
-  return "Branch";
-}
-
 export function AttendanceSummaryTable({
   records,
   branches,
   serviceTypes,
-  serviceSchedules,
   defaultBranchId,
-  canEdit = true,
 }: {
   records: AttendanceItem[];
   branches: BranchSummary[];
@@ -63,345 +30,257 @@ export function AttendanceSummaryTable({
   defaultBranchId?: string;
   canEdit?: boolean;
 }) {
-  const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState(defaultBranchId || "");
-  const [serviceTypeFilter, setServiceTypeFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [page, setPage] = useState(1);
-  const [sort, setSort] = useState("newest");
-  const [pageSize, setPageSize] = useState(25);
-  const [editingRecord, setEditingRecord] = useState<AttendanceItem | null>(
-    null,
+  const t = useTranslations("services.attendance.summaries");
+  const tw = useTranslations("workspace");
+  const { dateTime } = useAppFormat();
+  const q = useSearchParams();
+  const [search, setSearch] = useState(q.get("search") || "");
+  const [branch, setBranch] = useState(
+    q.get("branchId") || defaultBranchId || "",
   );
-
-  const filteredRecords = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    return [...records]
-      .filter((record) => {
-        const branchId = getBranchId(record.branchId);
-        const serviceDate = record.serviceDate.slice(0, 10);
-        const serviceLabel =
-          `${record.serviceName || ""} ${record.serviceTypeLabel || ""} ${record.serviceType || ""}`.toLowerCase();
-
-        if (branchFilter && branchId !== branchFilter) {
-          return false;
-        }
-
-        if (
-          serviceTypeFilter &&
-          record.serviceType !== serviceTypeFilter &&
-          record.serviceTypeId?._id !== serviceTypeFilter
-        ) {
-          return false;
-        }
-
-        if (dateFrom && serviceDate < dateFrom) {
-          return false;
-        }
-
-        if (dateTo && serviceDate > dateTo) {
-          return false;
-        }
-
-        if (normalizedSearch && !serviceLabel.includes(normalizedSearch)) {
-          return false;
-        }
-
-        return true;
-      })
-      .sort(
-        (left, right) =>
-          (sort === "oldest" ? 1 : -1) *
-            (new Date(left.serviceDate).getTime() -
-              new Date(right.serviceDate).getTime()) ||
-          left._id.localeCompare(right._id),
-      );
-  }, [
-    branchFilter,
-    dateFrom,
-    dateTo,
-    records,
+  const [service, setService] = useState(q.get("serviceType") || "");
+  const [sort, setSort] = useState(q.get("sort") || "newest");
+  const [page, setPage] = useState(Math.max(1, Number(q.get("page")) || 1));
+  const [pageSize, setPageSize] = useState(
+    [25, 50, 100].includes(Number(q.get("pageSize")))
+      ? Number(q.get("pageSize"))
+      : 25,
+  );
+  const [breakdown, setBreakdown] = useState(false);
+  const filtered = useMemo(
+    () =>
+      records
+        .filter(
+          (r) =>
+            (!branch || branchId(r) === branch) &&
+            (!service ||
+              r.serviceType === service ||
+              r.serviceTypeId?._id === service) &&
+            `${r.serviceName || ""} ${r.serviceTypeLabel || ""} ${r.serviceType}`
+              .toLowerCase()
+              .includes(search.trim().toLowerCase()),
+        )
+        .sort(
+          (a, b) =>
+            (sort === "oldest" ? 1 : -1) *
+            a.serviceDate.localeCompare(b.serviceDate),
+        ),
+    [records, branch, service, search, sort],
+  );
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const current = Math.min(page, pages);
+  const params = {
+    ...Object.fromEntries(q.entries()),
+    tab: "summaries",
     search,
-    serviceTypeFilter,
+    branchId: branch,
+    serviceType: service,
     sort,
-  ]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const visibleRecords = filteredRecords.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
-  );
-
+    page: String(current),
+    pageSize: String(pageSize),
+  };
   return (
-    <>
-      <div className="space-y-5">
-        <FilterPanel><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
-          <input
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
-            }}
-            placeholder="Search service name or type"
-            aria-label="Search service summaries"
-            className="ui-input sm:col-span-2 lg:col-span-1"
-          />
-          <select
-            value={branchFilter}
-            onChange={(event) => {
-              setBranchFilter(event.target.value);
-              setPage(1);
-            }}
-            aria-label="Branch"
-            className="ui-input"
-          >
-            <option value="">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch._id} value={branch._id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={serviceTypeFilter}
-            onChange={(event) => {
-              setServiceTypeFilter(event.target.value);
-              setPage(1);
-            }}
-            aria-label="Service type"
-            className="ui-input"
-          >
-            <option value="">All service types</option>
-            {serviceTypes.map((serviceType) => (
-              <option key={serviceType._id} value={serviceType.key}>
-                {serviceType.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => {
-              setDateFrom(event.target.value);
-              setPage(1);
-            }}
-            aria-label="From date"
-            className="ui-input"
-          />
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(event) => {
-              setDateTo(event.target.value);
-              setPage(1);
-            }}
-            aria-label="To date"
-            className="ui-input"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <label className="text-xs text-[#6b6b6b]">
-            Sort
-            <select
-              className="ui-input mt-1"
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="newest">Newest service first</option>
-              <option value="oldest">Oldest service first</option>
-            </select>
-          </label>
-          <label className="text-xs text-[#6b6b6b]">
-            Per page
-            <select
-              className="ui-input mt-1"
-              value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setPage(1);
-              }}
-            >
-              {[25, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setSearch("");
-              setBranchFilter(defaultBranchId || "");
-              setServiceTypeFilter("");
-              setDateFrom("");
-              setDateTo("");
-              setSort("newest");
-              setPage(1);
-            }}
-          >
-            Reset filters
-          </Button>
-        </div>
-        </FilterPanel><ExportTableButtons
-          resource="attendance"
-          rows={filteredRecords}
-          label="Download filtered summaries"
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          aria-label={t("searchAria")}
+          placeholder={t("searchPlaceholder")}
+          className="ui-input max-w-md"
         />
-        {filteredRecords.length === 0 ? (
-          <EmptyState icon="attendance" title="No summaries found">
-            No service summaries match the current filters.
-          </EmptyState>
-        ) : (
-          <TableWrap>
-            <table className="ui-table min-w-[1120px]">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Branch</th>
-                  <th>Service</th>
-                  <th>Type</th>
-                  {NUMBER_COLUMNS.map((column) => (
-                    <th key={column} className="text-right">
-                      {column}
+        <ExportMenu resource="attendance" rows={filtered} />
+      </div>
+      <FilterPanel>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <select
+            value={branch}
+            aria-label={t("branchAria")}
+            onChange={(e) => {
+              setBranch(e.target.value);
+              setPage(1);
+            }}
+            className="ui-input"
+          >
+            <option value="">{t("allBranches")}</option>
+            {branches.map((b) => (
+              <option key={b._id} value={b._id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={service}
+            aria-label={t("serviceTypeAria")}
+            onChange={(e) => {
+              setService(e.target.value);
+              setPage(1);
+            }}
+            className="ui-input"
+          >
+            <option value="">{t("allServiceTypes")}</option>
+            {serviceTypes.map((s) => (
+              <option key={s._id} value={s.key}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sort}
+            aria-label={t("sort")}
+            onChange={(e) => {
+              setSort(e.target.value);
+              setPage(1);
+            }}
+            className="ui-input"
+          >
+            <option value="newest">{t("newestFirst")}</option>
+            <option value="oldest">{t("oldestFirst")}</option>
+          </select>
+          <select
+            value={pageSize}
+            aria-label={t("perPage")}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            className="ui-input"
+          >
+            {[25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setSearch("");
+            setBranch(defaultBranchId || "");
+            setService("");
+            setSort("newest");
+            setPage(1);
+          }}
+        >
+          {t("resetFilters")}
+        </Button>
+      </FilterPanel>
+      <details className="text-sm text-[#6b6b6b]">
+        <summary className="w-fit cursor-pointer">{tw("columns")}</summary>
+        <label className="mt-3 flex gap-2">
+          <input
+            type="checkbox"
+            checked={breakdown}
+            onChange={(e) => setBreakdown(e.target.checked)}
+          />
+          {t("columns.men")} / {t("columns.women")} / {t("columns.holySpirit")}
+        </label>
+      </details>
+      {!filtered.length ? (
+        <EmptyState icon="attendance" title={t("emptyTitle")}>
+          {t("emptyBody")}
+        </EmptyState>
+      ) : (
+        <TableWrap>
+          <table className="ui-table">
+            <thead>
+              <tr>
+                <th>{t("date")}</th>
+                <th>{t("branch")}</th>
+                <th>{t("service")}</th>
+                {["adults", "children", "firstTimers", "newConverts"].map(
+                  (k) => (
+                    <th key={k}>
+                      {t(`columns.${k}` as Parameters<typeof t>[0])}
                     </th>
-                  ))}
-                  {canEdit ? (
-                    <th className="text-right">
-                      <span className="sr-only">Action</span>
-                    </th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody>
-                {visibleRecords.map((record) => (
-                  <tr key={record._id}>
-                    <td className="whitespace-nowrap text-[#55534e]">
-                      {new Date(record.serviceDate).toLocaleString()}
-                    </td>
-                    <td className="text-[#55534e]">
-                      {getBranchName(record.branchId, branches)}
-                    </td>
-                    <td className="font-medium">
-                      {record.serviceName || "Not named"}
+                  ),
+                )}
+                {breakdown && (
+                  <>
+                    <th>{t("columns.men")}</th>
+                    <th>{t("columns.women")}</th>
+                    <th>{t("columns.holySpirit")}</th>
+                  </>
+                )}
+                <th>{tw("open")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered
+                .slice((current - 1) * pageSize, current * pageSize)
+                .map((r) => (
+                  <tr
+                    key={r._id}
+                    id={`record-${r._id}`}
+                    className="scroll-mt-24"
+                  >
+                    <td className="whitespace-nowrap">
+                      {dateTime(r.serviceDate)}
                     </td>
                     <td>
-                      <Badge>
-                        {record.serviceTypeLabel || record.serviceType}
-                      </Badge>
+                      {typeof r.branchId === "object"
+                        ? r.branchId?.name
+                        : branches.find((b) => b._id === r.branchId)?.name}
                     </td>
-                    <td className="text-right tabular-nums">
-                      {record.menCount ?? 0}
+                    <td>
+                      <Link
+                        href={detailHref("/attendance", r._id, params)}
+                        className="font-medium hover:text-orange-700"
+                      >
+                        {r.serviceName || r.serviceTypeLabel || r.serviceType}
+                      </Link>
                     </td>
-                    <td className="text-right tabular-nums">
-                      {record.womenCount ?? 0}
+                    <td>{r.adultsCount || 0}</td>
+                    <td>{r.childrenCount || 0}</td>
+                    <td>{r.firstTimersCount || 0}</td>
+                    <td>{r.newConvertsCount || 0}</td>
+                    {breakdown && (
+                      <>
+                        <td>{r.menCount || 0}</td>
+                        <td>{r.womenCount || 0}</td>
+                        <td>{r.holySpiritBaptismCount || 0}</td>
+                      </>
+                    )}
+                    <td>
+                      <Link
+                        className="whitespace-nowrap text-orange-700"
+                        href={detailHref("/attendance", r._id, params)}
+                      >
+                        {tw("open")} ↗
+                      </Link>
                     </td>
-                    <td className="text-right tabular-nums">
-                      {record.childrenCount ?? 0}
-                    </td>
-                    <td className="text-right tabular-nums">
-                      {record.adultsCount ?? 0}
-                    </td>
-                    <td className="text-right tabular-nums">
-                      {record.firstTimersCount ?? 0}
-                    </td>
-                    <td className="text-right tabular-nums">
-                      {record.newConvertsCount ?? 0}
-                    </td>
-                    <td className="text-right tabular-nums">
-                      {record.holySpiritBaptismCount ?? 0}
-                    </td>
-                    {canEdit ? (
-                      <td className="text-right">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => setEditingRecord(record)}
-                        >
-                          Edit
-                        </Button>
-                      </td>
-                    ) : null}
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </TableWrap>
-        )}
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[13px] text-[#8a8780]">
-            {filteredRecords.length > 0 ? (
-              <>
-                Showing{" "}
-                <span className="font-medium tabular-nums text-[#111111]">
-                  {(safePage - 1) * pageSize + 1}–
-                  {Math.min(safePage * pageSize, filteredRecords.length)}
-                </span>{" "}
-                of{" "}
-                <span className="tabular-nums">{filteredRecords.length}</span>
-              </>
-            ) : (
-              "No summaries found"
-            )}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={safePage === 1}
-            >
-              Previous
-            </Button>
-            <span className="text-[13px] text-[#8a8780]">
-              Page{" "}
-              <span className="font-medium tabular-nums text-[#111111]">
-                {safePage}
-              </span>{" "}
-              of <span className="tabular-nums">{totalPages}</span>
-            </span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() =>
-                setPage((current) => Math.min(totalPages, current + 1))
-              }
-              disabled={safePage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
+            </tbody>
+          </table>
+        </TableWrap>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Badge>{filtered.length}</Badge>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            disabled={current <= 1}
+            onClick={() => setPage(current - 1)}
+          >
+            {t("previous")}
+          </Button>
+          <span className="text-xs">
+            {tw("page", { page: current, total: pages })}
+          </span>
+          <Button
+            variant="secondary"
+            disabled={current >= pages}
+            onClick={() => setPage(current + 1)}
+          >
+            {t("next")}
+          </Button>
         </div>
       </div>
-
-      {canEdit ? (
-        <ModalShell
-          open={!!editingRecord}
-          onClose={() => setEditingRecord(null)}
-          eyebrow="Attendance"
-          title="Edit service summary"
-          description="Adjust the recorded totals, service type or service details for this summary."
-        >
-          {editingRecord ? (
-            <AttendanceCreateForm
-              branches={branches}
-              serviceTypes={serviceTypes}
-              serviceSchedules={serviceSchedules}
-              defaultBranchId={defaultBranchId}
-              record={editingRecord}
-              onSuccess={() => setEditingRecord(null)}
-            />
-          ) : null}
-        </ModalShell>
-      ) : null}
-    </>
+    </div>
   );
 }

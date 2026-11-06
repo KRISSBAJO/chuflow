@@ -114,4 +114,21 @@ export class AttendanceController {
   summary(@CurrentUser() user: AuthUser, @Query('branchId') branchId?: string) {
     return this.attendanceService.summary(user, branchId);
   }
+
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+    'follow_up',
+    'usher',
+  )
+  @Get(':id')
+  detail(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.attendanceService.detail(id, user);
+  }
 }

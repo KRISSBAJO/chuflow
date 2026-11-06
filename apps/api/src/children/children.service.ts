@@ -102,6 +102,27 @@ export class ChildrenService {
   registrationAccess(u: AuthUser, branchId: string) {
     return this.access(u, branchId, true);
   }
+  async memberFamilies(u: AuthUser, memberId: string) {
+    const member = await this.members
+      .findById(this.id(memberId))
+      .select('branchId')
+      .lean();
+    if (!member) throw new NotFoundException('Member not found');
+    await this.access(u, String(member.branchId), true);
+    const families = await this.families
+      .find({
+        branchId: member.branchId,
+        isActive: true,
+        'guardians.memberId': memberId,
+      })
+      .select('_id name')
+      .lean();
+    const children = await this.children
+      .find({ familyId: { $in: families.map((f) => f._id) }, isActive: true })
+      .select('_id firstName lastName familyId')
+      .lean();
+    return { families, children };
+  }
   async options(u: AuthUser) {
     if (!this.manager(u) && u.role !== 'children_worker')
       return { branches: [], canManage: false };

@@ -31,9 +31,11 @@ export class AuditLogsController {
     @Query('branchId') branchId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('entityId') entityId?: string,
   ) {
     return this.auditLogsService.list(user, {
       entityType,
+      entityId,
       search,
       branchId,
       page: Number(page) || 1,

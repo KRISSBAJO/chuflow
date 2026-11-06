@@ -456,7 +456,10 @@ export class MembersService {
 
   async update(id: string, dto: UpdateMemberDto, currentUser: AuthUser) {
     const existing = await this.findOne(id, currentUser);
-    if (existing.recordType === 'child') throw new BadRequestException('Update this child through the children’s ministry workspace to keep guardian links and membership synchronized.');
+    if (existing.recordType === 'child')
+      throw new BadRequestException(
+        'Update this child through the children’s ministry workspace to keep guardian links and membership synchronized.',
+      );
     const normalizedDto = this.normalizeMemberPayload(dto);
     this.validateMemberPayload(normalizedDto);
     const branchId = await this.accessScopeService.resolveScopedBranchId(
@@ -504,6 +507,25 @@ export class MembersService {
       delete normalizedDto.serviceUnitInterest;
       delete normalizedDto.serviceUnitNames;
     }
+    const unsetFields: Record<string, ''> = {};
+    for (const key of Object.keys(
+      normalizedDto,
+    ) as (keyof typeof normalizedDto)[]) {
+      if (!Object.prototype.hasOwnProperty.call(dto, key)) {
+        delete normalizedDto[key];
+      } else if (
+        normalizedDto[key] === undefined &&
+        !['firstName', 'lastName', 'branchId', 'serviceUnitIds'].includes(key)
+      ) {
+        unsetFields[key] = '';
+        delete normalizedDto[key];
+      }
+    }
+    if (serviceUnitAssignment && !serviceUnitAssignment.serviceUnitId) {
+      unsetFields.serviceUnitId = '';
+      if (!serviceUnitAssignment.serviceUnitInterest)
+        unsetFields.serviceUnitInterest = '';
+    }
     const member = await this.memberModel
       .findByIdAndUpdate(
         id,
@@ -524,16 +546,7 @@ export class MembersService {
                   : {}),
               }
             : {}),
-          ...(serviceUnitAssignment && !serviceUnitAssignment.serviceUnitId
-            ? {
-                $unset: {
-                  serviceUnitId: '',
-                  ...(!serviceUnitAssignment.serviceUnitInterest
-                    ? { serviceUnitInterest: '' }
-                    : {}),
-                },
-              }
-            : {}),
+          ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}),
         },
         { new: true },
       )

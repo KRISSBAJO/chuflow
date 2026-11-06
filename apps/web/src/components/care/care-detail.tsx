@@ -1,25 +1,21 @@
 "use client";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
+import { CareActivityTable } from "./care-activity-table";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { apiPatch, apiPost } from "@/lib/api";
 import { Card, Button, Field, buttonClass } from "@/components/ui/ui";
 import { CarePicker } from "./care-picker";
 import {
   careId,
   careLabel,
+  isCareLabelValue,
   type CareRecord,
   type CareOptions,
   type CarePerson,
 } from "@/lib/care";
-const when = (value?: string) =>
-  value
-    ? new Date(value).toLocaleString("en-US", {
-        timeZone: "UTC",
-        dateStyle: "medium",
-        timeStyle: "short",
-      }) + " UTC"
-    : "Not recorded";
 const outcomes = [
   "contacted",
   "no_answer",
@@ -37,8 +33,26 @@ export function CareDetail({
   options: CareOptions;
 }) {
   const router = useRouter();
+  const t = useTranslations("people.care.detail");
+  const tw = useTranslations("workspace");
+  const tCare = useTranslations("people.care");
+  const tsh = useTranslations("people.shared");
+  const format = useFormatter();
+  const label = (value: string) =>
+    isCareLabelValue(value) ? tCare(`labels.${value}`) : careLabel(value);
+  const when = (value?: string) =>
+    value
+      ? tsh("utc", {
+          date: format.dateTime(new Date(value), {
+            timeZone: "UTC",
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+        })
+      : tsh("notRecorded");
   const [c, setCase] = useState(initial);
-  const [tab, setTab] = useState("timeline");
+  const query = useSearchParams();
+  const [tab, setTab] = useState(query.get("tab") || "timeline");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -53,10 +67,9 @@ export function CareDetail({
     c.people.filter((p) => p._id === c.backupId),
   );
   const [receiving, setReceiving] = useState<CarePerson[]>([]);
-  const [entryKind, setEntryKind] = useState("contact");
   const person = (id?: string) => {
     const p = c.people.find((x) => x._id === id);
-    return p ? `${p.firstName} ${p.lastName}` : "Unassigned";
+    return p ? `${p.firstName} ${p.lastName}` : tsh("unassigned");
   };
   const ownerId = typeof c.ownerId === "string" ? c.ownerId : c.ownerId?._id;
   const branch = careId(c.branchId);
@@ -72,10 +85,10 @@ export function CareDetail({
         ...data,
       });
       setCase(result);
-      setNotice("Care record saved.");
+      setNotice(t("saved"));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save care record");
+      setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
     }
@@ -91,32 +104,10 @@ export function CareDetail({
       );
       setLink(result.url);
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not create check-in link",
-      );
+      setError(e instanceof Error ? e.message : t("errorLink"));
     } finally {
       setBusy(false);
     }
-  }
-  function note(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const d = new FormData(e.currentTarget);
-    void change(entryKind, {
-      note: d.get("note"),
-      ...(entryKind === "contact"
-        ? {
-            outcome: d.get("outcome"),
-            method: d.get("method"),
-            ...(d.get("taskId") ? { taskId: d.get("taskId") } : {}),
-          }
-        : {}),
-      visibility: d.get("visibility") || "team",
-      ...(d.get("nextActionAt")
-        ? {
-            nextActionAt: new Date(String(d.get("nextActionAt"))).toISOString(),
-          }
-        : {}),
-    });
   }
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5">
@@ -127,7 +118,7 @@ export function CareDetail({
             className="underline"
             onClick={() => window.location.reload()}
           >
-            Reload latest
+            {t("reloadLatest")}
           </button>
         </p>
       )}
@@ -139,35 +130,37 @@ export function CareDetail({
       <Card className="p-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="lp-label">{careLabel(c.journey)}</p>
+            <p className="lp-label">{label(c.journey)}</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">
               {c.firstName} {c.lastName}
             </h1>
             <p className="mt-2 text-sm text-[#6b6b6b]">
-              {c.email || "No email recorded"}
+              {c.email || t("noEmail")}
               {c.phone ? " · " + c.phone : ""}
             </p>
           </div>
           <span
             className={`rounded-full bg-white px-3 py-1 text-sm ${c.stopContact ? "text-red-700" : "text-[#b94f0a]"}`}
           >
-            {c.stopContact ? "Contact stopped" : careLabel(c.stage)}
+            {c.stopContact ? t("contactStopped") : label(c.stage)}
           </span>
         </div>
         <div className="grid gap-3 border-t border-black/5 pt-4 text-sm sm:grid-cols-3">
           <p>
-            <span className="block text-xs text-[#8a8780]">Care owner</span>
+            <span className="block text-xs text-[#8a8780]">
+              {t("careOwner")}
+            </span>
             {person(ownerId)}
           </p>
           <p>
             <span className="block text-xs text-[#8a8780]">
-              Last personal contact
+              {t("lastContact")}
             </span>
             {when(c.lastContactAt)}
           </p>
           <p>
             <span className="block text-xs text-[#8a8780]">
-              Recorded individual attendance
+              {t("lastAttendance")}
             </span>
             {when(c.lastAttendanceAt)}
           </p>
@@ -178,7 +171,7 @@ export function CareDetail({
               href={"/guests/" + c.guestId}
               className={buttonClass("secondary", "sm")}
             >
-              Guest record ↗
+              {t("guestRecord")}
             </Link>
           )}
           {c.memberId && (
@@ -186,7 +179,7 @@ export function CareDetail({
               href={"/members/" + c.memberId}
               className={buttonClass("secondary", "sm")}
             >
-              Member record ↗
+              {t("memberRecord")}
             </Link>
           )}
           {c.canManage && !c.automationEnrolledAt && (
@@ -195,45 +188,41 @@ export function CareDetail({
               disabled={busy || c.stopContact}
               onClick={() => void change("enroll")}
             >
-              Start care plan
+              {t("startPlan")}
             </Button>
           )}
         </div>
       </Card>
       {c.canAccept && (
         <Card className="p-5 space-y-3">
-          <p className="font-medium">
-            A care handover is waiting for your acceptance.
-          </p>
-          <p className="text-sm text-[#6b6b6b]">
-            The previous owner remains responsible until you accept.
-          </p>
+          <p className="font-medium">{t("handoverWaiting")}</p>
+          <p className="text-sm text-[#6b6b6b]">{t("handoverPrevious")}</p>
           <div className="flex gap-2">
             <Button disabled={busy} onClick={() => void change("accept")}>
-              Accept responsibility
+              {t("acceptResponsibility")}
             </Button>
             <Button
               variant="secondary"
               disabled={busy}
               onClick={() => void change("decline")}
             >
-              Decline
+              {t("decline")}
             </Button>
           </div>
         </Card>
       )}
       <nav
         className="flex gap-1 overflow-x-auto border-b border-black/10"
-        aria-label="Care sections"
+        aria-label={t("sectionsAria")}
       >
-        {["timeline", "tasks", "connection", "preferences"].map((t) => (
+        {["timeline", "tasks", "connection", "preferences"].map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm ${tab === t ? "border-[#ed7b19] font-semibold text-[#b94f0a]" : "border-transparent text-[#6b6b6b]"}`}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
+            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm ${tab === tabKey ? "border-[#ed7b19] font-semibold text-[#b94f0a]" : "border-transparent text-[#6b6b6b]"}`}
           >
-            {careLabel(t)}
-            {t === "tasks"
+            {label(tabKey)}
+            {tabKey === "tasks"
               ? ` (${c.tasks.filter((x) => x.status === "open").length})`
               : ""}
           </button>
@@ -242,13 +231,10 @@ export function CareDetail({
       <div hidden={tab !== "timeline"} className="space-y-5">
         <details className="app-card p-5">
           <summary className="cursor-pointer font-medium">
-            Care summary & suggested message
+            {t("summaryTitle")}
           </summary>
           <p className="mt-3 text-sm leading-7">{c.summary}</p>
-          <p className="mt-4 text-xs text-[#8a8780]">
-            Suggested wording for a personal check-in. Review it before
-            contacting the person.
-          </p>
+          <p className="mt-4 text-xs text-[#8a8780]">{t("suggestedHint")}</p>
           <blockquote className="mt-2 rounded-xl bg-white p-4 text-sm">
             {c.language === "es"
               ? `Hola ${c.firstName}, queríamos saber cómo está. ¿Hay algo en lo que podamos apoyarle? Puede responder cuando le resulte conveniente.`
@@ -256,166 +242,42 @@ export function CareDetail({
           </blockquote>
         </details>
         {c.canManage && (
-          <Card className="p-6">
-            <form onSubmit={note} className="space-y-4">
-              <div className="flex flex-wrap gap-3">
-                <select
-                  className="ui-input max-w-xs"
-                  value={entryKind}
-                  onChange={(e) => setEntryKind(e.target.value)}
-                >
-                  <option value="contact">
-                    Record a conversation / attempt
-                  </option>
-                  <option value="note">Add a care note</option>
-                </select>
-                {c.isAdmin && (
-                  <select
-                    className="ui-input max-w-xs"
-                    name="visibility"
-                    aria-label="Note access"
-                  >
-                    <option value="team">Assigned care team</option>
-                    <option value="pastoral">Restricted to leadership</option>
-                  </select>
-                )}
-              </div>
-              <textarea
-                className="ui-input min-h-28"
-                name="note"
-                required
-                maxLength={5000}
-                placeholder="What happened, and what did you agree to do next?"
-              />
-              {entryKind === "contact" && (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Field label="Outcome">
-                    <select className="ui-input" name="outcome">
-                      {outcomes.map((o) => (
-                        <option key={o} value={o}>
-                          {careLabel(o)}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Method">
-                    <select className="ui-input" name="method">
-                      {[
-                        "phone",
-                        "email",
-                        "whatsapp",
-                        "text",
-                        "in_person",
-                        "administrative",
-                      ].map((m) => (
-                        <option key={m} value={m}>
-                          {careLabel(m)}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Complete an open task">
-                    <select className="ui-input" name="taskId">
-                      <option value="">Conversation only</option>
-                      {c.tasks
-                        .filter((t) => t.status === "open")
-                        .map((t) => (
-                          <option key={t._id} value={t._id}>
-                            {t.title}
-                          </option>
-                        ))}
-                    </select>
-                  </Field>
-                </div>
-              )}
-              <Field label="Agreed next action (optional)">
-                <input
-                  type="datetime-local"
-                  name="nextActionAt"
-                  className="ui-input max-w-sm"
-                />
-              </Field>
-              <p className="text-xs text-[#8a8780]">
-                This records staff activity. Choosing email, text or WhatsApp
-                here does not send a message.
-              </p>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Saving…" : "Save to timeline"}
-              </Button>
-            </form>
-          </Card>
+          <div className="flex justify-end">
+            <Link
+              href={`/care/${c._id}/activities/new`}
+              className={buttonClass("primary")}
+            >
+              + {tw("addActivity")}
+            </Link>
+          </div>
         )}
-        <Card className="p-6">
-          <h2 className="font-semibold">Activity history</h2>
-          <div className="mt-4 divide-y divide-black/5">
-            {c.events.map((event) => (
-              <article key={event._id} className="py-4">
-                <p className="text-xs text-[#8a8780]">
-                  {careLabel(event.kind)} · {when(event.createdAt)}
-                  {event.actorId
-                    ? ` · ${event.actorId.firstName} ${event.actorId.lastName}`
-                    : ""}
-                  {event.visibility === "pastoral" ? " · Leadership only" : ""}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-7">
-                  {event.text}
-                </p>
-              </article>
-            ))}
-            {!c.events.length && (
-              <p className="text-sm text-[#8a8780]">
-                No activity recorded yet.
-              </p>
-            )}
-          </div>
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span>{c.eventTotal} entries</span>
-            <div className="flex gap-2">
-              {c.eventPage > 1 && (
-                <Link
-                  href={`/care/${c._id}?page=${c.eventPage - 1}`}
-                  className={buttonClass("ghost", "sm")}
-                >
-                  Newer
-                </Link>
-              )}
-              {c.eventPage * 20 < c.eventTotal && (
-                <Link
-                  href={`/care/${c._id}?page=${c.eventPage + 1}`}
-                  className={buttonClass("ghost", "sm")}
-                >
-                  Older
-                </Link>
-              )}
-            </div>
-          </div>
-        </Card>
+        <CareActivityTable record={c} />
       </div>
       <div hidden={tab !== "tasks"} className="space-y-5">
         <Card className="p-6 space-y-4">
-          <h2 className="font-semibold">Open commitments</h2>
+          <h2 className="font-semibold">{t("openCommitments")}</h2>
           {c.tasks
-            .filter((t) => t.status === "open")
-            .map((t) => (
-              <div className="rounded-xl bg-white p-4 space-y-2" key={t._id}>
+            .filter((task) => task.status === "open")
+            .map((task) => (
+              <div className="rounded-xl bg-white p-4 space-y-2" key={task._id}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-sm font-medium">{t.title}</h3>
+                  <h3 className="text-sm font-medium">{task.title}</h3>
                   <span className="text-xs text-[#8a8780]">
-                    {when(t.dueAt)}
-                    {t.escalated ? " · Leadership review" : ""}
+                    {when(task.dueAt)}
+                    {task.escalated ? ` · ${t("leadershipReview")}` : ""}
                   </span>
                 </div>
-                {t.evidence && (
-                  <p className="text-sm text-[#6b6b6b]">{t.evidence}</p>
+                {task.evidence && (
+                  <p className="text-sm text-[#6b6b6b]">{task.evidence}</p>
                 )}
-                {(c.canManage || t.assignedTo === options.userId) && (
+                {(c.canManage || task.assignedTo === options.userId) && (
                   <form
                     className="flex flex-wrap gap-2"
                     onSubmit={(e) => {
                       e.preventDefault();
                       const d = new FormData(e.currentTarget);
                       void change("complete", {
-                        taskId: t._id,
+                        taskId: task._id,
                         outcome: d.get("outcome"),
                         note: d.get("note") || undefined,
                       });
@@ -424,25 +286,25 @@ export function CareDetail({
                     <select className="ui-input max-w-xs" name="outcome">
                       {outcomes.map((o) => (
                         <option key={o} value={o}>
-                          {careLabel(o)}
+                          {label(o)}
                         </option>
                       ))}
                     </select>
                     <input
                       className="ui-input flex-1 min-w-40"
                       name="note"
-                      placeholder="Outcome note (optional)"
+                      placeholder={t("outcomeNotePlaceholder")}
                       maxLength={5000}
                     />
                     <Button type="submit" size="sm" disabled={busy}>
-                      Complete
+                      {t("complete")}
                     </Button>
                   </form>
                 )}
               </div>
             ))}
-          {!c.tasks.some((t) => t.status === "open") && (
-            <p className="text-sm text-[#8a8780]">No open commitments.</p>
+          {!c.tasks.some((task) => task.status === "open") && (
+            <p className="text-sm text-[#8a8780]">{t("noOpenCommitments")}</p>
           )}
         </Card>
         {c.canManage && (
@@ -459,18 +321,18 @@ export function CareDetail({
                 });
               }}
             >
-              <h2 className="font-semibold">Add a next step</h2>
+              <h2 className="font-semibold">{t("addNextStep")}</h2>
               <input
                 className="ui-input"
                 name="title"
-                aria-label="Task title"
+                aria-label={t("taskTitle")}
                 required
                 minLength={2}
                 maxLength={200}
-                placeholder="Introduce to a group, arrange a pastoral call…"
+                placeholder={t("taskPlaceholder")}
               />
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Due">
+                <Field label={t("due")}>
                   <input
                     className="ui-input"
                     name="due"
@@ -478,9 +340,9 @@ export function CareDetail({
                     required
                   />
                 </Field>
-                <Field label="Group introduction (optional)">
+                <Field label={t("groupIntro")}>
                   <select className="ui-input" name="unit">
-                    <option value="">Other care action</option>
+                    <option value="">{t("otherCareAction")}</option>
                     {c.units.map((unit) => (
                       <option key={unit._id} value={unit._id}>
                         {unit.name}
@@ -490,7 +352,7 @@ export function CareDetail({
                 </Field>
               </div>
               <Button type="submit" disabled={busy}>
-                Add task
+                {t("addTask")}
               </Button>
             </form>
           </Card>
@@ -498,18 +360,15 @@ export function CareDetail({
       </div>
       <div hidden={tab !== "connection"} className="space-y-5">
         <Card className="p-6 space-y-4">
-          <h2 className="font-semibold">Belonging and next steps</h2>
+          <h2 className="font-semibold">{t("belonging")}</h2>
           <div className="flex flex-wrap gap-2">
             {c.milestones.map((m) => (
               <span className="rounded-full bg-white px-3 py-1 text-sm" key={m}>
-                {careLabel(m)}
+                {label(m)}
               </span>
             ))}
             {!c.milestones.length && (
-              <p className="text-sm text-[#8a8780]">
-                Milestones appear when visits, membership and group placements
-                are recorded.
-              </p>
+              <p className="text-sm text-[#8a8780]">{t("milestonesHint")}</p>
             )}
           </div>
           {c.canManage && (
@@ -530,20 +389,20 @@ export function CareDetail({
                 {["new", "connecting", "connected", "paused", "closed"].map(
                   (stage) => (
                     <option key={stage} value={stage}>
-                      {careLabel(stage)}
+                      {label(stage)}
                     </option>
                   ),
                 )}
               </select>
               <Button type="submit" disabled={busy}>
-                Update stage
+                {t("updateStage")}
               </Button>
             </form>
           )}
         </Card>
         {c.canManage && (
           <Card className="p-6 space-y-5">
-            <h2 className="font-semibold">Ownership and handover</h2>
+            <h2 className="font-semibold">{t("ownership")}</h2>
             {c.isAdmin && (
               <form
                 className="space-y-4"
@@ -555,7 +414,7 @@ export function CareDetail({
                   });
                 }}
               >
-                <Field label="Care owner">
+                <Field label={t("careOwner")}>
                   <CarePicker
                     branchId={branch}
                     selected={owner}
@@ -563,7 +422,7 @@ export function CareDetail({
                     single
                   />
                 </Field>
-                <Field label="Backup worker">
+                <Field label={t("backupWorker")}>
                   <CarePicker
                     branchId={branch}
                     selected={backup}
@@ -572,7 +431,7 @@ export function CareDetail({
                   />
                 </Field>
                 <Button type="submit" disabled={busy}>
-                  Save ownership
+                  {t("saveOwnership")}
                 </Button>
               </form>
             )}
@@ -587,7 +446,7 @@ export function CareDetail({
                 });
               }}
             >
-              <Field label="Request a handover">
+              <Field label={t("requestHandover")}>
                 <CarePicker
                   branchId={branch}
                   selected={receiving}
@@ -600,19 +459,16 @@ export function CareDetail({
                 name="note"
                 required
                 maxLength={5000}
-                placeholder="What does the receiving worker need to know?"
+                placeholder={t("handoverPlaceholder")}
               />
-              <p className="text-xs text-[#8a8780]">
-                The current owner remains responsible until the receiving worker
-                accepts.
-              </p>
+              <p className="text-xs text-[#8a8780]">{t("handoverNote")}</p>
               <Button type="submit" disabled={busy || !receiving.length}>
-                Request handover
+                {t("requestHandoverButton")}
               </Button>
             </form>
             {c.handover && (
               <p className="text-sm">
-                Handover: {careLabel(c.handover.status)}
+                {t("handoverStatus", { status: label(c.handover.status) })}
               </p>
             )}
           </Card>
@@ -635,14 +491,14 @@ export function CareDetail({
                   });
                 }}
               >
-                <h2 className="font-semibold">Contact permission</h2>
+                <h2 className="font-semibold">{t("contactPermission")}</h2>
                 <label className="flex gap-2">
                   <input
                     type="checkbox"
                     name="emailAllowed"
                     defaultChecked={c.emailAllowed}
                   />
-                  Permission is recorded for automated care email
+                  {t("emailPermission")}
                 </label>
                 <label className="flex gap-2">
                   <input
@@ -650,9 +506,9 @@ export function CareDetail({
                     name="stopContact"
                     defaultChecked={c.stopContact}
                   />
-                  Stop contact
+                  {t("stopContact")}
                 </label>
-                <Field label="Preferred language">
+                <Field label={t("preferredLanguage")}>
                   <select
                     className="ui-input max-w-xs"
                     name="language"
@@ -662,30 +518,31 @@ export function CareDetail({
                     <option value="es">Español</option>
                   </select>
                 </Field>
-                <Field label="Permission source / changes">
+                <Field label={t("permissionSource")}>
                   <textarea
                     className="ui-input"
                     name="note"
                     maxLength={5000}
-                    placeholder="How and when did the person give or renew permission?"
+                    placeholder={t("permissionPlaceholder")}
                   />
                 </Field>
                 <Button type="submit" disabled={busy}>
-                  Save preferences
+                  {t("savePreferences")}
                 </Button>
               </form>
             </Card>
             <Card className="p-6 space-y-4">
-              <h2 className="font-semibold">
-                Availability and member check-in
-              </h2>
+              <h2 className="font-semibold">{t("availability")}</h2>
               {c.stage === "paused" ? (
                 <>
                   <p className="text-sm">
-                    Paused until {when(c.pausedUntil)} · {c.absenceExplanation}
+                    {t("pausedUntil", {
+                      when: when(c.pausedUntil),
+                      reason: c.absenceExplanation ?? "",
+                    })}
                   </p>
                   <Button disabled={busy} onClick={() => void change("resume")}>
-                    Resume care
+                    {t("resumeCare")}
                   </Button>
                 </>
               ) : (
@@ -704,39 +561,35 @@ export function CareDetail({
                     className="ui-input"
                     type="datetime-local"
                     name="until"
-                    aria-label="Pause until"
+                    aria-label={t("pauseUntil")}
                     required
                   />
                   <input
                     className="ui-input"
                     name="note"
-                    aria-label="Reason for pause"
-                    placeholder="Travel, work, temporary availability…"
+                    aria-label={t("pauseReason")}
+                    placeholder={t("pausePlaceholder")}
                     maxLength={5000}
                   />
                   <Button disabled={busy} type="submit" variant="secondary">
-                    Pause care
+                    {t("pauseCare")}
                   </Button>
                 </form>
               )}
               <div className="border-t border-black/5 pt-4 space-y-3">
-                <p className="text-sm text-[#6b6b6b]">
-                  Create a private, time-limited link for the person to request
-                  help or update their availability. Creating a link does not
-                  send it.
-                </p>
+                <p className="text-sm text-[#6b6b6b]">{t("checkInHint")}</p>
                 <Button
                   disabled={busy}
                   variant="secondary"
                   onClick={() => void makeLink()}
                 >
-                  Create member check-in link
+                  {t("createCheckIn")}
                 </Button>
                 {link && (
                   <div className="flex gap-2">
                     <input
                       className="ui-input"
-                      aria-label="Private check-in link"
+                      aria-label={t("privateLink")}
                       readOnly
                       value={link}
                     />
@@ -745,31 +598,28 @@ export function CareDetail({
                       onClick={() => {
                         void navigator.clipboard
                           .writeText(link)
-                          .then(() => setNotice("Link copied."))
-                          .catch(() => setError("Could not copy link."));
+                          .then(() => setNotice(t("linkCopied")))
+                          .catch(() => setError(t("copyFailed")));
                       }}
                     >
-                      Copy
+                      {t("copy")}
                     </Button>
                   </div>
                 )}
               </div>
             </Card>
             <Card className="p-6 space-y-3">
-              <h2 className="font-semibold">Automation history</h2>
+              <h2 className="font-semibold">{t("automationHistory")}</h2>
               {c.jobs.map((job) => (
                 <div className="rounded-xl bg-white p-3 text-sm" key={job._id}>
                   <p>
-                    {careLabel(job.kind)} · {careLabel(job.status)} ·{" "}
-                    {when(job.dueAt)}
+                    {label(job.kind)} · {label(job.status)} · {when(job.dueAt)}
                   </p>
                   <p className="mt-1 text-xs text-[#8a8780]">{job.result}</p>
                 </div>
               ))}
               {!c.jobs.length && (
-                <p className="text-sm text-[#8a8780]">
-                  No scheduled automation for this person.
-                </p>
+                <p className="text-sm text-[#8a8780]">{t("noAutomation")}</p>
               )}
               {c.jobs.some((j) => j.status === "failed") && (
                 <Button
@@ -777,7 +627,7 @@ export function CareDetail({
                   disabled={busy}
                   onClick={() => void change("retry_messages")}
                 >
-                  Retry unsent care emails
+                  {t("retryEmails")}
                 </Button>
               )}
             </Card>

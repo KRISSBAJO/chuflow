@@ -16,13 +16,18 @@ export const MESSAGE_PARTS = [
   "org",
   "services",
   "admin",
+  "workspace",
 ] as const;
 
 export type MessagePart = (typeof MESSAGE_PARTS)[number];
 
 export async function loadMessages(locale: Locale) {
   const parts = await Promise.all(
-    MESSAGE_PARTS.map(async (part) => (await import(`../../messages/${locale}/${part}.json`)).default as Record<string, unknown>),
+    MESSAGE_PARTS.map(
+      async (part) =>
+        (await import(`../../messages/${locale}/${part}.json`))
+          .default as Record<string, unknown>,
+    ),
   );
 
   return Object.assign({}, ...parts) as Record<string, unknown>;

@@ -181,4 +181,17 @@ describe('Multiple service-group membership', () => {
     ).rejects.toThrow('branch');
     expect(update).not.toHaveBeenCalled();
   });
+  it('section edits preserve unrelated fields and clear only explicitly emptied optional fields', async () => {
+    await service.update(
+      'member-id',
+      { bccStatus: 'yes', bccLocation: '' },
+      user,
+    );
+    const payload = argument(update, 1);
+    expect(payload.bccStatus).toBe('yes');
+    expect(payload).not.toHaveProperty('firstName');
+    expect(payload).not.toHaveProperty('membershipStatus');
+    expect(payload).not.toHaveProperty('serviceUnitIds');
+    expect(payload.$unset).toEqual({ bccLocation: '' });
+  });
 });

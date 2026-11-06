@@ -97,6 +97,11 @@ export class UsersController {
     return this.usersService.findOneForAdmin(user, id);
   }
 
+  @Get(':id/access')
+  access(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.usersService.accessDetails(user, id);
+  }
+
   @Patch(':id')
   update(
     @CurrentUser() user: AuthUser,

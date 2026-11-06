@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -505,6 +505,23 @@ export class AttendanceService {
       },
     ]);
     return result;
+  }
+
+  async detail(id: string, currentUser: AuthUser) {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Attendance record not found');
+    const record = await this.attendanceModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        ...(await this.accessScopeService.buildBranchFilter(currentUser)),
+        entryMode: 'summary',
+      })
+      .populate('branchId')
+      .populate('serviceTypeId')
+      .populate('serviceScheduleId')
+      .lean();
+    if (!record) throw new NotFoundException('Attendance record not found');
+    return record;
   }
 
   async update(id: string, dto: UpdateAttendanceDto, currentUser: AuthUser) {

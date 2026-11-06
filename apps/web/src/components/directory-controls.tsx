@@ -13,79 +13,109 @@ export function DirectoryControls({
   params,
   filters = [],
   placeholder,
+  alwaysSearch = false,
 }: {
   path: string;
   params: DirectoryParams;
   filters?: DirectoryFilter[];
   placeholder?: string;
+  alwaysSearch?: boolean;
 }) {
   const t = useTranslations("common");
   return (
-    <FilterPanel><form action={path} className="my-5 flex flex-wrap items-end gap-3">
-      <label className="min-w-48 flex-1 text-xs text-[#6b6b6b]">
-        {t("search")}
-        <input
-          name="search"
-          className="ui-input mt-1"
-          defaultValue={params.search}
-          placeholder={placeholder ?? t("searchRecords")}
-          maxLength={100}
-        />
-      </label>
-      {filters.map((filter) => (
-        <label
-          key={filter.key}
-          className="min-w-36 flex-1 text-xs text-[#6b6b6b]"
-        >
-          {filter.label}
-          <select
-            name={filter.key}
-            className="ui-input mt-1"
-            defaultValue={params[filter.key] || ""}
-          >
-            <option value="">{t("all")}</option>
-            {filter.options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ))}
-      <label className="text-xs text-[#6b6b6b]">
-        {t("sort")}
-        <select
-          name="sort"
-          className="ui-input mt-1"
-          defaultValue={params.sort || "newest"}
-        >
-          <option value="newest">{t("newestFirst")}</option>
-          <option value="oldest">{t("oldestFirst")}</option>
-          <option value="name_asc">{t("nameAsc")}</option>
-          <option value="name_desc">{t("nameDesc")}</option>
-        </select>
-      </label>
-      <label className="text-xs text-[#6b6b6b]">
-        {t("perPage")}
-        <select
-          name="pageSize"
-          className="ui-input mt-1"
-          defaultValue={params.pageSize || "25"}
-        >
-          {[25, 50, 100].map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
+    <form action={path} className="my-5 space-y-3">
+      {params.tab && <input type="hidden" name="tab" value={params.tab} />}
+      <div
+        className={alwaysSearch ? "flex flex-wrap items-end gap-3" : "hidden"}
+      >
+        {alwaysSearch && (
+          <label className="min-w-48 flex-1 text-xs text-[#6b6b6b]">
+            {t("search")}
+            <input
+              name="search"
+              className="ui-input mt-1"
+              defaultValue={params.search}
+              placeholder={placeholder ?? t("searchRecords")}
+              maxLength={100}
+            />
+          </label>
+        )}
+        {alwaysSearch && (
+          <button type="submit" className={buttonClass("primary")}>
+            {t("search")}
+          </button>
+        )}
+      </div>
+      <FilterPanel>
+        <div className="flex flex-wrap items-end gap-3">
+          {!alwaysSearch && (
+            <label className="min-w-48 flex-1 text-xs text-[#6b6b6b]">
+              {t("search")}
+              <input
+                name="search"
+                className="ui-input mt-1"
+                defaultValue={params.search}
+                placeholder={placeholder ?? t("searchRecords")}
+                maxLength={100}
+              />
+            </label>
+          )}
+          {filters.map((filter) => (
+            <label
+              key={filter.key}
+              className="min-w-36 flex-1 text-xs text-[#6b6b6b]"
+            >
+              {filter.label}
+              <select
+                name={filter.key}
+                className="ui-input mt-1"
+                defaultValue={params[filter.key] || ""}
+              >
+                <option value="">{t("all")}</option>
+                {filter.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           ))}
-        </select>
-      </label>
-      <button type="submit" className={buttonClass("primary")}>
-        {t("apply")}
-      </button>
-      <Link href={path} className={buttonClass("secondary")}>
-        {t("reset")}
-      </Link>
-    </form></FilterPanel>
+          <label className="text-xs text-[#6b6b6b]">
+            {t("sort")}
+            <select
+              name="sort"
+              className="ui-input mt-1"
+              defaultValue={params.sort || "newest"}
+            >
+              <option value="newest">{t("newestFirst")}</option>
+              <option value="oldest">{t("oldestFirst")}</option>
+              <option value="name_asc">{t("nameAsc")}</option>
+              <option value="name_desc">{t("nameDesc")}</option>
+            </select>
+          </label>
+          <label className="text-xs text-[#6b6b6b]">
+            {t("perPage")}
+            <select
+              name="pageSize"
+              className="ui-input mt-1"
+              defaultValue={params.pageSize || "25"}
+            >
+              {[25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className={buttonClass("primary")}>
+            {t("apply")}
+          </button>
+          <Link href={path} className={buttonClass("secondary")}>
+            {t("reset")}
+          </Link>
+        </div>
+      </FilterPanel>
+    </form>
   );
 }
 
@@ -108,7 +138,11 @@ export function DirectoryPagination({
   return (
     <div className="mt-5 border-t border-black/[0.06] pt-4">
       <p className="mb-3 text-sm text-[#8a8780]">
-        {t("showingRecords", { from: total ? (page - 1) * pageSize + 1 : 0, to: Math.min(page * pageSize, total), total })}
+        {t("showingRecords", {
+          from: total ? (page - 1) * pageSize + 1 : 0,
+          to: Math.min(page * pageSize, total),
+          total,
+        })}
       </p>
       <Pagination
         page={page}

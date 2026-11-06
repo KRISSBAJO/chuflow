@@ -2178,7 +2178,9 @@ export class IntakeTemplatesService implements OnModuleInit {
 
     return this.branchModel
       .find(query)
-      .select('name oversightRegion district city state status')
+      .select('name oversightRegion district city state status zoneId areaId')
+      .populate('zoneId', 'name')
+      .populate('areaId', 'name')
       .sort({ oversightRegion: 1, district: 1, name: 1 })
       .lean();
   }
@@ -2254,6 +2256,32 @@ export class IntakeTemplatesService implements OnModuleInit {
     };
   }
 
+  async weeklyReportDetail(currentUser: AuthUser, id: string) {
+    this.ensureAttendanceSubmissionViewRole(currentUser);
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Weekly report not found');
+    const submission = await this.submissionModel
+      .findOne({ _id: id, templateKind: 'weekly_report' })
+      .lean();
+    if (!submission || !submission.branchId)
+      throw new NotFoundException('Weekly report not found');
+    await this.accessScopeService.ensureBranchAccess(
+      currentUser,
+      String(submission.branchId),
+    );
+    const populated = await this.submissionModel
+      .findById(id)
+      .populate('branchId', 'name oversightRegion district city state')
+      .populate('approvedBy', 'firstName lastName')
+      .populate('rejectedBy', 'firstName lastName')
+      .lean();
+    if (!populated) throw new NotFoundException('Weekly report not found');
+    return {
+      item: this.weeklyItemFromSubmission(populated),
+      submission: this.toAttendanceSubmissionResponse(populated, 0),
+    };
+  }
+
   async listWeeklyReports(
     currentUser: AuthUser,
     filters: {
@@ -2263,6 +2291,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       status?: string;
       dateFrom?: string;
       dateTo?: string;
+      search?: string;
     } = {},
   ) {
     this.ensureAttendanceSubmissionViewRole(currentUser);
@@ -2287,36 +2316,6 @@ export class IntakeTemplatesService implements OnModuleInit {
       (branch) => new Types.ObjectId(String(branch._id)),
     );
 
-    if (branchIds.length === 0) {
-      return {
-        filters: {
-          dateFrom: startDate.toISOString(),
-          dateTo: endDate.toISOString(),
-        },
-        items: [],
-        totals: {},
-        branchTotals: [],
-        districtTotals: [],
-        trends: [],
-      };
-    }
-
-    const query: Record<string, unknown> = {
-      templateKind: 'weekly_report',
-      branchId: { $in: branchIds },
-      serviceDate: { $gte: startDate, $lte: endDate },
-      ...(filters.status ? { status: filters.status } : {}),
-    };
-
-    const submissions = await this.submissionModel
-      .find(query)
-      .populate('branchId', 'name oversightRegion district city state')
-      .sort({ serviceDate: -1, createdAt: -1 })
-      .lean();
-    const items = submissions.map((submission) =>
-      this.weeklyItemFromSubmission(submission),
-    );
-
     const emptyTotals = {
       reports: 0,
       currentAttendance: 0,
@@ -2337,6 +2336,49 @@ export class IntakeTemplatesService implements OnModuleInit {
       approved: 0,
       rejected: 0,
     };
+
+    if (branchIds.length === 0) {
+      return {
+        filters: {
+          dateFrom: startDate.toISOString(),
+          dateTo: endDate.toISOString(),
+        },
+        items: [],
+        totals: emptyTotals,
+        scope: { branchCount: 0, branches: [] },
+        branchTotals: [],
+        districtTotals: [],
+        trends: [],
+      };
+    }
+
+    const query: Record<string, unknown> = {
+      templateKind: 'weekly_report',
+      branchId: { $in: branchIds },
+      serviceDate: { $gte: startDate, $lte: endDate },
+      ...(filters.status ? { status: filters.status } : {}),
+    };
+
+    const submissions = await this.submissionModel
+      .find(query)
+      .populate('branchId', 'name oversightRegion district city state')
+      .sort({ serviceDate: -1, createdAt: -1 })
+      .lean();
+    const terms = (filters.search || '')
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    const items = submissions
+      .map((submission) => this.weeklyItemFromSubmission(submission))
+      .filter((item) =>
+        terms.every((term) =>
+          `${item.branch.name} ${item.branch.district} ${item.reportWeek || ''}`
+            .toLowerCase()
+            .includes(term),
+        ),
+      );
+
     const totals = items.reduce(
       (acc, item) => {
         acc.reports += 1;
@@ -2475,6 +2517,20 @@ export class IntakeTemplatesService implements OnModuleInit {
           name: branch.name,
           oversightRegion: branch.oversightRegion,
           district: branch.district,
+          zoneId: branch.zoneId
+            ? (
+                branch.zoneId as unknown as { _id?: Types.ObjectId }
+              )._id?.toHexString() || branch.zoneId.toString()
+            : undefined,
+          areaId: branch.areaId
+            ? (
+                branch.areaId as unknown as { _id?: Types.ObjectId }
+              )._id?.toHexString() || branch.areaId.toString()
+            : undefined,
+          zoneName: (branch.zoneId as unknown as { name?: string } | undefined)
+            ?.name,
+          areaName: (branch.areaId as unknown as { name?: string } | undefined)
+            ?.name,
           city: branch.city,
           state: branch.state,
           hasReport: items.some(

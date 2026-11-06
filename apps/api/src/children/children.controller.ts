@@ -32,6 +32,12 @@ import {
 @Roles(...APP_ROLES)
 export class ChildrenController {
   constructor(private readonly service: ChildrenService) {}
+  @Get('member-families/:memberId') memberFamilies(
+    @CurrentUser() u: AuthUser,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.service.memberFamilies(u, memberId);
+  }
   @Get('options') options(@CurrentUser() u: AuthUser) {
     return this.service.options(u);
   }

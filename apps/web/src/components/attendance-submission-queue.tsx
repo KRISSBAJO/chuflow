@@ -1,32 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { useAppFormat, useStatusLabel } from "@/i18n/labels";
 import type { AttendanceSubmissionItem } from "@/lib/types";
 import { Badge, Button, EmptyState, statusTone } from "@/components/ui/ui";
 
-function formatStatus(status: string) {
-  switch (status) {
-    case "approved":
-      return "Approved";
-    case "rejected":
-      return "Rejected";
-    default:
-      return "Pending";
-  }
-}
-
-function formatKind(kind: string) {
-  if (kind === "maag_report") {
-    return "MAAG report";
-  }
-
-  return kind === "weekly_report" ? "Weekly report" : "Attendance";
-}
-
-async function mutateSubmission(id: string, action: "approve" | "reject") {
+async function mutateSubmission(
+  id: string,
+  action: "approve" | "reject",
+  fallback: string,
+) {
   const response = await fetch(
     `${API_URL}/intake-templates/attendance-submissions/${id}/${action}`,
     {
@@ -38,7 +25,7 @@ async function mutateSubmission(id: string, action: "approve" | "reject") {
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.message || `Unable to ${action} submission`);
+    throw new Error(result.message || fallback);
   }
 
   return result;
@@ -52,18 +39,36 @@ export function AttendanceSubmissionQueue({
   canApprove: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("services.attendance.queue");
+  const statusLabel = useStatusLabel();
+  const { date, dateTime } = useAppFormat();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const formatStatus = (status: string) =>
+    statusLabel(
+      status === "approved" || status === "rejected" ? status : "pending",
+    );
+
+  function formatKind(kind: string) {
+    if (kind === "maag_report") {
+      return t("kinds.maag");
+    }
+
+    return kind === "weekly_report" ? t("kinds.weekly") : t("kinds.attendance");
+  }
 
   async function handleAction(id: string, action: "approve" | "reject") {
     setLoadingId(id);
 
     try {
-      await mutateSubmission(id, action);
+      await mutateSubmission(
+        id,
+        action,
+        action === "approve" ? t("approveFailed") : t("rejectFailed"),
+      );
       toast.success(
-        action === "approve"
-          ? "Submission approved"
-          : "Submission rejected",
+        action === "approve" ? t("toastApproved") : t("toastRejected"),
       );
       startTransition(() => {
         router.refresh();
@@ -72,7 +77,9 @@ export function AttendanceSubmissionQueue({
       toast.error(
         error instanceof Error
           ? error.message
-          : `Unable to ${action} attendance submission`,
+          : action === "approve"
+            ? t("approveAttendanceFailed")
+            : t("rejectAttendanceFailed"),
       );
     } finally {
       setLoadingId(null);
@@ -81,20 +88,58 @@ export function AttendanceSubmissionQueue({
 
   if (items.length === 0) {
     return (
-      <EmptyState icon="attendance" title="Nothing waiting">
-        No attendance submissions are waiting in the current scope.
+      <EmptyState icon="attendance" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
 
+  const strong = (chunks: ReactNode) => (
+    <span className="font-medium tabular-nums text-[#111111]">{chunks}</span>
+  );
+
   return (
     <div className="space-y-3">
       {items.map((item) => {
-        const totalPeople =
-          (item.adultsCount ?? 0) + (item.childrenCount ?? 0);
+        const totalPeople = (item.adultsCount ?? 0) + (item.childrenCount ?? 0);
         const isWeeklyReport = item.templateKind === "weekly_report";
         const isMaagReport = item.templateKind === "maag_report";
-        const busy = pending || loadingId === item._id || item.status !== "pending";
+        const busy =
+          pending || loadingId === item._id || item.status !== "pending";
+        const fields: [string, string | number][] = isMaagReport
+          ? [
+              [t("fields.report"), t("fields.monthly")],
+              [t("fields.status"), formatStatus(item.status)],
+              [t("fields.branch"), item.branchId?.name || t("fields.branch")],
+              [
+                t("fields.review"),
+                item.approvedAt ? t("fields.reviewed") : t("fields.pending"),
+              ],
+              [t("fields.created"), item.createdAt ? date(item.createdAt) : ""],
+              [t("fields.type"), "MAAG"],
+            ]
+          : isWeeklyReport
+            ? [
+                [t("fields.previous"), item.previousAttendance ?? 0],
+                [t("fields.growth"), item.growth ?? 0],
+                [
+                  t("fields.growthPercent"),
+                  item.growthPercent !== undefined
+                    ? `${item.growthPercent}%`
+                    : "0%",
+                ],
+                [t("fields.bfc"), item.believersFoundationClassCount ?? 0],
+                [t("fields.cells"), item.cellCount ?? 0],
+                [t("fields.wofbi"), item.wofbiAttendance ?? 0],
+              ]
+            : [
+                [t("fields.men"), item.menCount ?? 0],
+                [t("fields.women"), item.womenCount ?? 0],
+                [t("fields.children"), item.childrenCount ?? 0],
+                [t("fields.adults"), item.adultsCount ?? 0],
+                [t("fields.firstTimers"), item.firstTimersCount ?? 0],
+                [t("fields.holySpirit"), item.holySpiritBaptismCount ?? 0],
+              ];
 
         return (
           <article
@@ -111,76 +156,66 @@ export function AttendanceSubmissionQueue({
                     {formatStatus(item.status)}
                   </Badge>
                   <Badge tone="flame">{formatKind(item.templateKind)}</Badge>
-                  {item.branchId?.name ? <Badge>{item.branchId.name}</Badge> : null}
+                  {item.branchId?.name ? (
+                    <Badge>{item.branchId.name}</Badge>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-[#6b6b6b]">
                   <span>
                     {item.serviceDate
-                      ? new Date(item.serviceDate).toLocaleString()
-                      : "No date"}
+                      ? dateTime(item.serviceDate)
+                      : t("noDate")}
                   </span>
                   {isMaagReport ? (
-                    <span>MAAG monthly report</span>
+                    <span>{t("maagMonthly")}</span>
                   ) : isWeeklyReport ? (
                     <span>
-                      <span className="font-medium tabular-nums text-[#111111]">{item.currentAttendance ?? 0}</span> current attendance
+                      {t.rich("currentAttendance", {
+                        count: item.currentAttendance ?? 0,
+                        b: strong,
+                      })}
                     </span>
                   ) : (
                     <span>
-                      <span className="font-medium tabular-nums text-[#111111]">{totalPeople}</span> total people
+                      {t.rich("totalPeople", { count: totalPeople, b: strong })}
                     </span>
                   )}
                   <span>
-                    <span className="font-medium tabular-nums text-[#111111]">{item.firstTimersCount ?? 0}</span> first timers
+                    {t.rich("firstTimers", {
+                      count: item.firstTimersCount ?? 0,
+                      b: strong,
+                    })}
                   </span>
                   <span>
-                    <span className="font-medium tabular-nums text-[#111111]">{item.newConvertsCount ?? 0}</span> new converts
+                    {t.rich("newConverts", {
+                      count: item.newConvertsCount ?? 0,
+                      b: strong,
+                    })}
                   </span>
                   {item.duplicateSummaryCount > 0 ? (
                     <Badge tone="danger">
-                      {item.duplicateSummaryCount} possible duplicate
-                      {item.duplicateSummaryCount === 1 ? "" : "s"}
+                      {t("duplicates", { count: item.duplicateSummaryCount })}
                     </Badge>
                   ) : null}
                 </div>
 
                 <dl className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-                  {(isMaagReport
-                    ? [
-                        ["Report", "Monthly"],
-                        ["Status", formatStatus(item.status)],
-                        ["Branch", item.branchId?.name || "Branch"],
-                        ["Review", item.approvedAt ? "Reviewed" : "Pending"],
-                        ["Created", item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""],
-                        ["Type", "MAAG"],
-                      ]
-                    : isWeeklyReport
-                    ? [
-                        ["Previous", item.previousAttendance ?? 0],
-                        ["Growth", item.growth ?? 0],
-                        ["Growth %", item.growthPercent !== undefined ? `${item.growthPercent}%` : "0%"],
-                        ["BFC", item.believersFoundationClassCount ?? 0],
-                        ["Cells", item.cellCount ?? 0],
-                        ["WOFBI", item.wofbiAttendance ?? 0],
-                      ]
-                    : [
-                        ["Men", item.menCount ?? 0],
-                        ["Women", item.womenCount ?? 0],
-                        ["Children", item.childrenCount ?? 0],
-                        ["Adults", item.adultsCount ?? 0],
-                        ["First timers", item.firstTimersCount ?? 0],
-                        ["Holy Spirit", item.holySpiritBaptismCount ?? 0],
-                      ]).map(([label, value]) => (
-                    <div key={label} className="rounded-xl bg-[#f6f5f1] px-3 py-2.5">
+                  {fields.map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-xl bg-[#f6f5f1] px-3 py-2.5"
+                    >
                       <dt className="text-[12px] text-[#6b6b6b]">{label}</dt>
-                      <dd className="mt-0.5 truncate text-[15px] font-semibold tabular-nums text-[#111111]">{value}</dd>
+                      <dd className="mt-0.5 truncate text-[15px] font-semibold tabular-nums text-[#111111]">
+                        {value}
+                      </dd>
                     </div>
                   ))}
                 </dl>
                 {isWeeklyReport && item.remarks ? (
                   <div className="max-w-3xl rounded-xl border border-black/[0.06] px-4 py-3 text-[14px] text-[#55534e]">
-                    <p className="text-[12px] text-[#8a8780]">Remarks</p>
+                    <p className="text-[12px] text-[#8a8780]">{t("remarks")}</p>
                     <p className="mt-1 leading-[1.6]">{item.remarks}</p>
                   </div>
                 ) : null}
@@ -195,10 +230,14 @@ export function AttendanceSubmissionQueue({
                     onClick={() => handleAction(item._id, "reject")}
                     disabled={busy}
                   >
-                    {loadingId === item._id ? "Working..." : "Reject"}
+                    {loadingId === item._id ? t("working") : t("reject")}
                   </Button>
-                  <Button size="sm" onClick={() => handleAction(item._id, "approve")} disabled={busy}>
-                    {loadingId === item._id ? "Working..." : "Approve"}
+                  <Button
+                    size="sm"
+                    onClick={() => handleAction(item._id, "approve")}
+                    disabled={busy}
+                  >
+                    {loadingId === item._id ? t("working") : t("approve")}
                   </Button>
                 </div>
               ) : null}

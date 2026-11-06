@@ -698,6 +698,36 @@ export class UsersService implements OnModuleInit {
     return target;
   }
 
+  async accessDetails(currentUser: AuthUser, userId: string) {
+    const target = await this.findOneForAdmin(currentUser, userId);
+    const subject: AuthUser = {
+      sub: String(target._id),
+      email: target.email,
+      role: target.role as AuthUser['role'],
+      branchId: target.branchId ? String(target.branchId) : undefined,
+      oversightRegion: target.oversightRegion,
+      district: target.district,
+    };
+    const [subjectQuery, viewerQuery, assignments] = await Promise.all([
+      this.accessScopeService.getBranchDocumentQuery(subject),
+      this.accessScopeService.getBranchDocumentQuery(currentUser),
+      this.accessScopeService.oversightAssignments(subject),
+    ]);
+    const churches = await this.branchModel
+      .find({ $and: [subjectQuery, viewerQuery] })
+      .select('_id name district oversightRegion')
+      .sort({ name: 1 })
+      .lean();
+    return {
+      assignments: assignments.map((unit) => ({
+        id: String(unit._id),
+        name: unit.name,
+        kind: unit.kind,
+      })),
+      churches,
+    };
+  }
+
   async update(currentUser: AuthUser, userId: string, dto: UpdateUserDto) {
     const target = await this.ensureManageableTarget(currentUser, userId);
     const attemptedPrivilegedChange =

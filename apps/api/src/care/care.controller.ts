@@ -101,8 +101,17 @@ export class CareController {
     @CurrentUser() u: AuthUser,
     @Param('id') id: string,
     @Query('page') page?: string,
+    @Query('search') search?: string,
+    @Query('kind') kind?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
   ) {
-    return this.service.details(u, id, page);
+    return this.service.details(u, id, page, {
+      search,
+      kind,
+      dateFrom,
+      dateTo,
+    });
   }
   @Patch('cases/:id') change(
     @CurrentUser() u: AuthUser,

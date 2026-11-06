@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import { Button, Field } from "@/components/ui/ui";
 import type {
@@ -53,7 +54,9 @@ function getScheduleBranchId(value: ServiceScheduleSummary["branchId"]) {
   return typeof value === "string" ? value : value?._id;
 }
 
-function getScheduleServiceTypeId(value: ServiceScheduleSummary["serviceTypeId"]) {
+function getScheduleServiceTypeId(
+  value: ServiceScheduleSummary["serviceTypeId"],
+) {
   return typeof value === "string" ? value : value?._id;
 }
 
@@ -64,6 +67,7 @@ export function AttendanceCreateForm({
   defaultBranchId,
   record,
   onSuccess,
+  returnHref,
 }: {
   branches: BranchSummary[];
   serviceTypes: ServiceTypeSummary[];
@@ -71,24 +75,31 @@ export function AttendanceCreateForm({
   defaultBranchId?: string;
   record?: AttendanceItem;
   onSuccess?: () => void;
+  returnHref?: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("services.attendance.form");
   const [loading, setLoading] = useState(false);
   const mode = record ? "edit" : "create";
   const initialBranchId =
-    getAttendanceBranchId(record?.branchId) || defaultBranchId || branches[0]?._id || "";
-  const [selectedBranchId, setSelectedBranchId] = useState(
-    initialBranchId,
-  );
+    getAttendanceBranchId(record?.branchId) ||
+    defaultBranchId ||
+    branches[0]?._id ||
+    "";
+  const [selectedBranchId, setSelectedBranchId] = useState(initialBranchId);
   const [scheduleChoice, setScheduleChoice] = useState(
     record?.serviceScheduleId?._id || "",
   );
-  const defaultBranchName = branches.find((branch) => branch._id === initialBranchId)?.name;
+  const defaultBranchName = branches.find(
+    (branch) => branch._id === initialBranchId,
+  )?.name;
 
   const filteredServiceTypes = useMemo(
     () =>
       serviceTypes.filter((serviceType) =>
-        selectedBranchId ? getBranchId(serviceType.branchId) === selectedBranchId : true,
+        selectedBranchId
+          ? getBranchId(serviceType.branchId) === selectedBranchId
+          : true,
       ),
     [selectedBranchId, serviceTypes],
   );
@@ -99,7 +110,10 @@ export function AttendanceCreateForm({
           return false;
         }
 
-        if (selectedBranchId && getScheduleBranchId(schedule.branchId) !== selectedBranchId) {
+        if (
+          selectedBranchId &&
+          getScheduleBranchId(schedule.branchId) !== selectedBranchId
+        ) {
           return false;
         }
 
@@ -109,54 +123,60 @@ export function AttendanceCreateForm({
   );
   // A schedule chosen under another branch is simply ignored once the branch changes.
   const selectedSchedule =
-    filteredServiceSchedules.find((schedule) => schedule._id === scheduleChoice) || null;
+    filteredServiceSchedules.find(
+      (schedule) => schedule._id === scheduleChoice,
+    ) || null;
   const selectedScheduleId = selectedSchedule?._id ?? "";
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/attendance${record ? `/${record._id}` : ""}`, {
-        method: record ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          branchId: formData.get("branchId") || initialBranchId,
-          serviceDate: formData.get("serviceDate"),
-          serviceScheduleId: selectedScheduleId || undefined,
-          serviceTypeId:
-            formData.get("serviceTypeId") ||
-            getScheduleServiceTypeId(selectedSchedule?.serviceTypeId) ||
-            undefined,
-          serviceName: formData.get("serviceName") || undefined,
-          entryMode: "summary",
-          personType: "summary",
-          menCount: Number(formData.get("menCount") || 0),
-          womenCount: Number(formData.get("womenCount") || 0),
-          childrenCount: Number(formData.get("childrenCount") || 0),
-          adultsCount: Number(formData.get("adultsCount") || 0),
-          firstTimersCount: Number(formData.get("firstTimersCount") || 0),
-          newConvertsCount: Number(formData.get("newConvertsCount") || 0),
-          holySpiritBaptismCount: Number(formData.get("holySpiritBaptismCount") || 0),
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/attendance${record ? `/${record._id}` : ""}`,
+        {
+          method: record ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            branchId: formData.get("branchId") || initialBranchId,
+            serviceDate: formData.get("serviceDate"),
+            serviceScheduleId: selectedScheduleId || undefined,
+            serviceTypeId:
+              formData.get("serviceTypeId") ||
+              getScheduleServiceTypeId(selectedSchedule?.serviceTypeId) ||
+              undefined,
+            serviceName: formData.get("serviceName") || undefined,
+            entryMode: "summary",
+            personType: "summary",
+            menCount: Number(formData.get("menCount") || 0),
+            womenCount: Number(formData.get("womenCount") || 0),
+            childrenCount: Number(formData.get("childrenCount") || 0),
+            adultsCount: Number(formData.get("adultsCount") || 0),
+            firstTimersCount: Number(formData.get("firstTimersCount") || 0),
+            newConvertsCount: Number(formData.get("newConvertsCount") || 0),
+            holySpiritBaptismCount: Number(
+              formData.get("holySpiritBaptismCount") || 0,
+            ),
+          }),
+        },
+      );
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to record attendance");
+        throw new Error(result.message || t("recordFailed"));
       }
 
-      toast.success(record ? "Attendance summary updated" : "Attendance summary saved", {
-        description: record
-          ? "The service totals have been updated successfully."
-          : "The service totals have been recorded for this branch.",
+      toast.success(record ? t("toastUpdated") : t("toastSaved"), {
+        description: record ? t("toastUpdatedBody") : t("toastSavedBody"),
       });
+      if (returnHref) router.push(returnHref);
       router.refresh();
       onSuccess?.();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to record attendance";
-      toast.error(record ? "Attendance update failed" : "Attendance summary failed", {
+        error instanceof Error ? error.message : t("recordFailed");
+      toast.error(record ? t("toastUpdateFailed") : t("toastSaveFailed"), {
         description: message,
       });
     } finally {
@@ -168,18 +188,16 @@ export function AttendanceCreateForm({
     <form action={handleSubmit}>
       <div>
         <h3 className="lp-heading text-[18px]">
-          {mode === "edit" ? "Edit service attendance summary" : "Record service attendance summary"}
+          {mode === "edit" ? t("editTitle") : t("createTitle")}
         </h3>
         <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">
-          {mode === "edit"
-            ? "Update the branch, service details and attendance totals for this summary."
-            : "Enter service totals: men, women, children, adults, first timers and new converts."}
+          {mode === "edit" ? t("editDescription") : t("createDescription")}
         </p>
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {branches.length > 0 ? (
-          <Field label="Branch" required>
+          <Field label={t("branch")} required>
             <select
               name="branchId"
               value={selectedBranchId}
@@ -187,7 +205,9 @@ export function AttendanceCreateForm({
               className="ui-input"
               required
             >
-              <option value={initialBranchId || ""}>{defaultBranchName || "Select branch"}</option>
+              <option value={initialBranchId || ""}>
+                {defaultBranchName || t("selectBranch")}
+              </option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -196,13 +216,22 @@ export function AttendanceCreateForm({
             </select>
           </Field>
         ) : (
-          <Field label="Branch">
-            <input type="hidden" name="branchId" value={initialBranchId ?? ""} />
-            <input value="Current branch scope" readOnly disabled className="ui-input" />
+          <Field label={t("branch")}>
+            <input
+              type="hidden"
+              name="branchId"
+              value={initialBranchId ?? ""}
+            />
+            <input
+              value={t("currentBranchScope")}
+              readOnly
+              disabled
+              className="ui-input"
+            />
           </Field>
         )}
 
-        <Field label="Day of service" required>
+        <Field label={t("dayOfService")} required>
           <input
             name="serviceDate"
             type="datetime-local"
@@ -212,28 +241,28 @@ export function AttendanceCreateForm({
           />
         </Field>
 
-        <Field label="Service schedule" hint="Choose a branch service when this summary belongs to a scheduled gathering.">
+        <Field label={t("serviceSchedule")} hint={t("serviceScheduleHint")}>
           <select
             value={selectedScheduleId}
             onChange={(event) => setScheduleChoice(event.target.value)}
             className="ui-input"
           >
-            <option value="">No saved schedule</option>
+            <option value="">{t("noSavedSchedule")}</option>
             {filteredServiceSchedules.map((schedule) => (
               <option key={schedule._id} value={schedule._id}>
-                {schedule.name} · {schedule.dayOfWeek} · {schedule.startTime}
+                {schedule.name} Â· {schedule.dayOfWeek} Â· {schedule.startTime}
               </option>
             ))}
           </select>
         </Field>
 
         <Field
-          label="Service type"
+          label={t("serviceType")}
           required={!selectedSchedule}
           hint={
             selectedSchedule
-              ? "The service type comes from the selected schedule."
-              : "Pick a managed service type so reports group services consistently."
+              ? t("serviceTypeFromSchedule")
+              : t("serviceTypeHint")
           }
         >
           <select
@@ -247,7 +276,7 @@ export function AttendanceCreateForm({
             className="ui-input"
             required={!selectedSchedule}
           >
-            <option value="">Select service type</option>
+            <option value="">{t("selectServiceType")}</option>
             {filteredServiceTypes.map((serviceType) => (
               <option key={serviceType._id} value={serviceType._id}>
                 {serviceType.name}
@@ -257,17 +286,21 @@ export function AttendanceCreateForm({
         </Field>
 
         <Field
-          label="Service name"
+          label={t("serviceName")}
           className="md:col-span-2"
           hint={
             selectedSchedule
-              ? `Schedule: ${selectedSchedule.name} · ${selectedSchedule.startTime} · ${selectedSchedule.timezone}`
+              ? t("scheduleHint", {
+                  name: selectedSchedule.name,
+                  time: selectedSchedule.startTime,
+                  timezone: selectedSchedule.timezone,
+                })
               : undefined
           }
         >
           <input
             name="serviceName"
-            placeholder="Sunday worship, Miracle service, Midweek communion..."
+            placeholder={t("serviceNamePlaceholder")}
             defaultValue={record?.serviceName || selectedSchedule?.name || ""}
             className="ui-input"
           />
@@ -275,9 +308,9 @@ export function AttendanceCreateForm({
       </div>
 
       <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
-        <p className="text-[13px] font-medium text-[#6b6b6b]">Attendance totals</p>
+        <p className="text-[13px] font-medium text-[#6b6b6b]">{t("totals")}</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Total men" required>
+          <Field label={t("totalMen")} required>
             <input
               name="menCount"
               type="number"
@@ -287,7 +320,7 @@ export function AttendanceCreateForm({
               required
             />
           </Field>
-          <Field label="Total women" required>
+          <Field label={t("totalWomen")} required>
             <input
               name="womenCount"
               type="number"
@@ -297,7 +330,7 @@ export function AttendanceCreateForm({
               required
             />
           </Field>
-          <Field label="Total children" required>
+          <Field label={t("totalChildren")} required>
             <input
               name="childrenCount"
               type="number"
@@ -307,7 +340,7 @@ export function AttendanceCreateForm({
               required
             />
           </Field>
-          <Field label="Total adults" required>
+          <Field label={t("totalAdults")} required>
             <input
               name="adultsCount"
               type="number"
@@ -317,7 +350,7 @@ export function AttendanceCreateForm({
               required
             />
           </Field>
-          <Field label="First timers" required>
+          <Field label={t("firstTimers")} required>
             <input
               name="firstTimersCount"
               type="number"
@@ -327,7 +360,7 @@ export function AttendanceCreateForm({
               required
             />
           </Field>
-          <Field label="New converts" required>
+          <Field label={t("newConverts")} required>
             <input
               name="newConvertsCount"
               type="number"
@@ -337,7 +370,7 @@ export function AttendanceCreateForm({
               required
             />
           </Field>
-          <Field label="Baptism of the Holy Spirit">
+          <Field label={t("holySpiritBaptism")}>
             <input
               name="holySpiritBaptismCount"
               type="number"
@@ -351,7 +384,7 @@ export function AttendanceCreateForm({
 
       <div className="mt-5 flex justify-end">
         <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : mode === "edit" ? "Update attendance summary" : "Save attendance summary"}
+          {loading ? t("saving") : mode === "edit" ? t("update") : t("save")}
         </Button>
       </div>
     </form>

@@ -42,10 +42,12 @@ export function ExportTableButtons({
   resource,
   rows,
   label,
+  filters,
 }: {
   resource: string;
   rows?: unknown[];
   label?: string;
+  filters?: Record<string, string>;
 }) {
   const query = useSearchParams();
   const t = useTranslations("common");
@@ -56,6 +58,8 @@ export function ExportTableButtons({
     setError("");
     try {
       const params = new URLSearchParams(query.toString());
+      for (const [key, value] of Object.entries(filters || {}))
+        params.set(key, value);
       params.set("format", format);
       const response = await fetch(
         `/api/exports/${resource}?${params}`,
@@ -89,7 +93,9 @@ export function ExportTableButtons({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-sm text-[#6b6b6b]">{label ?? t("downloadTable")}</span>
+        <span className="mr-1 text-sm text-[#6b6b6b]">
+          {label ?? t("downloadTable")}
+        </span>
         <Button
           variant="secondary"
           size="sm"
@@ -126,7 +132,11 @@ export function TableExportToolbar() {
     (id) => id !== "workspace-requests" || user?.role === "super_admin",
   );
   const [selected, setSelected] = useState("");
-  if (!tables.length) return null;
+  if (
+    !tables.length ||
+    ["/members", "/users", "/weekly-reports"].includes(path)
+  )
+    return null;
   const tabMap: Record<string, string> = {
     ledger: "ledger",
     offerings: "offerings",
@@ -137,8 +147,7 @@ export function TableExportToolbar() {
     governance: "audit-logs",
   };
   const defaultResource =
-    tables.find((id) => id === tabMap[params.get("tab") || ""]) ||
-    tables[0];
+    tables.find((id) => id === tabMap[params.get("tab") || ""]) || tables[0];
   const resource = tables.some((id) => id === selected)
     ? selected
     : defaultResource;
@@ -149,9 +158,7 @@ export function TableExportToolbar() {
     >
       <div>
         <p className="text-sm font-medium">{t("exportYourTable")}</p>
-        <p className="mt-1 text-xs text-[#8a8780]">
-          {t("exportHint")}
-        </p>
+        <p className="mt-1 text-xs text-[#8a8780]">{t("exportHint")}</p>
       </div>
       {tables.length > 1 && (
         <label className="text-xs text-[#6b6b6b]">

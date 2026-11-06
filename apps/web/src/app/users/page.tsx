@@ -1,3 +1,5 @@
+import { ExportMenu } from "@/components/export-menu";
+import { getTranslations } from "next-intl/server";
 import { FilterPanel } from "@/components/filter-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -98,9 +100,15 @@ export default async function UsersPage({
 }) {
   const currentUser = await requireServerRole("/users");
   const params = await searchParams;
+  const t = await getTranslations("org.users");
+  const tCommon = await getTranslations("common");
+  const tRoles = await getTranslations("roles");
 
   const isSuperAdmin = currentUser.role === "super_admin";
-  const canFilterBranches = canFilterAcrossBranches(currentUser.role, currentUser.hasOversight);
+  const canFilterBranches = canFilterAcrossBranches(
+    currentUser.role,
+    currentUser.hasOversight,
+  );
   const canChooseDistrict = isSuperAdmin || isNationalRole(currentUser.role);
 
   const search = params.search?.trim() || "";
@@ -124,6 +132,10 @@ export default async function UsersPage({
     : currentUser.branchId || "";
 
   const visibleRoleOptions = getVisibleUserRoleOptions(currentUser.role);
+  const roleLabel = (value: string) =>
+    tRoles.has(value as Parameters<typeof tRoles>[0])
+      ? tRoles(value as Parameters<typeof tRoles>[0])
+      : formatRoleLabel(value);
 
   const usersQuery = buildUsersQuery({
     selectedBranchId,
@@ -176,12 +188,12 @@ export default async function UsersPage({
   );
 
   const scopeLabel = selectedBranchId
-    ? "Branch scope"
+    ? t("branchScope")
     : district
-      ? "District scope"
+      ? t("districtScope")
       : oversightRegion
-        ? "National scope"
-        : "Network scope";
+        ? t("nationalScope")
+        : t("networkScope");
 
   function buildPageHref(page: number) {
     const query = buildUsersQuery({
@@ -204,9 +216,9 @@ export default async function UsersPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Users"
-        title="User directory"
-        description="Manage staff access across oversight, district, and branch scope."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <UserCreateModalButton
             branches={branches}
@@ -222,77 +234,80 @@ export default async function UsersPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Total users"
+          label={t("totalUsers")}
           value={String(totalUsers)}
-          delta="People with accounts in the current scope"
+          delta={t("totalUsersCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Active users"
+          label={t("activeUsers")}
           value={String(activeUsers)}
-          delta={`${inactiveUsers} inactive`}
+          delta={t("inactiveCount", { count: inactiveUsers })}
           tone="warm"
         />
         <MetricCard
-          label="Follow-up team"
+          label={t("followUpTeam")}
           value={String(followUpUsers)}
-          delta="Care workflow staff"
+          delta={t("followUpTeamCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Ushers"
+          label={t("ushers")}
           value={String(usherUsers)}
-          delta="Front desk and service-day operators"
+          delta={t("ushersCaption")}
           tone="warm"
         />
       </section>
 
+      <div className="flex justify-end">
+        <ExportMenu resource="users" />
+      </div>
       <FilterPanel className="app-rise p-6 sm:p-7">
         <CardHeader
-          label="Filters"
-          title="Refine the staff directory"
-          description="Review people by scope, role, and status."
+          label={tCommon("filters")}
+          title={t("filtersTitle")}
+          description={t("filtersDescription")}
           action={<Badge tone="info">{scopeLabel}</Badge>}
         />
 
         <form className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Field label="Search" className="xl:col-span-2">
+            <Field label={tCommon("search")} className="xl:col-span-2">
               <input
                 name="search"
                 defaultValue={search}
-                placeholder="Search by name or email"
+                placeholder={t("searchPlaceholder")}
                 className="ui-input"
               />
             </Field>
 
-            <Field label="Role">
+            <Field label={t("role")}>
               <select name="role" defaultValue={role} className="ui-input">
-                <option value="">All roles</option>
+                <option value="">{t("allRoles")}</option>
                 {visibleRoleOptions.map((roleOption) => (
                   <option key={roleOption} value={roleOption}>
-                    {formatRoleLabel(roleOption)}
+                    {roleLabel(roleOption)}
                   </option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Status">
+            <Field label={tCommon("status")}>
               <select name="status" defaultValue={status} className="ui-input">
-                <option value="">All statuses</option>
-                <option value="active">Active only</option>
-                <option value="inactive">Inactive only</option>
+                <option value="">{t("allStatuses")}</option>
+                <option value="active">{t("activeOnly")}</option>
+                <option value="inactive">{t("inactiveOnly")}</option>
               </select>
             </Field>
 
             {isSuperAdmin ? (
-              <Field label="Oversight region">
+              <Field label={t("oversightRegion")}>
                 <select
                   name="oversightRegion"
                   defaultValue={oversightRegion}
                   className="ui-input"
                 >
-                  <option value="">All oversight regions</option>
+                  <option value="">{t("allOversightRegions")}</option>
                   {oversightRegionNames.map((regionName) => (
                     <option key={regionName} value={regionName}>
                       {regionName}
@@ -303,13 +318,13 @@ export default async function UsersPage({
             ) : null}
 
             {canChooseDistrict ? (
-              <Field label="District">
+              <Field label={tCommon("district")}>
                 <select
                   name="district"
                   defaultValue={district}
                   className="ui-input"
                 >
-                  <option value="">All districts</option>
+                  <option value="">{tCommon("allDistricts")}</option>
                   {districtNames.map((districtName) => (
                     <option key={districtName} value={districtName}>
                       {districtName}
@@ -320,13 +335,13 @@ export default async function UsersPage({
             ) : null}
 
             {canFilterBranches ? (
-              <Field label="Branch">
+              <Field label={tCommon("branch")}>
                 <select
                   name="branchId"
                   defaultValue={selectedBranchId}
                   className="ui-input"
                 >
-                  <option value="">All branches</option>
+                  <option value="">{tCommon("allBranches")}</option>
                   {branches.map((branch) => (
                     <option key={branch._id} value={branch._id}>
                       {branch.name}
@@ -336,29 +351,29 @@ export default async function UsersPage({
               </Field>
             ) : null}
 
-            <Field label="Sort">
+            <Field label={tCommon("sort")}>
               <select
                 name="sort"
                 className="ui-input"
                 defaultValue={params.sort || "newest"}
               >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="name_asc">Name A–Z</option>
-                <option value="name_desc">Name Z–A</option>
+                <option value="newest">{tCommon("newestFirst")}</option>
+                <option value="oldest">{tCommon("oldestFirst")}</option>
+                <option value="name_asc">{tCommon("nameAsc")}</option>
+                <option value="name_desc">{tCommon("nameDesc")}</option>
               </select>
             </Field>
-            <Field label="Page size">
+            <Field label={t("pageSize")}>
               <select
                 name="limit"
                 defaultValue={String(pageSize)}
                 className="ui-input"
               >
-                <option value="10">10 per page</option>
-                <option value="20">20 per page</option>
-                <option value="25">25 per page</option>
-                <option value="50">50 per page</option>
-                <option value="100">100 per page</option>
+                {[10, 20, 25, 50, 100].map((size) => (
+                  <option key={size} value={String(size)}>
+                    {t("perPage", { count: size })}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
@@ -367,24 +382,28 @@ export default async function UsersPage({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-5">
             <p className="text-[13px] text-[#6b6b6b]">
-              {totalUsers > 0 ? (
-                <>
-                  Showing{" "}
-                  <span className="font-medium tabular-nums text-[#111111]">
-                    {startItem}–{endItem}
-                  </span>{" "}
-                  of <span className="tabular-nums">{totalUsers}</span> users
-                </>
-              ) : (
-                "No users found in this scope"
-              )}
+              {totalUsers > 0
+                ? t.rich("showing", {
+                    from: startItem,
+                    to: endItem,
+                    total: totalUsers,
+                    b: (chunks) => (
+                      <span className="font-medium tabular-nums text-[#111111]">
+                        {chunks}
+                      </span>
+                    ),
+                    n: (chunks) => (
+                      <span className="tabular-nums">{chunks}</span>
+                    ),
+                  })
+                : t("noUsersInScope")}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <ButtonLink href="/users" variant="ghost">
-                Reset
+                {tCommon("reset")}
               </ButtonLink>
               <Button type="submit" icon="search">
-                Apply filters
+                {t("applyFilters")}
               </Button>
             </div>
           </div>
@@ -393,12 +412,12 @@ export default async function UsersPage({
 
       <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
         <CardHeader
-          label="Directory"
-          title="Staff accounts"
-          description="Open an account to update its details, role, scope, or sign-in access."
+          label={t("directoryLabel")}
+          title={t("directoryTitle")}
+          description={t("directoryDescription")}
           action={
             <Badge>
-              {selectedBranchId ? "Filtered scope" : "Current scope"}
+              {selectedBranchId ? t("filteredScope") : t("currentScope")}
             </Badge>
           }
         />
@@ -420,8 +439,12 @@ export default async function UsersPage({
         <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-4">
           <p className="text-[13px] text-[#8a8780]">
             {totalUsers > 0
-              ? `Showing ${startItem}–${endItem} of ${totalUsers}`
-              : "No users found"}
+              ? t("showingShort", {
+                  from: startItem,
+                  to: endItem,
+                  total: totalUsers,
+                })
+              : t("noUsers")}
           </p>
           <Pagination
             page={userDirectory.pagination.page}

@@ -166,6 +166,7 @@ export class IntakeTemplatesController {
     @Query('status') status?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Query('search') search?: string,
   ) {
     return this.intakeTemplatesService.listWeeklyReports(user, {
       branchId,
@@ -174,7 +175,25 @@ export class IntakeTemplatesController {
       status,
       dateFrom,
       dateTo,
+      search,
     });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
+  @Get('weekly-reports/details/:id')
+  weeklyReportDetail(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.intakeTemplatesService.weeklyReportDetail(user, id);
   }
 
   @ApiBearerAuth()
