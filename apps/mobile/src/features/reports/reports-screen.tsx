@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { router, Stack, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -83,6 +83,7 @@ export function ReportsScreen() {
       contentStyle={{ gap: space.xl }}
     >
       <Stack.Screen options={{ title: t('title') }} />
+      <Button label={t('weekly.title')} onPress={()=>router.push('/weekly-reports' as Href)} />
 
       <View style={{ gap: space.md }}>
         <Caption>{t('description', { days })}</Caption>

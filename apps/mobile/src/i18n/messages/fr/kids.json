@@ -44,10 +44,10 @@
         "endedAgo": "Terminé {time}",
         "overdue": "{count, plural, one {# enfant n’a} other {# enfants n’ont}} pas encore été récupéré(s).",
         "allHome": "Tous les enfants ont été récupérés. Le superviseur peut clôturer la session.",
-        "desk": "Ouvrir l’accueil",
+        "desk": "Accueil",
         "pickup": "Récupération",
         "supervisor": "Outils du superviseur",
-        "scan": "Scanner une carte",
+        "scan": "Scanner",
         "scanHint": "Pointez la caméra vers une carte famille ou enfant pour démarrer l’enregistrement.",
         "activity": "Dernière activité",
         "noActivity": "Aucun enregistrement pour l’instant. La première famille arrivée apparaîtra ici.",
@@ -128,6 +128,15 @@
         "guardians": "{count, plural, one {# tuteur} other {# tuteurs}}",
         "empty": "Aucune famille trouvée. Inscrivez d’abord un parent ou tuteur sur le site web, puis ajoutez ses enfants.",
         "page": "Page {page} sur {total}"
+      },
+      "welcome": {
+        "title": "Petits cœurs. Grande famille.",
+        "subtitle": "Un accueil chaleureux. Un départ en toute sécurité."
+      },
+      "tabs": {
+        "today": "Aujourd’hui",
+        "families": "Familles",
+        "insights": "Vue d’ensemble"
       }
     },
     "desk": {

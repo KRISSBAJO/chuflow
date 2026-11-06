@@ -1,9 +1,10 @@
+import { FinanceReviewControls } from './review-controls';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { KeyValue } from '@/components/kit';
 import { toast } from '@/components/toast';
-import { Button, Caption, EmptyState, ErrorState, Loading, Screen, Section } from '@/components/ui';
+import { Badge, Button, Caption, EmptyState, ErrorState, Loading, Screen, Section } from '@/components/ui';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { api, errorMessage } from '@/lib/api';
@@ -75,6 +76,8 @@ export function OfferingDetailScreen() {
             </View>
           )}
 
+          <Badge label={format.status(item.status||'approved')} />
+          {!editing ? <FinanceReviewControls id={item._id} status={item.status} canReview={item.permissions?.canReview} revision={item.reviewRevision} onReviewed={()=>void entry.reload()} /> : null}
           {!editing && canEdit ? <Button label={t('offering.edit')} variant="secondary" icon="edit" onPress={() => setEditing(true)} /> : null}
           {!editing && item.permissions?.reason ? <Caption>{item.permissions.reason}</Caption> : null}
         </>

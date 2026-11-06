@@ -21,6 +21,7 @@ import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
 import { initials as personInitials, type Tone } from '@/lib/format';
 import { Icon, type IconName } from './icon';
+import { PressableScale, Reveal } from './motion';
 
 /* ChuFlow phone UI kit: light, quiet and small — the website's look at a phone's scale. */
 
@@ -129,7 +130,9 @@ export function Screen({ children, refreshing = false, onRefresh, safeTop = true
           onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.flame} colors={[colors.flame]} /> : undefined
         }
       >
-        {children}
+        <Reveal distance={10} style={[styles.screenContent, { paddingHorizontal: 0 }, contentStyle]}>
+          {children}
+        </Reveal>
       </ScrollView>
       {footer ? <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.md) }]}>{footer}</View> : null}
     </View>
@@ -166,7 +169,7 @@ export function Button({ label, variant = 'primary', icon, loading, size = 'md',
     variant === 'primary' ? colors.ink : variant === 'flame' ? colors.flame : variant === 'danger' ? colors.danger : variant === 'secondary' ? colors.inset : 'transparent';
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled || !!loading, busy: !!loading }}
       disabled={disabled || loading}
@@ -174,14 +177,12 @@ export function Button({ label, variant = 'primary', icon, loading, size = 'md',
         tap();
         onPress?.(event);
       }}
-      style={({ pressed }) => [
+      scaleTo={0.96}
+      dim={0.85}
+      baseOpacity={disabled ? 0.4 : 1}
+      style={[
         styles.button,
-        {
-          height: BUTTON_HEIGHT[size],
-          paddingHorizontal: size === 'sm' ? 12 : 16,
-          backgroundColor: background,
-          opacity: disabled ? 0.4 : pressed ? 0.8 : 1,
-        },
+        { height: BUTTON_HEIGHT[size], paddingHorizontal: size === 'sm' ? 12 : 16, backgroundColor: background },
         variant === 'secondary' && { borderWidth: 1, borderColor: colors.hairlineStrong },
         style,
       ]}
@@ -193,7 +194,7 @@ export function Button({ label, variant = 'primary', icon, loading, size = 'md',
         <Icon name={icon} size={size === 'sm' ? 15 : 17} color={fg} strokeWidth={1.9} />
       ) : null}
       <Text style={[styles.buttonLabel, { color: fg, fontSize: size === 'sm' ? 13 : 14.5 }]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -319,16 +320,18 @@ export function ListRow({
   const rowStyle = [styles.row, divider && styles.rowDivider];
   if (!onPress) return <View style={rowStyle}>{body}</View>;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={() => {
         tap();
         onPress();
       }}
-      style={({ pressed }) => [...rowStyle, pressed && { opacity: 0.55 }]}
+      scaleTo={0.985}
+      dim={0.55}
+      style={rowStyle}
     >
       {body}
-    </Pressable>
+    </PressableScale>
   );
 }
 

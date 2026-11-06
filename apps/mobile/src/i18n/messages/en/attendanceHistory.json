@@ -55,6 +55,31 @@
       "holdForTen": "Hold to add ten",
       "countFor": "{label} count",
       "notFound": "This service summary is no longer available."
+    },
+    "advanced": {
+      "filters": "Filters",
+      "month": "Month",
+      "year": "Year",
+      "custom": "Custom dates",
+      "from": "From (YYYY-MM-DD)",
+      "to": "To (YYYY-MM-DD)",
+      "weekday": "Day of week",
+      "allDays": "All days",
+      "sundays": "Sundays only",
+      "service": "Service",
+      "allServices": "All services",
+      "search": "Search services",
+      "sort": "Sort",
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "highest": "Highest attendance",
+      "lowest": "Lowest attendance",
+      "reset": "Reset filters",
+      "average": "Average per service",
+      "sundayAverage": "Average per recorded Sunday",
+      "sundayCount": "Recorded Sundays",
+      "averageHint": "Missing Sundays are excluded from the average.",
+      "invalid": "Invalid date range"
     }
   }
 }

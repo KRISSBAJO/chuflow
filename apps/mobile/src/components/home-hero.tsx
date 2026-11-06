@@ -1,30 +1,26 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
-import { colors, fonts, radius, space } from '@/constants/theme';
+import { colors, fonts, space } from '@/constants/theme';
 import { Icon } from './icon';
 import { tap } from './ui';
 
-/* Same congregation photography as the website's hero; one per day so Home feels alive. */
-const PHOTOS = [
-  '1658356788072-ecd83ab24e33',
-  '1791357775814-24088f555824',
-  '1647957902647-0337913440fc',
-  '1614317354806-860a3bf79069',
-  '1560251445-ba979d304eb9',
-];
+/*
+ * Home opens on the congregation photo, edge to edge and up under the status bar, with the
+ * greeting and the four headline numbers floating on it in frosted tiles. It pulls itself out
+ * of the page's gutters and safe-area padding with negative margins, so the page below keeps
+ * its usual rhythm.
+ */
 
-function photoOfTheDay(date: Date) {
-  const day = Math.floor(date.getTime() / 86_400_000);
-  return `https://images.unsplash.com/photo-${PHOTOS[day % PHOTOS.length]}?auto=format&fit=crop&w=900&q=70`;
-}
+/* Bundled with the app so Home has its photo before the first request and when offline. */
+const HERO_PHOTO = require('@/assets/images/home-welcome.webp');
 
 /** One number under the greeting; `value` arrives already formatted in the app's language. */
 export type HeroMetric = { key: string; label: string; value: string; onPress?: () => void };
 
 type Props = {
-  date: Date;
   /** The date already written out in the app's language. */
   dateLabel: string;
   greeting: string;
@@ -37,20 +33,21 @@ type Props = {
   metrics: HeroMetric[];
 };
 
-export function HomeHero({ date, dateLabel, greeting, name, scope, alerts, alertsLabel, onAlerts, metrics }: Props) {
+export function HomeHero({ dateLabel, greeting, name, scope, alerts, alertsLabel, onAlerts, metrics }: Props) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.hero}>
-      <Image source={{ uri: photoOfTheDay(date) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} cachePolicy="memory-disk" />
-      <LinearGradient
-        colors={['rgba(12,12,12,0.25)', 'rgba(12,12,12,0.35)', 'rgba(12,12,12,0.88)']}
-        locations={[0, 0.35, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[styles.hero, { marginTop: -(insets.top + space.md), paddingTop: insets.top + space.md, minHeight: 312 + insets.top }]}>
+      <Image source={HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="bottom" transition={180} cachePolicy="memory-disk" accessible={false} />
+      <LinearGradient colors={['rgba(8,8,8,0.42)', 'rgba(8,8,8,0)']} locations={[0, 0.4]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['rgba(8,8,8,0)', 'rgba(8,8,8,0.5)', 'rgba(8,8,8,0.93)']} locations={[0.25, 0.6, 1]} style={StyleSheet.absoluteFill} />
 
       <View style={styles.top}>
-        <Text style={styles.date} numberOfLines={1}>
-          {dateLabel}
-        </Text>
+        <View style={styles.datePill}>
+          <Icon name="calendar" size={13} color="rgba(255,255,255,0.9)" />
+          <Text style={styles.date} numberOfLines={1}>
+            {dateLabel}
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={alertsLabel}
@@ -73,7 +70,7 @@ export function HomeHero({ date, dateLabel, greeting, name, scope, alerts, alert
       <View style={styles.bottom}>
         <Text style={styles.greeting}>{greeting},</Text>
         <View style={{ alignSelf: 'flex-start', maxWidth: '100%' }}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit>
             {name}
           </Text>
           <Svg width="100%" height={10} viewBox="0 0 100 16" preserveAspectRatio="none" style={styles.swoosh}>
@@ -91,7 +88,7 @@ export function HomeHero({ date, dateLabel, greeting, name, scope, alerts, alert
         </Text>
 
         <View style={styles.metrics}>
-          {metrics.map((metric, index) => (
+          {metrics.map((metric) => (
             <Pressable
               key={metric.key}
               accessibilityRole={metric.onPress ? 'button' : undefined}
@@ -101,12 +98,12 @@ export function HomeHero({ date, dateLabel, greeting, name, scope, alerts, alert
                 tap();
                 metric.onPress?.();
               }}
-              style={({ pressed }) => [styles.metric, index === 0 ? { paddingLeft: 0 } : styles.metricDivider, pressed && { opacity: 0.6 }]}
+              style={({ pressed }) => [styles.metric, pressed && { backgroundColor: 'rgba(255,255,255,0.28)' }]}
             >
               <Text style={styles.metricValue} numberOfLines={1} adjustsFontSizeToFit>
                 {metric.value}
               </Text>
-              <Text style={styles.metricLabel} numberOfLines={1}>
+              <Text style={styles.metricLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                 {metric.label}
               </Text>
             </Pressable>
@@ -119,20 +116,34 @@ export function HomeHero({ date, dateLabel, greeting, name, scope, alerts, alert
 
 const styles = StyleSheet.create({
   hero: {
-    height: 300,
-    borderRadius: radius.lg + 4,
+    marginHorizontal: -space.page,
+    paddingHorizontal: space.page,
+    paddingBottom: space.md,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     overflow: 'hidden',
     backgroundColor: colors.ink,
-    padding: space.lg,
     justifyContent: 'space-between',
   },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  date: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,0.85)' },
+  datePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: '75%',
+    paddingVertical: 6,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  date: { fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,0.92)', flexShrink: 1 },
   bell: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.28)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.35)',
     alignItems: 'center',
@@ -151,20 +162,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bellBadgeText: { fontFamily: fonts.semibold, fontSize: 9, color: '#ffffff' },
-  bottom: { gap: 2 },
-  greeting: { fontFamily: fonts.regular, fontSize: 15, color: 'rgba(255,255,255,0.82)' },
-  name: { fontFamily: fonts.semibold, fontSize: 30, lineHeight: 35, letterSpacing: -0.9, color: '#ffffff' },
-  swoosh: { marginTop: 1, marginBottom: 6 },
-  scope: { fontFamily: fonts.regular, fontSize: 12.5, color: 'rgba(255,255,255,0.7)' },
-  metrics: {
-    flexDirection: 'row',
-    marginTop: space.md,
-    paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.25)',
+  bottom: { gap: 1, marginTop: space.lg },
+  greeting: { fontFamily: fonts.regular, fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+  name: { fontFamily: fonts.semibold, fontSize: 28, lineHeight: 34, letterSpacing: -0.5, color: '#ffffff' },
+  swoosh: { marginTop: 0, marginBottom: 4 },
+  scope: { fontFamily: fonts.regular, fontSize: 12.5, color: 'rgba(255,255,255,0.72)' },
+  metrics: { flexDirection: 'row', gap: 8, marginTop: space.md },
+  metric: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.28)',
   },
-  metric: { flex: 1, paddingHorizontal: space.sm },
-  metricDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: 'rgba(255,255,255,0.22)' },
-  metricValue: { fontFamily: fonts.semibold, fontSize: 19, letterSpacing: -0.4, color: '#ffffff', fontVariant: ['tabular-nums'] },
-  metricLabel: { fontFamily: fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
+  metricValue: { fontFamily: fonts.semibold, fontSize: 19, lineHeight: 23, letterSpacing: -0.5, color: '#ffffff', fontVariant: ['tabular-nums'] },
+  metricLabel: { fontFamily: fonts.regular, fontSize: 11, letterSpacing: 0, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
 });

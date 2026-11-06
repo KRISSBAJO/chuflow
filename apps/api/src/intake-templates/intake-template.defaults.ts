@@ -496,7 +496,7 @@ export const intakeTemplateDefaults: CreateIntakeTemplateDto[] = [
         required: false,
         width: 'half',
         helpText:
-          'Auto-filled from the latest attendance summary for this branch when available.',
+          'Attendance from the previous week’s acknowledged weekly report, when available.',
       },
       {
         key: 'averageLastYear',
@@ -504,15 +504,15 @@ export const intakeTemplateDefaults: CreateIntakeTemplateDto[] = [
         type: 'number',
         required: false,
         width: 'half',
-        helpText: 'Auto-filled when enough historical branch summaries exist.',
+        helpText: 'Average weekly attendance across the previous calendar year.',
       },
       {
         key: 'averageLastPeriod',
-        label: 'Avg of recent summaries',
+        label: 'Avg of last month',
         type: 'number',
         required: false,
         width: 'half',
-        helpText: 'Auto-filled from recent branch attendance summaries.',
+        helpText: 'Average weekly attendance in the previous calendar month.',
       },
       {
         key: 'firstTimersCount',
@@ -579,7 +579,7 @@ export const intakeTemplateDefaults: CreateIntakeTemplateDto[] = [
       },
       {
         key: 'wofbiAttendance',
-        label: 'WOFBI T/# of',
+        label: 'WOFBI - Bible school attendees',
         type: 'number',
         required: false,
         width: 'half',

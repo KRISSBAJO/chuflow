@@ -55,6 +55,31 @@
       "holdForTen": "Maintenir pour ajouter dix",
       "countFor": "Comptage {label}",
       "notFound": "Ce résumé de culte n’est plus disponible."
+    },
+    "advanced": {
+      "filters": "Filtres",
+      "month": "Mois",
+      "year": "Année",
+      "custom": "Dates personnalisées",
+      "from": "Du (AAAA-MM-JJ)",
+      "to": "Au (AAAA-MM-JJ)",
+      "weekday": "Jour de la semaine",
+      "allDays": "Tous les jours",
+      "sundays": "Dimanches uniquement",
+      "service": "Culte",
+      "allServices": "Tous les cultes",
+      "search": "Rechercher des cultes",
+      "sort": "Trier",
+      "newest": "Plus récents",
+      "oldest": "Plus anciens",
+      "highest": "Fréquentation décroissante",
+      "lowest": "Fréquentation croissante",
+      "reset": "Réinitialiser",
+      "average": "Moyenne par culte",
+      "sundayAverage": "Moyenne par dimanche enregistré",
+      "sundayCount": "Dimanches enregistrés",
+      "averageHint": "Les dimanches non enregistrés sont exclus de la moyenne.",
+      "invalid": "Période invalide"
     }
   }
 }

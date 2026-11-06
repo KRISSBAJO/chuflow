@@ -55,6 +55,31 @@
       "holdForTen": "Mantén presionado para agregar diez",
       "countFor": "Conteo de {label}",
       "notFound": "Este resumen de servicio ya no está disponible."
+    },
+    "advanced": {
+      "filters": "Filtros",
+      "month": "Mes",
+      "year": "Año",
+      "custom": "Fechas personalizadas",
+      "from": "Desde (AAAA-MM-DD)",
+      "to": "Hasta (AAAA-MM-DD)",
+      "weekday": "Día de la semana",
+      "allDays": "Todos los días",
+      "sundays": "Solo domingos",
+      "service": "Servicio",
+      "allServices": "Todos los servicios",
+      "search": "Buscar servicios",
+      "sort": "Ordenar",
+      "newest": "Más recientes",
+      "oldest": "Más antiguos",
+      "highest": "Mayor asistencia",
+      "lowest": "Menor asistencia",
+      "reset": "Restablecer filtros",
+      "average": "Promedio por servicio",
+      "sundayAverage": "Promedio por domingo registrado",
+      "sundayCount": "Domingos registrados",
+      "averageHint": "Los domingos sin registros se excluyen del promedio.",
+      "invalid": "Intervalo de fechas inválido"
     }
   }
 }

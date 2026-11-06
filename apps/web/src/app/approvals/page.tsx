@@ -1,3 +1,4 @@
+import { OfferingReviewQueue } from "@/components/offering-review-queue";
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -278,6 +279,7 @@ export default async function ApprovalsPage({
             }
           />
           <div className="mt-6">
+            <OfferingReviewQueue />
             <ExpenseEntriesTable
               entries={pendingExpenses.items}
               accounts={accounts}

@@ -35,6 +35,25 @@
         "holySpiritBaptismCount": "Holy Spirit baptism"
       }
     },
+    "list": {
+      "subtitle": "Every service count, newest first. Tap + to count a service.",
+      "newCount": "New count"
+    },
+    "flow": {
+      "title": "New count",
+      "stepOf": "Step {step} of {total}",
+      "runningTotal": "{count} so far",
+      "branch": { "question": "Which branch?", "hint": "The count is recorded against this branch." },
+      "service": { "question": "Which service?", "hint": "Pick the service you’re counting.", "none": "No services set up for this branch yet. Add them on the website." },
+      "date": { "question": "Which day?", "hint": "Usually today, but you can go back to an earlier service.", "today": "Today", "yesterday": "Yesterday", "other": "Another day" },
+      "men": { "question": "How many men?", "hint": "Tap + as they come in, or type the number." },
+      "women": { "question": "How many women?", "hint": "Tap + as they come in, or type the number." },
+      "children": { "question": "How many children?", "hint": "Everyone in the children’s rooms counts too." },
+      "firstTimers": { "question": "Of those, how many first-timers?", "hint": "Already in the headcount; noted here for reports." },
+      "newConverts": { "question": "How many new converts?", "hint": "People who gave their life to Christ at this service." },
+      "holySpirit": { "question": "How many received the Holy Spirit baptism?", "hint": "Leave it at zero if none." },
+      "review": { "question": "Ready to save?", "hint": "Check the numbers, then save. You can correct them later from the list.", "total": "Total people" }
+    },
     "outbox": {
       "couldNotSend": "Could not send"
     }

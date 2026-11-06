@@ -4,6 +4,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'rea
 import { Icon } from '@/components/icon';
 import { StatGrid, StatTile } from '@/components/kit';
 import { Badge, Caption, EmptyState, ErrorState, ListRow, Loading, Screen, Section, Segmented, tap } from '@/components/ui';
+import { Reveal } from '@/components/motion';
 import { colors, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -76,7 +77,7 @@ export function FinanceScreen() {
     let running = ledger.data?.summary.netBalance ?? 0;
     for (const item of ledger.items) {
       map.set(item._id, running);
-      running -= item.direction === 'credit' ? item.amount : -item.amount;
+      if (['approved', 'locked'].includes(item.status)) running -= item.direction === 'credit' ? item.amount : -item.amount;
     }
     return map;
   }, [ledger.data, ledger.items]);
@@ -236,7 +237,7 @@ export function FinanceScreen() {
         refreshControl={<RefreshControl refreshing={active.refreshing} onRefresh={() => void active.refresh()} tintColor={colors.flame} colors={[colors.flame]} />}
         onEndReachedThreshold={0.4}
         onEndReached={() => void active.loadMore()}
-        ListHeaderComponent={header}
+        ListHeaderComponent={<Reveal>{header}</Reveal>}
         renderItem={({ item, index }) => renderRow(item, index)}
         ListEmptyComponent={
           active.loading ? (

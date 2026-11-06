@@ -114,6 +114,7 @@ export function ExpenseEntriesTable({
         credentials: "include",
         body: JSON.stringify({
           notes: reviewNotes[entryId] || undefined,
+          reviewRevision: entries.find(entry => entry._id === entryId)?.reviewRevision,
         }),
       });
 
@@ -329,7 +330,7 @@ export function ExpenseEntriesTable({
                 </p>
               )}
 
-              {entry.status === "submitted" && canApprove ? (
+              {entry.status === "submitted" && canApprove && entry.permissions.canReview !== false ? (
                 <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-4">
                   <p className="text-[14px] font-semibold text-[#111111]">{t("decisionTitle")}</p>
                   <p className="mt-0.5 text-[13px] text-[#6b6b6b]">

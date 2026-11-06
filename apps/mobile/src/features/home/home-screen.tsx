@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { HomeHero } from '@/components/home-hero';
 import { Icon, type IconName } from '@/components/icon';
 import { Avatar, Caption, EmptyState, ErrorState, ListRow, Notice, Screen, Section, tap } from '@/components/ui';
@@ -37,6 +37,7 @@ export function HomeScreen() {
   const tc = useT('common');
   const format = useAppFormat();
   const role = user?.role;
+  const [showAllActions, setShowAllActions] = useState(false);
   const [days, setDays] = useState(() => user?.preferences?.defaultReportDays ?? 30);
   const dashboard = useApi<DashboardOverview>(`/reports/dashboard?days=${days}`);
   const [today] = useState(() => new Date());
@@ -53,6 +54,7 @@ export function HomeScreen() {
     { key: 'reports', label: t('shortcuts.reports'), icon: 'reports', href: '/reports' as Href, show: can.reports(role) },
   ];
   const shortcuts = allShortcuts.filter((shortcut) => shortcut.show);
+  const visibleShortcuts = showAllActions ? shortcuts : shortcuts.slice(0, 6);
 
   const data = dashboard.data;
   const metrics = data?.metrics;
@@ -72,7 +74,6 @@ export function HomeScreen() {
       contentStyle={{ gap: space.xl }}
     >
       <HomeHero
-        date={today}
         dateLabel={format.longDate(today)}
         greeting={format.greeting(today)}
         name={user?.firstName || t('friend')}
@@ -81,10 +82,30 @@ export function HomeScreen() {
         alertsLabel={t('alertsLabel', { count: summary?.quickStats.activeAlerts ?? 0 })}
         onAlerts={() => router.push(can.approvals(role) ? '/approvals' : '/more')}
         metrics={[
-          { key: 'guests', label: t('metrics.guests'), value: format.number(metrics?.totalGuests), onPress: can.guests(role) ? () => router.push('/guests') : undefined },
-          { key: 'attendance', label: t('metrics.attendance'), value: format.number(metrics?.totalAttendance), onPress: can.attendance(role) ? () => router.push('/attendance') : undefined },
-          { key: 'members', label: t('metrics.members'), value: format.number(metrics?.totalMembers), onPress: can.members(role) ? () => router.push('/members' as Href) : undefined },
-          { key: 'followUp', label: t('metrics.followUp'), value: format.number(metrics?.pendingFollowUp), onPress: can.followUp(role) ? () => router.push('/follow-up') : undefined },
+          {
+            key: 'guests',
+            label: t('metrics.guests'),
+            value: !metrics ? '—' : format.number(metrics?.totalGuests),
+            onPress: can.guests(role) ? () => router.push('/guests') : undefined,
+          },
+          {
+            key: 'attendance',
+            label: t('metrics.attendance'),
+            value: !metrics ? '—' : format.number(metrics?.totalAttendance),
+            onPress: can.attendance(role) ? () => router.push('/attendance') : undefined,
+          },
+          {
+            key: 'members',
+            label: t('metrics.members'),
+            value: !metrics ? '—' : format.number(metrics?.totalMembers),
+            onPress: can.members(role) ? () => router.push('/members' as Href) : undefined,
+          },
+          {
+            key: 'followUp',
+            label: t('metrics.followUp'),
+            value: !metrics ? '—' : format.number(metrics?.pendingFollowUp),
+            onPress: can.followUp(role) ? () => router.push('/follow-up') : undefined,
+          },
         ]}
       />
 
@@ -97,47 +118,58 @@ export function HomeScreen() {
       {dashboard.error && !metrics ? <ErrorState message={dashboard.error} onRetry={() => void dashboard.refresh()} /> : null}
 
       {shortcuts.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shortcuts} style={styles.shortcutsScroll}>
-          {shortcuts.map((shortcut, index) => (
-            <Pressable
-              key={shortcut.key}
-              accessibilityRole="button"
-              accessibilityLabel={shortcut.label}
-              onPress={() => {
-                tap();
-                router.push(shortcut.href);
-              }}
-              style={({ pressed }) => [styles.shortcut, pressed && { opacity: 0.6 }]}
-            >
-              <View style={[styles.shortcutIcon, index === 0 && styles.shortcutPrimary]}>
-                <Icon name={shortcut.icon} size={18} color={index === 0 ? '#ffffff' : colors.ink} strokeWidth={index === 0 ? 2.2 : 1.8} />
-              </View>
-              <Text style={styles.shortcutLabel} numberOfLines={1}>
-                {shortcut.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View>
+          <Section
+            title={t('shortcuts.title')}
+            action={shortcuts.length > 6 ? t(showAllActions ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
+            onAction={() => setShowAllActions(!showAllActions)}
+          />
+          <View style={styles.shortcuts}>
+            {visibleShortcuts.map((shortcut, index) => (
+              <Pressable
+                key={shortcut.key}
+                accessibilityRole="button"
+                accessibilityLabel={shortcut.label}
+                onPress={() => {
+                  tap();
+                  router.push(shortcut.href);
+                }}
+                style={({ pressed }) => [styles.shortcut, pressed && { opacity: 0.6 }]}
+              >
+                <View style={[styles.shortcutIcon, index === 0 && styles.shortcutPrimary]}>
+                  <Icon name={shortcut.icon} size={18} color={index === 0 ? '#ffffff' : colors.ink} strokeWidth={index === 0 ? 2.2 : 1.8} />
+                </View>
+                <Text style={styles.shortcutLabel} numberOfLines={1}>
+                  {shortcut.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
       ) : null}
 
       <View>
         <Section title={t('needsYou.title')} />
         {needsYou.length ? (
-          needsYou.slice(0, 4).map((item, index) => (
-            <ListRow
-              key={item.key}
-              divider={index > 0}
-              title={`${format.number(item.count)} ${item.label.toLowerCase()}`}
-              subtitle={item.description}
-              left={<View style={[styles.alertDot, { backgroundColor: ALERT_DOT[item.tone] ?? colors.faint }]} />}
-              onPress={() => router.push(routeForAlert(item.href))}
-            />
-          ))
-        ) : (
+          needsYou
+            .slice(0, 4)
+            .map((item, index) => (
+              <ListRow
+                key={item.key}
+                divider={index > 0}
+                title={`${format.number(item.count)} ${item.label.toLowerCase()}`}
+                subtitle={item.description}
+                left={<View style={[styles.alertDot, { backgroundColor: ALERT_DOT[item.tone] ?? colors.faint }]} />}
+                onPress={() => router.push(routeForAlert(item.href))}
+              />
+            ))
+        ) : summary ? (
           <View style={styles.caughtUp}>
             <Icon name="check" size={15} color={colors.success} strokeWidth={2.2} />
             <Caption>{t('needsYou.caughtUp')}</Caption>
           </View>
+        ) : (
+          <Caption>{tc('state.loading')}</Caption>
         )}
       </View>
 
@@ -160,19 +192,21 @@ export function HomeScreen() {
       <View>
         <Section title={t('recentGuests.title')} action={recent.length && can.guests(role) ? tc('actions.seeAll') : undefined} onAction={() => router.push('/guests')} />
         {recent.length ? (
-          recent.slice(0, 5).map((guest, index) => (
-            <ListRow
-              key={guest._id}
-              divider={index > 0}
-              title={format.fullName(guest)}
-              subtitle={guest.visitStatus ? format.status(guest.visitStatus) : undefined}
-              left={<Avatar person={guest} size={30} />}
-              right={<Caption>{format.relativeTime(guest.createdAt)}</Caption>}
-              chevron={false}
-              onPress={can.guests(role) ? () => router.push(`/guest/${guest._id}`) : undefined}
-            />
-          ))
-        ) : dashboard.loading ? null : (
+          recent
+            .slice(0, 3)
+            .map((guest, index) => (
+              <ListRow
+                key={guest._id}
+                divider={index > 0}
+                title={format.fullName(guest)}
+                subtitle={guest.visitStatus ? format.status(guest.visitStatus) : undefined}
+                left={<Avatar person={guest} size={30} />}
+                right={<Caption>{format.relativeTime(guest.createdAt)}</Caption>}
+                chevron={false}
+                onPress={can.guests(role) ? () => router.push(`/guest/${guest._id}`) : undefined}
+              />
+            ))
+        ) : dashboard.loading || dashboard.error || !operational ? null : (
           <EmptyState icon="guests" title={t('recentGuests.empty')} body={t('recentGuests.emptyBody')} />
         )}
       </View>
@@ -189,11 +223,10 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  shortcutsScroll: { marginHorizontal: -space.page },
-  shortcuts: { flexDirection: 'row', paddingHorizontal: space.page, gap: space.sm },
-  shortcut: { width: 78, alignItems: 'center', gap: 6 },
+  shortcuts: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  shortcut: { width: '31.5%', alignItems: 'center', gap: 7, paddingVertical: 10, borderRadius: 16, backgroundColor: colors.surface },
   shortcutIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  shortcutPrimary: { backgroundColor: colors.ink },
+  shortcutPrimary: { backgroundColor: colors.flame },
   shortcutLabel: { fontFamily: fonts.medium, fontSize: 11.5, color: colors.text },
   alertDot: { width: 7, height: 7, borderRadius: 4, marginHorizontal: 2 },
   caughtUp: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md },

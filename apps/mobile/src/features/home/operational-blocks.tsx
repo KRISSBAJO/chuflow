@@ -92,7 +92,7 @@ export function NewestMembers({ members, onSeeAll, onOpen }: { members: MemberLi
     <View>
       <Section title={t('title')} action={members.length && onSeeAll ? tc('actions.seeAll') : undefined} onAction={onSeeAll} />
       {members.length ? (
-        members.slice(0, 5).map((member, index) => (
+        members.slice(0, 3).map((member, index) => (
           <ListRow
             key={member._id}
             divider={index > 0}

@@ -6,6 +6,24 @@ export type OfferingEntryDocument = HydratedDocument<OfferingEntry>;
 @Schema({ timestamps: true })
 export class OfferingEntry {
   @Prop({
+    enum: ['submitted', 'approved', 'rejected', 'locked'],
+    default: 'submitted',
+    index: true,
+  })
+  status!: string;
+
+  @Prop({ default: 0 })
+  reviewRevision!: number;
+
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
+  approvedBy?: Types.ObjectId;
+
+  @Prop()
+  reviewedAt?: Date;
+
+  @Prop()
+  reviewNotes?: string;
+  @Prop({
     type: SchemaTypes.ObjectId,
     ref: 'Branch',
     required: true,

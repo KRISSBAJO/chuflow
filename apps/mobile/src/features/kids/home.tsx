@@ -1,10 +1,13 @@
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/icon';
-import { Banner, Meter, SearchBar, SheetPicker, StatGrid, StatTile, Timeline, type TimelineItem } from '@/components/kit';
-import { Button, Caption, Card, EmptyState, ErrorState, Heading, ListRow, Loading, Screen, ScreenHeader, Section, tap } from '@/components/ui';
+import { Banner, LiveDot, Meter, SearchBar, SheetPicker, StatGrid, StatTile, Timeline, type TimelineItem } from '@/components/kit';
+import { Reveal } from '@/components/motion';
+import { Button, Caption, Card, EmptyState, ErrorState, Heading, ListRow, Loading, Screen, ScreenHeader, Section, Segmented, tap } from '@/components/ui';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -15,7 +18,7 @@ import { useSession, userBranchId } from '@/lib/session';
 import type { BranchSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { familyInitials, formatAgeRange } from './age';
-import { InitialAvatar, KIDS, Kicker, kidsHref, PhaseBadge, RoomCard, useMinuteNow } from './shared';
+import { InitialAvatar, KIDS, Kicker, kidsHref, PHASE_TONE, PhaseBadge, RoomCard, useMinuteNow } from './shared';
 import type { AgeBucket, ChildrenOverview, LiveSession, Phase } from './types';
 
 const REFRESH_MS = 20_000;
@@ -47,6 +50,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
 
   const branches = useApi<BranchSummary[]>(pickBranch ? '/branches' : null);
   const [branchId, setBranchId] = useState(userBranchId(user));
+  const [view, setView] = useState<'today' | 'families' | 'insights'>('today');
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(1);
@@ -60,7 +64,9 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const overview = useApi<ChildrenOverview>(`/children${query({ branchId, search: debounced, page: page > 1 ? page : undefined, sessionPage: sessionPage > 1 ? sessionPage : undefined })}`);
+  const overview = useApi<ChildrenOverview>(
+    `/children${query({ branchId, search: debounced, page: page > 1 ? page : undefined, sessionPage: sessionPage > 1 ? sessionPage : undefined })}`,
+  );
   const { reload } = overview;
 
   // The live board stays fresh while this screen is in front.
@@ -71,7 +77,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
     }, [reload]),
   );
 
-  const data = overview.data;
+  const data = branchId && overview.data?.branchId !== branchId ? undefined : overview.data;
   const effectiveBranch = branchId || data?.branchId || '';
   const branchOptions = useMemo(() => (branches.data ?? []).map((b) => ({ value: b._id, label: b.name, hint: [b.city, b.district].filter(Boolean).join(' · ') })), [branches.data]);
   const stats = data?.stats;
@@ -83,28 +89,98 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
 
   return (
     <Screen safeTop={!inStack} refreshing={overview.refreshing} onRefresh={() => void overview.refresh()}>
-      {inStack ? <Stack.Screen options={{ title: tk('title') }} /> : <ScreenHeader title={tk('title')} subtitle={data && data.branches.length === 1 ? data.branches[0].name : undefined} />}
+      {inStack ? (
+        <Stack.Screen options={{ title: tk('title') }} />
+      ) : (
+        <ScreenHeader title={tk('title')} subtitle={data && data.branches.length === 1 ? data.branches[0].name : undefined} />
+      )}
 
-      {pickBranch && branchOptions.length > 1 ? <SheetPicker label={tk('church')} value={effectiveBranch} options={branchOptions} onChange={setBranchId} searchable={branchOptions.length > 6} /> : null}
+      {pickBranch && branchOptions.length > 1 ? (
+        <SheetPicker
+          label={tk('church')}
+          value={effectiveBranch}
+          options={branchOptions}
+          onChange={(value) => {
+            setBranchId(value);
+            setPage(1);
+            setSessionPage(1);
+            setSearch('');
+            setView('today');
+          }}
+          searchable={branchOptions.length > 6}
+        />
+      ) : null}
 
-      {overview.loading ? <Loading /> : null}
+      <View style={styles.welcome}>
+        <Image
+          source={require('@/assets/images/kids-welcome.webp')}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition="right"
+          accessible={false}
+          cachePolicy="memory-disk"
+        />
+        <LinearGradient
+          colors={['#fff4df', 'rgba(255,244,223,0.95)', 'rgba(255,244,223,0)']}
+          locations={[0, 0.32, 0.7]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <Text style={styles.welcomeTitle}>{t('welcome.title')}</Text>
+        <Text style={styles.welcomeCaption}>{t('welcome.subtitle')}</Text>
+      </View>
+      {data ? (
+        <Segmented
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'today', label: t('tabs.today') },
+            ...(data.canManage ? [{ value: 'families' as const, label: t('tabs.families'), count: data.pagination.total }] : []),
+            ...(stats ? [{ value: 'insights' as const, label: t('tabs.insights') }] : []),
+          ]}
+        />
+      ) : null}
+      {view !== 'today' && data?.live?.phase === 'overdue' ? (
+        <Banner
+          tone="danger"
+          icon="alert"
+          title={t('live.overdue', { count: data.live.present })}
+          action={<Button label={t('live.pickup')} variant="danger" size="sm" onPress={() => openDesk(data.live!._id, 'pickup')} />}
+        />
+      ) : null}
+      {overview.loading || (!data && !overview.error) ? <Loading /> : null}
       {overview.error && !data ? <ErrorState message={overview.error} onRetry={() => void overview.refresh()} /> : null}
       {data && !data.branches.length ? <EmptyState icon="lock" title={tk('noAccess')} /> : null}
 
-      {data?.live ? (
-        <LiveBoard live={data.live} canManage={data.canManage} onDesk={(tab, room) => openDesk(data.live!._id, tab, room)} onScan={() => router.push(kidsHref('/kids/scan', { sessionId: data.live!._id, tab: 'checkin' }))} />
-      ) : data ? (
-        <Card style={{ gap: space.sm, backgroundColor: KIDS.greenSoft }}>
-          <Kicker>{tk('title')}</Kicker>
-          <Heading>{t('quiet.title')}</Heading>
-          <Caption>{data.canManage && supervise ? t('quiet.manager') : t('quiet.worker')}</Caption>
-          {data.canManage && supervise ? (
-            <Button label={t('quiet.cta')} icon="door" style={{ alignSelf: 'flex-start', marginTop: space.xs }} onPress={() => router.push(kidsHref('/kids/sessions/new', { branchId: effectiveBranch }))} />
+      {view === 'today' ? (
+        <>
+          {data?.live ? (
+            <LiveBoard
+              live={data.live}
+              canManage={data.canManage}
+              onDesk={(tab, room) => openDesk(data.live!._id, tab, room)}
+              onScan={() => router.push(kidsHref('/kids/scan', { sessionId: data.live!._id, tab: 'checkin' }))}
+            />
+          ) : data ? (
+            <Card style={{ gap: space.sm, backgroundColor: KIDS.greenSoft }}>
+              <Kicker>{tk('title')}</Kicker>
+              <Heading>{t('quiet.title')}</Heading>
+              <Caption>{data.canManage && supervise ? t('quiet.manager') : t('quiet.worker')}</Caption>
+              {data.canManage && supervise ? (
+                <Button
+                  label={t('quiet.cta')}
+                  icon="door"
+                  style={{ alignSelf: 'flex-start', marginTop: space.xs }}
+                  onPress={() => router.push(kidsHref('/kids/sessions/new', { branchId: effectiveBranch }))}
+                />
+              ) : null}
+            </Card>
           ) : null}
-        </Card>
+        </>
       ) : null}
 
-      {stats ? (
+      {view === 'insights' && stats ? (
         <>
           <Section title={t('stats.title')} />
           <StatGrid>
@@ -126,7 +202,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
         </>
       ) : null}
 
-      {data ? (
+      {view === 'insights' && data ? (
         <>
           <Section title={t('trend.title')} />
           <Card style={{ gap: space.md }}>
@@ -137,7 +213,12 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
                   {data.trend.map((point) => (
                     <Pressable key={point._id} style={styles.barSlot} onPress={() => openDesk(point._id)} accessibilityLabel={`${point.name} · ${point.attended}`}>
                       <Text style={styles.barValue}>{point.attended}</Text>
-                      <View style={[styles.bar, { height: Math.max(4, Math.round((point.attended / trendMax) * 64)), backgroundColor: point.status === 'open' ? KIDS.amber : KIDS.green }]} />
+                      <View
+                        style={[
+                          styles.bar,
+                          { height: Math.max(4, Math.round((point.attended / trendMax) * 64)), backgroundColor: point.status === 'open' ? KIDS.amber : KIDS.green },
+                        ]}
+                      />
                     </Pressable>
                   ))}
                 </View>
@@ -193,7 +274,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
         </>
       ) : null}
 
-      {data?.canManage && stats ? (
+      {view === 'insights' && data?.canManage && stats ? (
         <>
           <Section title={t('birthdays.title')} />
           {stats.birthdays.length ? (
@@ -213,7 +294,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
         </>
       ) : null}
 
-      {data ? (
+      {view === 'today' && data ? (
         <>
           <Section
             title={`${t('sessions.title')} · ${t('sessions.subtitle', { count: data.sessionPagination.total })}`}
@@ -265,7 +346,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
         </>
       ) : null}
 
-      {data?.canManage ? (
+      {view === 'families' && data?.canManage ? (
         <>
           <Section title={`${t('families.title')} · ${t('families.registered', { count: data.pagination.total })}`} />
           <SearchBar value={search} onChangeText={setSearch} placeholder={t('families.placeholder')} />
@@ -330,68 +411,126 @@ function LiveBoard({ live, canManage, onDesk, onScan }: { live: LiveSession; can
     tone: eventTone(event.action),
   }));
 
+  const stats: { key: string; label: string; value: number; color: string }[] = [
+    { key: 'here', label: t('hereNow'), value: live.present, color: colors.ink },
+    { key: 'attended', label: t('attended'), value: live.attended, color: colors.ink },
+    { key: 'collected', label: t('collected'), value: live.collected, color: colors.ink },
+    { key: 'rooms', label: t('rooms'), value: live.rooms.length, color: colors.ink },
+  ];
+
   return (
-    <Card style={{ gap: space.md }}>
-      <View style={{ gap: 4 }}>
-        <Kicker>{t('eyebrow')}</Kicker>
-        <View style={styles.liveTitle}>
-          <Heading style={{ flex: 1 }} numberOfLines={2}>
-            {live.name}
-          </Heading>
-          <PhaseBadge phase={live.phase} />
+    <View style={{ gap: space.lg }}>
+      {/* Keep the service desk light; reserve strong color for actions and safety alerts. */}
+      <Reveal>
+        <View style={styles.live}>
+          <View style={styles.liveTop}>
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <View style={styles.liveRow}>
+                <LiveDot tone={PHASE_TONE[live.phase]} size={8} />
+                <Text style={[styles.liveEyebrow, { flex: 1 }]}>{t('eyebrow')}</Text><PhaseBadge phase={live.phase} />
+              </View>
+              <Text style={styles.liveName} numberOfLines={2}>
+                {live.name}
+              </Text>
+              <Text style={styles.liveWindow} numberOfLines={2}>
+                {t('window', { start: format.date(live.startsAt, { weekday: 'short', hour: 'numeric', minute: '2-digit' }), end: format.time(live.endsAt) })} · {timing}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.liveStats}>
+            {stats.map((stat) => (
+              <View key={stat.key} style={styles.liveStat}>
+                <Text style={[styles.liveStatValue, { color: stat.color }]} numberOfLines={1}>
+                  {format.number(stat.value)}
+                </Text>
+                <Text style={styles.liveStatLabel} numberOfLines={1}>
+                  {stat.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.actions}>
+            <Button label={t('desk')} icon="door" variant="flame" size="lg" style={{ flex: 1.3 }} onPress={() => onDesk('checkin')} />
+            <Button label={t('scan')} icon="camera" variant="secondary" size="lg" style={[{ flex: 1 }, styles.quietAction]} onPress={onScan} />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}><Text style={[styles.liveHint, { flex: 1, marginTop: 0 }]}>{t('scanHint')}</Text><Button label={t('pickup')} variant="secondary" size="sm" style={styles.quietAction} onPress={() => onDesk('pickup')} /></View>
         </View>
-        <Caption>
-          {t('window', { start: format.date(live.startsAt, { weekday: 'short', hour: 'numeric', minute: '2-digit' }), end: format.time(live.endsAt) })} · {timing}
-        </Caption>
-      </View>
+      </Reveal>
 
-      {live.phase === 'overdue' ? <Banner tone="danger" icon="alert" title={t('overdue', { count: live.present })} action={<Button label={t('pickup')} size="sm" variant="danger" onPress={() => onDesk('pickup')} />} /> : null}
-      {live.phase === 'ending' ? <Banner tone="success" icon="check" title={t('allHome')} /> : null}
-
-      <StatGrid>
-        <StatTile label={t('hereNow')} value={format.number(live.present)} tone="success" />
-        <StatTile label={t('attended')} value={format.number(live.attended)} />
-        <StatTile label={t('collected')} value={format.number(live.collected)} tone="info" />
-        <StatTile label={t('rooms')} value={format.number(live.rooms.length)} tone="warning" />
-      </StatGrid>
-
-      <View style={styles.roomGrid}>
-        {live.rooms.map((room) => (
-          <RoomCard
-            key={room.id}
-            name={room.name}
-            subtitle={formatAgeRange(room.minMonths, room.maxMonths, (count) => ta('months', { count }), (count) => ta('years', { count }))}
-            present={room.present}
-            capacity={room.capacity}
-            onPress={() => onDesk('rooms', room.id)}
-            style={styles.roomHalf}
+      {live.phase === 'overdue' ? (
+        <Reveal delay={60}>
+          <Banner
+            tone="danger"
+            icon="alert"
+            title={t('overdue', { count: live.present })}
+            action={<Button label={t('pickup')} size="sm" variant="danger" onPress={() => onDesk('pickup')} />}
           />
-        ))}
-      </View>
+        </Reveal>
+      ) : null}
+      {live.phase === 'ending' ? (
+        <Reveal delay={60}>
+          <Banner tone="success" icon="check" title={t('allHome')} />
+        </Reveal>
+      ) : null}
 
-      <View style={styles.actions}>
-        <Button label={t('desk')} icon="door" size="lg" style={{ flex: 1.3 }} onPress={() => onDesk('checkin')} />
-        <Button label={t('scan')} icon="camera" variant="secondary" size="lg" style={{ flex: 1 }} onPress={onScan} />
-      </View>
-      <Caption>{t('scanHint')}</Caption>
-
-      <View style={{ gap: space.sm }}>
-        <View style={styles.liveTitle}>
-          <Text style={[type.label, { flex: 1 }]}>{t('activity')}</Text>
-          <Pressable hitSlop={8} onPress={() => onDesk(canManage ? 'supervisor' : 'pickup')}>
-            <Text style={styles.link}>{canManage ? t('supervisor') : t('pickup')}</Text>
-          </Pressable>
+      <Reveal delay={100}>
+        <Section title={t('rooms')} />
+        <View style={styles.roomGrid}>
+          {live.rooms.map((room) => (
+            <RoomCard
+              key={room.id}
+              name={room.name}
+              subtitle={formatAgeRange(
+                room.minMonths,
+                room.maxMonths,
+                (count) => ta('months', { count }),
+                (count) => ta('years', { count }),
+              )}
+              present={room.present}
+              capacity={room.capacity}
+              onPress={() => onDesk('rooms', room.id)}
+              style={styles.roomHalf}
+            />
+          ))}
         </View>
+      </Reveal>
+
+      <Reveal delay={160}>
+        <Section title={t('activity')} action={canManage ? t('supervisor') : t('pickup')} onAction={() => onDesk(canManage ? 'supervisor' : 'pickup')} />
         {events.length ? <Timeline items={events} /> : <Caption>{t('noActivity')}</Caption>}
-      </View>
-    </Card>
+      </Reveal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  liveTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  welcome: { height: 166, borderRadius: 22, overflow: 'hidden', backgroundColor: '#fff4df', padding: 18, justifyContent: 'center' },
+  welcomeTitle: { fontFamily: fonts.semibold, fontSize: 19, lineHeight: 23, letterSpacing: -0.5, color: KIDS.green, maxWidth: '51%' },
+  welcomeCaption: { fontFamily: fonts.medium, fontSize: 10.5, lineHeight: 14, color: '#5d634a', maxWidth: '42%', marginTop: 8 },
+  live: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: colors.hairlineStrong, borderRadius: 20, padding: space.lg, gap: space.lg, overflow: 'hidden' },
+  liveTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  liveEyebrow: { ...type.micro, textTransform: 'uppercase', color: colors.muted },
+  liveName: { fontFamily: fonts.medium, fontSize: 19, lineHeight: 24, letterSpacing: -0.3, color: colors.ink },
+  liveWindow: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 17, color: colors.muted },
+  liveStats: { flexDirection: 'row', gap: 8 },
+  liveStat: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  liveStatValue: { fontFamily: fonts.semibold, fontSize: 20, lineHeight: 24, letterSpacing: -0.3, fontVariant: ['tabular-nums'] },
+  liveStatLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted, marginTop: 1 },
+  liveHint: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, color: colors.muted, marginTop: -space.sm },
+  quietAction: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairlineStrong },
   roomGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  roomHalf: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.inset },
+  roomHalf: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.page, borderColor: colors.hairlineStrong, borderWidth: 1 },
   actions: { flexDirection: 'row', gap: space.sm },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 88, paddingTop: 4 },
   barSlot: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
@@ -405,5 +544,4 @@ const styles = StyleSheet.create({
   ageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sessionRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairlineStrong },
   pager: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm, borderRadius: radius.md },
-  link: { fontFamily: fonts.medium, fontSize: 13, color: KIDS.green },
 });

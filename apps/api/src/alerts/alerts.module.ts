@@ -1,3 +1,4 @@
+import { OfferingEntry, OfferingEntrySchema } from '../finance/schemas/offering-entry.schema';
 import { CareModule } from '../care/care.module';
 import { MeetingsModule } from '../meetings/meetings.module';
 import { Module } from '@nestjs/common';
@@ -46,6 +47,7 @@ import { AlertsService } from './alerts.service';
       { name: Guest.name, schema: GuestSchema },
       { name: IntakeSubmission.name, schema: IntakeSubmissionSchema },
       { name: ExpenseEntry.name, schema: ExpenseEntrySchema },
+      {name:OfferingEntry.name,schema:OfferingEntrySchema},
       { name: WorkspaceRequest.name, schema: WorkspaceRequestSchema },
       { name: User.name, schema: UserSchema },
     ]),

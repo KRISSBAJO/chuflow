@@ -44,10 +44,10 @@
         "endedAgo": "Ended {time}",
         "overdue": "{count, plural, one {# child has} other {# children have}} not been collected yet.",
         "allHome": "Every child has been collected. The supervisor can close the session.",
-        "desk": "Open the desk",
+        "desk": "Check in",
         "pickup": "Pickup",
         "supervisor": "Supervisor tools",
-        "scan": "Scan a card",
+        "scan": "Scan",
         "scanHint": "Point the camera at a family or child card to start a check-in.",
         "activity": "Latest activity",
         "noActivity": "No check-ins yet. The first family to arrive will appear here.",
@@ -128,6 +128,15 @@
         "guardians": "{count, plural, one {# guardian} other {# guardians}}",
         "empty": "No matching families. Register a parent or guardian on the website first, then add their children.",
         "page": "Page {page} of {total}"
+      },
+      "welcome": {
+        "title": "Little hearts. Big belonging.",
+        "subtitle": "A warm welcome. A safe handover."
+      },
+      "tabs": {
+        "today": "Today",
+        "families": "Families",
+        "insights": "Insights"
       }
     },
     "desk": {

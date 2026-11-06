@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useAppFormat } from "@/i18n/labels";
 import { FilterPanel } from "@/components/filter-panel";
 import { ExportMenu } from "@/components/export-menu";
@@ -30,6 +30,7 @@ export function AttendanceSummaryTable({
   defaultBranchId?: string;
   canEdit?: boolean;
 }) {
+  const locale = useLocale();
   const t = useTranslations("services.attendance.summaries");
   const tw = useTranslations("workspace");
   const { dateTime } = useAppFormat();
@@ -47,12 +48,29 @@ export function AttendanceSummaryTable({
       : 25,
   );
   const [breakdown, setBreakdown] = useState(false);
+  const [month, setMonth] = useState(q.get("month")||"");
+  const [year, setYear] = useState(q.get("year")||"");
+  const [weekday, setWeekday] = useState(q.get("weekday")||"all");
+  const [from, setFrom] = useState(q.get("filterFrom")||"");
+  const [to, setTo] = useState(q.get("filterTo")||"");
+  const total = (r: AttendanceItem) =>
+    (r.adultsCount ?? (r.menCount ?? 0) + (r.womenCount ?? 0)) +
+    (r.childrenCount ?? 0);
+
   const filtered = useMemo(
     () =>
       records
         .filter(
           (r) =>
             (!branch || branchId(r) === branch) &&
+            (!month || r.serviceDate.slice(5, 7) === month) &&
+            (!year || r.serviceDate.slice(0, 4) === year) &&
+            (!from || r.serviceDate.slice(0, 10) >= from) &&
+            (!to || r.serviceDate.slice(0, 10) <= to) &&
+            (weekday === "all" ||
+              new Date(
+                r.serviceDate.slice(0, 10) + "T12:00:00Z",
+              ).getUTCDay() === Number(weekday)) &&
             (!service ||
               r.serviceType === service ||
               r.serviceTypeId?._id === service) &&
@@ -60,18 +78,37 @@ export function AttendanceSummaryTable({
               .toLowerCase()
               .includes(search.trim().toLowerCase()),
         )
-        .sort(
-          (a, b) =>
-            (sort === "oldest" ? 1 : -1) *
-            a.serviceDate.localeCompare(b.serviceDate),
+        .sort((a, b) =>
+          sort === "highest"
+            ? total(b) - total(a)
+            : sort === "lowest"
+              ? total(a) - total(b)
+              : (sort === "oldest" ? 1 : -1) *
+                a.serviceDate.localeCompare(b.serviceDate),
         ),
-    [records, branch, service, search, sort],
+    [records, branch, service, search, sort, month, year, weekday, from, to],
   );
+  const sundays = filtered.filter(
+    (r) =>
+      new Date(r.serviceDate.slice(0, 10) + "T12:00:00Z").getUTCDay() === 0,
+  );
+  const sundayCount = new Set(sundays.map((r) => r.serviceDate.slice(0, 10)))
+    .size;
+  const average = filtered.length
+    ? filtered.reduce((sum, r) => sum + total(r), 0) / filtered.length
+    : undefined;
+  const sundayAverage = sundayCount
+    ? sundays.reduce((sum, r) => sum + total(r), 0) / sundayCount
+    : undefined;
+  const years = [...new Set(records.map((r) => r.serviceDate.slice(0, 4)))]
+    .sort()
+    .reverse();
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = Math.min(page, pages);
   const params = {
     ...Object.fromEntries(q.entries()),
     tab: "summaries",
+    month,year,weekday,filterFrom:from,filterTo:to,
     search,
     branchId: branch,
     serviceType: service,
@@ -95,6 +132,90 @@ export function AttendanceSummaryTable({
         <ExportMenu resource="attendance" rows={filtered} />
       </div>
       <FilterPanel>
+        <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label>
+            {t("advanced.month")}
+            <select
+              className="ui-input"
+              value={month}
+              onChange={(e) => {
+                setMonth(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">—</option>
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i} value={String(i + 1).padStart(2, "0")}>
+                  {new Intl.DateTimeFormat(locale, { month: "long" }).format(
+                    new Date(2026, i, 1),
+                  )}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("advanced.year")}
+            <select
+              className="ui-input"
+              value={year}
+              onChange={(e) => {
+                setYear(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">—</option>
+              {years.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("advanced.weekday")}
+            <select
+              className="ui-input"
+              value={weekday}
+              onChange={(e) => {
+                setWeekday(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">{t("advanced.allDays")}</option>
+              {Array.from({ length: 7 }, (_, day) => (
+                <option key={day} value={String(day)}>
+                  {new Intl.DateTimeFormat(locale, { weekday: "long" }).format(
+                    new Date(2026, 10, 1 + day),
+                  )}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("advanced.from")}
+            <input
+              className="ui-input"
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label>
+            {t("advanced.to")}
+            <input
+              className="ui-input"
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <select
             value={branch}
@@ -139,6 +260,8 @@ export function AttendanceSummaryTable({
           >
             <option value="newest">{t("newestFirst")}</option>
             <option value="oldest">{t("oldestFirst")}</option>
+            <option value="highest">{t("advanced.highest")}</option>
+            <option value="lowest">{t("advanced.lowest")}</option>
           </select>
           <select
             value={pageSize}
@@ -160,6 +283,11 @@ export function AttendanceSummaryTable({
           variant="secondary"
           onClick={() => {
             setSearch("");
+            setMonth("");
+            setYear("");
+            setWeekday("all");
+            setFrom("");
+            setTo("");
             setBranch(defaultBranchId || "");
             setService("");
             setSort("newest");
@@ -169,6 +297,34 @@ export function AttendanceSummaryTable({
           {t("resetFilters")}
         </Button>
       </FilterPanel>
+      <div className="rounded-2xl bg-[#f5f4f1] p-4 text-sm">
+        <div className="flex flex-wrap gap-6">
+          <span>
+            {t("advanced.average")}:{" "}
+            <strong>
+              {average === undefined
+                ? "—"
+                : average.toLocaleString(locale, { maximumFractionDigits: 1 })}
+            </strong>
+          </span>
+          <span>
+            {t("advanced.sundayAverage")}:{" "}
+            <strong>
+              {sundayAverage === undefined
+                ? "—"
+                : sundayAverage.toLocaleString(locale, {
+                    maximumFractionDigits: 1,
+                  })}
+            </strong>
+          </span>
+          <span>
+            {t("advanced.sundayCount")}: {sundayCount}
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-[#6b6b6b]">
+          {t("advanced.averageHint")}
+        </p>
+      </div>
       <details className="text-sm text-[#6b6b6b]">
         <summary className="w-fit cursor-pointer">{tw("columns")}</summary>
         <label className="mt-3 flex gap-2">

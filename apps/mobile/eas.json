@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.chuflow.com/api",
+        "EXPO_PUBLIC_WEB_URL": "https://chuflow.com"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.chuflow.com/api",
+        "EXPO_PUBLIC_WEB_URL": "https://chuflow.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

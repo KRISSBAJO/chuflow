@@ -278,11 +278,16 @@ export type OfferingEntrySummary = {
   amount: number;
   currency: string;
   notes?: string;
+  status?: string;
+  reviewRevision?: number;
+  reviewedAt?: string;
+  reviewNotes?: string;
   createdBy?: UserSummary;
   updatedBy?: UserSummary;
   createdAt?: string;
   updatedAt?: string;
   permissions: {
+    canReview?: boolean;
     canEdit: boolean;
     reason: string;
   };
@@ -354,9 +359,11 @@ export type ExpenseEntrySummary = {
   receiptUrl?: string;
   notes?: string;
   status: string;
+  reviewRevision?: number;
   reviewedAt?: string;
   reviewNotes?: string;
   permissions: {
+    canReview?: boolean;
     canEdit: boolean;
     reason: string;
   };

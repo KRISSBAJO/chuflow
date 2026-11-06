@@ -1,3 +1,4 @@
+import { OfferingEntry } from '../finance/schemas/offering-entry.schema';
 import { CareService } from '../care/care.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
@@ -74,6 +75,7 @@ export class AlertsService {
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
     private readonly accessScopeService: AccessScopeService,
+    @InjectModel(OfferingEntry.name) private readonly offeringEntryModel:Model<OfferingEntry>,
   ) {}
 
   private normalizeDays(days?: number) {
@@ -208,10 +210,10 @@ export class AlertsService {
         templateKind: 'attendance',
         status: 'pending',
       }),
-      this.expenseEntryModel.countDocuments({
-        ...(branchMatch ? { branchId: branchMatch } : {}),
-        status: 'submitted',
-      }),
+      Promise.all([
+        this.expenseEntryModel.countDocuments({...(branchMatch ? {branchId:branchMatch}:{}),status:'submitted',createdBy:{$ne:currentUser.sub},updatedBy:{$ne:currentUser.sub}}),
+        this.offeringEntryModel.countDocuments({...(branchMatch ? {branchId:branchMatch}:{}),status:'submitted',createdBy:{$ne:currentUser.sub},updatedBy:{$ne:currentUser.sub}}),
+      ]).then(counts=>counts.reduce((sum,count)=>sum+count,0)),
       isGlobalRole(currentUser.role)
         ? this.workspaceRequestModel.countDocuments({
             status: { $in: ['new', 'in_review'] },
@@ -356,10 +358,10 @@ export class AlertsService {
       pendingExpenseApprovals > 0
         ? {
             key: 'expense_approvals',
-            label: 'Expense approvals',
+            label: 'Finance approvals',
             count: pendingExpenseApprovals,
             tone: 'warm',
-            description: 'Finance expense requests are waiting for approval.',
+            description: 'Offerings and expenses are waiting for independent approval.',
             href: '/approvals',
           }
         : null,

@@ -1,3 +1,7 @@
+import { WeeklyWorkflowController } from './weekly-workflow.controller';
+import { WeeklyWorkflowService } from './weekly-workflow.service';
+import { WeeklyDistrictPacket, WeeklyDistrictPacketSchema } from './weekly-workflow.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -36,9 +40,11 @@ import {
       { name: IntakeTemplate.name, schema: IntakeTemplateSchema },
       { name: IntakeSubmission.name, schema: IntakeSubmissionSchema },
       { name: Branch.name, schema: BranchSchema },
+      {name:User.name,schema:UserSchema},
+      {name:WeeklyDistrictPacket.name,schema:WeeklyDistrictPacketSchema},
     ]),
   ],
-  controllers: [IntakeTemplatesController],
-  providers: [IntakeTemplatesService],
+  controllers: [IntakeTemplatesController, WeeklyWorkflowController],
+  providers: [IntakeTemplatesService, WeeklyWorkflowService],
 })
 export class IntakeTemplatesModule {}

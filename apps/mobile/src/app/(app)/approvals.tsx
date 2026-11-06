@@ -1,3 +1,5 @@
+import { FinanceReviewControls } from '@/features/finance/review-controls';
+import type { OfferingEntrySummary, ExpenseEntrySummary } from '@/features/finance/types';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
@@ -11,7 +13,7 @@ import { api, errorMessage } from '@/lib/api';
 import { branchName } from '@/lib/format';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
-import type { AttendanceSubmission, ExpenseEntry, Paginated } from '@/lib/types';
+import type { AttendanceSubmission, Paginated } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
 type Decision = 'approve' | 'reject';
@@ -50,7 +52,8 @@ export default function ApprovalsScreen() {
   const format = useAppFormat();
   const canExpenses = can.approveExpenses(user?.role);
   const attendance = useApi<{ items: AttendanceSubmission[] }>('/intake-templates/attendance-submissions?status=pending');
-  const expenses = useApi<Paginated<ExpenseEntry>>(canExpenses ? '/finance/expenses?status=submitted&limit=20' : null);
+  const expenses = useApi<Paginated<ExpenseEntrySummary>>(canExpenses ? '/finance/expenses?status=submitted&limit=20' : null);
+  const offerings=useApi<Paginated<OfferingEntrySummary>>(canExpenses?'/finance/offerings?status=submitted&limit=20':null);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function decide(kind: 'attendance' | 'expense', id: string, decision: Decision) {
@@ -62,7 +65,7 @@ export default function ApprovalsScreen() {
     setBusy(`${id}:${decision}`);
     try {
       const path = kind === 'attendance' ? `/intake-templates/attendance-submissions/${id}/${decision}` : `/finance/expenses/${id}/${decision}`;
-      await api.patch(path, kind === 'expense' ? {} : undefined);
+      await api.patch(path, kind === 'expense' ? {reviewRevision:expenses.data?.items.find(item=>item._id===id)?.reviewRevision} : undefined);
       toast.success(decision === 'approve' ? common('statuses.approved') : common('statuses.rejected'));
       if (kind === 'attendance') attendance.setData((current) => current && { items: current.items.filter((item) => item._id !== id) });
       else expenses.setData((current) => current && { ...current, items: current.items.filter((item) => item._id !== id) });
@@ -77,7 +80,7 @@ export default function ApprovalsScreen() {
   const attendanceItems = attendance.data?.items ?? [];
   const expenseItems = expenses.data?.items ?? [];
   const loading = attendance.loading || (canExpenses && expenses.loading);
-  const nothing = !loading && !attendanceItems.length && !expenseItems.length;
+  const nothing = !loading && !attendanceItems.length && !expenseItems.length && !offerings.data?.items.length;
   const alerts = (summary?.items ?? []).filter((item) => !['attendance_approvals', 'expense_approvals'].includes(item.key));
 
   return (
@@ -87,6 +90,7 @@ export default function ApprovalsScreen() {
       onRefresh={() => {
         void attendance.refresh();
         void expenses.refresh();
+        void offerings.refresh();
         void refreshAlerts();
       }}
     >
@@ -127,6 +131,7 @@ export default function ApprovalsScreen() {
         </Card>
       ))}
 
+      {(offerings.data?.items??[]).map(item=><Card key={item._id}><Text style={styles.title}>{item.offeringTypeLabel} · {format.money(item.amount,item.currency)}</Text><Caption>{item.branchId?.name} · {format.date(item.serviceDate)}</Caption><FinanceReviewControls id={item._id} status={item.status} canReview={item.permissions?.canReview} revision={item.reviewRevision} onReviewed={()=>void offerings.reload()}/></Card>)}
       {expenseItems.length ? <Section title={t('expenses')} /> : null}
       {expenseItems.map((item) => (
         <Card key={item._id} style={styles.card}>
@@ -140,8 +145,8 @@ export default function ApprovalsScreen() {
             <Text style={styles.amount}>{format.money(item.amount, item.currency)}</Text>
           </View>
           <View style={styles.actions}>
-            <Button label={common('actions.reject')} variant="secondary" size="sm" style={{ flex: 1 }} loading={busy === `${item._id}:reject`} onPress={() => void decide('expense', item._id, 'reject')} />
-            <Button label={common('actions.approve')} icon="check" size="sm" style={{ flex: 1.4 }} loading={busy === `${item._id}:approve`} onPress={() => void decide('expense', item._id, 'approve')} />
+            <Button disabled={item.permissions?.canReview!==true} label={common('actions.reject')} variant="secondary" size="sm" style={{ flex: 1 }} loading={busy === `${item._id}:reject`} onPress={() => void decide('expense', item._id, 'reject')} />
+            <Button disabled={item.permissions?.canReview!==true} label={common('actions.approve')} icon="check" size="sm" style={{ flex: 1.4 }} loading={busy === `${item._id}:approve`} onPress={() => void decide('expense', item._id, 'approve')} />
           </View>
         </Card>
       ))}

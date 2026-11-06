@@ -31,19 +31,19 @@ export const colors = {
 export const flameGradient = [colors.flameFrom, colors.flameTo] as const;
 
 export const fonts = {
-  regular: 'InterTight_400Regular',
-  medium: 'InterTight_500Medium',
-  semibold: 'InterTight_600SemiBold',
-  bold: 'InterTight_700Bold',
+  regular: 'Jost_400Regular',
+  medium: 'Jost_500Medium',
+  semibold: 'Jost_600SemiBold',
+  bold: 'Jost_700Bold',
 } as const;
 
 /** One type scale for every screen. */
 export const type = {
-  display: { fontFamily: fonts.semibold, fontSize: 24, lineHeight: 29, letterSpacing: -0.6, color: colors.ink },
-  title: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 21, letterSpacing: -0.2, color: colors.ink },
-  body: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.text },
-  label: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 19, color: colors.ink },
-  small: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 17, color: colors.muted },
+  display: { fontFamily: fonts.semibold, fontSize: 22, lineHeight: 27, letterSpacing: -0.6, color: colors.ink },
+  title: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2, color: colors.ink },
+  body: { fontFamily: fonts.regular, fontSize: 13.5, lineHeight: 19, color: colors.text },
+  label: { fontFamily: fonts.medium, fontSize: 13.5, lineHeight: 19, color: colors.ink },
+  small: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.muted },
   micro: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14, letterSpacing: 0.4, color: colors.faint },
   number: { fontFamily: fonts.semibold, fontSize: 20, lineHeight: 24, letterSpacing: -0.4, color: colors.ink },
 } as const;

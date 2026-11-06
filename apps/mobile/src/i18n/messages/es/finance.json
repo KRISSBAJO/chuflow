@@ -138,6 +138,15 @@
       "confirmRejectBody": "La sede tendrá que enviarlo de nuevo.",
       "openReceipt": "Abrir recibo",
       "pendingHint": "En espera de aprobación antes de pasar al libro mayor."
+    },
+    "review": {
+      "independent": "Otra persona autorizada debe aprobar este registro. Los importes pendientes no se incluyen en el saldo aprobado.",
+      "notes": "Notas de revisión (opcional)",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "approved": "Registro aprobado",
+      "rejected": "Registro rechazado",
+      "failed": "No se pudo revisar este registro"
     }
   }
 }

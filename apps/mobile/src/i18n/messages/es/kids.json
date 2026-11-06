@@ -44,10 +44,10 @@
         "endedAgo": "Terminó {time}",
         "overdue": "{count, plural, one {# niño todavía no ha sido recogido} other {# niños todavía no han sido recogidos}}.",
         "allHome": "Todos los niños fueron recogidos. El supervisor puede cerrar la sesión.",
-        "desk": "Abrir el mostrador",
+        "desk": "Registrar",
         "pickup": "Recogida",
         "supervisor": "Herramientas del supervisor",
-        "scan": "Escanear una tarjeta",
+        "scan": "Escanear",
         "scanHint": "Apunta la cámara a una tarjeta de familia o de niño para iniciar el registro.",
         "activity": "Última actividad",
         "noActivity": "Aún no hay registros. La primera familia en llegar aparecerá aquí.",
@@ -128,6 +128,15 @@
         "guardians": "{count, plural, one {# tutor} other {# tutores}}",
         "empty": "No hay familias que coincidan. Inscribe primero a un padre o tutor en el sitio web y luego añade a sus hijos.",
         "page": "Página {page} de {total}"
+      },
+      "welcome": {
+        "title": "Pequeños corazones. Una gran familia.",
+        "subtitle": "Una cálida bienvenida. Una entrega segura."
+      },
+      "tabs": {
+        "today": "Hoy",
+        "families": "Familias",
+        "insights": "Resumen"
       }
     },
     "desk": {

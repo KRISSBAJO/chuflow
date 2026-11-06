@@ -1,6 +1,7 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import {
   IsDateString,
+  IsInt,
   IsMongoId,
   IsNumber,
   IsOptional,
@@ -69,6 +70,11 @@ export class CreateExpenseEntryDto {
 export class UpdateExpenseEntryDto extends PartialType(CreateExpenseEntryDto) {}
 
 export class ReviewExpenseEntryDto {
+  @ApiProperty({ required: false, minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  reviewRevision?: number;
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

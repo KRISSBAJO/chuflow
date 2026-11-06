@@ -5,6 +5,7 @@ import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
 import type { Tone } from '@/lib/format';
 import { Icon, type IconName } from './icon';
+import { PressableScale } from './motion';
 import { Caption, tap } from './ui';
 
 /*
@@ -66,16 +67,17 @@ export function StatTile({
   );
   if (!onPress) return <View style={[styles.stat, style]}>{body}</View>;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={() => {
         tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.stat, pressed && { opacity: 0.6 }, style]}
+      dim={0.7}
+      style={[styles.stat, style]}
     >
       {body}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -416,13 +418,14 @@ export function Banner({ tone = 'info', icon = 'info', title, body, action }: { 
 /** Icon + label tile for a grid of destinations (the More hub, quick actions). */
 export function ActionTile({ icon, label, hint, onPress, badge, tone = 'neutral' }: { icon: IconName; label: string; hint?: string; onPress: () => void; badge?: number; tone?: 'neutral' | 'dark' }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={() => {
         tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.tile, pressed && { opacity: 0.6 }]}
+      dim={0.7}
+      style={styles.tile}
     >
       <View style={[styles.tileIcon, tone === 'dark' && { backgroundColor: colors.ink }]}>
         <Icon name={icon} size={18} color={tone === 'dark' ? '#ffffff' : colors.ink} />
@@ -436,7 +439,7 @@ export function ActionTile({ icon, label, hint, onPress, badge, tone = 'neutral'
         {label}
       </Text>
       {hint ? <Caption numberOfLines={2}>{hint}</Caption> : null}
-    </Pressable>
+    </PressableScale>
   );
 }
 

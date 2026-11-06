@@ -35,6 +35,25 @@
         "holySpiritBaptismCount": "Batismo no Espírito Santo"
       }
     },
+    "list": {
+      "subtitle": "Todas as contagens de cultos, da mais recente à mais antiga. Toque em + para contar um culto.",
+      "newCount": "Nova contagem"
+    },
+    "flow": {
+      "title": "Nova contagem",
+      "stepOf": "Etapa {step} de {total}",
+      "runningTotal": "{count} até agora",
+      "branch": { "question": "Qual igreja local?", "hint": "A contagem é registrada para esta igreja local." },
+      "service": { "question": "Qual culto?", "hint": "Escolha o culto que você está contando.", "none": "Ainda não há cultos configurados para esta igreja local. Adicione-os no site." },
+      "date": { "question": "Qual dia?", "hint": "Normalmente hoje, mas você pode voltar a um culto anterior.", "today": "Hoje", "yesterday": "Ontem", "other": "Outro dia" },
+      "men": { "question": "Quantos homens?", "hint": "Toque em + conforme entram, ou digite o número." },
+      "women": { "question": "Quantas mulheres?", "hint": "Toque em + conforme entram, ou digite o número." },
+      "children": { "question": "Quantas crianças?", "hint": "As crianças nas salas infantis também contam." },
+      "firstTimers": { "question": "Dessas, quantas vieram pela primeira vez?", "hint": "Já estão no total; anotadas aqui para os relatórios." },
+      "newConverts": { "question": "Quantos novos convertidos?", "hint": "Pessoas que entregaram a vida a Cristo neste culto." },
+      "holySpirit": { "question": "Quantos receberam o batismo no Espírito Santo?", "hint": "Deixe em zero se nenhum." },
+      "review": { "question": "Pronto para salvar?", "hint": "Confira os números e salve. Você pode corrigi-los depois na lista.", "total": "Total de pessoas" }
+    },
     "outbox": {
       "couldNotSend": "Não foi possível enviar"
     }

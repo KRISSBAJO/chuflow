@@ -138,6 +138,15 @@
       "confirmRejectBody": "L’église devra la soumettre à nouveau.",
       "openReceipt": "Ouvrir le reçu",
       "pendingHint": "En attente d’approbation avant inscription au grand livre."
+    },
+    "review": {
+      "independent": "Une autre personne autorisée doit approuver cette écriture. Les montants en attente ne sont pas inclus dans le solde approuvé.",
+      "notes": "Notes de révision (facultatif)",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "approved": "Écriture approuvée",
+      "rejected": "Écriture rejetée",
+      "failed": "Impossible de réviser cette écriture"
     }
   }
 }

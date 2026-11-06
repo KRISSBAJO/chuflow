@@ -5,6 +5,8 @@ export type ExpenseEntryDocument = HydratedDocument<ExpenseEntry>;
 
 @Schema({ timestamps: true })
 export class ExpenseEntry {
+  @Prop({ default: 0 })
+  reviewRevision!: number;
   @Prop({
     type: SchemaTypes.ObjectId,
     ref: 'Branch',

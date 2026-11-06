@@ -1,13 +1,18 @@
 import { hasAdditionalPermission } from '../common/permissions';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, type ClientSession } from 'mongoose';
+import {
+  ensureIndependentReview,
+  SETTLED_FINANCE_STATUSES,
+} from './finance-review';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import {
@@ -216,6 +221,29 @@ type ScopedBranch = {
   district: string;
   city?: string;
   state?: string;
+};
+
+type ReviewableFinanceEntry = {
+  _id: Types.ObjectId;
+  branchId: Types.ObjectId;
+  oversightRegion: string;
+  district: string;
+  serviceDate?: Date;
+  expenseDate?: Date;
+  accountId: Types.ObjectId;
+  accountKey: string;
+  accountLabel: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  offeringTypeLabel?: string;
+  serviceScheduleId?: Types.ObjectId;
+  serviceInstanceId?: Types.ObjectId;
+  serviceLabel?: string;
+  status: string;
+  reviewRevision?: number;
+  createdBy: Types.ObjectId;
+  updatedBy?: Types.ObjectId;
 };
 
 @Injectable()
@@ -756,66 +784,71 @@ export class FinanceService implements OnModuleInit {
     };
   }
 
-  private async syncLedgerEntry(params: {
-    branchId: string;
-    oversightRegion: string;
-    district: string;
-    entryDate: Date;
-    accountId: string;
-    accountKey: string;
-    accountLabel: string;
-    direction: 'credit' | 'debit';
-    sourceType: 'offering' | 'expense' | 'adjustment';
-    sourceId: string;
-    serviceScheduleId?: string;
-    serviceInstanceId?: string;
-    serviceLabel?: string;
-    amount: number;
-    currency: string;
-    description: string;
-    status: 'approved' | 'submitted' | 'rejected' | 'locked';
-    createdBy: string;
-    updatedBy?: string;
-    approvedBy?: string;
-    reviewedAt?: Date;
-  }) {
+  private async syncLedgerEntry(
+    params: {
+      branchId: string;
+      oversightRegion: string;
+      district: string;
+      entryDate: Date;
+      accountId: string;
+      accountKey: string;
+      accountLabel: string;
+      direction: 'credit' | 'debit';
+      sourceType: 'offering' | 'expense' | 'adjustment';
+      sourceId: string;
+      serviceScheduleId?: string;
+      serviceInstanceId?: string;
+      serviceLabel?: string;
+      amount: number;
+      currency: string;
+      description: string;
+      status: 'approved' | 'submitted' | 'rejected' | 'locked';
+      createdBy: string;
+      updatedBy?: string;
+      approvedBy?: string;
+      reviewedAt?: Date;
+    },
+    session?: ClientSession,
+  ) {
     const periodKey = this.getPeriodKey(params.entryDate);
 
     await this.ledgerEntryModel.findOneAndUpdate(
       { sourceType: params.sourceType, sourceId: params.sourceId },
       {
-        branchId: new Types.ObjectId(params.branchId),
-        oversightRegion: params.oversightRegion,
-        district: params.district,
-        entryDate: params.entryDate,
-        periodKey,
-        accountId: new Types.ObjectId(params.accountId),
-        accountKey: params.accountKey,
-        accountLabel: params.accountLabel,
-        direction: params.direction,
-        sourceType: params.sourceType,
-        sourceId: params.sourceId,
-        serviceScheduleId: params.serviceScheduleId
-          ? new Types.ObjectId(params.serviceScheduleId)
-          : undefined,
-        serviceInstanceId: params.serviceInstanceId
-          ? new Types.ObjectId(params.serviceInstanceId)
-          : undefined,
-        serviceLabel: params.serviceLabel,
-        amount: params.amount,
-        currency: params.currency,
-        description: params.description,
-        status: params.status,
-        createdBy: new Types.ObjectId(params.createdBy),
-        updatedBy: params.updatedBy
-          ? new Types.ObjectId(params.updatedBy)
-          : undefined,
-        approvedBy: params.approvedBy
-          ? new Types.ObjectId(params.approvedBy)
-          : undefined,
-        reviewedAt: params.reviewedAt,
+        $set: {
+          branchId: new Types.ObjectId(params.branchId),
+          oversightRegion: params.oversightRegion,
+          district: params.district,
+          entryDate: params.entryDate,
+          periodKey,
+          accountId: new Types.ObjectId(params.accountId),
+          accountKey: params.accountKey,
+          accountLabel: params.accountLabel,
+          direction: params.direction,
+          sourceType: params.sourceType,
+          sourceId: params.sourceId,
+          serviceScheduleId: params.serviceScheduleId
+            ? new Types.ObjectId(params.serviceScheduleId)
+            : undefined,
+          serviceInstanceId: params.serviceInstanceId
+            ? new Types.ObjectId(params.serviceInstanceId)
+            : undefined,
+          serviceLabel: params.serviceLabel,
+          amount: params.amount,
+          currency: params.currency,
+          description: params.description,
+          status: params.status,
+          createdBy: new Types.ObjectId(params.createdBy),
+          updatedBy: params.updatedBy
+            ? new Types.ObjectId(params.updatedBy)
+            : undefined,
+          ...(params.approvedBy ? {approvedBy:new Types.ObjectId(params.approvedBy),reviewedAt:params.reviewedAt} : {}),
+        },
+        ...(!params.approvedBy
+          ? { $unset: { approvedBy: 1, reviewedAt: 1 } }
+          : {}),
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, new: true, setDefaultsOnInsert: true, session },
     );
   }
 
@@ -826,51 +859,23 @@ export class FinanceService implements OnModuleInit {
   ) {
     const branchObjectId = new Types.ObjectId(branchId);
     const [year, month] = periodKey.split('-').map(Number);
-    const periodStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
-    const nextPeriodStart = new Date(year, month, 1, 0, 0, 0, 0);
-
+    const range = {
+      $gte: new Date(year, month - 1, 1),
+      $lt: new Date(year, month, 1),
+    };
+    const from = locked ? 'approved' : 'locked';
+    const to = locked ? 'locked' : 'approved';
     await this.expenseEntryModel.updateMany(
-      {
-        branchId: branchObjectId,
-        expenseDate: { $gte: periodStart, $lt: nextPeriodStart },
-      },
-      locked
-        ? { status: 'locked' }
-        : [
-            {
-              $set: {
-                status: {
-                  $cond: [
-                    { $ifNull: ['$approvedBy', false] },
-                    'approved',
-                    'submitted',
-                  ],
-                },
-              },
-            },
-          ],
+      { branchId: branchObjectId, expenseDate: range, status: from },
+      { $set: { status: to } },
     );
-
+    await this.offeringEntryModel.updateMany(
+      { branchId: branchObjectId, serviceDate: range, status: from },
+      { $set: { status: to } },
+    );
     await this.ledgerEntryModel.updateMany(
-      {
-        branchId: branchObjectId,
-        periodKey,
-      },
-      locked
-        ? { status: 'locked' }
-        : [
-            {
-              $set: {
-                status: {
-                  $cond: [
-                    { $eq: ['$sourceType', 'expense'] },
-                    'approved',
-                    'approved',
-                  ],
-                },
-              },
-            },
-          ],
+      { branchId: branchObjectId, periodKey, status: from },
+      { $set: { status: to } },
     );
   }
 
@@ -1051,6 +1056,10 @@ export class FinanceService implements OnModuleInit {
       accountId: accountValue,
       amount: Number(entry.amount ?? 0),
       currency: String(entry.currency ?? 'USD'),
+      status: String(entry.status ?? 'approved'),
+      reviewRevision: Number(entry.reviewRevision ?? 0),
+      reviewedAt: entry.reviewedAt,
+      reviewNotes: entry.reviewNotes,
       notes: typeof entry.notes === 'string' ? entry.notes : undefined,
       createdBy: createdByValue,
       updatedBy: updatedByValue,
@@ -1060,15 +1069,18 @@ export class FinanceService implements OnModuleInit {
       updatedAt: entry.updatedAt
         ? new Date(String(entry.updatedAt))
         : undefined,
-      permissions: this.getOfferingEditPermission(currentUser, {
-        branchId: branchValue?._id,
-        serviceDate: entry.serviceDate
-          ? new Date(String(entry.serviceDate))
-          : undefined,
-        createdAt: entry.createdAt
-          ? new Date(String(entry.createdAt))
-          : undefined,
-      }),
+      permissions: {
+        canReview: this.canReviewEntry(currentUser, entry),
+        ...this.getOfferingEditPermission(currentUser, {
+          branchId: branchValue?._id,
+          serviceDate: entry.serviceDate
+            ? new Date(String(entry.serviceDate))
+            : undefined,
+          createdAt: entry.createdAt
+            ? new Date(String(entry.createdAt))
+            : undefined,
+        }),
+      },
     };
   }
 
@@ -1154,20 +1166,24 @@ export class FinanceService implements OnModuleInit {
         typeof entry.receiptUrl === 'string' ? entry.receiptUrl : undefined,
       notes: typeof entry.notes === 'string' ? entry.notes : undefined,
       status: String(entry.status ?? 'submitted'),
+      reviewRevision: Number(entry.reviewRevision ?? 0),
       reviewedAt: entry.reviewedAt
         ? new Date(String(entry.reviewedAt))
         : undefined,
       reviewNotes:
         typeof entry.reviewNotes === 'string' ? entry.reviewNotes : undefined,
-      permissions: this.getExpenseEditPermission(currentUser, {
-        expenseDate: entry.expenseDate
-          ? new Date(String(entry.expenseDate))
-          : undefined,
-        createdAt: entry.createdAt
-          ? new Date(String(entry.createdAt))
-          : undefined,
-        status: typeof entry.status === 'string' ? entry.status : undefined,
-      }),
+      permissions: {
+        canReview: this.canReviewEntry(currentUser, entry),
+        ...this.getExpenseEditPermission(currentUser, {
+          expenseDate: entry.expenseDate
+            ? new Date(String(entry.expenseDate))
+            : undefined,
+          createdAt: entry.createdAt
+            ? new Date(String(entry.createdAt))
+            : undefined,
+          status: typeof entry.status === 'string' ? entry.status : undefined,
+        }),
+      },
     };
   }
 
@@ -1579,58 +1595,73 @@ export class FinanceService implements OnModuleInit {
         serviceInstanceId: dto.serviceInstanceId,
       });
 
-    const entry = await this.offeringEntryModel.create({
-      branchId: branch._id,
-      oversightRegion: branch.oversightRegion,
-      district: branch.district,
-      serviceDate,
-      serviceScheduleId:
-        serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id,
-      serviceLabel: serviceInstance?.serviceScheduleName || serviceType.name,
-      serviceTypeId: serviceType._id,
-      serviceTypeKey: serviceType.key,
-      serviceTypeLabel: serviceType.name,
-      offeringTypeId: offeringType._id,
-      offeringTypeKey: offeringType.key,
-      offeringTypeLabel: offeringType.name,
-      accountId: account._id,
-      accountKey: account.key,
-      accountLabel: account.name,
-      amount: dto.amount,
-      currency: dto.currency?.trim() || 'USD',
-      notes: dto.notes?.trim() || undefined,
-      createdBy: new Types.ObjectId(currentUser.sub),
-      updatedBy: new Types.ObjectId(currentUser.sub),
-    });
+    const entry = await this.offeringEntryModel.db.transaction(
+      async (session) => {
+        const [entry] = await this.offeringEntryModel.create(
+          [
+            {
+              status: 'submitted',
+              reviewRevision: 0,
+              branchId: branch._id,
+              oversightRegion: branch.oversightRegion,
+              district: branch.district,
+              serviceDate,
+              serviceScheduleId:
+                serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
+              serviceInstanceId: serviceInstance?._id,
+              serviceLabel:
+                serviceInstance?.serviceScheduleName || serviceType.name,
+              serviceTypeId: serviceType._id,
+              serviceTypeKey: serviceType.key,
+              serviceTypeLabel: serviceType.name,
+              offeringTypeId: offeringType._id,
+              offeringTypeKey: offeringType.key,
+              offeringTypeLabel: offeringType.name,
+              accountId: account._id,
+              accountKey: account.key,
+              accountLabel: account.name,
+              amount: dto.amount,
+              currency: dto.currency?.trim() || 'USD',
+              notes: dto.notes?.trim() || undefined,
+              createdBy: new Types.ObjectId(currentUser.sub),
+              updatedBy: new Types.ObjectId(currentUser.sub),
+            },
+          ],
+          { session },
+        );
 
-    await this.syncLedgerEntry({
-      branchId: String(branch._id),
-      oversightRegion: branch.oversightRegion,
-      district: branch.district,
-      entryDate: serviceDate,
-      accountId: String(account._id),
-      accountKey: account.key,
-      accountLabel: account.name,
-      direction: 'credit',
-      sourceType: 'offering',
-      sourceId: String(entry._id),
-      serviceScheduleId: serviceInstance?.serviceScheduleId
-        ? String(serviceInstance.serviceScheduleId)
-        : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id
-        ? String(serviceInstance._id)
-        : undefined,
-      serviceLabel: serviceInstance?.serviceScheduleName || serviceType.name,
-      amount: dto.amount,
-      currency: dto.currency?.trim() || 'USD',
-      description: `${offeringType.name} offering`,
-      status: 'approved',
-      createdBy: currentUser.sub,
-      updatedBy: currentUser.sub,
-      approvedBy: currentUser.sub,
-      reviewedAt: new Date(),
-    });
+        await this.syncLedgerEntry(
+          {
+            branchId: String(branch._id),
+            oversightRegion: branch.oversightRegion,
+            district: branch.district,
+            entryDate: serviceDate,
+            accountId: String(account._id),
+            accountKey: account.key,
+            accountLabel: account.name,
+            direction: 'credit',
+            sourceType: 'offering',
+            sourceId: String(entry._id),
+            serviceScheduleId: serviceInstance?.serviceScheduleId
+              ? String(serviceInstance.serviceScheduleId)
+              : dto.serviceScheduleId,
+            serviceInstanceId: serviceInstance?._id
+              ? String(serviceInstance._id)
+              : undefined,
+            serviceLabel:
+              serviceInstance?.serviceScheduleName || serviceType.name,
+            amount: dto.amount,
+            currency: dto.currency?.trim() || 'USD',
+            description: `${offeringType.name} offering`,
+            status: 'submitted',
+            createdBy: currentUser.sub,
+            updatedBy: currentUser.sub,
+          },
+          session,
+        );
+        return entry;
+      },
+    );
 
     if (serviceInstance?._id) {
       await this.serviceSchedulesService.touchServiceInstance(
@@ -1666,6 +1697,7 @@ export class FinanceService implements OnModuleInit {
       oversightRegion?: string;
       district?: string;
       offeringTypeId?: string;
+      status?: string;
       accountId?: string;
       search?: string;
       date?: string;
@@ -1698,6 +1730,15 @@ export class FinanceService implements OnModuleInit {
 
     const requestedPage = Math.max(filters.page || 1, 1);
     const query: Record<string, unknown> = { branchId: branchMatch };
+    if (filters.status) {
+      if (
+        !['submitted', 'approved', 'rejected', 'locked'].includes(
+          filters.status,
+        )
+      )
+        throw new BadRequestException('Invalid finance status');
+      query.status = filters.status;
+    }
     const normalizedSearch = this.normalizeFilterValue(filters.search);
 
     if (filters.offeringTypeId) {
@@ -1749,6 +1790,12 @@ export class FinanceService implements OnModuleInit {
     const nextMonthStart = new Date(currentMonthStart);
     nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
 
+    const settled = {
+      $or: [
+        { status: { $in: SETTLED_FINANCE_STATUSES } },
+        { status: { $exists: false } },
+      ],
+    };
     const [
       total,
       amountAggregate,
@@ -1758,12 +1805,13 @@ export class FinanceService implements OnModuleInit {
     ] = await Promise.all([
       this.offeringEntryModel.countDocuments(query),
       this.offeringEntryModel.aggregate<{ totalAmount: number }>([
-        { $match: query },
+        { $match: { $and: [query, settled] } },
         { $group: { _id: null, totalAmount: { $sum: '$amount' } } },
       ]),
       this.offeringEntryModel.aggregate<{ totalAmount: number }>([
         {
           $match: {
+            ...settled,
             branchId: branchMatch,
             serviceDate: { $gte: currentMonthStart, $lt: nextMonthStart },
           },
@@ -1776,7 +1824,7 @@ export class FinanceService implements OnModuleInit {
         totalAmount: number;
         entryCount: number;
       }>([
-        { $match: query },
+        { $match: { $and: [query, settled] } },
         {
           $group: {
             _id: '$offeringTypeId',
@@ -1792,7 +1840,7 @@ export class FinanceService implements OnModuleInit {
         totalAmount: number;
         entryCount: number;
       }>([
-        { $match: query },
+        { $match: { $and: [query, settled] } },
         {
           $group: {
             _id: '$branchId',
@@ -1956,65 +2004,87 @@ export class FinanceService implements OnModuleInit {
         serviceInstanceId: dto.serviceInstanceId,
       });
 
-    await this.offeringEntryModel.findByIdAndUpdate(id, {
-      serviceDate,
-      serviceScheduleId:
-        serviceInstance?.serviceScheduleId ??
-        dto.serviceScheduleId ??
-        existing.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id ?? existing.serviceInstanceId,
-      serviceLabel:
-        serviceInstance?.serviceScheduleName ||
-        existing.serviceLabel ||
-        serviceType.name,
-      serviceTypeId: serviceType._id,
-      serviceTypeKey: serviceType.key,
-      serviceTypeLabel: serviceType.name,
-      offeringTypeId: offeringType._id,
-      offeringTypeKey: offeringType.key,
-      offeringTypeLabel: offeringType.name,
-      accountId: account._id,
-      accountKey: account.key,
-      accountLabel: account.name,
-      ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
-      ...(dto.currency !== undefined
-        ? { currency: dto.currency.trim() || 'USD' }
-        : {}),
-      ...(dto.notes !== undefined
-        ? { notes: dto.notes?.trim() || undefined }
-        : {}),
-      updatedBy: new Types.ObjectId(currentUser.sub),
-    });
+    await this.offeringEntryModel.db.transaction(async (session) => {
+      const changed = await this.offeringEntryModel.findOneAndUpdate(
+        {
+          _id: id,
+          reviewRevision: existing.reviewRevision ?? { $exists: false },
+        },
+        {
+          $set: {
+            status: 'submitted',
+            approvedBy: null,
+            reviewedAt: null,
+            reviewNotes: null,
+            serviceDate,
+            serviceScheduleId:
+              serviceInstance?.serviceScheduleId ??
+              dto.serviceScheduleId ??
+              existing.serviceScheduleId,
+            serviceInstanceId:
+              serviceInstance?._id ?? existing.serviceInstanceId,
+            serviceLabel:
+              serviceInstance?.serviceScheduleName ||
+              existing.serviceLabel ||
+              serviceType.name,
+            serviceTypeId: serviceType._id,
+            serviceTypeKey: serviceType.key,
+            serviceTypeLabel: serviceType.name,
+            offeringTypeId: offeringType._id,
+            offeringTypeKey: offeringType.key,
+            offeringTypeLabel: offeringType.name,
+            accountId: account._id,
+            accountKey: account.key,
+            accountLabel: account.name,
+            ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
+            ...(dto.currency !== undefined
+              ? { currency: dto.currency.trim() || 'USD' }
+              : {}),
+            ...(dto.notes !== undefined
+              ? { notes: dto.notes?.trim() || undefined }
+              : {}),
+            updatedBy: new Types.ObjectId(currentUser.sub),
+          },
+          $inc: { reviewRevision: 1 },
+        },
+        { new: true, session },
+      );
+      if (!changed)
+        throw new ConflictException(
+          'This entry changed. Refresh before editing.',
+        );
 
-    await this.syncLedgerEntry({
-      branchId: String(existing.branchId),
-      oversightRegion: existing.oversightRegion,
-      district: existing.district,
-      entryDate: serviceDate,
-      accountId: String(account._id),
-      accountKey: account.key,
-      accountLabel: account.name,
-      direction: 'credit',
-      sourceType: 'offering',
-      sourceId: id,
-      serviceScheduleId: serviceInstance?.serviceScheduleId
-        ? String(serviceInstance.serviceScheduleId)
-        : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id
-        ? String(serviceInstance._id)
-        : dto.serviceInstanceId,
-      serviceLabel:
-        serviceInstance?.serviceScheduleName ||
-        existing.serviceLabel ||
-        serviceType.name,
-      amount: dto.amount ?? existing.amount,
-      currency: dto.currency?.trim() || existing.currency || 'USD',
-      description: `${offeringType.name} offering`,
-      status: 'approved',
-      createdBy: String(existing.createdBy),
-      updatedBy: currentUser.sub,
-      approvedBy: currentUser.sub,
-      reviewedAt: new Date(),
+      await this.syncLedgerEntry(
+        {
+          branchId: String(existing.branchId),
+          oversightRegion: existing.oversightRegion,
+          district: existing.district,
+          entryDate: serviceDate,
+          accountId: String(account._id),
+          accountKey: account.key,
+          accountLabel: account.name,
+          direction: 'credit',
+          sourceType: 'offering',
+          sourceId: id,
+          serviceScheduleId: serviceInstance?.serviceScheduleId
+            ? String(serviceInstance.serviceScheduleId)
+            : dto.serviceScheduleId,
+          serviceInstanceId: serviceInstance?._id
+            ? String(serviceInstance._id)
+            : dto.serviceInstanceId,
+          serviceLabel:
+            serviceInstance?.serviceScheduleName ||
+            existing.serviceLabel ||
+            serviceType.name,
+          amount: dto.amount ?? existing.amount,
+          currency: dto.currency?.trim() || existing.currency || 'USD',
+          description: `${offeringType.name} offering`,
+          status: 'submitted',
+          createdBy: String(existing.createdBy),
+          updatedBy: currentUser.sub,
+        },
+        session,
+      );
     });
 
     await this.auditLogsService.record({
@@ -2060,69 +2130,80 @@ export class FinanceService implements OnModuleInit {
         serviceInstanceId: dto.serviceInstanceId,
       });
 
-    const autoApproved =
-      isGlobalRole(currentUser.role) ||
-      isNationalRole(currentUser.role) ||
-      isDistrictRole(currentUser.role);
-    const status = autoApproved ? 'approved' : 'submitted';
+    const autoApproved = false;
+    const status = 'submitted';
 
-    const entry = await this.expenseEntryModel.create({
-      branchId: branch._id,
-      oversightRegion: branch.oversightRegion,
-      district: branch.district,
-      expenseDate,
-      accountId: account._id,
-      accountKey: account.key,
-      accountLabel: account.name,
-      expenseCategoryId: category._id,
-      expenseCategoryKey: category.key,
-      expenseCategoryLabel: category.name,
-      serviceScheduleId:
-        serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id,
-      serviceLabel: serviceInstance?.serviceScheduleName,
-      payee: dto.payee?.trim() || undefined,
-      description: dto.description.trim(),
-      amount: dto.amount,
-      currency: dto.currency?.trim() || 'USD',
-      receiptUrl: dto.receiptUrl?.trim() || undefined,
-      notes: dto.notes?.trim() || undefined,
-      status,
-      createdBy: new Types.ObjectId(currentUser.sub),
-      updatedBy: new Types.ObjectId(currentUser.sub),
-      approvedBy: autoApproved
-        ? new Types.ObjectId(currentUser.sub)
-        : undefined,
-      reviewedAt: autoApproved ? new Date() : undefined,
-    });
+    const entry = await this.expenseEntryModel.db.transaction(
+      async (session) => {
+        const [entry] = await this.expenseEntryModel.create(
+          [
+            {
+              reviewRevision: 0,
+              branchId: branch._id,
+              oversightRegion: branch.oversightRegion,
+              district: branch.district,
+              expenseDate,
+              accountId: account._id,
+              accountKey: account.key,
+              accountLabel: account.name,
+              expenseCategoryId: category._id,
+              expenseCategoryKey: category.key,
+              expenseCategoryLabel: category.name,
+              serviceScheduleId:
+                serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
+              serviceInstanceId: serviceInstance?._id,
+              serviceLabel: serviceInstance?.serviceScheduleName,
+              payee: dto.payee?.trim() || undefined,
+              description: dto.description.trim(),
+              amount: dto.amount,
+              currency: dto.currency?.trim() || 'USD',
+              receiptUrl: dto.receiptUrl?.trim() || undefined,
+              notes: dto.notes?.trim() || undefined,
+              status,
+              createdBy: new Types.ObjectId(currentUser.sub),
+              updatedBy: new Types.ObjectId(currentUser.sub),
+              approvedBy: autoApproved
+                ? new Types.ObjectId(currentUser.sub)
+                : undefined,
+              reviewedAt: autoApproved ? new Date() : undefined,
+            },
+          ],
+          { session },
+        );
 
-    await this.syncLedgerEntry({
-      branchId: String(branch._id),
-      oversightRegion: branch.oversightRegion,
-      district: branch.district,
-      entryDate: expenseDate,
-      accountId: String(account._id),
-      accountKey: account.key,
-      accountLabel: account.name,
-      direction: 'debit',
-      sourceType: 'expense',
-      sourceId: String(entry._id),
-      serviceScheduleId: serviceInstance?.serviceScheduleId
-        ? String(serviceInstance.serviceScheduleId)
-        : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id
-        ? String(serviceInstance._id)
-        : undefined,
-      serviceLabel: serviceInstance?.serviceScheduleName,
-      amount: dto.amount,
-      currency: dto.currency?.trim() || 'USD',
-      description: dto.description.trim(),
-      status: status as 'approved' | 'submitted' | 'rejected' | 'locked',
-      createdBy: currentUser.sub,
-      updatedBy: currentUser.sub,
-      approvedBy: autoApproved ? currentUser.sub : undefined,
-      reviewedAt: autoApproved ? new Date() : undefined,
-    });
+        await this.syncLedgerEntry(
+          {
+            branchId: String(branch._id),
+            oversightRegion: branch.oversightRegion,
+            district: branch.district,
+            entryDate: expenseDate,
+            accountId: String(account._id),
+            accountKey: account.key,
+            accountLabel: account.name,
+            direction: 'debit',
+            sourceType: 'expense',
+            sourceId: String(entry._id),
+            serviceScheduleId: serviceInstance?.serviceScheduleId
+              ? String(serviceInstance.serviceScheduleId)
+              : dto.serviceScheduleId,
+            serviceInstanceId: serviceInstance?._id
+              ? String(serviceInstance._id)
+              : undefined,
+            serviceLabel: serviceInstance?.serviceScheduleName,
+            amount: dto.amount,
+            currency: dto.currency?.trim() || 'USD',
+            description: dto.description.trim(),
+            status: status as 'approved' | 'submitted' | 'rejected' | 'locked',
+            createdBy: currentUser.sub,
+            updatedBy: currentUser.sub,
+            approvedBy: autoApproved ? currentUser.sub : undefined,
+            reviewedAt: autoApproved ? new Date() : undefined,
+          },
+          session,
+        );
+        return entry;
+      },
+    );
 
     if (serviceInstance?._id) {
       await this.serviceSchedulesService.touchServiceInstance(
@@ -2349,87 +2430,97 @@ export class FinanceService implements OnModuleInit {
         serviceInstanceId: dto.serviceInstanceId,
       });
 
-    const nextStatus =
-      ['branch_admin', 'resident_pastor', 'associate_pastor'].includes(
-        currentUser.role,
-      ) &&
-      (dto.amount !== undefined ||
-        dto.accountId !== undefined ||
-        dto.expenseCategoryId !== undefined ||
-        dto.expenseDate !== undefined ||
-        dto.description !== undefined)
-        ? 'submitted'
-        : existing.status;
+    const nextStatus = 'submitted';
 
-    await this.expenseEntryModel.findByIdAndUpdate(id, {
-      expenseDate,
-      accountId: account._id,
-      accountKey: account.key,
-      accountLabel: account.name,
-      expenseCategoryId: category._id,
-      expenseCategoryKey: category.key,
-      expenseCategoryLabel: category.name,
-      serviceScheduleId:
-        serviceInstance?.serviceScheduleId ??
-        dto.serviceScheduleId ??
-        existing.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id ?? existing.serviceInstanceId,
-      serviceLabel:
-        serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
-      ...(dto.payee !== undefined
-        ? { payee: dto.payee?.trim() || undefined }
-        : {}),
-      ...(dto.description !== undefined
-        ? { description: dto.description.trim() }
-        : {}),
-      ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
-      ...(dto.currency !== undefined
-        ? { currency: dto.currency.trim() || 'USD' }
-        : {}),
-      ...(dto.receiptUrl !== undefined
-        ? { receiptUrl: dto.receiptUrl?.trim() || undefined }
-        : {}),
-      ...(dto.notes !== undefined
-        ? { notes: dto.notes?.trim() || undefined }
-        : {}),
-      status: nextStatus,
-      updatedBy: new Types.ObjectId(currentUser.sub),
-      ...(nextStatus === 'submitted'
-        ? {
-            approvedBy: undefined,
-            reviewedAt: undefined,
-            reviewNotes: undefined,
-          }
-        : {}),
-    });
+    await this.expenseEntryModel.db.transaction(async (session) => {
+      const changed = await this.expenseEntryModel.findOneAndUpdate(
+        {
+          _id: id,
+          reviewRevision: existing.reviewRevision ?? { $exists: false },
+        },
+        {
+          $set: {
+            expenseDate,
+            accountId: account._id,
+            accountKey: account.key,
+            accountLabel: account.name,
+            expenseCategoryId: category._id,
+            expenseCategoryKey: category.key,
+            expenseCategoryLabel: category.name,
+            serviceScheduleId:
+              serviceInstance?.serviceScheduleId ??
+              dto.serviceScheduleId ??
+              existing.serviceScheduleId,
+            serviceInstanceId:
+              serviceInstance?._id ?? existing.serviceInstanceId,
+            serviceLabel:
+              serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
+            ...(dto.payee !== undefined
+              ? { payee: dto.payee?.trim() || undefined }
+              : {}),
+            ...(dto.description !== undefined
+              ? { description: dto.description.trim() }
+              : {}),
+            ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
+            ...(dto.currency !== undefined
+              ? { currency: dto.currency.trim() || 'USD' }
+              : {}),
+            ...(dto.receiptUrl !== undefined
+              ? { receiptUrl: dto.receiptUrl?.trim() || undefined }
+              : {}),
+            ...(dto.notes !== undefined
+              ? { notes: dto.notes?.trim() || undefined }
+              : {}),
+            status: nextStatus,
+            updatedBy: new Types.ObjectId(currentUser.sub),
+            approvedBy: null,
+            reviewedAt: null,
+            reviewNotes: null,
+          },
+          $inc: { reviewRevision: 1 },
+        },
+        { new: true, session },
+      );
+      if (!changed)
+        throw new ConflictException(
+          'This entry changed. Refresh before editing.',
+        );
 
-    await this.syncLedgerEntry({
-      branchId: String(existing.branchId),
-      oversightRegion: existing.oversightRegion,
-      district: existing.district,
-      entryDate: expenseDate,
-      accountId: String(account._id),
-      accountKey: account.key,
-      accountLabel: account.name,
-      direction: 'debit',
-      sourceType: 'expense',
-      sourceId: id,
-      serviceScheduleId: serviceInstance?.serviceScheduleId
-        ? String(serviceInstance.serviceScheduleId)
-        : dto.serviceScheduleId,
-      serviceInstanceId: serviceInstance?._id
-        ? String(serviceInstance._id)
-        : dto.serviceInstanceId,
-      serviceLabel:
-        serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
-      amount: dto.amount ?? existing.amount,
-      currency: dto.currency?.trim() || existing.currency || 'USD',
-      description: dto.description?.trim() || existing.description,
-      status: nextStatus as 'approved' | 'submitted' | 'rejected' | 'locked',
-      createdBy: String(existing.createdBy),
-      updatedBy: currentUser.sub,
-      approvedBy: nextStatus === 'approved' ? currentUser.sub : undefined,
-      reviewedAt: nextStatus === 'approved' ? new Date() : undefined,
+      await this.syncLedgerEntry(
+        {
+          branchId: String(existing.branchId),
+          oversightRegion: existing.oversightRegion,
+          district: existing.district,
+          entryDate: expenseDate,
+          accountId: String(account._id),
+          accountKey: account.key,
+          accountLabel: account.name,
+          direction: 'debit',
+          sourceType: 'expense',
+          sourceId: id,
+          serviceScheduleId: serviceInstance?.serviceScheduleId
+            ? String(serviceInstance.serviceScheduleId)
+            : dto.serviceScheduleId,
+          serviceInstanceId: serviceInstance?._id
+            ? String(serviceInstance._id)
+            : dto.serviceInstanceId,
+          serviceLabel:
+            serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
+          amount: dto.amount ?? existing.amount,
+          currency: dto.currency?.trim() || existing.currency || 'USD',
+          description: dto.description?.trim() || existing.description,
+          status: nextStatus as
+            | 'approved'
+            | 'submitted'
+            | 'rejected'
+            | 'locked',
+          createdBy: String(existing.createdBy),
+          updatedBy: currentUser.sub,
+          approvedBy: undefined,
+          reviewedAt: undefined,
+        },
+        session,
+      );
     });
 
     await this.auditLogsService.record({
@@ -2450,74 +2541,25 @@ export class FinanceService implements OnModuleInit {
     return this.findExpenseEntry(id, currentUser);
   }
 
+  private canReviewEntry(
+    currentUser: AuthUser,
+    entry: Record<string, unknown>,
+  ) {
+    try {
+      this.ensureExpenseApprover(currentUser);
+      ensureIndependentReview(entry, currentUser.sub);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async approveExpenseEntry(
     id: string,
     dto: ReviewExpenseEntryDto,
     currentUser: AuthUser,
   ) {
-    this.ensureFinanceViewRole(currentUser);
-    this.ensureExpenseApprover(currentUser);
-
-    const existing = await this.expenseEntryModel.findById(id).lean();
-
-    if (!existing) {
-      throw new NotFoundException('Expense entry not found');
-    }
-
-    await this.accessScopeService.ensureBranchAccess(
-      currentUser,
-      String(existing.branchId),
-    );
-
-    await this.expenseEntryModel.findByIdAndUpdate(id, {
-      status: 'approved',
-      approvedBy: new Types.ObjectId(currentUser.sub),
-      reviewedAt: new Date(),
-      reviewNotes: dto.notes?.trim() || undefined,
-      updatedBy: new Types.ObjectId(currentUser.sub),
-    });
-
-    await this.syncLedgerEntry({
-      branchId: String(existing.branchId),
-      oversightRegion: existing.oversightRegion,
-      district: existing.district,
-      entryDate: existing.expenseDate,
-      accountId: String(existing.accountId),
-      accountKey: existing.accountKey,
-      accountLabel: existing.accountLabel,
-      direction: 'debit',
-      sourceType: 'expense',
-      sourceId: id,
-      serviceScheduleId: existing.serviceScheduleId
-        ? String(existing.serviceScheduleId)
-        : undefined,
-      serviceInstanceId: existing.serviceInstanceId
-        ? String(existing.serviceInstanceId)
-        : undefined,
-      serviceLabel: existing.serviceLabel,
-      amount: existing.amount,
-      currency: existing.currency,
-      description: existing.description,
-      status: 'approved',
-      createdBy: String(existing.createdBy),
-      updatedBy: currentUser.sub,
-      approvedBy: currentUser.sub,
-      reviewedAt: new Date(),
-    });
-
-    await this.auditLogsService.record({
-      entityType: 'expense_entry',
-      entityId: id,
-      action: 'approved',
-      summary: `${existing.expenseCategoryLabel} expense approved`,
-      actor: currentUser,
-      branchId: String(existing.branchId),
-      metadata: {
-        amount: existing.amount,
-        reviewNotes: dto.notes?.trim() || undefined,
-      },
-    });
-
+    await this.reviewFinanceEntry('expense', id, dto, currentUser, 'approved');
     return this.findExpenseEntry(id, currentUser);
   }
 
@@ -2526,70 +2568,113 @@ export class FinanceService implements OnModuleInit {
     dto: ReviewExpenseEntryDto,
     currentUser: AuthUser,
   ) {
+    await this.reviewFinanceEntry('expense', id, dto, currentUser, 'rejected');
+    return this.findExpenseEntry(id, currentUser);
+  }
+
+  async reviewOfferingEntry(
+    id: string,
+    dto: ReviewExpenseEntryDto,
+    currentUser: AuthUser,
+    decision: 'approved' | 'rejected',
+  ) {
+    await this.reviewFinanceEntry('offering', id, dto, currentUser, decision);
+    return this.findOfferingEntry(id, currentUser);
+  }
+
+  private async reviewFinanceEntry(
+    kind: 'offering' | 'expense',
+    id: string,
+    dto: ReviewExpenseEntryDto,
+    currentUser: AuthUser,
+    decision: 'approved' | 'rejected',
+  ) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureExpenseApprover(currentUser);
-
-    const existing = await this.expenseEntryModel.findById(id).lean();
-
-    if (!existing) {
-      throw new NotFoundException('Expense entry not found');
-    }
-
-    await this.accessScopeService.ensureBranchAccess(
-      currentUser,
-      String(existing.branchId),
-    );
-
-    await this.expenseEntryModel.findByIdAndUpdate(id, {
-      status: 'rejected',
-      approvedBy: new Types.ObjectId(currentUser.sub),
-      reviewedAt: new Date(),
-      reviewNotes: dto.notes?.trim() || undefined,
-      updatedBy: new Types.ObjectId(currentUser.sub),
+    const model = (kind === 'offering'
+      ? this.offeringEntryModel
+      : this.expenseEntryModel) as unknown as Model<ReviewableFinanceEntry>;
+    const reviewed = await model.db.transaction(async (session) => {
+      const existing = await model.findById(id).session(session).lean();
+      if (!existing) throw new NotFoundException('Finance entry not found');
+      await this.accessScopeService.ensureBranchAccess(
+        currentUser,
+        String(existing.branchId),
+      );
+      ensureIndependentReview(existing, currentUser.sub, dto.reviewRevision);
+      const entryDate =
+        kind === 'offering' ? existing.serviceDate! : existing.expenseDate!;
+      await this.ensurePeriodOpen(String(existing.branchId), entryDate);
+      const now = new Date();
+      const changed = await model.findOneAndUpdate(
+        {
+          _id: existing._id,
+          status: 'submitted',
+          reviewRevision: existing.reviewRevision ?? { $exists: false },
+        },
+        {
+          $set: {
+            status: decision,
+            approvedBy: new Types.ObjectId(currentUser.sub),
+            reviewedAt: now,
+            reviewNotes: dto.notes?.trim() || '',
+          },
+          $inc: { reviewRevision: 1 },
+        },
+        { new: true, session },
+      );
+      if (!changed)
+        throw new ConflictException(
+          'This entry changed. Refresh before reviewing.',
+        );
+      await this.syncLedgerEntry(
+        {
+          branchId: String(existing.branchId),
+          oversightRegion: existing.oversightRegion,
+          district: existing.district,
+          entryDate,
+          accountId: String(existing.accountId),
+          accountKey: existing.accountKey,
+          accountLabel: existing.accountLabel,
+          direction: kind === 'offering' ? 'credit' : 'debit',
+          sourceType: kind,
+          sourceId: id,
+          serviceScheduleId: existing.serviceScheduleId
+            ? String(existing.serviceScheduleId)
+            : undefined,
+          serviceInstanceId: existing.serviceInstanceId
+            ? String(existing.serviceInstanceId)
+            : undefined,
+          serviceLabel: existing.serviceLabel,
+          amount: existing.amount,
+          currency: existing.currency,
+          description:
+            existing.description || `${existing.offeringTypeLabel} offering`,
+          status: decision,
+          createdBy: String(existing.createdBy),
+          updatedBy: existing.updatedBy
+            ? String(existing.updatedBy)
+            : undefined,
+          approvedBy: currentUser.sub,
+          reviewedAt: now,
+        },
+        session,
+      );
+      return existing;
     });
-
-    await this.syncLedgerEntry({
-      branchId: String(existing.branchId),
-      oversightRegion: existing.oversightRegion,
-      district: existing.district,
-      entryDate: existing.expenseDate,
-      accountId: String(existing.accountId),
-      accountKey: existing.accountKey,
-      accountLabel: existing.accountLabel,
-      direction: 'debit',
-      sourceType: 'expense',
-      sourceId: id,
-      serviceScheduleId: existing.serviceScheduleId
-        ? String(existing.serviceScheduleId)
-        : undefined,
-      serviceInstanceId: existing.serviceInstanceId
-        ? String(existing.serviceInstanceId)
-        : undefined,
-      serviceLabel: existing.serviceLabel,
-      amount: existing.amount,
-      currency: existing.currency,
-      description: existing.description,
-      status: 'rejected',
-      createdBy: String(existing.createdBy),
-      updatedBy: currentUser.sub,
-      approvedBy: currentUser.sub,
-      reviewedAt: new Date(),
-    });
-
     await this.auditLogsService.record({
-      entityType: 'expense_entry',
+      entityType: `${kind}_entry`,
       entityId: id,
-      action: 'rejected',
-      summary: `${existing.expenseCategoryLabel} expense rejected`,
+      action: decision,
+      summary: `${kind === 'offering' ? 'Offering' : 'Expense'} entry ${decision} by an independent reviewer`,
       actor: currentUser,
-      branchId: String(existing.branchId),
+      branchId: String(reviewed.branchId),
       metadata: {
-        amount: existing.amount,
-        reviewNotes: dto.notes?.trim() || undefined,
+        amount: reviewed.amount,
+        reviewNotes: dto.notes?.trim() || '',
+        reviewRevision: (reviewed.reviewRevision ?? 0) + 1,
       },
     });
-
-    return this.findExpenseEntry(id, currentUser);
   }
 
   async listLedger(
@@ -2671,7 +2756,11 @@ export class FinanceService implements OnModuleInit {
     ] = await Promise.all([
       this.ledgerEntryModel.countDocuments(query),
       this.ledgerEntryModel.aggregate<{ _id: string; total: number }>([
-        { $match: query },
+        {
+          $match: {
+            $and: [query, { status: { $in: SETTLED_FINANCE_STATUSES } }],
+          },
+        },
         { $group: { _id: '$direction', total: { $sum: '$amount' } } },
       ]),
       this.ledgerEntryModel.aggregate<{
@@ -2680,7 +2769,11 @@ export class FinanceService implements OnModuleInit {
         direction: string;
         totalAmount: number;
       }>([
-        { $match: { ...query, status: { $ne: 'rejected' } } },
+        {
+          $match: {
+            $and: [query, { status: { $in: SETTLED_FINANCE_STATUSES } }],
+          },
+        },
         {
           $group: {
             _id: '$accountId',
@@ -2701,7 +2794,11 @@ export class FinanceService implements OnModuleInit {
         totalCredits: number;
         totalDebits: number;
       }>([
-        { $match: { ...query, status: { $ne: 'rejected' } } },
+        {
+          $match: {
+            $and: [query, { status: { $in: SETTLED_FINANCE_STATUSES } }],
+          },
+        },
         {
           $group: {
             _id: '$branchId',

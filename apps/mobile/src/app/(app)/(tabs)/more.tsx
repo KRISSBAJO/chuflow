@@ -1,15 +1,15 @@
 import * as WebBrowser from 'expo-web-browser';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { canUseAppLock, isAppLockEnabled, setAppLock } from '@/components/app-lock';
 import { Icon, type IconName } from '@/components/icon';
-import { ActionTile, SwitchRow } from '@/components/kit';
+import { SwitchRow } from '@/components/kit';
 import { LanguageRow } from '@/components/language-picker';
 import { toast } from '@/components/toast';
-import { Avatar, Badge, Caption, ListRow, Screen, ScreenHeader, Section } from '@/components/ui';
+import { Avatar, Badge, Caption, ListRow, Screen, ScreenHeader, Section, tap } from '@/components/ui';
 import { AppMark } from '@/components/wordmark';
-import { colors, fonts, space, type } from '@/constants/theme';
+import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
@@ -24,8 +24,9 @@ import { useSession } from '@/lib/session';
  * role can use open in the app; the admin-only screens open on the website.
  */
 
-type AreaKey = 'members' | 'kids' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports' | 'search';
+type AreaKey = 'members' | 'kids' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports';
 
+/** Areas listed under the search; search itself sits at the top as a field. */
 const AREAS: { key: AreaKey; icon: IconName; href: Href; show: (role?: string) => boolean }[] = [
   { key: 'members', icon: 'members', href: '/members' as Href, show: can.members },
   { key: 'kids', icon: 'smile', href: '/kids' as Href, show: (role) => can.kids(role) && !can.kidsOnly(role) },
@@ -34,7 +35,6 @@ const AREAS: { key: AreaKey; icon: IconName; href: Href; show: (role?: string) =
   { key: 'careCases', icon: 'care', href: '/care-cases' as Href, show: can.careCases },
   { key: 'attendanceHistory', icon: 'history', href: '/attendance-history' as Href, show: can.attendance },
   { key: 'reports', icon: 'reports', href: '/reports' as Href, show: can.reports },
-  { key: 'search', icon: 'search', href: '/search' as Href, show: can.search },
 ];
 
 type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings';
@@ -50,6 +50,38 @@ const WEB_LINKS: { key: LinkKey; icon: IconName; path: string; show: (role?: str
 
 function RowIcon({ name }: { name: IconName }) {
   return <Icon name={name} size={18} color={colors.muted} />;
+}
+
+/** Soft square behind an area's icon, so the list of areas reads heavier than the settings rows. */
+function AreaIcon({ name }: { name: IconName }) {
+  return (
+    <View style={styles.areaIcon}>
+      <Icon name={name} size={18} color={colors.ink} />
+    </View>
+  );
+}
+
+/** Looks like the search field; tapping it opens the search screen with the keyboard up. */
+function SearchLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="search"
+      accessibilityLabel={label}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.searchLink, pressed && { backgroundColor: colors.surfaceStrong }]}
+    >
+      <View style={styles.searchIcon}>
+        <Icon name="search" size={15} color="#ffffff" strokeWidth={2.2} />
+      </View>
+      <Text style={styles.searchText} numberOfLines={1}>
+        {label}
+      </Text>
+      <Icon name="arrowRight" size={15} color={colors.faint} />
+    </Pressable>
+  );
 }
 
 export default function MoreScreen() {
@@ -129,6 +161,8 @@ export default function MoreScreen() {
     <Screen contentStyle={{ gap: space.xl }}>
       <ScreenHeader title={common('tabs.more')} />
 
+      {can.search(role) ? <SearchLink label={t('hints.search')} onPress={() => router.push('/search' as Href)} /> : null}
+
       <View style={styles.profile}>
         <Avatar person={user} size={44} />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -151,11 +185,18 @@ export default function MoreScreen() {
       ) : null}
 
       {areas.length ? (
-        <View style={styles.grid}>
-          {areas.map((area) => (
-            <ActionTile key={area.key} icon={area.icon} label={common(`areas.${area.key}`)} hint={t(`hints.${area.key}`)} onPress={() => router.push(area.href)} />
+        <View>
+          <Section title={t('workspace')} />
+          {areas.map((area, index) => (
+            <ListRow
+              key={area.key}
+              divider={index > 0}
+              title={common(`areas.${area.key}`)}
+              subtitle={t(`hints.${area.key}`)}
+              left={<AreaIcon name={area.icon} />}
+              onPress={() => router.push(area.href)}
+            />
           ))}
-          {areas.length % 2 ? <View style={styles.gridSpacer} /> : null}
         </View>
       ) : null}
 
@@ -207,8 +248,21 @@ export default function MoreScreen() {
 
 const styles = StyleSheet.create({
   profile: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
-  gridSpacer: { flexGrow: 1, flexBasis: '45%', minWidth: 0 },
+  areaIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  searchLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    height: 50,
+    paddingLeft: 7,
+    paddingRight: 14,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.hairlineStrong,
+  },
+  searchIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  searchText: { flex: 1, fontFamily: fonts.medium, fontSize: 15, color: colors.muted },
   footer: { alignItems: 'center', gap: space.sm, paddingVertical: space.lg },
   footerText: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.faint },
 });

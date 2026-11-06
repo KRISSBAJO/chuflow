@@ -982,6 +982,15 @@
         "turnOn": "Ativar alertas",
         "sendTest": "Enviar um teste"
       }
+    },
+    "financeReview": {
+      "independent": "Outra pessoa autorizada deve aprovar este lançamento. Valores pendentes não entram no saldo aprovado.",
+      "notes": "Notas de revisão (opcional)",
+      "approve": "Aprovar",
+      "reject": "Rejeitar",
+      "approved": "Lançamento aprovado",
+      "rejected": "Lançamento rejeitado",
+      "failed": "Não foi possível revisar este lançamento"
     }
   }
 }

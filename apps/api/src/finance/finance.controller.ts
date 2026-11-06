@@ -172,6 +172,7 @@ export class FinanceController {
     @Query('branchId') branchId?: string,
     @Query('oversightRegion') oversightRegion?: string,
     @Query('district') district?: string,
+    @Query('status') status?: string,
     @Query('offeringTypeId') offeringTypeId?: string,
     @Query('accountId') accountId?: string,
     @Query('search') search?: string,
@@ -186,6 +187,7 @@ export class FinanceController {
       oversightRegion,
       district,
       offeringTypeId,
+      status,
       accountId,
       search,
       date,
@@ -413,6 +415,44 @@ export class FinanceController {
   )
   removeLock(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.financeService.removeFinanceLock(id, user);
+  }
+
+  @Patch('offerings/:id/approve')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
+  approveOffering(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReviewExpenseEntryDto,
+  ) {
+    return this.financeService.reviewOfferingEntry(id, dto, user, 'approved');
+  }
+
+  @Patch('offerings/:id/reject')
+  @Roles(
+    'super_admin',
+    'national_admin',
+    'national_pastor',
+    'district_admin',
+    'district_pastor',
+    'branch_admin',
+    'resident_pastor',
+    'associate_pastor',
+  )
+  rejectOffering(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReviewExpenseEntryDto,
+  ) {
+    return this.financeService.reviewOfferingEntry(id, dto, user, 'rejected');
   }
 
   @Get('offerings/:id')

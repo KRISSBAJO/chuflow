@@ -138,6 +138,15 @@
       "confirmRejectBody": "The branch will need to submit it again.",
       "openReceipt": "Open receipt",
       "pendingHint": "Waiting for approval before it posts to the ledger."
+    },
+    "review": {
+      "independent": "A different authorized person must approve this entry. Pending figures do not count toward the approved balance.",
+      "notes": "Review notes (optional)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Entry approved",
+      "rejected": "Entry rejected",
+      "failed": "Unable to review this entry"
     }
   }
 }

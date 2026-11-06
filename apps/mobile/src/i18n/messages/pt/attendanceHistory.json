@@ -55,6 +55,31 @@
       "holdForTen": "Mantenha premido para adicionar dez",
       "countFor": "Contagem de {label}",
       "notFound": "Este resumo de culto já não está disponível."
+    },
+    "advanced": {
+      "filters": "Filtros",
+      "month": "Mês",
+      "year": "Ano",
+      "custom": "Datas personalizadas",
+      "from": "De (AAAA-MM-DD)",
+      "to": "Até (AAAA-MM-DD)",
+      "weekday": "Dia da semana",
+      "allDays": "Todos os dias",
+      "sundays": "Apenas domingos",
+      "service": "Culto",
+      "allServices": "Todos os cultos",
+      "search": "Pesquisar cultos",
+      "sort": "Ordenar",
+      "newest": "Mais recentes",
+      "oldest": "Mais antigos",
+      "highest": "Maior presença",
+      "lowest": "Menor presença",
+      "reset": "Repor filtros",
+      "average": "Média por culto",
+      "sundayAverage": "Média por domingo registado",
+      "sundayCount": "Domingos registados",
+      "averageHint": "Os domingos sem registos são excluídos da média.",
+      "invalid": "Intervalo de datas inválido"
     }
   }
 }

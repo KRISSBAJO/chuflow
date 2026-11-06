@@ -5,6 +5,10 @@ export type IntakeSubmissionDocument = HydratedDocument<IntakeSubmission>;
 
 @Schema({ timestamps: true })
 export class IntakeSubmission {
+  @Prop() workflowKey?: string;
+  @Prop() workflowRevision?: number;
+  @Prop({type:SchemaTypes.ObjectId,ref:'User'}) submittedBy?: Types.ObjectId;
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'IntakeTemplate', required: true })
   templateId!: Types.ObjectId;
 
@@ -119,3 +123,5 @@ export class IntakeSubmission {
 
 export const IntakeSubmissionSchema =
   SchemaFactory.createForClass(IntakeSubmission);
+
+IntakeSubmissionSchema.index({workflowKey:1},{unique:true,partialFilterExpression:{workflowKey:{$type:'string'}}});

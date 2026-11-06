@@ -36,7 +36,7 @@ export function ExpenseDetailScreen() {
   const item = entry.data;
   // Ushers can see expenses but the API's PATCH is for leadership only.
   const canEdit = !!item?.permissions?.canEdit && role !== 'usher';
-  const canReview = !!item && item.status === 'submitted' && can.approveExpenses(role);
+  const canReview = !!item && item.status === 'submitted' && item.permissions?.canReview === true && can.approveExpenses(role);
 
   async function save(next: { amount: number; notes?: string }) {
     if (!item) return;
@@ -59,7 +59,7 @@ export function ExpenseDetailScreen() {
     if (decision === 'reject' && !(await confirm(t('expense.confirmRejectTitle'), t('expense.confirmRejectBody'), t('expense.reject')))) return;
     setBusy(decision);
     try {
-      await api.patch(`/finance/expenses/${item._id}/${decision}`, reviewNote.trim() ? { notes: reviewNote.trim() } : {});
+      await api.patch(`/finance/expenses/${item._id}/${decision}`, { notes: reviewNote.trim(), reviewRevision: item.reviewRevision });
       toast.success(decision === 'approve' ? t('expense.approved') : t('expense.rejected'));
       entry.setData((current) => current && { ...current, status: decision === 'approve' ? 'approved' : 'rejected' });
       setReviewNote('');

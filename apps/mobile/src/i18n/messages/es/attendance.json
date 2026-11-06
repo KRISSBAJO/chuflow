@@ -35,6 +35,25 @@
         "holySpiritBaptismCount": "Bautismo del Espíritu Santo"
       }
     },
+    "list": {
+      "subtitle": "Todos los recuentos de servicios, del más reciente al más antiguo. Toca + para contar un servicio.",
+      "newCount": "Nuevo recuento"
+    },
+    "flow": {
+      "title": "Nuevo recuento",
+      "stepOf": "Paso {step} de {total}",
+      "runningTotal": "{count} hasta ahora",
+      "branch": { "question": "¿Qué iglesia local?", "hint": "El recuento se registra para esta iglesia local." },
+      "service": { "question": "¿Qué servicio?", "hint": "Elige el servicio que estás contando.", "none": "Aún no hay servicios configurados para esta iglesia local. Añádelos en el sitio web." },
+      "date": { "question": "¿Qué día?", "hint": "Normalmente hoy, pero puedes volver a un servicio anterior.", "today": "Hoy", "yesterday": "Ayer", "other": "Otro día" },
+      "men": { "question": "¿Cuántos hombres?", "hint": "Toca + a medida que entran, o escribe el número." },
+      "women": { "question": "¿Cuántas mujeres?", "hint": "Toca + a medida que entran, o escribe el número." },
+      "children": { "question": "¿Cuántos niños?", "hint": "Los niños en las salas infantiles también cuentan." },
+      "firstTimers": { "question": "De ellos, ¿cuántos vienen por primera vez?", "hint": "Ya están en el total; se anotan aquí para los informes." },
+      "newConverts": { "question": "¿Cuántos nuevos convertidos?", "hint": "Personas que entregaron su vida a Cristo en este servicio." },
+      "holySpirit": { "question": "¿Cuántos recibieron el bautismo del Espíritu Santo?", "hint": "Déjalo en cero si ninguno." },
+      "review": { "question": "¿Listo para guardar?", "hint": "Revisa los números y guarda. Podrás corregirlos después desde la lista.", "total": "Total de personas" }
+    },
     "outbox": {
       "couldNotSend": "No se pudo enviar"
     }

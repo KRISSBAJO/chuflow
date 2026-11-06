@@ -982,6 +982,15 @@
         "turnOn": "Turn on alerts",
         "sendTest": "Send a test"
       }
+    },
+    "financeReview": {
+      "independent": "A different authorized person must approve this entry. Pending figures do not count toward the approved balance.",
+      "notes": "Review notes (optional)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Entry approved",
+      "rejected": "Entry rejected",
+      "failed": "Unable to review this entry"
     }
   }
 }

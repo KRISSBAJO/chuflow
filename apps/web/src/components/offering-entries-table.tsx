@@ -1,12 +1,13 @@
 "use client";
 
+import { FinanceReviewControls } from "@/components/finance-review-controls";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button, EmptyState, Field } from "@/components/ui/ui";
-import { useAppFormat } from "@/i18n/labels";
+import { useAppFormat, useStatusLabel } from "@/i18n/labels";
 import { API_URL } from "@/lib/api";
 import type {
   FinanceAccountSummary,
@@ -30,6 +31,7 @@ export function OfferingEntriesTable({
   serviceTypes: ServiceTypeSummary[];
   accounts: FinanceAccountSummary[];
 }) {
+  const statusLabel = useStatusLabel();
   const t = useTranslations("admin.offerings");
   const tc = useTranslations("common");
   const format = useFormatter();
@@ -126,6 +128,7 @@ export function OfferingEntriesTable({
                   </span>
                   {entry.accountId?.name ? <Badge tone="info">{entry.accountId.name}</Badge> : null}
                   {enteredBy ? <Badge>{enteredBy}</Badge> : null}
+                  <Badge tone={entry.status === "submitted" ? "warning" : entry.status === "rejected" ? "danger" : "neutral"}>{statusLabel(entry.status ?? "approved")}</Badge>
                 </div>
               </div>
               <Icon
@@ -135,6 +138,7 @@ export function OfferingEntriesTable({
             </summary>
 
             <div className="border-t border-black/[0.06] px-4 py-5">
+              <FinanceReviewControls id={entry._id} status={entry.status} canReview={entry.permissions.canReview} reviewRevision={entry.reviewRevision} />
               {entry.permissions.canEdit ? (
                 <form
                   action={(formData) => updateEntry(entry._id, formData)}

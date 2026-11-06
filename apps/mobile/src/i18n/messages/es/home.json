@@ -19,7 +19,10 @@
       "kids": "Niños",
       "finance": "Finanzas",
       "meetings": "Reuniones",
-      "reports": "Informes"
+      "reports": "Informes",
+      "title": "Acciones rápidas",
+      "showAll": "Ver todas",
+      "showLess": "Ver menos"
     },
     "needsYou": {
       "title": "Pendiente",

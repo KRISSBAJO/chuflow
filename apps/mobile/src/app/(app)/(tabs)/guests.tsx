@@ -4,6 +4,7 @@ import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { Avatar, Badge, Caption, EmptyState, ErrorState, ListRow, Loading, RoundAction, ScreenHeader } from '@/components/ui';
+import { Reveal } from '@/components/motion';
 import { colors, fonts, radius, space } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -69,7 +70,7 @@ export default function GuestsScreen() {
         onEndReachedThreshold={0.4}
         onEndReached={() => void loadMore()}
         ListHeaderComponent={
-          <View style={styles.header}>
+          <Reveal style={styles.header}>
             <ScreenHeader
               title={common('areas.guests')}
               subtitle={subtitle}
@@ -88,7 +89,7 @@ export default function GuestsScreen() {
                 clearButtonMode="while-editing"
               />
             </View>
-          </View>
+          </Reveal>
         }
         renderItem={({ item, index }) => {
           const status = item.nextFollowUpStatus || item.visitStatus;

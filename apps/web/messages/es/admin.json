@@ -982,6 +982,15 @@
         "turnOn": "Activar alertas",
         "sendTest": "Enviar una prueba"
       }
+    },
+    "financeReview": {
+      "independent": "Otra persona autorizada debe aprobar este registro. Los importes pendientes no se incluyen en el saldo aprobado.",
+      "notes": "Notas de revisión (opcional)",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "approved": "Registro aprobado",
+      "rejected": "Registro rechazado",
+      "failed": "No se pudo revisar este registro"
     }
   }
 }

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SearchBar, SheetPicker, StatGrid, StatTile } from '@/components/kit';
 import { Avatar, Badge, Caption, EmptyState, ErrorState, ListRow, Loading, RoundAction, ScreenHeader, Segmented } from '@/components/ui';
+import { Reveal } from '@/components/motion';
 import { colors, space } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -98,7 +99,7 @@ export function MembersDirectoryScreen() {
         onEndReachedThreshold={0.4}
         onEndReached={() => void loadMore()}
         ListHeaderComponent={
-          <View style={styles.header}>
+          <Reveal style={styles.header}>
             <ScreenHeader title={t('title')} subtitle={subtitle} right={<RoundAction icon="plus" label={t('add')} tone="dark" onPress={() => router.push('/members/new' as Href)} />} />
             {first.data ? (
               <StatGrid columns={3}>
@@ -112,7 +113,7 @@ export function MembersDirectoryScreen() {
               <SheetPicker label={tc('fields.branch')} value={branchId || ALL} options={branchOptions} onChange={(value) => setBranchId(value === ALL ? '' : value)} />
             ) : null}
             <Segmented options={statusOptions} value={status} onChange={setStatus} />
-          </View>
+          </Reveal>
         }
         renderItem={({ item, index }) => {
           const groups = memberGroupNames(item);

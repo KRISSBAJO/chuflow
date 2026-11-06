@@ -1,3 +1,4 @@
+import { FilterPanel } from "@/components/filter-panel";
 import { hasPermission } from "@/lib/capabilities";
 import Link from "next/link";
 import { ChurchRecordingLinks } from "@/components/church-recording-links";
@@ -174,7 +175,7 @@ export default async function AttendancePage({
       />
 
       <ChurchRecordingLinks branches={branches} defaultBranchId={user.branchId} kind="attendance" />
-      <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-black/5 bg-white p-4">
+      <FilterPanel><form className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="tab" value={params.tab || "summaries"} />
         <label className="text-xs text-[#6b6b6b]">
           {tw("period")}
@@ -200,7 +201,7 @@ export default async function AttendancePage({
         <button className={buttonClass("secondary")} type="submit">
           {tw("apply")}
         </button>
-      </form>
+      </form></FilterPanel>
       <WorkspaceTabs
         defaultTab="summaries"
         tabs={[

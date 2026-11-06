@@ -19,7 +19,10 @@
       "kids": "Kids",
       "finance": "Finance",
       "meetings": "Meetings",
-      "reports": "Reports"
+      "reports": "Reports",
+      "title": "Quick actions",
+      "showAll": "View all",
+      "showLess": "Show less"
     },
     "needsYou": {
       "title": "Needs you",

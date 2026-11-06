@@ -49,6 +49,7 @@
       "lockedTitle": "ChuFlow is locked",
       "lockedBody": "Unlock with Face ID, fingerprint or your phone passcode.",
       "unlock": "Unlock"
-    }
+    },
+    "workspace": "Workspace"
   }
 }

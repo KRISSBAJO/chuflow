@@ -35,6 +35,25 @@
         "holySpiritBaptismCount": "Baptême du Saint-Esprit"
       }
     },
+    "list": {
+      "subtitle": "Tous les comptages de cultes, du plus récent au plus ancien. Touchez + pour compter un culte.",
+      "newCount": "Nouveau comptage"
+    },
+    "flow": {
+      "title": "Nouveau comptage",
+      "stepOf": "Étape {step} sur {total}",
+      "runningTotal": "{count} jusqu’ici",
+      "branch": { "question": "Quelle église locale ?", "hint": "Le comptage est enregistré pour cette église locale." },
+      "service": { "question": "Quel culte ?", "hint": "Choisissez le culte que vous comptez.", "none": "Aucun culte n’est encore configuré pour cette église locale. Ajoutez-les sur le site web." },
+      "date": { "question": "Quel jour ?", "hint": "En général aujourd’hui, mais vous pouvez revenir à un culte précédent.", "today": "Aujourd’hui", "yesterday": "Hier", "other": "Un autre jour" },
+      "men": { "question": "Combien d’hommes ?", "hint": "Touchez + à mesure qu’ils entrent, ou saisissez le nombre." },
+      "women": { "question": "Combien de femmes ?", "hint": "Touchez + à mesure qu’elles entrent, ou saisissez le nombre." },
+      "children": { "question": "Combien d’enfants ?", "hint": "Les enfants dans les salles comptent aussi." },
+      "firstTimers": { "question": "Parmi eux, combien de nouveaux visiteurs ?", "hint": "Déjà dans l’effectif ; notés ici pour les rapports." },
+      "newConverts": { "question": "Combien de nouveaux convertis ?", "hint": "Les personnes qui ont donné leur vie à Christ à ce culte." },
+      "holySpirit": { "question": "Combien ont reçu le baptême du Saint-Esprit ?", "hint": "Laissez à zéro s’il n’y en a pas." },
+      "review": { "question": "Prêt à enregistrer ?", "hint": "Vérifiez les nombres, puis enregistrez. Vous pourrez les corriger plus tard depuis la liste.", "total": "Total de personnes" }
+    },
     "outbox": {
       "couldNotSend": "Envoi impossible"
     }

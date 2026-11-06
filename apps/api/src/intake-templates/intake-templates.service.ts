@@ -1,3 +1,5 @@
+import { WeeklyWorkflowService } from './weekly-workflow.service';
+import { weeklyComparisons } from './weekly-comparisons';
 import { hasAdditionalPermission } from '../common/permissions';
 import {
   BadRequestException,
@@ -5,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -58,6 +61,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     private readonly accessScopeService: AccessScopeService,
     private readonly auditLogsService: AuditLogsService,
     private readonly pushService: PushService,
+    @Optional() private readonly weeklyWorkflow?: WeeklyWorkflowService,
   ) {}
 
   /** Tells the people who review a submitted report that it is waiting for them. */
@@ -382,7 +386,20 @@ export class IntakeTemplatesService implements OnModuleInit {
       averageLastYear?: number;
     } =
       template.kind === 'weekly_report'
-        ? await this.attendanceService.branchSummaryDefaults(branchId)
+        ? weeklyComparisons(
+            await this.submissionModel
+              .find({
+                branchId: new Types.ObjectId(branchId),
+                templateKind: 'weekly_report',
+                status: 'approved',
+                serviceDate: {
+                  $gte: new Date(Date.UTC(new Date().getUTCFullYear() - 1, 0, 1)),
+                  $lt: new Date(),
+                },
+              })
+              .select('serviceDate currentAttendance updatedAt')
+              .lean(),
+          )
         : {};
 
     return {
@@ -3058,6 +3075,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       throw new NotFoundException('Attendance submission not found');
     }
 
+    if (submission.templateKind === 'weekly_report' && this.weeklyWorkflow) {
+      return this.weeklyWorkflow.review(currentUser,id,{decision:'approved',revision:submission.workflowRevision??0});
+    }
     const status = this.getAttendanceSubmissionStatus(submission);
 
     if (
@@ -3164,6 +3184,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       throw new NotFoundException('Attendance submission not found');
     }
 
+    if (submission.templateKind === 'weekly_report' && this.weeklyWorkflow) {
+      return this.weeklyWorkflow.review(currentUser,id,{decision:'rejected',revision:submission.workflowRevision??0});
+    }
     const status = this.getAttendanceSubmissionStatus(submission);
 
     if (status === 'approved') {

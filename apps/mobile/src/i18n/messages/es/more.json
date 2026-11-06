@@ -49,6 +49,7 @@
       "lockedTitle": "ChuFlow está bloqueado",
       "lockedBody": "Desbloquea con Face ID, huella o el código de tu teléfono.",
       "unlock": "Desbloquear"
-    }
+    },
+    "workspace": "Áreas de trabajo"
   }
 }

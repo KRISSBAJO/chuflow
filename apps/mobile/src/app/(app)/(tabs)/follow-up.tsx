@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, EmptyState, ErrorState, Loading, RoundAction, ScreenHeader, Segmented, tap } from '@/components/ui';
+import { Reveal } from '@/components/motion';
 import { colors, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -91,10 +92,10 @@ export default function FollowUpScreen() {
         onEndReachedThreshold={0.4}
         onEndReached={() => void loadMore()}
         ListHeaderComponent={
-          <View style={styles.header}>
+          <Reveal style={styles.header}>
             <ScreenHeader title={common('areas.followUp')} subtitle={t('subtitle')} />
             <Segmented options={filters} value={filter} onChange={setFilter} />
-          </View>
+          </Reveal>
         }
         renderItem={({ item, index }) => <FollowUpRow item={item} divider={index > 0} />}
         ListEmptyComponent={

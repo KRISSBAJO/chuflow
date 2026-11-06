@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SearchBar, SheetPicker, StatGrid, StatTile } from '@/components/kit';
 import { Avatar, Badge, Caption, EmptyState, ErrorState, ListRow, Loading, ScreenHeader, Segmented } from '@/components/ui';
+import { Reveal } from '@/components/motion';
 import { colors, space } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -93,7 +94,7 @@ export function CareListScreen() {
         onEndReachedThreshold={0.4}
         onEndReached={() => void loadMore()}
         ListHeaderComponent={
-          <View style={styles.header}>
+          <Reveal style={styles.header}>
             <ScreenHeader title={t('title')} subtitle={subtitle} />
             {overview.data ? (
               <StatGrid>
@@ -108,7 +109,7 @@ export function CareListScreen() {
               <SheetPicker label={tc('fields.branch')} value={branchId || ALL} options={branchOptions} onChange={(value) => setBranchId(value === ALL ? '' : value)} />
             ) : null}
             <Segmented options={CARE_VIEWS.map((value) => ({ value, label: t(`views.${value}`) }))} value={view} onChange={setView} />
-          </View>
+          </Reveal>
         }
         renderItem={({ item, index }) => {
           const owner = careOwner(item.ownerId);

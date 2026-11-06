@@ -42,6 +42,8 @@ export const PERMISSION_ENDPOINTS: Record<string, Record<string, string>> = {
     createOffering: 'finance.offerings',
     createExpense: 'finance.expenses',
     approveExpense: 'finance.approve',
+    approveOffering: 'finance.approve',
+    rejectOffering: 'finance.approve',
     rejectExpense: 'finance.approve',
     createLock: 'finance.locks',
     removeLock: 'finance.locks',

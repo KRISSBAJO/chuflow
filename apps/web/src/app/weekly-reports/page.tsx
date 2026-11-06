@@ -135,11 +135,12 @@ export default async function WeeklyReportsPage({
         eyebrow={t("eyebrow")}
         title={t("title")}
         description={t("description")}
-        action={
+        action={<div className="flex flex-wrap gap-3"><Link href="/weekly-reports/workspace" className="ui-button">{t("workflow.title")}</Link>
           <ExportMenu
             resource="weekly-reports"
             filters={Object.fromEntries(query)}
-          />
+
+        /></div>
         }
       />
       <form className="space-y-3">

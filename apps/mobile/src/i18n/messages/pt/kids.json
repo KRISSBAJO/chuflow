@@ -44,10 +44,10 @@
         "endedAgo": "Terminou {time}",
         "overdue": "{count, plural, one {# criança ainda não foi recolhida} other {# crianças ainda não foram recolhidas}}.",
         "allHome": "Todas as crianças foram recolhidas. O supervisor pode encerrar a sessão.",
-        "desk": "Abrir o balcão",
+        "desk": "Entrada",
         "pickup": "Recolha",
         "supervisor": "Ferramentas do supervisor",
-        "scan": "Ler um cartão",
+        "scan": "Escanear",
         "scanHint": "Aponte a câmara a um cartão de família ou de criança para iniciar o registo.",
         "activity": "Atividade recente",
         "noActivity": "Ainda não há registos. A primeira família a chegar aparecerá aqui.",
@@ -128,6 +128,15 @@
         "guardians": "{count, plural, one {# responsável} other {# responsáveis}}",
         "empty": "Nenhuma família corresponde. Inscreva primeiro um pai ou responsável no site e depois adicione as crianças.",
         "page": "Página {page} de {total}"
+      },
+      "welcome": {
+        "title": "Pequenos corações. Uma grande família.",
+        "subtitle": "Uma recepção acolhedora. Uma saída segura."
+      },
+      "tabs": {
+        "today": "Hoje",
+        "families": "Famílias",
+        "insights": "Resumo"
       }
     },
     "desk": {
