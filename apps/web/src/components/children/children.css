@@ -1,0 +1,235 @@
+.children-workspace {
+  min-height: 100vh;
+  background: #fcfaf5;
+  color: #243a36;
+}
+.children-wrap {
+  max-width: 1280px;
+  margin: auto;
+  padding: 24px;
+}
+.children-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.children-nav a {
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  background: white;
+  border: 1px solid #e5e8df;
+}
+.children-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  background: #f9e7cc;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 300px;
+}
+.children-hero-copy {
+  padding: 36px;
+  align-self: center;
+}
+.children-hero img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+.children-title {
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  color: #244b40;
+}
+.children-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #a25223;
+}
+.children-panel {
+  background: white;
+  border: 1px solid #e9e9df;
+  border-radius: 24px;
+  padding: 24px;
+}
+.children-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.children-step {
+  padding: 24px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #e7e6dc;
+}
+.children-step strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  font-size: 22px;
+  background: #fbe1b5;
+  color: #86521f;
+  margin-bottom: 16px;
+}
+.children-step:nth-child(2) strong {
+  background: #d9ebe4;
+  color: #2b6554;
+}
+.children-step:nth-child(3) strong {
+  background: #e0eaf5;
+  color: #3e6286;
+}
+.children-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 14px;
+  background: #245b4b;
+  color: #fff;
+  min-height: 46px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 650;
+}
+.children-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.children-button.secondary {
+  background: #f4f3ec;
+  color: #284a3e;
+  border: 1px solid #e1e3d8;
+}
+.children-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #edf4ec;
+  font-size: 12px;
+  color: #3d604a;
+}
+.children-input {
+  background: #fff;
+  border: 1px solid #dce0d7;
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+  font-size: 15px;
+  min-height: 46px;
+}
+.children-input:focus {
+  outline: 3px solid #f7d391;
+  outline-offset: 1px;
+}
+.children-error {
+  border-radius: 12px;
+  background: #fff0ed;
+  padding: 14px;
+  color: #953c2e;
+  font-size: 14px;
+}
+.children-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.children-muted {
+  font-size: 14px;
+  color: #69776d;
+  line-height: 1.6;
+}
+.children-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.children-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e1e6db;
+  padding-bottom: 16px;
+}
+.children-tabs button {
+  border-radius: 12px;
+  padding: 12px 20px;
+  background: white;
+  color: #426653;
+}
+.children-tabs button[aria-selected="true"] {
+  background: #245b4b;
+  color: white;
+}
+.children-card-qr {
+  width: 160px;
+  height: 160px;
+}
+.children-room {
+  border-top: 5px solid #ebbc71;
+}
+.children-room:nth-child(2n) {
+  border-top-color: #88b8a9;
+}
+.children-room:nth-child(3n) {
+  border-top-color: #9bb8da;
+}
+@media (max-width: 700px) {
+  .children-wrap {
+    padding: 16px;
+  }
+  .children-hero {
+    grid-template-columns: 1fr;
+  }
+  .children-hero-copy {
+    padding: 28px;
+  }
+  .children-hero img {
+    max-height: 230px;
+  }
+  .children-steps,
+  .children-grid {
+    grid-template-columns: 1fr;
+  }
+  .children-panel {
+    padding: 18px;
+  }
+}
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  [data-children-labels],
+  [data-children-labels] * {
+    visibility: visible !important;
+  }
+  [data-children-labels] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: white;
+    width: 100%;
+    padding: 10mm;
+  }
+  [data-no-print] {
+    display: none !important;
+  }
+  .children-print-label {
+    break-inside: avoid;
+    border: 1px dashed #777;
+    padding: 10mm;
+    margin-bottom: 8mm;
+    color: black;
+  }
+}

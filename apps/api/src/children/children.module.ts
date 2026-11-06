@@ -1,0 +1,36 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AccessScopeModule } from '../access-scope/access-scope.module';
+import { Branch, BranchSchema } from '../branches/schemas/branch.schema';
+import { Member, MemberSchema } from '../members/schemas/member.schema';
+import {
+  ChildFamily,
+  ChildFamilySchema,
+  ChildProfile,
+  ChildProfileSchema,
+  ChildSession,
+  ChildSessionSchema,
+  ChildKiosk,
+  ChildKioskSchema,
+} from './children.schema';
+import { ChildrenService } from './children.service';
+import {
+  ChildrenController,
+  ChildrenKioskController,
+} from './children.controller';
+@Module({
+  imports: [
+    AccessScopeModule,
+    MongooseModule.forFeature([
+      { name: Branch.name, schema: BranchSchema },
+      { name: Member.name, schema: MemberSchema },
+      { name: ChildFamily.name, schema: ChildFamilySchema },
+      { name: ChildProfile.name, schema: ChildProfileSchema },
+      { name: ChildSession.name, schema: ChildSessionSchema },
+      { name: ChildKiosk.name, schema: ChildKioskSchema },
+    ]),
+  ],
+  controllers: [ChildrenController, ChildrenKioskController],
+  providers: [ChildrenService],
+})
+export class ChildrenModule {}

@@ -15,6 +15,13 @@ function load(file, mocks = {}, globals = {}) {
     module, exports: module.exports, URLSearchParams, ...globals,
     require: (name) => {
       if (name in mocks) return mocks[name];
+      const t = key => key;
+      t.has = () => false;
+      t.rich = t;
+      if (name === 'next-intl') return { useTranslations: () => t, useLocale: () => 'en', useFormatter: () => ({ number: String, dateTime: String, relativeTime: String }) };
+      if (name === 'next-intl/server') return { getTranslations: async () => t, getLocale: async () => 'en', getFormatter: async () => ({ number: String, dateTime: String, relativeTime: String }) };
+      if (name === '@/i18n/labels') return { useRoleLabel: () => permissions.formatRoleLabel, useScopeLabel: () => permissions.getUserScopeLabel, useStatusLabel: () => value => value, useAppFormat: () => ({number:String,date:String,dateTime:String,relative:String}) };
+
       if (name.startsWith('@/components/') || name === 'next/link') return {};
       throw new Error('Unexpected dependency: ' + name);
     },
@@ -172,8 +179,8 @@ for (const role of allRoles) {
       '@/components/dashboard/dashboard-view': {},
       '@/components/shell': {},
     }).default;
-    if (role === 'follow_up' || role === 'usher') {
-      const destination = role === 'follow_up' ? '/care' : '/attendance';
+    if (['follow_up', 'usher', 'children_worker', 'children_supervisor'].includes(role)) {
+      const destination = permissions.roleHomeHref(role);
       await assert.rejects(page({ searchParams: Promise.resolve({}) }), { message: 'REDIRECT:' + destination });
       assert.equal(requests.length, 0);
       assert.ok(permissions.canAccessRoute(role, destination));
@@ -186,6 +193,7 @@ for (const role of allRoles) {
 }
 for (const role of allRoles) {
   test(role + ': guest forms and details only load authorized data', async () => {
+    if (role.startsWith('children_')) { assert.equal(permissions.canAccessRoute(role, '/guests/new'), false); return; }
     const requests = [];
     const jsx = (type, props) => ({ type, props });
     const mocks = {
@@ -319,3 +327,11 @@ test('hierarchy pages show only immediate levels and paginate 120 churches', () 
   assert.equal(hrefs('a').filter(h => h.startsWith('/dashboard?')).length, 3);
   assert.ok(hrefs('a').includes('/hierarchy/z?districtId=district-record'));
 });
+
+for (const role of ['children_worker','children_supervisor']) {
+  test(role + ': login opens only the children workspace', () => {
+    assert.equal(permissions.roleHomeHref(role), '/children');
+    for (const path of ['/children', '/children/sessions/test', '/children/families/new']) assert.equal(permissions.canAccessRoute(role, path), true);
+    for (const path of ['/dashboard','/finance','/members','/users','/approvals','/settings']) assert.equal(permissions.canAccessRoute(role, path), false);
+  });
+}

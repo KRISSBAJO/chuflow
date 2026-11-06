@@ -39,6 +39,7 @@ const NAV_GROUPS: { label: GroupKey; items: NavItem[] }[] = [
       { href: "/guests", label: "guests", icon: "guests", badge: "firstTimers" },
       { href: "/care", label: "followUp", icon: "care", badge: "followUp" },
       { href: "/members", label: "members", icon: "members" },
+      { href: "/children", label: "children", icon: "members" },
       { href: "/service-units", label: "serviceUnits", icon: "units" },
     ],
   },
@@ -89,6 +90,7 @@ const TAB_CANDIDATES: NavItem[] = [
   { href: "/attendance", label: "attendance", icon: "attendance" },
   { href: "/approvals", label: "approvals", icon: "approvals", badge: "approvals" },
   { href: "/members", label: "members", icon: "members" },
+  { href: "/children", label: "children", icon: "members" },
   { href: "/reports", label: "reports", icon: "reports" },
 ];
 

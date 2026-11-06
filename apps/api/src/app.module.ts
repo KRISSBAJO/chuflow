@@ -1,3 +1,4 @@
+import { ChildrenModule } from './children/children.module';
 import { ApprovalWorkflowsModule } from './approval-workflows/approval.module';
 import { CareModule } from './care/care.module';
 import { HierarchyModule } from './hierarchy/hierarchy.module';
@@ -43,6 +44,7 @@ import { PushModule } from './push/push.module';
 @Module({
   imports: [
     HierarchyModule,
+    ChildrenModule,
     ApprovalWorkflowsModule,
     ConfigModule.forRoot({
       isGlobal: true,

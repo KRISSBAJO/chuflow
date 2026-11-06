@@ -10,7 +10,9 @@ export type AppRole =
   | "resident_pastor"
   | "associate_pastor"
   | "follow_up"
-  | "usher";
+  | "usher"
+  | "children_worker"
+  | "children_supervisor";
 
 export const GLOBAL_ROLES: AppRole[] = ["super_admin"];
 export const NATIONAL_ROLES: AppRole[] = ["national_admin", "national_pastor"];
@@ -20,10 +22,12 @@ export const BRANCH_LEADERSHIP_ROLES: AppRole[] = [
   "resident_pastor",
   "associate_pastor",
 ];
+export const CHILDREN_ROLES: AppRole[] = ["children_worker", "children_supervisor"];
 export const BRANCH_SUPPORT_ROLES: AppRole[] = ["follow_up", "usher"];
 export const BRANCH_SCOPED_ROLES: AppRole[] = [
   ...BRANCH_LEADERSHIP_ROLES,
   ...BRANCH_SUPPORT_ROLES,
+  ...CHILDREN_ROLES,
 ];
 export const LEADERSHIP_ROLES: AppRole[] = [
   ...GLOBAL_ROLES,
@@ -39,6 +43,7 @@ export const APP_SETTINGS_ROLES: AppRole[] = [
 ];
 
 export function roleHomeHref(role?: string) {
+  if (role === "children_worker" || role === "children_supervisor") return "/children";
   if (role === "follow_up") return "/care";
   if (role === "usher") return "/attendance";
   return includesRole(LEADERSHIP_ROLES, role) ? "/dashboard" : "/unauthorized";
@@ -185,6 +190,8 @@ export function formatRoleLabel(role?: string) {
     associate_pastor: "Associate pastor",
     follow_up: "Follow-up",
     usher: "Usher",
+    children_worker: "Children’s worker",
+    children_supervisor: "Children’s supervisor",
   };
 
   return role && role in labels
@@ -205,6 +212,8 @@ export function getManageableUserRoleOptions(role?: string): AppRole[] {
       "associate_pastor",
       "follow_up",
       "usher",
+      "children_worker",
+      "children_supervisor",
     ];
   }
 
@@ -219,6 +228,8 @@ export function getManageableUserRoleOptions(role?: string): AppRole[] {
       "associate_pastor",
       "follow_up",
       "usher",
+      "children_worker",
+      "children_supervisor",
     ];
   }
 
@@ -231,11 +242,13 @@ export function getManageableUserRoleOptions(role?: string): AppRole[] {
       "associate_pastor",
       "follow_up",
       "usher",
+      "children_worker",
+      "children_supervisor",
     ];
   }
 
   if (role === "branch_admin") {
-    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher"];
+    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", "children_worker", "children_supervisor"];
   }
 
   return [];
@@ -254,6 +267,8 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
       "associate_pastor",
       "follow_up",
       "usher",
+      "children_worker",
+      "children_supervisor",
     ];
   }
 
@@ -268,6 +283,8 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
       "associate_pastor",
       "follow_up",
       "usher",
+      "children_worker",
+      "children_supervisor",
     ];
   }
 
@@ -280,11 +297,13 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
       "associate_pastor",
       "follow_up",
       "usher",
+      "children_worker",
+      "children_supervisor",
     ];
   }
 
   if (isBranchLeadershipRole(role)) {
-    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher"];
+    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", "children_worker", "children_supervisor"];
   }
 
   return role ? [role as AppRole] : [];
@@ -316,6 +335,7 @@ export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightReg
 }
 
 export const routePermissions: Record<string, AppRole[]> = {
+  "/children": [...LEADERSHIP_ROLES, "children_worker", "children_supervisor"],
   "/hierarchy": [...LEADERSHIP_ROLES],
   "/care/settings": [...LEADERSHIP_ROLES],
   "/meetings/groups": [...LEADERSHIP_ROLES],
@@ -357,6 +377,7 @@ export const routePermissions: Record<string, AppRole[]> = {
 };
 
 export function canAccessRoute(role: string | undefined, pathname: string) {
+  if (role === "children_worker" || role === "children_supervisor") return pathname === "/children" || pathname.startsWith("/children/");
   const matchedEntry = Object.entries(routePermissions).sort(([a], [b]) => b.length - a.length).find(([route]) =>
     pathname === route || pathname.startsWith(`${route}/`),
   );

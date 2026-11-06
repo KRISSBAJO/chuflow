@@ -111,6 +111,8 @@ export class UsersService implements OnModuleInit {
         'associate_pastor',
         'follow_up',
         'usher',
+        'children_worker',
+        'children_supervisor',
       ];
     }
 
@@ -123,6 +125,8 @@ export class UsersService implements OnModuleInit {
         'associate_pastor',
         'follow_up',
         'usher',
+        'children_worker',
+        'children_supervisor',
       ];
     }
 
@@ -133,6 +137,8 @@ export class UsersService implements OnModuleInit {
         'associate_pastor',
         'follow_up',
         'usher',
+        'children_worker',
+        'children_supervisor',
       ];
     }
 
@@ -155,6 +161,8 @@ export class UsersService implements OnModuleInit {
         'associate_pastor',
         'follow_up',
         'usher',
+        'children_worker',
+        'children_supervisor',
       ];
     }
 
@@ -167,6 +175,8 @@ export class UsersService implements OnModuleInit {
         'associate_pastor',
         'follow_up',
         'usher',
+        'children_worker',
+        'children_supervisor',
       ];
     }
 
@@ -177,6 +187,8 @@ export class UsersService implements OnModuleInit {
         'associate_pastor',
         'follow_up',
         'usher',
+        'children_worker',
+        'children_supervisor',
       ];
     }
 

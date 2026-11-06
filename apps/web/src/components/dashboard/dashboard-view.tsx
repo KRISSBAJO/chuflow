@@ -6,6 +6,7 @@ import { Icon, type IconName } from "@/components/app/icons";
 import type { SessionUser } from "@/lib/auth";
 import { canAccessRoute } from "@/lib/permissions";
 import type { DashboardBranchAlert, DashboardOverview } from "@/lib/types";
+import { ChildrenDashboardSummary } from "@/components/children/dashboard-summary";
 import { BranchHealth } from "./branch-health";
 
 type Operational = NonNullable<DashboardOverview["operational"]>;
@@ -498,6 +499,8 @@ export function DashboardView({
           delay={180}
         />
       </section>
+
+      {can("/children") && <ChildrenDashboardSummary scope={scope} />}
 
       {scope.kind !== "branch" ? (
         <section className="grid gap-4 xl:grid-cols-3">

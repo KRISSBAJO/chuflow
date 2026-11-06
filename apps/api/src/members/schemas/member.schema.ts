@@ -5,6 +5,7 @@ export type MemberDocument = HydratedDocument<Member>;
 
 @Schema({ timestamps: true })
 export class Member {
+  @Prop({ enum: ['adult', 'child'], default: 'adult' }) recordType!: string;
   @Prop({
     type: [{ type: SchemaTypes.ObjectId, ref: 'ServiceUnit' }],
     default: undefined,

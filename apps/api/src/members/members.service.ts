@@ -456,6 +456,7 @@ export class MembersService {
 
   async update(id: string, dto: UpdateMemberDto, currentUser: AuthUser) {
     const existing = await this.findOne(id, currentUser);
+    if (existing.recordType === 'child') throw new BadRequestException('Update this child through the children’s ministry workspace to keep guardian links and membership synchronized.');
     const normalizedDto = this.normalizeMemberPayload(dto);
     this.validateMemberPayload(normalizedDto);
     const branchId = await this.accessScopeService.resolveScopedBranchId(

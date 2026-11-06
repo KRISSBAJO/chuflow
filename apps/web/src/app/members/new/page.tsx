@@ -1,3 +1,4 @@
+import { ChildMemberEntry } from "@/components/children/member-entry";
 import { CreatePage } from "@/components/create-page";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
@@ -17,6 +18,7 @@ export default async function NewPage() {
   ]);
   return (
     <CreatePage title="Add member" backHref="/members">
+      <ChildMemberEntry role={user.role} />
       <MemberCreateForm
         branches={branches}
         guests={guests.items}
