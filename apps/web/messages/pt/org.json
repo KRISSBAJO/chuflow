@@ -544,7 +544,7 @@
     "hierarchy": {
       "eyebrow": "Supervisão da igreja",
       "title": "Uma só igreja. Responsabilidades ligadas.",
-      "description": "Cada localização continua a ser uma igreja local. As nomeações de distrito, zona e área acrescentam supervisão à conta existente do pastor residente da sede.",
+      "description": "Gerencie igrejas locais e nomeações pastorais. O acesso ampliado aos dados é uma opção separada e facultativa do administrador.",
       "nationalSetup": "Configuração nacional e de distritos",
       "myChurch": "A minha igreja",
       "openDistrict": "Abrir distrito",
@@ -569,7 +569,7 @@
       "notAppointed": "Não nomeado",
       "residentPastorLine": "Pastor residente e {level}: {name}",
       "manageAppointment": "Gerir nomeação",
-      "intro": "Distrito → Zonas → Áreas → Igrejas locais. As sedes são igrejas existentes, pelo que os membros, as ofertas e as presenças são contados uma única vez. As igrejas por colocar mantêm-se no distrito atual.",
+      "intro": "Cada igreja continua sendo uma igreja local. Os pastores residentes veem apenas a sua igreja, a menos que um administrador ative expressamente a nomeação de área, zona ou distrito.",
       "yourOversight": "A sua supervisão: {list}",
       "addLevel": "Adicionar um nível de supervisão",
       "level": "Nível",
@@ -607,7 +607,11 @@
       "pastorHint": "Se não aparecer nenhum pastor residente, nomeie primeiro o pastor residente dessa igreja local em Utilizadores.",
       "clearAppointment": "Remover nomeação de supervisão",
       "deactivate": "Desativar nível",
-      "reactivate": "Reativar nível"
+      "reactivate": "Reativar nível",
+      "visibilityLocal": "Acesso pastoral: apenas a igreja local",
+      "visibilityEnabled": "Acesso de supervisão pastoral: {name}",
+      "visibilityEnable": "Ativar acesso de supervisão para este pastor",
+      "visibilityHint": "Desativado por padrão. Quando ativado, este pastor pode acessar as igrejas de {name}, além da sua igreja local. Apenas um administrador autorizado pode alterar esta opção."
     },
     "hierarchyCatalog": {
       "createRegionError": "Não foi possível criar a região de supervisão",

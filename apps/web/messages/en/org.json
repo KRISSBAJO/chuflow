@@ -544,7 +544,7 @@
     "hierarchy": {
       "eyebrow": "Church oversight",
       "title": "One church. Connected responsibilities.",
-      "description": "Every location remains a local church. District, zonal and area appointments add oversight to the headquarters resident pastor’s existing account.",
+      "description": "Manage local churches and pastoral appointments. Broader data access is a separate, optional administrator setting.",
       "nationalSetup": "National & district setup",
       "myChurch": "My church",
       "openDistrict": "Open district",
@@ -569,7 +569,7 @@
       "notAppointed": "Not appointed",
       "residentPastorLine": "Resident & {level} pastor: {name}",
       "manageAppointment": "Manage appointment",
-      "intro": "District → Zones → Areas → Local churches. Headquarters are existing churches, so members, giving and attendance are counted once. Churches awaiting placement remain in their current district.",
+      "intro": "Every church remains a local station. Resident pastors see only their own station unless an administrator explicitly enables an area, zone or district appointment.",
       "yourOversight": "Your oversight: {list}",
       "addLevel": "Add an oversight level",
       "level": "Level",
@@ -607,7 +607,11 @@
       "pastorHint": "If no resident pastor appears, appoint the resident pastor to that local church in Users first.",
       "clearAppointment": "Clear oversight appointment",
       "deactivate": "Deactivate level",
-      "reactivate": "Reactivate level"
+      "reactivate": "Reactivate level",
+      "visibilityLocal": "Pastor access: own station only",
+      "visibilityEnabled": "Pastor oversight access: {name}",
+      "visibilityEnable": "Enable oversight access for this pastor",
+      "visibilityHint": "Off by default. When enabled, this pastor can access churches in {name} alongside their own station. Only an authorized administrator can change this setting."
     },
     "hierarchyCatalog": {
       "createRegionError": "Unable to create oversight region",

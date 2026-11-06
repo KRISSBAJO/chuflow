@@ -6,6 +6,7 @@ export type HierarchyUnit = {
   districtId: string;
   headquartersBranchId?: { _id: string; name: string } | null;
   pastorUserId?: { _id: string; firstName: string; lastName: string } | null;
+  pastorVisibilityEnabled?: boolean;
   isActive: boolean;
   revision: number;
   churches: number;

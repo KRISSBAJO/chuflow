@@ -17,6 +17,7 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { Member, MemberDocument } from '../members/schemas/member.schema';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { isBranchScopedRole } from '../common/constants/roles.constants';
 import {
   HierarchyUnit,
   HierarchyUnitDocument,
@@ -210,7 +211,9 @@ export class HierarchyService {
     });
     return {
       districts,
-      units: unitItems,
+      units: isBranchScopedRole(u.role)
+        ? unitItems.filter((unit) => unit.churches > 0)
+        : unitItems,
       branches: visible.map((branch) => ({
         ...branch,
         zoneName:
@@ -291,7 +294,12 @@ export class HierarchyService {
       if (unit.parentId)
         await this.scope.unitBranchQuery(String(unit.parentId));
     }
-    if (dto.clearAppointment && (dto.pastorUserId || dto.headquartersBranchId))
+    if (
+      dto.clearAppointment &&
+      (dto.pastorUserId ||
+        dto.headquartersBranchId ||
+        dto.pastorVisibilityEnabled === true)
+    )
       throw new BadRequestException(
         'Choose either a new appointment or clear the current appointment.',
       );
@@ -301,17 +309,39 @@ export class HierarchyService {
     if (dto.clearAppointment) {
       unset.pastorUserId = '';
       unset.headquartersBranchId = '';
-    } else if (dto.headquartersBranchId || dto.pastorUserId) {
-      if (!dto.headquartersBranchId || !dto.pastorUserId)
+      set.pastorVisibilityEnabled = false;
+    } else if (
+      dto.headquartersBranchId ||
+      dto.pastorUserId ||
+      dto.pastorVisibilityEnabled === true
+    ) {
+      if (
+        (dto.headquartersBranchId || dto.pastorUserId) &&
+        (!dto.headquartersBranchId || !dto.pastorUserId)
+      )
         throw new BadRequestException(
           'Choose both a headquarters church and its resident pastor.',
+        );
+      const headquartersBranchId =
+        dto.headquartersBranchId || String(unit.headquartersBranchId || '');
+      const pastorUserId = dto.pastorUserId || String(unit.pastorUserId || '');
+      if (!headquartersBranchId || !pastorUserId)
+        throw new BadRequestException(
+          'Appoint a headquarters church and resident pastor before enabling oversight access.',
+        );
+      if (
+        dto.pastorVisibilityEnabled === true &&
+        (!unit.isActive || dto.isActive === false)
+      )
+        throw new BadRequestException(
+          'Activate this oversight level before enabling access.',
         );
       const query = await this.scope.unitBranchQuery(id);
       const headquarters = await this.branches
         .findOne({
           $and: [
             query,
-            { _id: hierarchyId(dto.headquartersBranchId), status: 'active' },
+            { _id: hierarchyId(headquartersBranchId), status: 'active' },
           ],
         })
         .lean();
@@ -321,7 +351,7 @@ export class HierarchyService {
         );
       const pastor = await this.users
         .findOne({
-          _id: hierarchyId(dto.pastorUserId),
+          _id: hierarchyId(pastorUserId),
           branchId: headquarters._id,
           role: 'resident_pastor',
           isActive: true,
@@ -333,7 +363,15 @@ export class HierarchyService {
         );
       set.headquartersBranchId = headquarters._id;
       set.pastorUserId = pastor._id;
+      const changed =
+        String(unit.pastorUserId || '') !== String(pastor._id) ||
+        String(unit.headquartersBranchId || '') !== String(headquarters._id);
+      set.pastorVisibilityEnabled =
+        dto.pastorVisibilityEnabled ??
+        (changed ? false : unit.pastorVisibilityEnabled === true);
     }
+    if (dto.pastorVisibilityEnabled === false || dto.isActive === false)
+      set.pastorVisibilityEnabled = false;
     if (
       dto.isActive === false &&
       (await this.units.exists({ parentId: unit._id, isActive: true }))
@@ -356,6 +394,7 @@ export class HierarchyService {
         before: {
           headquartersBranchId: unit.headquartersBranchId,
           pastorUserId: unit.pastorUserId,
+          pastorVisibilityEnabled: unit.pastorVisibilityEnabled === true,
           isActive: unit.isActive,
         },
         after: set,

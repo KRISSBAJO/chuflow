@@ -544,7 +544,7 @@
     "hierarchy": {
       "eyebrow": "Supervision de l'église",
       "title": "Une seule église. Des responsabilités connectées.",
-      "description": "Chaque lieu reste une église locale. Les nominations de district, de zone et de secteur ajoutent une supervision au compte existant du pasteur résident du siège.",
+      "description": "Gérez les églises locales et les nominations pastorales. L’accès élargi aux données est un réglage facultatif et distinct de l’administrateur.",
       "nationalSetup": "Configuration nationale et des districts",
       "myChurch": "Mon église",
       "openDistrict": "Ouvrir le district",
@@ -569,7 +569,7 @@
       "notAppointed": "Non nommé",
       "residentPastorLine": "Pasteur résident et {level} : {name}",
       "manageAppointment": "Gérer la nomination",
-      "intro": "District → Zones → Secteurs → Églises locales. Les sièges sont des églises existantes, donc les membres, les dons et la présence ne sont comptés qu'une fois. Les églises en attente de placement restent dans leur district actuel.",
+      "intro": "Chaque église reste une église locale. Les pasteurs résidents ne voient que leur église, sauf si un administrateur active explicitement leur nomination de secteur, zone ou district.",
       "yourOversight": "Votre supervision : {list}",
       "addLevel": "Ajouter un niveau de supervision",
       "level": "Niveau",
@@ -607,7 +607,11 @@
       "pastorHint": "Si aucun pasteur résident n'apparaît, nommez d'abord le pasteur résident de cette église locale dans Utilisateurs.",
       "clearAppointment": "Retirer la nomination de supervision",
       "deactivate": "Désactiver le niveau",
-      "reactivate": "Réactiver le niveau"
+      "reactivate": "Réactiver le niveau",
+      "visibilityLocal": "Accès pastoral : église locale uniquement",
+      "visibilityEnabled": "Accès pastoral de supervision : {name}",
+      "visibilityEnable": "Activer l’accès de supervision pour ce pasteur",
+      "visibilityHint": "Désactivé par défaut. Une fois activé, ce pasteur peut accéder aux églises de {name}, en plus de son église locale. Seul un administrateur autorisé peut modifier ce réglage."
     },
     "hierarchyCatalog": {
       "createRegionError": "Impossible de créer la région de supervision",

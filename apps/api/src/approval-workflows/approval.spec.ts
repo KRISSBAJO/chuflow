@@ -73,6 +73,7 @@ function fixture() {
     _id:
       kind === 'area' ? branch.areaId : kind === 'zone' ? branch.zoneId : oid(),
     kind,
+    pastorVisibilityEnabled: true,
     districtId: district._id,
     name: kind,
     headquartersBranchId: branch._id,
@@ -183,6 +184,7 @@ function fixture() {
   return {
     service,
     branch,
+    units,
     request,
     requests,
     users,
@@ -584,4 +586,22 @@ it('null amounts cannot bypass amount-based route requirements', () => {
       null as unknown as number,
     ),
   ).toThrow(BadRequestException);
+});
+
+describe('Explicit oversight access in approval routes', () => {
+  it('does not route a request to an appointed pastor without administrator-enabled access', async () => {
+    const f = fixture();
+    f.units[0].pastorVisibilityEnabled = false;
+    await expect(f.service.preview(user, f.dto)).rejects.toThrow(
+      'enable the appointed pastor',
+    );
+  });
+  it('constrains direct request reads to the current church scope, including previous participants', async () => {
+    const f = fixture();
+    await f.service.detail(user, String(f.request._id));
+    const filter = (
+      f.requests.findOne.mock.calls[0] as unknown as [Record<string, unknown>]
+    )[0];
+    expect(filter.$and).toContainEqual({ branchId: { $in: [f.branch._id] } });
+  });
 });

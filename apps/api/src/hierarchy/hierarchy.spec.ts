@@ -55,6 +55,7 @@ function fixture() {
     {
       _id: districtUnitId,
       kind: 'district',
+      pastorVisibilityEnabled: true,
       districtId,
       name: 'District A',
       isActive: true,
@@ -62,6 +63,7 @@ function fixture() {
     {
       _id: zoneId,
       kind: 'zone',
+      pastorVisibilityEnabled: true,
       districtId,
       parentId: districtUnitId,
       name: 'Zone A',
@@ -70,6 +72,7 @@ function fixture() {
     {
       _id: areaId,
       kind: 'area',
+      pastorVisibilityEnabled: true,
       districtId,
       parentId: zoneId,
       name: 'Area A',
@@ -487,5 +490,161 @@ describe('Hierarchy management boundaries', () => {
         clearAppointment: true,
       }),
     ).rejects.toThrow(ConflictException);
+  });
+});
+
+describe('Administrator-enabled pastor visibility', () => {
+  it.each([undefined, false])(
+    'an existing appointment with visibility %s remains local-only',
+    async (enabled) => {
+      const f = fixture();
+      if (enabled === undefined) delete f.units[2].pastorVisibilityEnabled;
+      else f.units[2].pastorVisibilityEnabled = enabled;
+      expect(await f.scope.getAccessibleBranchIds(f.user)).toEqual([
+        String(f.headquartersId),
+      ]);
+      await expect(
+        f.scope.ensureBranchAccess(f.user, String(f.churches[1]._id)),
+      ).rejects.toThrow(ForbiddenException);
+    },
+  );
+  it('revokes expanded queries immediately without changing the logged-in user', async () => {
+    const f = fixture();
+    expect(await f.scope.getAccessibleBranchIds(f.user)).toHaveLength(2);
+    f.units[2].pastorVisibilityEnabled = false;
+    expect(await f.scope.getAccessibleBranchIds(f.user)).toEqual([
+      String(f.headquartersId),
+    ]);
+    expect(await f.scope.buildBranchObjectIdFilter(f.user)).toEqual({
+      branchId: { $in: [f.headquartersId] },
+    });
+  });
+  it('never exposes neighboring unit appointments to local-only resident pastors', async () => {
+    const f = fixture();
+    f.units[2].pastorVisibilityEnabled = false;
+    const service = new HierarchyService(
+      ...([
+        f.unitModel,
+        {},
+        f.branchModel,
+        f.districtModel,
+        {},
+        { aggregate: jest.fn().mockResolvedValue([]) },
+        { aggregate: jest.fn().mockResolvedValue([]) },
+        f.scope,
+      ] as unknown as ConstructorParameters<typeof HierarchyService>),
+    );
+    const result = await service.list(f.user);
+    const visible = result.units as Row[];
+    expect(visible.map((u) => u._id)).toEqual([
+      f.units[0]._id,
+      f.units[1]._id,
+      f.units[2]._id,
+    ]);
+    expect(result.branches).toHaveLength(1);
+  });
+  it('district admins retain their district scope and cannot access another district', async () => {
+    const f = fixture();
+    const admin = { ...f.user, role: 'district_admin' as const };
+    expect(await f.scope.getBranchDocumentQuery(admin)).toEqual({
+      oversightRegion: 'Region A',
+      district: 'District A',
+    });
+    await expect(
+      f.scope.ensureBranchAccess(admin, String(f.churches[4]._id)),
+    ).rejects.toThrow(ForbiddenException);
+  });
+  it('rejects null and string grants instead of treating them as permission', () => {
+    for (const value of [null, 'true', 1])
+      expect(
+        validateSync(
+          Object.assign(new UpdateHierarchyDto(), {
+            expectedRevision: 0,
+            pastorVisibilityEnabled: value,
+          }),
+        ),
+      ).toHaveLength(1);
+  });
+  function editable() {
+    const f = fixture();
+    const updates = jest.fn((_filter: Row, update: { $set: Row }) =>
+      Promise.resolve({ ...f.units[2], ...update.$set }),
+    );
+    const changes = { create: jest.fn().mockResolvedValue({}) };
+    const service = Object.create(
+      HierarchyService.prototype,
+    ) as HierarchyService;
+    Object.assign(service, {
+      units: {
+        ...f.unitModel,
+        findById: () => q({ ...f.units[2], revision: 0 }),
+        findOneAndUpdate: updates,
+      },
+      districts: { ...f.districtModel, findById: () => q(f.district) },
+      branches: f.branchModel,
+      users: { findOne: () => q({ _id: f.pastorId }) },
+      changes,
+      scope: f.scope,
+    });
+    return { ...f, service, updates, changes };
+  }
+  it('allows an authorized admin to explicitly enable access and records it in history', async () => {
+    const f = editable();
+    f.units[2].pastorVisibilityEnabled = false;
+    await f.service.update(
+      { ...f.user, role: 'district_admin' },
+      String(f.areaId),
+      { expectedRevision: 0, pastorVisibilityEnabled: true },
+    );
+    expect(f.updates.mock.calls[0][1].$set.pastorVisibilityEnabled).toBe(true);
+    const event = (
+      f.changes.create.mock.calls[0] as unknown as [
+        {
+          details: {
+            before: { pastorVisibilityEnabled: boolean };
+            after: { pastorVisibilityEnabled: boolean };
+          };
+        },
+      ]
+    )[0];
+    expect(event.details.before.pastorVisibilityEnabled).toBe(false);
+    expect(event.details.after.pastorVisibilityEnabled).toBe(true);
+  });
+  it('pastors cannot enable their own access, and foreign district admins cannot grant it', async () => {
+    const f = editable();
+    for (const actor of [
+      f.user,
+      { ...f.user, role: 'district_admin' as const, district: 'District B' },
+    ])
+      await expect(
+        f.service.update(actor, String(f.areaId), {
+          expectedRevision: 0,
+          pastorVisibilityEnabled: true,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    expect(f.updates).not.toHaveBeenCalled();
+  });
+  it('clearing an appointment also revokes the grant', async () => {
+    const f = editable();
+    await f.service.update(
+      { ...f.user, role: 'super_admin' },
+      String(f.areaId),
+      { expectedRevision: 0, clearAppointment: true },
+    );
+    expect(f.updates.mock.calls[0][1].$set.pastorVisibilityEnabled).toBe(false);
+  });
+  it('changing the appointed pastor does not silently inherit an enabled grant', async () => {
+    const f = editable();
+    f.units[2].pastorUserId = id();
+    await f.service.update(
+      { ...f.user, role: 'super_admin' },
+      String(f.areaId),
+      {
+        expectedRevision: 0,
+        headquartersBranchId: String(f.headquartersId),
+        pastorUserId: String(f.pastorId),
+      },
+    );
+    expect(f.updates.mock.calls[0][1].$set.pastorVisibilityEnabled).toBe(false);
   });
 });

@@ -19,6 +19,7 @@ export class HierarchyUnit {
   headquartersBranchId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'User', index: true })
   pastorUserId?: Types.ObjectId;
+  @Prop({ default: false }) pastorVisibilityEnabled!: boolean;
   @Prop({ default: true }) isActive!: boolean;
   @Prop({ default: 0 }) revision!: number;
 }

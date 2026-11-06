@@ -544,7 +544,7 @@
     "hierarchy": {
       "eyebrow": "Supervisión de la iglesia",
       "title": "Una sola iglesia. Responsabilidades conectadas.",
-      "description": "Cada ubicación sigue siendo una iglesia local. Los nombramientos de distrito, zona y área añaden supervisión a la cuenta existente del pastor residente de la sede central.",
+      "description": "Gestiona iglesias locales y nombramientos pastorales. El acceso ampliado a los datos es una opción independiente del administrador.",
       "nationalSetup": "Configuración nacional y de distritos",
       "myChurch": "Mi iglesia",
       "openDistrict": "Abrir distrito",
@@ -569,7 +569,7 @@
       "notAppointed": "Sin nombrar",
       "residentPastorLine": "Pastor residente y {level}: {name}",
       "manageAppointment": "Gestionar nombramiento",
-      "intro": "Distrito → Zonas → Áreas → Iglesias locales. Las sedes centrales son iglesias existentes, por lo que los miembros, las ofrendas y la asistencia se cuentan una sola vez. Las iglesias pendientes de ubicación permanecen en su distrito actual.",
+      "intro": "Cada iglesia sigue siendo una iglesia local. Los pastores residentes solo ven su iglesia, salvo que un administrador habilite expresamente su nombramiento de área, zona o distrito.",
       "yourOversight": "Su supervisión: {list}",
       "addLevel": "Agregar un nivel de supervisión",
       "level": "Nivel",
@@ -607,7 +607,11 @@
       "pastorHint": "Si no aparece ningún pastor residente, nombre primero al pastor residente de esa iglesia local en Usuarios.",
       "clearAppointment": "Quitar nombramiento de supervisión",
       "deactivate": "Desactivar nivel",
-      "reactivate": "Reactivar nivel"
+      "reactivate": "Reactivar nivel",
+      "visibilityLocal": "Acceso pastoral: solo su iglesia local",
+      "visibilityEnabled": "Acceso de supervisión pastoral: {name}",
+      "visibilityEnable": "Habilitar acceso de supervisión para este pastor",
+      "visibilityHint": "Desactivado por defecto. Al activarlo, este pastor puede acceder a las iglesias de {name}, además de su iglesia local. Solo un administrador autorizado puede cambiar esta opción."
     },
     "hierarchyCatalog": {
       "createRegionError": "No se pudo crear la región de supervisión",

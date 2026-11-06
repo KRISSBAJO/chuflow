@@ -86,6 +86,7 @@ export class AccessScopeService {
     const appointments = await this.units
       .find({
         pastorUserId: u.sub,
+        pastorVisibilityEnabled: true,
         headquartersBranchId: u.branchId,
         isActive: true,
       })

@@ -109,9 +109,7 @@ export class AuditLogsService {
     }
 
     if (isBranchScopedRole(currentUser.role)) {
-      return {
-        branchId: new Types.ObjectId(currentUser.branchId),
-      };
+      return this.accessScopeService.buildBranchObjectIdFilter(currentUser);
     }
 
     const branchQuery =

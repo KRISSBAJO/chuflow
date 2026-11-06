@@ -22,6 +22,9 @@ export class UpdateHierarchyDto {
   @IsOptional() @IsMongoId() pastorUserId?: string;
   @ValidateIf((_, value) => value !== undefined)
   @IsBoolean()
+  pastorVisibilityEnabled?: boolean;
+  @ValidateIf((_, value) => value !== undefined)
+  @IsBoolean()
   clearAppointment?: boolean;
   @ValidateIf((_, value) => value !== undefined)
   @IsBoolean()

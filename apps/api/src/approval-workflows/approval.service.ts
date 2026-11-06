@@ -255,6 +255,10 @@ export class ApprovalWorkflowsService {
         throw new BadRequestException(
           'The church hierarchy is inconsistent. Correct its placement.',
         );
+      if (unit.pastorVisibilityEnabled !== true)
+        throw new BadRequestException(
+          `An administrator must enable the appointed pastor's oversight access for ${unit.name} before using this approval route.`,
+        );
       const people =
         unit.pastorUserId && unit.headquartersBranchId
           ? await this.candidates(
@@ -434,13 +438,27 @@ export class ApprovalWorkflowsService {
           },
         });
     }
+    const branchIds = await this.scope.getAccessibleBranchIds(u);
     return {
-      $or: [
-        { requesterId: u.sub },
-        { participantIds: u.sub },
-        ...(eligible.length
-          ? [{ currentReviewerIds: u.sub, status: 'pending', $or: eligible }]
-          : []),
+      $and: [
+        ...(branchIds === null
+          ? []
+          : [{ branchId: { $in: branchIds.map((id) => this.id(id)) } }]),
+        {
+          $or: [
+            { requesterId: u.sub },
+            { participantIds: u.sub },
+            ...(eligible.length
+              ? [
+                  {
+                    currentReviewerIds: u.sub,
+                    status: 'pending',
+                    $or: eligible,
+                  },
+                ]
+              : []),
+          ],
+        },
       ],
     };
   }
