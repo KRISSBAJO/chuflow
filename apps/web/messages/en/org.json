@@ -383,7 +383,16 @@
       "canSignIn": "User can sign in",
       "update": "Update user",
       "lastSignedIn": "Last signed in {when}",
-      "noSignIn": "No sign-in recorded yet"
+      "noSignIn": "No sign-in recorded yet",
+      "welcomeTitle": "Welcome email",
+      "sendWelcome": "Send welcome email",
+      "sendingWelcome": "Sending…",
+      "welcomeAccepted": "Welcome email accepted for delivery.",
+      "welcomeFailed": "The account is saved, but the welcome email could not be sent. Retry from the user’s Security tab.",
+      "welcomeRecent": "A welcome email was requested recently. Please wait one minute.",
+      "welcomeInactive": "Activate and save this account before sending a welcome email.",
+      "welcomeHint": "Send a private password-setup link, valid for 24 hours. Sending a new link replaces any previous password-reset link.",
+      "welcomeLast": "Last welcome email: {status}"
     },
     "branches": {
       "eyebrow": "Branches",

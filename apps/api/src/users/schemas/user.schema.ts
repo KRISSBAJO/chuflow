@@ -46,6 +46,15 @@ export class User {
   @Prop()
   lastLoginAt?: Date;
 
+  @Prop()
+  welcomeEmailAttemptAt?: Date;
+
+  @Prop()
+  welcomeEmailStatus?: string;
+
+  @Prop()
+  welcomeEmailMessageId?: string;
+
   @Prop({ required: true, enum: APP_ROLES })
   role!: string;
 

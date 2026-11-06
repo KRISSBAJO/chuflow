@@ -383,7 +383,16 @@
       "canSignIn": "El usuario puede iniciar sesión",
       "update": "Actualizar usuario",
       "lastSignedIn": "Último inicio de sesión {when}",
-      "noSignIn": "Aún no se ha registrado ningún inicio de sesión"
+      "noSignIn": "Aún no se ha registrado ningún inicio de sesión",
+      "welcomeTitle": "Correo de bienvenida",
+      "sendWelcome": "Enviar correo de bienvenida",
+      "sendingWelcome": "Enviando…",
+      "welcomeAccepted": "Correo de bienvenida aceptado para su envío.",
+      "welcomeFailed": "La cuenta está guardada, pero no se pudo enviar el correo de bienvenida. Reintente en la pestaña Seguridad.",
+      "welcomeRecent": "Se solicitó un correo recientemente. Espere un minuto.",
+      "welcomeInactive": "Active y guarde esta cuenta antes de enviar el correo.",
+      "welcomeHint": "Envíe un enlace privado para crear la contraseña, válido durante 24 horas. Un enlace nuevo reemplaza cualquier enlace de restablecimiento anterior.",
+      "welcomeLast": "Último correo de bienvenida: {status}"
     },
     "branches": {
       "eyebrow": "Sedes",

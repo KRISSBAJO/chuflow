@@ -52,6 +52,7 @@ export function UserCreateForm({
   showHeader?: boolean;
 }) {
   const router = useRouter();
+  const tWelcome = useTranslations("org.userList");
   const t = useTranslations("org.userForm");
   const tCommon = useTranslations("common");
   const roleLabel = useRoleLabel();
@@ -127,6 +128,10 @@ export function UserCreateForm({
       }
 
       toast.success(t("created"), { id: savedToastId(result) });
+      if (result.welcomeEmail?.status === "accepted")
+        toast.success(tWelcome("welcomeAccepted"));
+      else if (["failed", "not_sent"].includes(result.welcomeEmail?.status))
+        toast.error(tWelcome("welcomeFailed"));
       router.push(
         createdHref(
           `/users?search=${encodeURIComponent(String(formData.get("email") || ""))}`,

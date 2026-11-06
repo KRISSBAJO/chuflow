@@ -37,6 +37,8 @@ export default () => {
     adminEmail: process.env.ADMIN_EMAIL ?? 'admin@church.local',
     adminPassword: process.env.ADMIN_PASSWORD ?? 'ChangeMe123!',
     mailHost: process.env.MAIL_HOST,
+    mailProvider: process.env.MAIL_PROVIDER ?? 'smtp',
+    relykitApiKey: process.env.RELYKIT_API_KEY,
     mailPort: process.env.MAIL_PORT
       ? parseInt(process.env.MAIL_PORT, 10)
       : undefined,

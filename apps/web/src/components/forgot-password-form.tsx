@@ -21,14 +21,12 @@ export function ForgotPasswordForm() {
   const tc = useTranslations("common");
   const [status, setStatus] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const [resetUrl, setResetUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setStatus(null);
     setFailed(false);
-    setResetUrl(null);
 
     try {
       const response = await fetch(`${API_URL}/auth/forgot-password`, {
@@ -42,12 +40,9 @@ export function ForgotPasswordForm() {
         throw new Error(result.message || t("failed"));
       }
 
-      setStatus(result.delivery === "email" ? t("emailSent") : result.message);
-      setResetUrl(result.resetUrl ?? null);
+      setStatus(t("resetRequested"));
 
-      actionToast.success(
-        result.delivery === "email" ? t("emailSent") : result.message,
-      );
+      actionToast.success(t("resetRequested"));
     } catch (error) {
       setFailed(true);
       toast.error(error instanceof Error ? error.message : t("failed"));
@@ -82,18 +77,6 @@ export function ForgotPasswordForm() {
       {status ? (
         <div className="mt-5">
           <Alert tone={failed ? "error" : "success"}>{status}</Alert>
-        </div>
-      ) : null}
-
-      {resetUrl ? (
-        <div className="mt-3 rounded-2xl bg-[var(--lp-panel)] px-4 py-4 text-[14px]">
-          <p className="text-[var(--lp-muted)]">{t("previewNote")}</p>
-          <a
-            href={resetUrl}
-            className="mt-2 inline-flex font-medium text-[var(--lp-ink)] underline underline-offset-4"
-          >
-            {t("openResetPage")}
-          </a>
         </div>
       ) : null}
 

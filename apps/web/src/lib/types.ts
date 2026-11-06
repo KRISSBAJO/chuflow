@@ -1036,6 +1036,8 @@ export type UserSummary = {
   district?: string;
   branchId?: string;
   isActive?: boolean;
+  welcomeEmailStatus?: string;
+  welcomeEmailAttemptAt?: string;
   lastLoginAt?: string;
   createdAt?: string;
 };

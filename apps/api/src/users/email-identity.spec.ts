@@ -28,6 +28,7 @@ function fixture(rows: Record<string, unknown>[]) {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
   );
   return { service, users, query };
 }
@@ -116,6 +117,7 @@ describe('Password-only account edits', () => {
       {} as never,
       {} as never,
       audit as never,
+      {} as never,
     );
     Object.assign(service, {
       ensureManageableTarget: jest.fn().mockResolvedValue(saved),

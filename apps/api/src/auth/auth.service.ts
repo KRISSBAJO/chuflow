@@ -135,20 +135,18 @@ export class AuthService {
     const webUrl =
       this.configService.get<string>('webUrl') ?? 'http://localhost:3001';
     const resetUrl = `${webUrl}/reset-password?token=${rawToken}`;
-    const mailResult = await this.mailService.sendPasswordResetEmail(
-      user.email,
-      resetUrl,
-      expiresAt.toISOString(),
-    );
-
+    try {
+      await this.mailService.sendPasswordResetEmail(
+        user.email,
+        resetUrl,
+        expiresAt.toISOString(),
+      );
+    } catch {
+      // Never expose reset credentials or account existence when delivery fails.
+    }
     return {
-      message: mailResult.delivered
-        ? 'Password reset email sent successfully.'
-        : 'Password reset link generated. SMTP is not configured, so a preview link is returned.',
-      resetToken: mailResult.delivered ? undefined : rawToken,
-      resetUrl: mailResult.previewUrl,
-      expiresAt: expiresAt.toISOString(),
-      delivery: mailResult.delivered ? 'email' : 'preview',
+      message:
+        'If an account exists for that email, password reset instructions have been prepared.',
     };
   }
 
@@ -175,7 +173,7 @@ export class AuthService {
       throw new BadRequestException('Reset token is invalid or has expired');
     }
 
-    await this.usersService.updatePassword(user.id, dto.newPassword);
+    await this.usersService.updatePassword(user.id, dto.newPassword, tokenHash);
 
     return {
       message: 'Password has been reset successfully',

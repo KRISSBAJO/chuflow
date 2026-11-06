@@ -110,4 +110,9 @@ export class UsersController {
   ) {
     return this.usersService.update(user, id, dto);
   }
+
+  @Post(':id/welcome')
+  welcome(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.usersService.sendWelcome(user, id);
+  }
 }

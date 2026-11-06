@@ -31,6 +31,7 @@ describe('user detail workspace access', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
     return { service, branches, scope };
   }

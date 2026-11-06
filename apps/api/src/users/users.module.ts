@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MailModule } from '../mail/mail.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
@@ -13,6 +14,7 @@ import { User, UserSchema } from './schemas/user.schema';
 @Module({
   imports: [
     ConfigModule,
+    MailModule,
     AccessScopeModule,
     AuditLogsModule,
     OversightRegionsModule,

@@ -17,6 +17,14 @@ export const envValidationSchema = Joi.object({
   ADMIN_EMAIL: Joi.string().email().required(),
   ADMIN_PASSWORD: Joi.string().min(8).required(),
   MAIL_HOST: Joi.string().allow('').optional(),
+  MAIL_PROVIDER: Joi.string().valid('smtp', 'relykit').default('smtp'),
+  RELYKIT_API_KEY: Joi.string().when('MAIL_PROVIDER', {
+    is: 'relykit',
+    then: Joi.string()
+      .pattern(/^rlk_live_[A-Za-z0-9_-]+$/)
+      .required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
   MAIL_PORT: Joi.number().optional(),
   MAIL_SECURE: Joi.boolean().truthy('true').falsy('false').default(false),
   MAIL_USER: Joi.string().allow('').optional(),

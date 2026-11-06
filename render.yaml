@@ -35,6 +35,10 @@ services:
         sync: false
       - key: MAIL_HOST
         sync: false
+      - key: MAIL_PROVIDER
+        sync: false
+      - key: RELYKIT_API_KEY
+        sync: false
       - key: MAIL_PORT
         sync: false
       - key: MAIL_SECURE

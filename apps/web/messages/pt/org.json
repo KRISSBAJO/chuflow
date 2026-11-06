@@ -383,7 +383,16 @@
       "canSignIn": "O utilizador pode iniciar sessão",
       "update": "Atualizar utilizador",
       "lastSignedIn": "Último início de sessão {when}",
-      "noSignIn": "Ainda não foi registado nenhum início de sessão"
+      "noSignIn": "Ainda não foi registado nenhum início de sessão",
+      "welcomeTitle": "E-mail de boas-vindas",
+      "sendWelcome": "Enviar e-mail de boas-vindas",
+      "sendingWelcome": "Enviando…",
+      "welcomeAccepted": "E-mail de boas-vindas aceito para envio.",
+      "welcomeFailed": "A conta foi salva, mas o e-mail de boas-vindas não foi enviado. Tente novamente na aba Segurança.",
+      "welcomeRecent": "Um e-mail foi solicitado recentemente. Aguarde um minuto.",
+      "welcomeInactive": "Ative e salve esta conta antes de enviar o e-mail.",
+      "welcomeHint": "Envie um link privado para definir a senha, válido por 24 horas. Um novo link substitui qualquer link anterior de redefinição.",
+      "welcomeLast": "Último e-mail de boas-vindas: {status}"
     },
     "branches": {
       "eyebrow": "Filiais",

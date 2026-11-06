@@ -8,6 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
+import { createHash, randomBytes } from 'crypto';
+import { MailService } from '../mail/mail.service';
 import { Model } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
@@ -53,6 +55,7 @@ export class UsersService implements OnModuleInit {
     private readonly oversightRegionsService: OversightRegionsService,
     private readonly districtsService: DistrictsService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly mailService: MailService,
   ) {}
 
   async onModuleInit() {
@@ -664,7 +667,10 @@ export class UsersService implements OnModuleInit {
     };
   }
 
-  async create(currentUser: AuthUser, dto: CreateUserDto) {
+  async create(
+    currentUser: AuthUser,
+    dto: CreateUserDto,
+  ): Promise<Record<string, unknown>> {
     this.validateRoleAssignment(currentUser, dto.role);
     await this.ensureEmailAvailable(dto.email);
 
@@ -698,7 +704,90 @@ export class UsersService implements OnModuleInit {
       },
     });
 
-    return this.findOneForAdmin(currentUser, user.id);
+    const welcomeEmail = await this.sendWelcome(
+      currentUser,
+      String(user._id),
+    ).catch(() => ({ status: 'failed' }));
+    return {
+      ...(await this.findOneForAdmin(currentUser, String(user._id))),
+      welcomeEmail,
+    };
+  }
+
+  async sendWelcome(currentUser: AuthUser, userId: string) {
+    // Always use the same authorization as editing an account, even for global viewers.
+    const target = await this.ensureManageableTarget(currentUser, userId);
+    this.validateRoleAssignment(currentUser, target.role);
+    if (!target.isActive) return { status: 'inactive' };
+    const now = new Date();
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(now.getTime() + 86400000);
+    const claimed = await this.userModel.updateOne(
+      {
+        _id: target._id,
+        $or: [
+          { welcomeEmailAttemptAt: { $exists: false } },
+          { welcomeEmailAttemptAt: { $lt: new Date(now.getTime() - 60000) } },
+        ],
+      },
+      {
+        $set: {
+          welcomeEmailAttemptAt: now,
+          passwordResetToken: tokenHash,
+          passwordResetExpiresAt: expiresAt,
+          welcomeEmailStatus: 'preparing',
+        },
+      },
+    );
+    if (!claimed.modifiedCount) return { status: 'recently_requested' };
+    let status = 'failed';
+    let messageId: string | null = null;
+    try {
+      const webUrl =
+        this.configService.get<string>('webUrl') ?? 'http://localhost:3001';
+      const setupUrl = `${webUrl.replace(/\/$/, '')}/reset-password?token=${rawToken}`;
+      let scope =
+        [target.district, target.oversightRegion].filter(Boolean).join(' · ') ||
+        'ChuFlow';
+      if (target.branchId) {
+        const branch = await this.branchModel
+          .findById(target.branchId)
+          .select('name')
+          .lean();
+        scope = branch?.name ?? scope;
+      }
+      const result = await this.mailService.sendWelcomeEmail(
+        target.email,
+        `${target.firstName} ${target.lastName}`,
+        target.role.replace(/_/g, ' '),
+        scope,
+        setupUrl,
+      );
+      status = result.delivered ? 'accepted' : 'not_sent';
+      messageId = result.messageId;
+    } catch {
+      // Account creation remains successful when delivery fails. No tokens or passwords leave this method.
+      status = 'failed';
+    }
+    await this.userModel.updateOne(
+      { _id: target._id, welcomeEmailAttemptAt: now },
+      {
+        $set: { welcomeEmailStatus: status, welcomeEmailMessageId: messageId },
+      },
+    );
+    await this.auditLogsService.record({
+      entityType: 'user',
+      entityId: userId,
+      action: 'welcome_email',
+      summary: `Welcome email ${status}`,
+      actor: currentUser,
+      branchId: target.branchId ? String(target.branchId) : undefined,
+      district: target.district,
+      oversightRegion: target.oversightRegion,
+      metadata: { status, messageId },
+    });
+    return { status, messageId };
   }
 
   async findOneForAdmin(currentUser: AuthUser, userId: string) {
@@ -835,6 +924,11 @@ export class UsersService implements OnModuleInit {
       setPayload.password = await bcrypt.hash(dto.password, 10);
     }
 
+    if (dto.password || dto.email !== undefined || dto.isActive === false) {
+      unsetPayload.passwordResetToken = 1;
+      unsetPayload.passwordResetExpiresAt = 1;
+    }
+
     const user = await this.userModel
       .findByIdAndUpdate(
         userId,
@@ -876,22 +970,34 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
-  async updatePassword(userId: string, password: string) {
+  async updatePassword(
+    userId: string,
+    password: string,
+    resetTokenHash?: string,
+  ) {
     const hash = await bcrypt.hash(password, 10);
-    const user = await this.userModel.findByIdAndUpdate(
-      userId,
+    const user = await this.userModel.findOneAndUpdate(
       {
-        password: hash,
-        passwordResetToken: undefined,
-        passwordResetExpiresAt: undefined,
+        _id: userId,
+        ...(resetTokenHash
+          ? {
+              passwordResetToken: resetTokenHash,
+              passwordResetExpiresAt: { $gt: new Date() },
+              isActive: true,
+            }
+          : {}),
+      },
+      {
+        $set: { password: hash },
+        $unset: { passwordResetToken: 1, passwordResetExpiresAt: 1 },
       },
       { new: true },
     );
-
     if (!user) {
+      if (resetTokenHash)
+        throw new BadRequestException('Reset token is invalid or has expired');
       throw new NotFoundException('User not found');
     }
-
     return user;
   }
 
@@ -915,14 +1021,14 @@ export class UsersService implements OnModuleInit {
       .findOne({
         passwordResetToken: tokenHash,
         passwordResetExpiresAt: { $gt: new Date() },
+        isActive: true,
       })
       .exec();
   }
 
   clearPasswordResetToken(userId: string) {
     return this.userModel.findByIdAndUpdate(userId, {
-      passwordResetToken: undefined,
-      passwordResetExpiresAt: undefined,
+      $unset: { passwordResetToken: 1, passwordResetExpiresAt: 1 },
     });
   }
 

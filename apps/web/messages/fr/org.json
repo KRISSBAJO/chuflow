@@ -383,7 +383,16 @@
       "canSignIn": "L'utilisateur peut se connecter",
       "update": "Mettre à jour l'utilisateur",
       "lastSignedIn": "Dernière connexion {when}",
-      "noSignIn": "Aucune connexion enregistrée pour l'instant"
+      "noSignIn": "Aucune connexion enregistrée pour l'instant",
+      "welcomeTitle": "E-mail de bienvenue",
+      "sendWelcome": "Envoyer l’e-mail de bienvenue",
+      "sendingWelcome": "Envoi…",
+      "welcomeAccepted": "E-mail de bienvenue accepté pour envoi.",
+      "welcomeFailed": "Le compte est enregistré, mais l’e-mail de bienvenue n’a pas pu être envoyé. Réessayez depuis l’onglet Sécurité.",
+      "welcomeRecent": "Un e-mail vient d’être demandé. Patientez une minute.",
+      "welcomeInactive": "Activez et enregistrez ce compte avant d’envoyer l’e-mail.",
+      "welcomeHint": "Envoyez un lien privé de création de mot de passe, valable 24 heures. Un nouveau lien remplace le précédent lien de réinitialisation.",
+      "welcomeLast": "Dernier e-mail de bienvenue : {status}"
     },
     "branches": {
       "eyebrow": "Branches",
