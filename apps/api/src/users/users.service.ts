@@ -25,6 +25,7 @@ import { DistrictsService } from '../districts/districts.service';
 import { OversightRegionsService } from '../oversight-regions/oversight-regions.service';
 import { CreateUserDto, UpdateUserDto } from './dto/manage-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
+import { normalizeUserEmail, userEmailPattern } from './email-identity';
 
 type UserScopePayload = {
   branchId?: string;
@@ -55,8 +56,12 @@ export class UsersService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const adminEmail = this.configService.get<string>('adminEmail')!;
-    const existing = await this.userModel.findOne({ email: adminEmail });
+    const adminEmail = normalizeUserEmail(
+      this.configService.get<string>('adminEmail')!,
+    );
+    const existing = await this.userModel.findOne({
+      email: userEmailPattern(adminEmail),
+    });
 
     if (!existing) {
       const hash = await bcrypt.hash(
@@ -74,12 +79,22 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  private async findEmailIdentity(email: string, withPassword: boolean) {
+    const query = this.userModel
+      .find({ email: userEmailPattern(email) })
+      .limit(2);
+    if (!withPassword) query.select('-password -passwordResetToken');
+    const users = await query.exec();
+    // Never choose between two legacy accounts that differ only in capitalization.
+    return users.length === 1 ? users[0] : null;
+  }
+
   findByEmailWithPassword(email: string) {
-    return this.userModel.findOne({ email }).exec();
+    return this.findEmailIdentity(email, true);
   }
 
   findByEmail(email: string) {
-    return this.userModel.findOne({ email }).select('-password').exec();
+    return this.findEmailIdentity(email, false);
   }
 
   async findById(id: string) {
@@ -364,7 +379,12 @@ export class UsersService implements OnModuleInit {
   }
 
   private async ensureEmailAvailable(email: string, currentUserId?: string) {
-    const existing = await this.userModel.findOne({ email }).lean();
+    const existing = await this.userModel
+      .findOne({
+        email: userEmailPattern(email),
+        ...(currentUserId ? { _id: { $ne: currentUserId } } : {}),
+      })
+      .lean();
 
     if (existing && String(existing._id) !== currentUserId) {
       throw new BadRequestException('A user with this email already exists');
@@ -655,7 +675,7 @@ export class UsersService implements OnModuleInit {
     const user = await this.userModel.create({
       firstName: dto.firstName,
       lastName: dto.lastName,
-      email: dto.email,
+      email: normalizeUserEmail(dto.email),
       role: dto.role,
       ...scope,
       password,
@@ -673,7 +693,7 @@ export class UsersService implements OnModuleInit {
       district: scope.district,
       metadata: {
         role: dto.role,
-        email: dto.email,
+        email: normalizeUserEmail(dto.email),
         isActive: dto.isActive ?? true,
       },
     });
@@ -782,7 +802,7 @@ export class UsersService implements OnModuleInit {
     }
 
     if (dto.email !== undefined) {
-      setPayload.email = dto.email;
+      setPayload.email = normalizeUserEmail(dto.email);
     }
 
     if (dto.role !== undefined) {
@@ -845,7 +865,8 @@ export class UsersService implements OnModuleInit {
       metadata: {
         firstName: dto.firstName,
         lastName: dto.lastName,
-        email: dto.email,
+        email:
+          dto.email !== undefined ? normalizeUserEmail(dto.email) : undefined,
         role: dto.role,
         isActive: dto.isActive,
         passwordChanged: dto.password !== undefined,
