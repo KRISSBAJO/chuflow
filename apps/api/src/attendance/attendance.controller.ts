@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JsonSubmissionGuard } from '../common/guards/json-submission.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { AttendanceService } from './attendance.service';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -22,7 +23,7 @@ import {
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, JsonSubmissionGuard)
 @Controller('attendance')
 export class AttendanceController {
   constructor(

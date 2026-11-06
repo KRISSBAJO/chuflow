@@ -265,6 +265,36 @@ describe('Authenticated reporting routes', () => {
       .expect(403);
     expect(finance.createExpenseEntry).not.toHaveBeenCalled();
   });
+  it('rejects simple-form attendance submissions before any write', async () => {
+    await request(app.getHttpServer())
+      .post(`/church-reporting/${churchA}/attendance`)
+      .set('x-test-role', 'usher')
+      .type('form')
+      .send(summary)
+      .expect(415);
+    await request(app.getHttpServer())
+      .post('/attendance')
+      .set('x-test-role', 'usher')
+      .type('form')
+      .send(summary)
+      .expect(415);
+    expect(attendance.create).not.toHaveBeenCalled();
+  });
+  it('rejects simple-form finance submissions before any write', async () => {
+    await request(app.getHttpServer())
+      .post(`/church-reporting/${churchA}/offerings`)
+      .set('x-test-role', 'usher')
+      .type('form')
+      .send(offering)
+      .expect(415);
+    await request(app.getHttpServer())
+      .post('/finance/offerings')
+      .set('x-test-role', 'usher')
+      .type('form')
+      .send(offering)
+      .expect(415);
+    expect(finance.createOfferingEntry).not.toHaveBeenCalled();
+  });
   it('cannot bypass local-only entry through the normal attendance endpoint', async () => {
     await request(app.getHttpServer())
       .post('/attendance')

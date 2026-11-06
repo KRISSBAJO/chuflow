@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JsonSubmissionGuard } from '../common/guards/json-submission.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { APP_ROLES } from '../common/constants/roles.constants';
 import {
@@ -22,7 +23,7 @@ import { ServiceTypesService } from './service-types.service';
 
 @ApiTags('Service Types')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, JsonSubmissionGuard)
 @Roles(
   'super_admin',
   'national_admin',

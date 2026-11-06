@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JsonSubmissionGuard } from '../common/guards/json-submission.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
   CreateExpenseCategoryDto,
@@ -253,6 +254,7 @@ export class FinanceController {
   }
 
   @Post('expenses')
+  @UseGuards(JsonSubmissionGuard)
   @Roles('branch_admin', 'resident_pastor', 'associate_pastor')
   async createExpense(
     @CurrentUser() user: AuthUser,
@@ -430,6 +432,7 @@ export class FinanceController {
   }
 
   @Post('offerings')
+  @UseGuards(JsonSubmissionGuard)
   @Roles('resident_pastor', 'associate_pastor', 'usher')
   createOffering(
     @CurrentUser() user: AuthUser,
