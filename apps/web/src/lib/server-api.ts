@@ -1,8 +1,15 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { API_URL } from "./api";
+import { serverRead, unavailableHref } from "./server-read";
 
 const AUTH_COOKIE_NAME = "cms_access_token";
+
+export class ServerApiError extends Error {
+  constructor(public readonly status: number) {
+    super(`The request could not be completed (${status}).`);
+    this.name = "ServerApiError";
+  }
+}
 
 async function getAuthHeaders() {
   const cookieStore = await cookies();
@@ -16,23 +23,20 @@ async function getAuthHeaders() {
   return headers;
 }
 
-export async function serverGet<T>(path: string): Promise<T> {
+export async function serverGet<T>(path: string, options: { redirectOnForbidden?: boolean } = {}): Promise<T> {
   const headers = await getAuthHeaders();
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}${path}`, {
-      headers,
-      cache: "no-store",
-    });
+    response = await serverRead(path, headers);
   } catch {
-    throw new Error("ChuFlow API is temporarily unavailable. Please try again shortly.");
+    redirect(await unavailableHref());
   }
 
   if (response.status === 401) redirect("/login?reason=session-expired");
-  if (response.status === 403) redirect("/unauthorized");
+  if (response.status === 403 && options.redirectOnForbidden !== false) redirect("/unauthorized");
   if (!response.ok) {
-    throw new Error(`GET ${path} failed with status ${response.status}`);
+    throw new ServerApiError(response.status);
   }
 
   return response.json() as Promise<T>;
@@ -42,11 +46,9 @@ export async function publicServerGet<T>(path: string): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}${path}`, {
-      cache: "no-store",
-    });
+    response = await serverRead(path);
   } catch {
-    throw new Error("ChuFlow API is temporarily unavailable. Please try again shortly.");
+    redirect(await unavailableHref());
   }
 
   if (!response.ok) {

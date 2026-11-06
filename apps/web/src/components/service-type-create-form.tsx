@@ -14,13 +14,17 @@ export function ServiceTypeCreateForm({
   defaultBranchId,
   currentUserRole,
 }: {
-  branches: BranchSummary[];
+  branches: Pick<BranchSummary, "_id" | "name">[];
   defaultBranchId?: string;
   currentUserRole: string;
 }) {
   const router = useRouter();
   const t = useTranslations("org.serviceTypes");
   const tCommon = useTranslations("common");
+  const tr = useTranslations("recording");
+  const [preset, setPreset] = useState("other");
+  const [serviceName, setServiceName] = useState("");
+  const [serviceKey, setServiceKey] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
@@ -70,6 +74,19 @@ export function ServiceTypeCreateForm({
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <Field label={tr("preset")} hint={tr("customHint")} className="md:col-span-2">
+          <select className="ui-input" value={preset} onChange={(event) => {
+            const value = event.target.value;
+            setPreset(value);
+            setServiceName(value === "sunday" ? tr("sunday") : value === "midweek" ? tr("midweek") : value === "wose" ? tr("wose") : "");
+            setServiceKey(value === "other" ? "" : value);
+          }}>
+            <option value="sunday">{tr("sunday")}</option>
+            <option value="midweek">{tr("midweek")}</option>
+            <option value="wose">{tr("wose")}</option>
+            <option value="other">{tr("other")}</option>
+          </select>
+        </Field>
         {!isBranchScopedRole(currentUserRole) ? (
           <Field label={tCommon("branch")} required>
             <select name="branchId" defaultValue={defaultBranchId || ""} className="ui-input" required>
@@ -86,11 +103,11 @@ export function ServiceTypeCreateForm({
         )}
 
         <Field label={t("displayName")} required>
-          <input name="name" placeholder={t("displayNamePlaceholder")} className="ui-input" required />
+          <input name="name" value={serviceName} onChange={(event) => setServiceName(event.target.value)} placeholder={t("displayNamePlaceholder")} className="ui-input" required />
         </Field>
 
         <Field label={t("key")} hint={t("keyHint")}>
-          <input name="key" placeholder={t("keyPlaceholder")} className="ui-input" />
+          <input name="key" value={serviceKey} onChange={(event) => setServiceKey(event.target.value)} placeholder={t("keyPlaceholder")} className="ui-input" />
         </Field>
       </div>
 

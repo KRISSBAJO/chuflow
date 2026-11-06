@@ -127,6 +127,38 @@ export class AccessScopeService {
     return value;
   }
 
+  async localReportingBranch(currentUser: AuthUser, branchId?: string) {
+    // Oversight appointments grant visibility, never another church's entry link.
+    if (
+      ![
+        'branch_admin',
+        'resident_pastor',
+        'associate_pastor',
+        'usher',
+      ].includes(currentUser.role) ||
+      !currentUser.branchId ||
+      (branchId !== undefined && !Types.ObjectId.isValid(branchId))
+    ) {
+      throw new ForbiddenException(
+        'Only authorised staff assigned to this local church can submit reports.',
+      );
+    }
+    const ownBranch = await this.branchModel
+      .findOne(this.buildBranchLookup(currentUser.branchId))
+      .select('_id name oversightRegion district status')
+      .lean();
+    if (
+      !ownBranch ||
+      (branchId !== undefined && String(ownBranch._id) !== branchId) ||
+      ownBranch.status !== 'active'
+    ) {
+      throw new ForbiddenException(
+        'This recording link is not available for your local church.',
+      );
+    }
+    return ownBranch;
+  }
+
   /** Both the string and ObjectId form of each id, so filters also work inside aggregations (no casting). */
   buildBranchReferenceValues(branchIds: string[]) {
     const values = new Map<string, string | Types.ObjectId>();

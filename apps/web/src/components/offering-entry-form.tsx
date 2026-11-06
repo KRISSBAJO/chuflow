@@ -35,13 +35,17 @@ export function OfferingEntryForm({
   serviceTypes,
   serviceSchedules,
   accounts,
+  submitPath = "/finance/offerings",
+  onSuccess,
 }: {
   defaultBranchId?: string;
-  branches: BranchSummary[];
+  branches: Pick<BranchSummary, "_id" | "name">[];
   offeringTypes: OfferingTypeSummary[];
   serviceTypes: ServiceTypeSummary[];
   serviceSchedules: ServiceScheduleSummary[];
   accounts: FinanceAccountSummary[];
+  submitPath?: string;
+  onSuccess?: () => void;
 }) {
   const t = useTranslations("admin.offeringForm");
   const router = useRouter();
@@ -80,7 +84,7 @@ export function OfferingEntryForm({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/finance/offerings`, {
+      const response = await fetch(`${API_URL}${submitPath}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -106,7 +110,8 @@ export function OfferingEntryForm({
       toast.success(t("recordedTitle"), {
         description: t("recordedDescription"),
       });
-      router.push(createdHref("/finance?tab=offerings", result, t("entityName")));
+      if (onSuccess) onSuccess();
+      else router.push(createdHref("/finance?tab=offerings", result, t("entityName")));
       router.refresh();
     } catch (error) {
       toast.error(t("notRecordedTitle"), {

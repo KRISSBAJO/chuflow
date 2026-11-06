@@ -12,9 +12,10 @@ import type {
   ServiceScheduleSummary,
 } from "@/lib/types";
 import { redirect } from "next/navigation";
+import { canCreateAttendanceEntries } from "@/lib/permissions";
 export default async function Page() {
   const user = await requireServerRole("/attendance");
-  if (user.role === "follow_up") redirect("/attendance");
+  if (!canCreateAttendanceEntries(user.role)) redirect("/attendance");
   const [t, branches, types, schedules] = await Promise.all([
     getTranslations("workspace"),
     serverGet<BranchSummary[]>("/branches/options"),

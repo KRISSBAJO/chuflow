@@ -25,13 +25,17 @@ export function ExpenseEntryForm({
   expenseCategories,
   serviceSchedules,
   canChooseBranch,
+  submitPath = "/finance/expenses",
+  onSuccess,
 }: {
   defaultBranchId?: string;
-  branches: BranchSummary[];
+  branches: Pick<BranchSummary, "_id" | "name">[];
   accounts: FinanceAccountSummary[];
   expenseCategories: ExpenseCategorySummary[];
   serviceSchedules: ServiceScheduleSummary[];
   canChooseBranch: boolean;
+  submitPath?: string;
+  onSuccess?: () => void;
 }) {
   const t = useTranslations("admin.expenseForm");
   const tc = useTranslations("common");
@@ -63,7 +67,7 @@ export function ExpenseEntryForm({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/finance/expenses`, {
+      const response = await fetch(`${API_URL}${submitPath}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -90,7 +94,8 @@ export function ExpenseEntryForm({
       toast.success(t("recordedTitle"), {
         description: t("recordedDescription"),
       });
-      router.push(createdHref("/finance?tab=expenses", result, t("entityName")));
+      if (onSuccess) onSuccess();
+      else router.push(createdHref("/finance?tab=expenses", result, t("entityName")));
       router.refresh();
     } catch (error) {
       toast.error(t("notRecordedTitle"), {

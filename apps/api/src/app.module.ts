@@ -41,6 +41,7 @@ import { AlertsModule } from './alerts/alerts.module';
 import { SearchModule } from './search/search.module';
 import { DatabaseMaintenanceModule } from './database-maintenance/database-maintenance.module';
 import { PushModule } from './push/push.module';
+import { ChurchReportingModule } from './church-reporting/church-reporting.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { PushModule } from './push/push.module';
     SearchModule,
     DatabaseMaintenanceModule,
     PushModule,
+    ChurchReportingModule,
   ],
   controllers: [AppController],
   providers: [

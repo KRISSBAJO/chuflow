@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reason?: string }>;
+  searchParams: Promise<{ reason?: string; returnTo?: string }>;
 }) {
   const [params, t, tc] = await Promise.all([searchParams, getTranslations("auth"), getTranslations("common")]);
 
@@ -26,7 +26,7 @@ export default async function LoginPage({
         body: t("login.asideBody"),
       }}
     >
-      <LoginForm notice={notice} />
+      <LoginForm notice={notice} returnTo={params.returnTo} />
     </AuthShell>
   );
 }
