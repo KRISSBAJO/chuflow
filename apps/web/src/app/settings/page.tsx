@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { DeviceSettings } from "@/components/pwa/device-settings";
+import { getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
 import { canConfigureAppSettings, canFilterAcrossBranches } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
@@ -19,6 +20,7 @@ export default async function SettingsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await requireServerRole("/settings");
+  const t = await getTranslations("admin.settings");
   const isAdmin = canConfigureAppSettings(user.role);
   const resolvedSearchParams = (await searchParams) ?? {};
   const overview = await serverGet<SettingsOverview>("/settings/overview").catch(() => ({
@@ -57,12 +59,12 @@ export default async function SettingsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Settings"
-        title={isAdmin ? "System setup and defaults" : "Account and preferences"}
+        eyebrow={t("eyebrow")}
+        title={isAdmin ? t("adminTitle") : t("userTitle")}
         description={
           isAdmin
-            ? "See what is configured for the organisation, your own workspace and each branch, and change it in one place."
-            : "Manage your password, working defaults and branch access from one place."
+            ? t("adminDescription")
+            : t("userDescription")
         }
         action={<LogoutButton />}
       />
@@ -71,8 +73,8 @@ export default async function SettingsPage({
         {isAdmin ? (
           <>
             <SettingsSection
-              title="Organisation"
-              description="Global defaults for public connect and reporting across the whole platform."
+              title={t("sections.organisation")}
+              description={t("sections.organisationDescription")}
             >
               <AppSettingsForm app={overview.app} />
             </SettingsSection>
@@ -81,32 +83,32 @@ export default async function SettingsPage({
         ) : null}
 
         <SettingsSection
-          title="Your preferences"
-          description="Change how the app feels for you without changing any ministry data."
+          title={t("sections.preferences")}
+          description={t("sections.preferencesDescription")}
         >
           <UserPreferencesForm preferences={overview.preferences} />
         </SettingsSection>
         <Divider />
 
         <SettingsSection
-          title="This device"
-          description="Install ChuFlow on this phone or computer and choose whether it gets alerts."
+          title={t("sections.device")}
+          description={t("sections.deviceDescription")}
         >
           <DeviceSettings />
         </SettingsSection>
         <Divider />
 
         <SettingsSection
-          title="Branch defaults"
-          description="Timezone, currency, approvals, public links and alerts for a single branch."
+          title={t("sections.branchDefaults")}
+          description={t("sections.branchDefaultsDescription")}
         >
           {branchForm}
         </SettingsSection>
         <Divider />
 
         <SettingsSection
-          title="Password"
-          description="Update your password without leaving the application."
+          title={t("sections.password")}
+          description={t("sections.passwordDescription")}
         >
           <ChangePasswordForm />
         </SettingsSection>

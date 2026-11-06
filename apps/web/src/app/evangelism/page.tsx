@@ -1,5 +1,6 @@
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { MetricCard } from "@/components/metric-card";
@@ -14,8 +15,8 @@ import {
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import {
+  isOutreachLabelValue,
   OUTREACH_STAGES,
-  outreachLabel,
   outreachName,
   type OutreachList,
 } from "@/lib/evangelism";
@@ -27,6 +28,14 @@ export default async function EvangelismPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   await requireServerRole("/evangelism");
+  const [t, tLabels, tc, tsh, format] = await Promise.all([
+    getTranslations("people.evangelism.list"),
+    getTranslations("people.evangelism.labels"),
+    getTranslations("common"),
+    getTranslations("people.shared"),
+    getFormatter(),
+  ]);
+  const label = (value: string) => (isOutreachLabelValue(value) ? tLabels(value) : value);
   const params = await searchParams;
   const query = new URLSearchParams();
   for (const key of ["branchId", "search", "queue", "stage", "page"])
@@ -43,56 +52,56 @@ export default async function EvangelismPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Evangelism"
-        title="Every conversation can become a journey."
-        description="Welcome people reached through outreach, take ownership of their care, and follow through on the next step."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex flex-wrap gap-2">
             <Link href="/evangelism/links" className={buttonClass("secondary")}>
-              Shareable links
+              {t("shareableLinks")}
             </Link>
             <Link href="/evangelism/new" className={buttonClass("primary")}>
-              + Add contact
+              {t("addContact")}
             </Link>
           </div>
         }
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="People reached"
+          label={t("peopleReached")}
           value={String(data.summary.all)}
-          delta="Outreach contacts in your branch scope"
+          delta={t("peopleReachedCaption")}
         />
         <MetricCard
-          label="New contacts"
+          label={t("newContacts")}
           value={String(data.summary.fresh)}
-          delta="Waiting for their first conversation"
+          delta={t("newContactsCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Unassigned"
+          label={tsh("unassigned")}
           value={String(data.summary.unassigned)}
-          delta="Choose someone to own the next step"
+          delta={t("unassignedCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Follow-up overdue"
+          label={t("overdue")}
           value={String(data.summary.overdue)}
-          delta="Scheduled actions that need attention"
+          delta={t("overdueCaption")}
           tone="warm"
         />
       </section>
       <Card className="p-5 sm:p-7">
         <h2 className="text-lg font-semibold">
-          Where people are in their journey
+          {t("journeyTitle")}
         </h2>
         <p className="mt-1 text-sm text-[#6b6b6b]">
-          Current stages across the selected branch scope.
+          {t("journeyDescription")}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {OUTREACH_STAGES.map(([key, label]) => (
+          {OUTREACH_STAGES.map(([key]) => (
             <div key={key} className="rounded-xl bg-white p-4">
-              <p className="text-xs text-[#8a8780]">{label}</p>
+              <p className="text-xs text-[#8a8780]">{tLabels(key)}</p>
               <p className="mt-2 text-2xl font-semibold tabular-nums">
                 {data.stages[key] || 0}
               </p>
@@ -106,23 +115,23 @@ export default async function EvangelismPage({
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
         >
           <label className="text-xs text-[#6b6b6b]">
-            Search
+            {tc("search")}
             <input
               name="search"
               defaultValue={params.search}
-              placeholder="Name, phone or email"
+              placeholder={t("searchPlaceholder")}
               className="ui-input mt-1"
               maxLength={100}
             />
           </label>
           <label className="text-xs text-[#6b6b6b]">
-            Branch
+            {tc("branch")}
             <select
               name="branchId"
               defaultValue={params.branchId || ""}
               className="ui-input mt-1"
             >
-              <option value="">All accessible branches</option>
+              <option value="">{t("allAccessibleBranches")}</option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -131,38 +140,38 @@ export default async function EvangelismPage({
             </select>
           </label>
           <label className="text-xs text-[#6b6b6b]">
-            Progress
+            {t("progress")}
             <select
               name="stage"
               defaultValue={params.stage || ""}
               className="ui-input mt-1"
             >
-              <option value="">All stages</option>
-              {OUTREACH_STAGES.map(([key, label]) => (
+              <option value="">{tsh("allStages")}</option>
+              {OUTREACH_STAGES.map(([key]) => (
                 <option key={key} value={key}>
-                  {label}
+                  {tLabels(key)}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-xs text-[#6b6b6b]">
-            Queue
+            {t("queue")}
             <select
               name="queue"
               defaultValue={params.queue || ""}
               className="ui-input mt-1"
             >
-              <option value="">All contacts</option>
-              <option value="mine">Assigned to me</option>
-              <option value="unassigned">Unassigned</option>
-              <option value="overdue">Overdue</option>
+              <option value="">{t("allContacts")}</option>
+              <option value="mine">{t("assignedToMe")}</option>
+              <option value="unassigned">{tsh("unassigned")}</option>
+              <option value="overdue">{t("queueOverdue")}</option>
             </select>
           </label>
           <button
             type="submit"
             className={buttonClass("primary", "md", "self-end")}
           >
-            Apply
+            {tc("apply")}
           </button>
         </form></FilterPanel>
         <div className="mt-6">
@@ -171,11 +180,11 @@ export default async function EvangelismPage({
               <table className="ui-table">
                 <thead>
                   <tr>
-                    <th>Person</th>
-                    <th>Branch</th>
-                    <th>Progress</th>
-                    <th>Follow-up owner</th>
-                    <th>Next action</th>
+                    <th>{t("person")}</th>
+                    <th>{tc("branch")}</th>
+                    <th>{t("progress")}</th>
+                    <th>{t("followUpOwner")}</th>
+                    <th>{t("nextAction")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -203,23 +212,21 @@ export default async function EvangelismPage({
                                 : "neutral"
                             }
                           >
-                            {outreachLabel(contact.stage)}
+                            {label(contact.stage)}
                           </Badge>
                         </td>
-                        <td>{outreachName(contact.assignedTo)}</td>
+                        <td>{outreachName(contact.assignedTo, tsh("unassigned"))}</td>
                         <td>
                           <span className={overdue ? "text-red-700" : ""}>
                             {contact.nextActionDate
-                              ? new Date(
-                                  contact.nextActionDate,
-                                ).toLocaleDateString("en-US", {
+                              ? format.dateTime(new Date(contact.nextActionDate), {
                                   timeZone: "UTC",
                                   month: "short",
                                   day: "numeric",
                                   year: "numeric",
                                 })
-                              : "Not scheduled"}
-                            {overdue ? " · Overdue" : ""}
+                              : t("notScheduled")}
+                            {overdue ? ` · ${t("overdueTag")}` : ""}
                           </span>
                         </td>
                       </tr>
@@ -229,15 +236,13 @@ export default async function EvangelismPage({
               </table>
             </TableWrap>
           ) : (
-            <EmptyState icon="care" title="No outreach contacts here yet">
-              Create a link to share during outreach, or add a person who has
-              given permission to connect.
+            <EmptyState icon="care" title={t("emptyTitle")}>
+              {t("emptyBody")}
             </EmptyState>
           )}
         </div>
         <p className="mt-5 text-xs text-[#8a8780]">
-          {data.total} matching contacts. Outreach contacts do not count as
-          church attendance.
+          {t("matching", { count: data.total })}
         </p>
         <Pagination
           page={data.page}

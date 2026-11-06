@@ -1,3 +1,4 @@
+import { getFormatter, getTranslations } from "next-intl/server";
 import { FilterPanel } from "@/components/filter-panel";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
@@ -7,6 +8,8 @@ import { requireServerRole } from "@/lib/auth";
 import { canFilterAcrossBranches } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
 import type { BranchSummary, ReportsSummary, SettingsOverview } from "@/lib/types";
+
+type StatusKey = Parameters<Awaited<ReturnType<typeof getTranslations<"statuses">>>>[0];
 
 export default async function ReportsPage({
   searchParams,
@@ -40,46 +43,52 @@ export default async function ReportsPage({
     query.set("branchId", branchId);
   }
 
-  const [summary, branches] = await Promise.all([
+  const [summary, branches, t, tStatus, format] = await Promise.all([
     serverGet<ReportsSummary>(`/reports/summary?${query.toString()}`),
     serverGet<BranchSummary[]>("/branches").catch(() => []),
+    getTranslations("services.reports"),
+    getTranslations("statuses"),
+    getFormatter(),
   ]);
+  const statusLabel = (value: string) =>
+    tStatus.has(value.toLowerCase() as StatusKey) ? tStatus(value.toLowerCase() as StatusKey) : formatStatus(value);
+  const formatDate = (value: string) => format.dateTime(new Date(value), { dateStyle: "medium" });
 
   const metrics = [
     {
-      label: "Guest total",
+      label: t("metrics.guestTotal"),
       value: summary.totals.guestTotal,
-      delta: "Current scoped guest records",
+      delta: t("metrics.guestTotalHint"),
       tone: "warm" as const,
     },
     {
-      label: "Member total",
+      label: t("metrics.memberTotal"),
       value: summary.totals.memberTotal,
-      delta: "Current scoped member records",
+      delta: t("metrics.memberTotalHint"),
       tone: "cool" as const,
     },
     {
-      label: "Attendance total",
+      label: t("metrics.attendanceTotal"),
       value: summary.totals.attendanceTotal,
-      delta: "Attendance recorded in the last 30 days",
+      delta: t("metrics.attendanceTotalHint"),
       tone: "cool" as const,
     },
     {
-      label: "First timers",
+      label: t("metrics.firstTimers"),
       value: summary.totals.firstTimersTotal,
-      delta: "Captured from attendance summaries",
+      delta: t("metrics.firstTimersHint"),
       tone: "warm" as const,
     },
     {
-      label: "New converts",
+      label: t("metrics.newConverts"),
       value: summary.totals.newConvertsTotal,
-      delta: "Counted across recorded services",
+      delta: t("metrics.newConvertsHint"),
       tone: "cool" as const,
     },
     {
-      label: "Conversion rate",
+      label: t("metrics.conversionRate"),
       value: `${summary.totals.conversionRate}%`,
-      delta: `Return rate ${summary.totals.returnRate}%`,
+      delta: t("metrics.returnRate", { rate: summary.totals.returnRate }),
       tone: "warm" as const,
     },
   ];
@@ -91,15 +100,15 @@ export default async function ReportsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Reports"
-        title="Leadership reports"
-        description={`Live ministry reporting across capture, follow-up, conversion and attendance for the last ${days} days.`}
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description", { days })}
         action={
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL ?? "https://api.chuflow.com/api"}/reports/export.csv?${query.toString()}`}
             className={buttonClass("primary")}
           >
-            Export CSV
+            {t("exportCsv")}
           </a>
         }
       />
@@ -108,16 +117,16 @@ export default async function ReportsPage({
         className="app-rise flex flex-col gap-2 rounded-2xl border border-black/[0.06] bg-white p-3 sm:flex-row sm:items-center"
         style={{ animationDelay: "60ms" }}
       >
-        <select name="days" aria-label="Date range" defaultValue={String(days)} className="ui-input sm:w-auto sm:min-w-[160px]">
+        <select name="days" aria-label={t("dateRangeAria")} defaultValue={String(days)} className="ui-input sm:w-auto sm:min-w-[160px]">
           {[7, 14, 30, 60, 90].map((value) => (
             <option key={value} value={value}>
-              Last {value} days
+              {t("lastDays", { count: value })}
             </option>
           ))}
         </select>
         {canFilterAcrossBranches(user.role, user.hasOversight) ? (
-          <select name="branchId" aria-label="Branch" defaultValue={branchId || ""} className="ui-input sm:max-w-xs sm:flex-1">
-            <option value="">All branches</option>
+          <select name="branchId" aria-label={t("branch")} defaultValue={branchId || ""} className="ui-input sm:max-w-xs sm:flex-1">
+            <option value="">{t("allBranches")}</option>
             {branches.map((branch) => (
               <option key={branch._id} value={branch._id}>
                 {branch.name}
@@ -126,7 +135,7 @@ export default async function ReportsPage({
           </select>
         ) : null}
         <Button type="submit" variant="secondary" icon="search">
-          Apply
+          {t("apply")}
         </Button>
       </form></FilterPanel>
 
@@ -137,25 +146,27 @@ export default async function ReportsPage({
       </section>
 
       <Card className="app-rise p-6 sm:p-7">
-        <CardHeader label="Range" title="Reporting window" />
+        <CardHeader label={t("range.label")} title={t("range.title")} />
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <Stat
-            label="Dates"
+            label={t("range.dates")}
             value={
               <span className="text-[17px] leading-tight">
-                {new Date(summary.range.startDate).toLocaleDateString()} to{" "}
-                {new Date(summary.range.endDate).toLocaleDateString()}
+                {t("range.datesValue", {
+                  from: formatDate(summary.range.startDate),
+                  to: formatDate(summary.range.endDate),
+                })}
               </span>
             }
-            hint={`Last ${days} days`}
+            hint={t("lastDays", { count: days })}
           />
           <Stat
-            label="Summary submissions"
+            label={t("range.summarySubmissions")}
             value={summary.totals.summarySubmissionTotal}
-            hint="Service totals recorded in the current range"
+            hint={t("range.summarySubmissionsHint")}
           />
           <Stat
-            label="Adults / children"
+            label={t("range.adultsChildren")}
             value={
               <>
                 {summary.totals.adultsTotal}
@@ -163,28 +174,28 @@ export default async function ReportsPage({
                 {summary.totals.childrenTotal}
               </>
             }
-            hint="Adults and children in service summaries"
+            hint={t("range.adultsChildrenHint")}
           />
         </div>
       </Card>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <Card className="app-rise min-w-0 p-6 sm:p-7">
-          <CardHeader label="Daily trend" title="Last 10 days" />
+          <CardHeader label={t("daily.label")} title={t("daily.title")} />
           <div className="mt-6">
             {recentTrends.length === 0 ? (
-              <EmptyState icon="reports" title="No activity yet">
-                No daily activity has been recorded in this range.
+              <EmptyState icon="reports" title={t("daily.emptyTitle")}>
+                {t("daily.emptyBody")}
               </EmptyState>
             ) : (
               <TableWrap>
                 <table className="ui-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th className="text-right">Guests</th>
-                      <th className="text-right">Attendance</th>
-                      <th className="text-right">First timers</th>
+                      <th>{t("daily.date")}</th>
+                      <th className="text-right">{t("daily.guests")}</th>
+                      <th className="text-right">{t("daily.attendance")}</th>
+                      <th className="text-right">{t("daily.firstTimers")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -204,18 +215,18 @@ export default async function ReportsPage({
         </Card>
 
         <Card className="app-rise min-w-0 p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
-          <CardHeader label="Follow-up" title="Follow-up breakdown" />
+          <CardHeader label={t("followUp.label")} title={t("followUp.title")} />
           <div className="mt-6">
             {summary.followUpBreakdown.length === 0 ? (
-              <EmptyState icon="care" title="No follow-up yet">
-                Nobody is in follow-up in this range.
+              <EmptyState icon="care" title={t("followUp.emptyTitle")}>
+                {t("followUp.emptyBody")}
               </EmptyState>
             ) : (
               <ul className="space-y-4">
                 {summary.followUpBreakdown.map((item, index) => (
                   <li key={item._id}>
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="truncate text-[14px] font-medium text-[#111111]">{formatStatus(item._id)}</span>
+                      <span className="truncate text-[14px] font-medium text-[#111111]">{statusLabel(item._id)}</span>
                       <span className="text-[15px] font-semibold tabular-nums text-[#111111]">{item.total}</span>
                     </div>
                     <span className="mt-2 block h-2 overflow-hidden rounded-full bg-[#f1f0ec]">
@@ -233,29 +244,29 @@ export default async function ReportsPage({
       </section>
 
       <Card className="app-rise min-w-0 p-6 sm:p-7">
-        <CardHeader label="Service mix" title="Attendance by service" />
+        <CardHeader label={t("serviceMix.label")} title={t("serviceMix.title")} />
         <div className="mt-6">
           {summary.serviceMix.length === 0 ? (
-            <EmptyState icon="attendance" title="No services yet">
-              No service attendance has been recorded in this range.
+            <EmptyState icon="attendance" title={t("serviceMix.emptyTitle")}>
+              {t("serviceMix.emptyBody")}
             </EmptyState>
           ) : (
             <TableWrap>
               <table className="ui-table min-w-[640px]">
                 <thead>
                   <tr>
-                    <th>Service</th>
-                    <th className="text-right">People</th>
-                    <th className="text-right">First timers</th>
-                    <th className="text-right">New converts</th>
-                    <th className="text-right">Summaries</th>
+                    <th>{t("serviceMix.service")}</th>
+                    <th className="text-right">{t("serviceMix.people")}</th>
+                    <th className="text-right">{t("serviceMix.firstTimers")}</th>
+                    <th className="text-right">{t("serviceMix.newConverts")}</th>
+                    <th className="text-right">{t("serviceMix.summaries")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {summary.serviceMix.map((service) => (
                     <tr key={service._id}>
                       <td>
-                        <span className="block font-medium">{formatStatus(service._id)}</span>
+                        <span className="block font-medium">{statusLabel(service._id)}</span>
                         <span className="mt-1.5 block h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-[#f1f0ec]">
                           <span
                             className="app-bar block h-full rounded-full bg-[#ea580c]"

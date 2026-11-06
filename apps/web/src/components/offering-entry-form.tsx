@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
@@ -42,6 +43,7 @@ export function OfferingEntryForm({
   serviceSchedules: ServiceScheduleSummary[];
   accounts: FinanceAccountSummary[];
 }) {
+  const t = useTranslations("admin.offeringForm");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
@@ -98,19 +100,18 @@ export function OfferingEntryForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to record offering");
+        throw new Error(result.message || t("recordError"));
       }
 
-      toast.success("Offering recorded", {
-        description:
-          "This entry is now visible in branch, district, national, and overall finance oversight.",
+      toast.success(t("recordedTitle"), {
+        description: t("recordedDescription"),
       });
-      router.push(createdHref("/finance?tab=offerings", result, "Offering"));
+      router.push(createdHref("/finance?tab=offerings", result, t("entityName")));
       router.refresh();
     } catch (error) {
-      toast.error("Offering not recorded", {
+      toast.error(t("notRecordedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to record offering",
+          error instanceof Error ? error.message : t("recordError"),
       });
     } finally {
       setLoading(false);
@@ -120,9 +121,9 @@ export function OfferingEntryForm({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="Record offering"
-        title="New offering entry"
-        description="Ushers and branch pastors can record offerings. Entries can be edited for 24 hours."
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#f6f5f1] px-4 py-3">
@@ -130,25 +131,25 @@ export function OfferingEntryForm({
           <Icon name="branches" className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-[12px] text-[#8a8780]">Branch</p>
+          <p className="text-[12px] text-[#8a8780]">{t("branch")}</p>
           <p className="truncate text-[14px] font-medium text-[#111111]">
-            {defaultBranchName || "Current branch"}
+            {defaultBranchName || t("currentBranch")}
           </p>
         </div>
       </div>
 
       <form action={handleSubmit} className="mt-5 grid gap-4">
-        <Field label="Service date" required>
+        <Field label={t("serviceDate")} required>
           <input name="serviceDate" type="datetime-local" className="ui-input" required />
         </Field>
 
-        <Field label="Service schedule" hint="Pick a saved schedule to fill in the service type.">
+        <Field label={t("serviceSchedule")} hint={t("scheduleHint")}>
           <select
             value={selectedScheduleId}
             onChange={(event) => setSelectedScheduleId(event.target.value)}
             className="ui-input"
           >
-            <option value="">No saved schedule</option>
+            <option value="">{t("noSavedSchedule")}</option>
             {availableSchedules.map((schedule) => (
               <option key={schedule._id} value={schedule._id}>
                 {schedule.name} · {schedule.dayOfWeek} · {schedule.startTime}
@@ -157,14 +158,14 @@ export function OfferingEntryForm({
           </select>
         </Field>
 
-        <Field label="Service type" required={!selectedSchedule}>
+        <Field label={t("serviceType")} required={!selectedSchedule}>
           {selectedSchedule ? (
             <div className="flex min-h-[40px] items-center rounded-xl bg-[#f6f5f1] px-3 text-[14px] text-[#55534e]">
               {selectedSchedule.serviceTypeLabel}
             </div>
           ) : (
             <select name="serviceTypeId" className="ui-input" required>
-              <option value="">Select service type</option>
+              <option value="">{t("selectServiceType")}</option>
               {availableServiceTypes.map((serviceType) => (
                 <option key={serviceType._id} value={serviceType._id}>
                   {serviceType.name}
@@ -175,9 +176,9 @@ export function OfferingEntryForm({
         </Field>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Offering type" required>
+          <Field label={t("offeringType")} required>
             <select name="offeringTypeId" className="ui-input" required>
-              <option value="">Select offering type</option>
+              <option value="">{t("selectOfferingType")}</option>
               {offeringTypes.filter((type) => type.isActive).map((offeringType) => (
                 <option key={offeringType._id} value={offeringType._id}>
                   {offeringType.name}
@@ -186,7 +187,7 @@ export function OfferingEntryForm({
             </select>
           </Field>
 
-          <Field label="Amount (USD)" required>
+          <Field label={t("amountUsd")} required>
             <input
               name="amount"
               type="number"
@@ -199,9 +200,9 @@ export function OfferingEntryForm({
           </Field>
         </div>
 
-        <Field label="Account or fund">
+        <Field label={t("accountOrFund")}>
           <select name="accountId" className="ui-input">
-            <option value="">Use default account from offering type</option>
+            <option value="">{t("useDefaultFromType")}</option>
             {accounts
               .filter((account) => account.isActive)
               .map((account) => (
@@ -212,20 +213,20 @@ export function OfferingEntryForm({
           </select>
         </Field>
 
-        <Field label="Notes">
+        <Field label={t("notes")}>
           <textarea
             name="notes"
-            placeholder="Optional note for the service, a correction or a special collection"
+            placeholder={t("notesPlaceholder")}
             className="ui-input"
           />
         </Field>
 
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <Button type="submit" disabled={loading || availableServiceTypes.length === 0}>
-            {loading ? "Recording..." : "Record offering"}
+            {loading ? t("recording") : t("record")}
           </Button>
           {availableServiceTypes.length === 0 ? (
-            <p className="text-[13px] text-[#8a8780]">Add an active service type for this branch first.</p>
+            <p className="text-[13px] text-[#8a8780]">{t("addServiceTypeFirst")}</p>
           ) : null}
         </div>
       </form>

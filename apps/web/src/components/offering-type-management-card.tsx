@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button, Card, CardHeader, EmptyState, Field } from "@/components/ui/ui";
@@ -13,6 +14,9 @@ export function OfferingTypeManagementCard({
 }: {
   offeringTypes: OfferingTypeSummary[];
 }) {
+  const t = useTranslations("admin.offeringTypes");
+  const tc = useTranslations("common");
+  const ts = useTranslations("statuses");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -36,17 +40,17 @@ export function OfferingTypeManagementCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create offering type");
+        throw new Error(result.message || t("createError"));
       }
 
-      toast.success("Offering type created", {
-        description: "All branches can now use this type for finance entries.",
+      toast.success(t("createdTitle"), {
+        description: t("createdDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Offering type not created", {
+      toast.error(t("createFailedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to create offering type",
+          error instanceof Error ? error.message : t("createError"),
       });
     } finally {
       setLoading(false);
@@ -72,17 +76,17 @@ export function OfferingTypeManagementCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update offering type");
+        throw new Error(result.message || t("updateError"));
       }
 
-      toast.success("Offering type updated", {
-        description: "The global offering type setup is now up to date.",
+      toast.success(t("updatedTitle"), {
+        description: t("updatedDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Offering type update failed", {
+      toast.error(t("updateFailedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to update offering type",
+          error instanceof Error ? error.message : t("updateError"),
       });
     } finally {
       setLoadingId(null);
@@ -92,43 +96,43 @@ export function OfferingTypeManagementCard({
   return (
     <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
       <CardHeader
-        label="Offering types"
-        title="Default offering types"
-        description="The shared offering types every branch uses when recording giving."
-        action={<Badge>{offeringTypes.length} types</Badge>}
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
+        action={<Badge>{t("count", { count: offeringTypes.length })}</Badge>}
       />
 
       <form action={createOfferingType} className="mt-6 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
-        <p className="text-[14px] font-semibold text-[#111111]">Add an offering type</p>
+        <p className="text-[14px] font-semibold text-[#111111]">{t("addTitle")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_120px]">
-          <Field label="Offering type name" required>
-            <input name="name" placeholder="e.g. Thanksgiving" className="ui-input" required />
+          <Field label={t("name")} required>
+            <input name="name" placeholder={t("namePlaceholder")} className="ui-input" required />
           </Field>
-          <Field label="Key">
-            <input name="key" placeholder="Optional" className="ui-input" />
+          <Field label={t("key")}>
+            <input name="key" placeholder={t("keyPlaceholder")} className="ui-input" />
           </Field>
-          <Field label="Sort order">
+          <Field label={t("sortOrder")}>
             <input name="sortOrder" type="number" defaultValue={0} className="ui-input tabular-nums" />
           </Field>
-          <Field label="Description" className="sm:col-span-3">
-            <textarea name="description" placeholder="Optional description" className="ui-input" />
+          <Field label={t("descriptionLabel")} className="sm:col-span-3">
+            <textarea name="description" placeholder={t("descriptionPlaceholder")} className="ui-input" />
           </Field>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
             <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4 accent-[#111111]" />
-            Active immediately
+            {t("activeImmediately")}
           </label>
           <Button type="submit" icon="plus" disabled={loading}>
-            {loading ? "Creating..." : "Create offering type"}
+            {loading ? t("creating") : t("create")}
           </Button>
         </div>
       </form>
 
       <div className="mt-5 space-y-3">
         {offeringTypes.length === 0 ? (
-          <EmptyState icon="finance" title="No offering types yet">
-            Create the first offering type above.
+          <EmptyState icon="finance" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         ) : null}
         {offeringTypes.map((offeringType) => (
@@ -141,11 +145,11 @@ export function OfferingTypeManagementCard({
                 <p className="truncate text-[14px] font-medium text-[#111111]">{offeringType.name}</p>
                 <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                   {offeringType.key}
-                  {offeringType.isSeeded ? " · Default" : ""}
+                  {offeringType.isSeeded ? ` · ${t("default")}` : ""}
                 </p>
               </div>
               <Badge tone={offeringType.isActive ? "success" : "neutral"} dot>
-                {offeringType.isActive ? "Active" : "Inactive"}
+                {offeringType.isActive ? ts("active") : ts("inactive")}
               </Badge>
               <Icon
                 name="chevronDown"
@@ -157,21 +161,21 @@ export function OfferingTypeManagementCard({
                 action={(formData) => updateOfferingType(offeringType._id, formData)}
                 className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_120px]"
               >
-                <Field label="Offering type name">
+                <Field label={t("name")}>
                   <input
                     name={`name-${offeringType._id}`}
                     defaultValue={offeringType.name}
                     className="ui-input"
                   />
                 </Field>
-                <Field label="Key">
+                <Field label={t("key")}>
                   <input
                     name={`key-${offeringType._id}`}
                     defaultValue={offeringType.key}
                     className="ui-input"
                   />
                 </Field>
-                <Field label="Sort order">
+                <Field label={t("sortOrder")}>
                   <input
                     name={`sortOrder-${offeringType._id}`}
                     type="number"
@@ -179,7 +183,7 @@ export function OfferingTypeManagementCard({
                     className="ui-input tabular-nums"
                   />
                 </Field>
-                <Field label="Description" className="sm:col-span-3">
+                <Field label={t("descriptionLabel")} className="sm:col-span-3">
                   <textarea
                     name={`description-${offeringType._id}`}
                     defaultValue={offeringType.description || ""}
@@ -194,10 +198,10 @@ export function OfferingTypeManagementCard({
                       defaultChecked={offeringType.isActive}
                       className="h-4 w-4 accent-[#111111]"
                     />
-                    Active offering type
+                    {t("activeType")}
                   </label>
                   <Button type="submit" size="sm" disabled={loadingId === offeringType._id}>
-                    {loadingId === offeringType._id ? "Saving..." : "Update offering type"}
+                    {loadingId === offeringType._id ? tc("saving") : t("update")}
                   </Button>
                 </div>
               </form>

@@ -1,5 +1,6 @@
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import { Shell } from "@/components/shell";
@@ -13,6 +14,8 @@ export default async function Page({
   searchParams: Promise<{ districtId?: string }>;
 }) {
   await requireServerRole("/hierarchy");
+  const t = await getTranslations("org.hierarchy");
+  const tCommon = await getTranslations("common");
   const { districtId } = await searchParams;
   const data = await serverGet<HierarchyOverview>(
     `/hierarchy${districtId ? "?districtId=" + encodeURIComponent(districtId) : ""}`,
@@ -20,13 +23,13 @@ export default async function Page({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Church oversight"
-        title="One church. Connected responsibilities."
-        description="Every location remains a local church. District, zonal and area appointments add oversight to the headquarters resident pastor’s existing account."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex flex-wrap gap-2">
             <Link href="/structure" className={buttonClass("secondary")}>
-              National & district setup
+              {t("nationalSetup")}
             </Link>
             <Link
               href={
@@ -36,14 +39,14 @@ export default async function Page({
               }
               className={buttonClass("secondary")}
             >
-              My church
+              {t("myChurch")}
             </Link>
           </div>
         }
       />
       <FilterPanel><form className="flex flex-wrap items-end gap-3">
         <label className="min-w-64 text-sm">
-          District
+          {tCommon("district")}
           <select
             name="districtId"
             className="ui-input mt-2"
@@ -56,7 +59,7 @@ export default async function Page({
             ))}
           </select>
         </label>
-        <button className={buttonClass("secondary")}>Open district</button>
+        <button className={buttonClass("secondary")}>{t("openDistrict")}</button>
       </form></FilterPanel>
       <HierarchyWorkspace key={data.selectedDistrictId} data={data} />
     </Shell>

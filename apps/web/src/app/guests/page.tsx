@@ -1,5 +1,6 @@
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
 import { GuestPageHeader } from "@/components/guest-page-header";
@@ -55,6 +56,19 @@ export default async function GuestsPage({
   }>;
 }) {
   const user = await requireServerRole("/guests");
+  const [t, tc, ts, tsh, format] = await Promise.all([
+    getTranslations("people.guests.list"),
+    getTranslations("common"),
+    getTranslations("statuses"),
+    getTranslations("people.shared"),
+    getFormatter(),
+  ]);
+  type StatusKey = Parameters<typeof ts>[0];
+  const statusLabel = (value?: string | null) => {
+    if (!value) return "";
+    const key = value.toLowerCase();
+    return ts.has(key as StatusKey) ? ts(key as StatusKey) : formatStatus(value);
+  };
 
   const params = await searchParams;
   const search = params.search?.trim();
@@ -126,10 +140,10 @@ export default async function GuestsPage({
   const publicGuestUrl =
     guestTemplateCards[0]?.shareUrl || fallbackPublicGuestUrl;
   const scopeLabel = selectedBranch
-    ? `${selectedBranch.name} guest records`
+    ? t("scopeBranch", { name: selectedBranch.name })
     : canChooseBranch
-      ? "All visible branches"
-      : "Current branch";
+      ? t("allVisibleBranches")
+      : t("currentBranch");
   const paginationQueryBase = new URLSearchParams();
   paginationQueryBase.set("sort", params.sort || "newest");
   paginationQueryBase.set("pageSize", String(pageSize));
@@ -170,21 +184,21 @@ export default async function GuestsPage({
       />
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard
-          label="Registered today"
+          label={t("registeredToday")}
           value={String(guestList.summary.todayCount)}
-          delta="New guest records created today"
+          delta={t("registeredTodayCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Possible duplicates"
+          label={t("possibleDuplicates")}
           value={String(duplicateCount)}
-          delta="Duplicate groups in the current scope"
+          delta={t("possibleDuplicatesCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Assigned follow-up"
+          label={t("assignedFollowUp")}
           value={String(guestList.summary.assignedFollowUpCount)}
-          delta={`${Math.max(guestList.pagination.total - guestList.summary.assignedFollowUpCount, 0)} still unassigned`}
+          delta={t("stillUnassigned", { count: Math.max(guestList.pagination.total - guestList.summary.assignedFollowUpCount, 0) })}
           tone="warm"
         />
       </section>
@@ -192,15 +206,15 @@ export default async function GuestsPage({
         <Card className="app-rise min-w-0 p-6 sm:p-7">
           <CardHeader
             label={scopeLabel}
-            title="Latest guests"
-            action={<Badge>{guestList.pagination.total} total</Badge>}
+            title={t("latestGuests")}
+            action={<Badge>{t("total", { count: guestList.pagination.total })}</Badge>}
           />
           <FilterPanel><form className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
             <input
               name="search"
               defaultValue={search}
-              placeholder="Search name, phone or email"
-              aria-label="Search guests"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchAria")}
               className={
                 canChooseBranch ? "ui-input" : "ui-input sm:col-span-2"
               }
@@ -209,10 +223,10 @@ export default async function GuestsPage({
               <select
                 name="branchId"
                 defaultValue={selectedBranchId || ""}
-                aria-label="Branch"
+                aria-label={tc("branch")}
                 className="ui-input"
               >
-                <option value="">All branches</option>
+                <option value="">{tc("allBranches")}</option>
                 {branches.map((branch) => (
                   <option key={branch._id} value={branch._id}>
                     {branch.name}
@@ -221,20 +235,20 @@ export default async function GuestsPage({
               </select>
             ) : null}
             <label className="text-xs text-[#6b6b6b]">
-              Sort
+              {tc("sort")}
               <select
                 name="sort"
                 className="ui-input mt-1"
                 defaultValue={params.sort || "newest"}
               >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="name_asc">Name A–Z</option>
-                <option value="name_desc">Name Z–A</option>
+                <option value="newest">{tc("newestFirst")}</option>
+                <option value="oldest">{tc("oldestFirst")}</option>
+                <option value="name_asc">{tc("nameAsc")}</option>
+                <option value="name_desc">{tc("nameDesc")}</option>
               </select>
             </label>
             <label className="text-xs text-[#6b6b6b]">
-              Per page
+              {tc("perPage")}
               <select
                 name="pageSize"
                 className="ui-input mt-1"
@@ -248,11 +262,11 @@ export default async function GuestsPage({
               </select>
             </label>
             <Link href="/guests" className={buttonClass("secondary")}>
-              Reset
+              {tc("reset")}
             </Link>
             <input type="hidden" name="page" value="1" />
             <Button type="submit" variant="secondary" icon="search">
-              Apply
+              {tc("apply")}
             </Button>
           </form></FilterPanel>
           <div className="mt-6">
@@ -261,11 +275,11 @@ export default async function GuestsPage({
                 <table className="ui-table">
                   <thead>
                     <tr>
-                      <th>Guest</th>
-                      <th>Branch</th>
-                      <th>Service date</th>
-                      <th>Status</th>
-                      <th>Next step</th>
+                      <th>{t("guest")}</th>
+                      <th>{tc("branch")}</th>
+                      <th>{t("serviceDate")}</th>
+                      <th>{tc("status")}</th>
+                      <th>{t("nextStep")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -290,22 +304,22 @@ export default async function GuestsPage({
                           </div>
                         </td>
                         <td className="text-[#55534e]">
-                          {guest.branchId?.name ?? "Unassigned"}
+                          {guest.branchId?.name ?? tsh("unassigned")}
                         </td>
                         <td className="whitespace-nowrap tabular-nums text-[#55534e]">
                           {guest.createdAt
-                            ? new Date(guest.createdAt).toLocaleDateString()
-                            : "No date"}
+                            ? format.dateTime(new Date(guest.createdAt), { dateStyle: "short" })
+                            : t("noDate")}
                         </td>
                         <td>
                           <Badge tone={statusTone(guest.visitStatus)} dot>
-                            {formatStatus(guest.visitStatus)}
+                            {statusLabel(guest.visitStatus)}
                           </Badge>
                         </td>
                         <td className="text-[#55534e]">
                           {guest.nextFollowUpStatus
-                            ? formatStatus(guest.nextFollowUpStatus)
-                            : "Awaiting follow-up"}
+                            ? statusLabel(guest.nextFollowUpStatus)
+                            : t("awaitingFollowUp")}
                         </td>
                       </tr>
                     ))}
@@ -313,19 +327,20 @@ export default async function GuestsPage({
                 </table>
               </TableWrap>
             ) : (
-              <EmptyState icon="guests" title="No guests found">
-                No guests match the current filters.
+              <EmptyState icon="guests" title={t("noGuestsTitle")}>
+                {t("noGuestsBody")}
               </EmptyState>
             )}
           </div>
           <div className="mt-5 flex flex-col gap-3 border-t border-black/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[13px] text-[#8a8780]">
-              Showing{" "}
-              <span className="font-medium tabular-nums text-[#111111]">
-                {startItem}–{endItem}
-              </span>{" "}
-              of{" "}
-              <span className="tabular-nums">{guestList.pagination.total}</span>
+              {tsh.rich("showing", {
+                from: startItem,
+                to: endItem,
+                total: guestList.pagination.total,
+                range: (chunks) => <span className="font-medium tabular-nums text-[#111111]">{chunks}</span>,
+                count: (chunks) => <span className="tabular-nums">{chunks}</span>,
+              })}
             </p>
             <div className="flex items-center gap-2">
               <Link
@@ -338,11 +353,10 @@ export default async function GuestsPage({
                   atFirstPage ? "pointer-events-none opacity-40" : undefined,
                 )}
               >
-                Previous
+                {tc("previous")}
               </Link>
               <span className="px-1 text-[13px] tabular-nums text-[#6b6b6b]">
-                Page {guestList.pagination.page} of{" "}
-                {guestList.pagination.totalPages}
+                {tc("pageOf", { page: guestList.pagination.page, total: guestList.pagination.totalPages })}
               </span>
               <Link
                 href={buildPageHref(
@@ -359,7 +373,7 @@ export default async function GuestsPage({
                   atLastPage ? "pointer-events-none opacity-40" : undefined,
                 )}
               >
-                Next
+                {tc("next")}
               </Link>
             </div>
           </div>
@@ -367,14 +381,14 @@ export default async function GuestsPage({
         <div className="flex min-w-0 flex-col gap-4">
           <Card id="guest-capture" className="p-6 sm:p-7">
             <CardHeader
-              label="Guest capture desk"
-              title="Desk form or public intake"
+              label={t("captureDeskLabel")}
+              title={t("captureDeskTitle")}
               description={
                 selectedBranch
-                  ? `Desk staff can use the full assisted-registration form here. QR codes and self-registration use the live public guest form for ${selectedBranch.name}.`
+                  ? t("captureDeskBranch", { name: selectedBranch.name })
                   : canChooseBranch
-                    ? "Pick a branch when you need a branch-specific desk form or public guest link. Without a branch filter you see your full visible network."
-                    : "Desk staff can use the full assisted-registration form here. QR codes and self-registration use the live public guest form for this branch."
+                    ? t("captureDeskPick")
+                    : t("captureDeskCurrent")
               }
             />
             <div className="mt-5">
@@ -383,13 +397,13 @@ export default async function GuestsPage({
                 users={users}
                 serviceTypes={serviceTypes}
                 defaultBranchId={selectedBranchId || user.branchId}
-                label="Open desk registration form"
+                label={t("openDeskForm")}
                 className={buttonClass("primary", "md", "w-full")}
               />
             </div>
           </Card>
           <Card className="p-6 sm:p-7">
-            <CardHeader label="Public guest intake" title="Share links" />
+            <CardHeader label={t("publicIntakeLabel")} title={t("shareLinks")} />
             <div className="mt-5">
               {guestTemplateCards.length > 0 ? (
                 <div className="space-y-4">
@@ -403,23 +417,23 @@ export default async function GuestsPage({
                       }
                       title={
                         canChooseBranch && !selectedBranchId
-                          ? `${template.branch?.name ?? template.name} guest share link`
-                          : `${template.name} share link`
+                          ? t("guestShareLink", { name: template.branch?.name ?? template.name })
+                          : t("shareLink", { name: template.name })
                       }
                     />
                   ))}
                 </div>
               ) : (
-                <EmptyState icon="templates" title="No public link yet">
+                <EmptyState icon="templates" title={t("noPublicLinkTitle")}>
                   {canChooseBranch && !selectedBranchId
-                    ? "Choose a branch to load its public guest link, or activate a guest template in Templates if none are live yet."
-                    : "No public guest template is active yet. Activate one in Templates to turn on self-registration."}
+                    ? t("noPublicLinkChoose")
+                    : t("noPublicLinkActivate")}
                 </EmptyState>
               )}
             </div>
           </Card>
           <Card className="p-6 sm:p-7">
-            <CardHeader label="Capture channels" title="Ways to register" />
+            <CardHeader label={t("channelsLabel")} title={t("channelsTitle")} />
             <div className="mt-5 space-y-2">
               <a
                 href={
@@ -429,8 +443,8 @@ export default async function GuestsPage({
                 rel={guestTemplateCards.length > 0 ? "noreferrer" : undefined}
                 className={channelRowClass}
               >
-                <span>Public self-registration</span>
-                <ChannelHint>Open</ChannelHint>
+                <span>{t("publicSelfRegistration")}</span>
+                <ChannelHint>{tc("open")}</ChannelHint>
               </a>
               <a
                 href={
@@ -440,15 +454,15 @@ export default async function GuestsPage({
                 rel={guestTemplateCards.length > 0 ? "noreferrer" : undefined}
                 className={channelRowClass}
               >
-                <span>QR code connect card</span>
-                <ChannelHint>Share</ChannelHint>
+                <span>{t("qrConnectCard")}</span>
+                <ChannelHint>{t("share")}</ChannelHint>
               </a>
               <GuestCreateModalButton
                 branches={branches}
                 users={users}
                 serviceTypes={serviceTypes}
                 defaultBranchId={selectedBranchId || user.branchId}
-                label="Usher desk registration"
+                label={t("usherDesk")}
                 className={`${channelRowClass} w-full text-left`}
               />
               <a
@@ -459,13 +473,13 @@ export default async function GuestsPage({
                 rel="noreferrer"
                 className={channelRowClass}
               >
-                <span>Church tablet kiosk</span>
-                <ChannelHint>Launch</ChannelHint>
+                <span>{t("tabletKiosk")}</span>
+                <ChannelHint>{t("launch")}</ChannelHint>
               </a>
             </div>
           </Card>
           <Card className="p-6 sm:p-7">
-            <CardHeader label="Data quality" title="Complete guest cards" />
+            <CardHeader label={t("dataQuality")} title={t("completeGuestCards")} />
             <div className="mt-5 rounded-2xl bg-[#f6f5f1] p-5">
               <p className="lp-heading text-[2.25rem] leading-none tabular-nums">
                 {guestList.summary.completionRate}%
@@ -479,7 +493,7 @@ export default async function GuestsPage({
                 />
               </div>
               <p className="mt-3 text-[13px] text-[#6b6b6b]">
-                Guest cards with both a phone number and an email
+                {t("completionCaption")}
               </p>
             </div>
           </Card>

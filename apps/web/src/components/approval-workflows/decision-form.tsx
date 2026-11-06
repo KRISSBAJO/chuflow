@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiPost } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import { approvalLevels, type ApprovalRequest } from "@/lib/approval-workflows";
@@ -11,6 +12,8 @@ export function ApprovalDecisionForm({
   request: ApprovalRequest;
   isAuthor: boolean;
 }) {
+  const t = useTranslations("admin.decisionForm");
+  const tr = useTranslations("admin.approvalRequests");
   const router = useRouter();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -33,7 +36,7 @@ export function ApprovalDecisionForm({
       router.refresh();
       setBusy(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save decision.");
+      setError(e instanceof Error ? e.message : t("saveError"));
       setBusy(false);
     }
   }
@@ -49,13 +52,13 @@ export function ApprovalDecisionForm({
     <Card className="p-6">
       <h2 className="text-lg font-semibold">
         {r.canReview
-          ? "Record your decision"
+          ? t("recordDecision")
           : isAuthor
-            ? "Manage request"
-            : "Return for rerouting"}
+            ? t("manageRequest")
+            : t("returnRerouting")}
       </h2>
       <form key={r.revision} onSubmit={submit} className="mt-4 space-y-4">
-        <Field label="Decision">
+        <Field label={t("decision")}>
           <select
             className="ui-input"
             value={action}
@@ -64,25 +67,25 @@ export function ApprovalDecisionForm({
             {r.canReview && (
               <>
                 <option value="advance">
-                  {final ? "Approve request" : "Recommend and forward"}
+                  {final ? t("approveRequest") : t("recommendForward")}
                 </option>
-                <option value="reject">Reject request</option>
-                <option value="return">Return for corrections</option>
+                <option value="reject">{t("rejectRequest")}</option>
+                <option value="return">{t("returnCorrections")}</option>
                 {final && r.finalLevel !== "national" && (
                   <option value="escalate">
-                    Escalate to a higher final level
+                    {t("escalate")}
                   </option>
                 )}
               </>
             )}
-            {isAuthor && <option value="withdraw">Withdraw request</option>}
+            {isAuthor && <option value="withdraw">{t("withdraw")}</option>}
             {r.canManage && !isAuthor && !r.canReview && (
-              <option value="return">Return to requester for rerouting</option>
+              <option value="return">{t("returnToRequester")}</option>
             )}
           </select>
         </Field>
         {action === "escalate" && (
-          <Field label="New final approval level" required>
+          <Field label={t("newFinalLevel")} required>
             <select className="ui-input" name="targetLevel" required>
               {approvalLevels
                 .filter(
@@ -92,13 +95,13 @@ export function ApprovalDecisionForm({
                 )
                 .map((l) => (
                   <option key={l} value={l}>
-                    {l}
+                    {tr(`level.${l}`)}
                   </option>
                 ))}
             </select>
           </Field>
         )}
-        <Field label="Reason or recommendation" required>
+        <Field label={t("reason")} required>
           <textarea
             name="note"
             className="ui-input min-h-28"
@@ -113,7 +116,7 @@ export function ApprovalDecisionForm({
           </p>
         )}
         <Button type="submit" disabled={busy}>
-          {busy ? "Saving…" : "Save decision"}
+          {busy ? t("saving") : t("save")}
         </Button>
       </form>
     </Card>

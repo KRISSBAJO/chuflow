@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { BranchDetailPanel } from "@/components/branch-detail-panel";
 import { MetricCard } from "@/components/metric-card";
@@ -46,6 +47,7 @@ export default async function BranchDetailPage({
 }) {
   const user = await requireServerRole("/branches");
   const { id } = await params;
+  const t = await getTranslations("org.branchDetail");
 
   const [branchRecord, branches, oversightRegions, districts, templates] = await Promise.all([
     serverGet<BranchSummary>(`/branches/${id}`).catch(() => null),
@@ -72,28 +74,28 @@ export default async function BranchDetailPage({
           className="group inline-flex items-center gap-1.5 rounded-lg px-2 py-1 -ml-2 text-[13px] font-medium text-[#6b6b6b] transition-colors hover:bg-white hover:text-[#111111]"
         >
           <Icon name="arrowRight" className="h-3.5 w-3.5 rotate-180 transition-transform group-hover:-translate-x-0.5" />
-          Back to branches
+          {t("backToBranches")}
         </Link>
         <PageHeader
-          eyebrow="Branch detail"
+          eyebrow={t("eyebrow")}
           title={branch.name}
           description={`${branch.city}, ${branch.state} · ${branch.district} · ${branch.oversightRegion}`}
           action={
             <ButtonLink href={`/users?branchId=${branch._id}`} icon="users">
-              Branch staff
+              {t("branchStaff")}
             </ButtonLink>
           }
         />
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Guests" value={String(branch.metrics.guestCount)} delta="Current guest records" tone="warm" />
-        <MetricCard label="Members" value={String(branch.metrics.memberCount)} delta="Current member records" tone="cool" />
-        <MetricCard label="Admins" value={String(branch.metrics.branchAdminCount)} delta="Branch admin coverage" tone="cool" />
+        <MetricCard label={t("guests")} value={String(branch.metrics.guestCount)} delta={t("guestsCaption")} tone="warm" />
+        <MetricCard label={t("members")} value={String(branch.metrics.memberCount)} delta={t("membersCaption")} tone="cool" />
+        <MetricCard label={t("admins")} value={String(branch.metrics.branchAdminCount)} delta={t("adminsCaption")} tone="cool" />
         <MetricCard
-          label="Care team"
+          label={t("careTeam")}
           value={String(branch.metrics.followUpCount + branch.metrics.usherCount)}
-          delta="Follow-up and usher operators"
+          delta={t("careTeamCaption")}
           tone="warm"
         />
       </section>

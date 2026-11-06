@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
@@ -13,6 +14,7 @@ export default async function Page({
   searchParams: Promise<{ branchId?: string }>;
 }) {
   await requireServerRole("/care");
+  const [t, tHub] = await Promise.all([getTranslations("people.care.settings"), getTranslations("people.care.hub")]);
   const options = await serverGet<CareOptions>("/care/options");
   if (!options.isAdmin) redirect("/care");
   const params = await searchParams;
@@ -26,13 +28,13 @@ export default async function Page({
     <Shell>
       <div>
         <Link className={buttonClass("ghost", "sm")} href="/care">
-          ← Care hub
+          ← {tHub("careHub")}
         </Link>
       </div>
       <PageHeader
-        eyebrow="Branch settings"
-        title="Care automation"
-        description="Choose the team, deadlines and contact rules. Preview the plan before enabling it."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
       <form className="flex gap-3">
         <select
@@ -46,7 +48,7 @@ export default async function Page({
             </option>
           ))}
         </select>
-        <button className={buttonClass("secondary")}>Choose branch</button>
+        <button className={buttonClass("secondary")}>{t("chooseBranch")}</button>
       </form>
       {plan && branchId && (
         <CarePlanForm key={branchId} plan={plan} branchId={branchId} />

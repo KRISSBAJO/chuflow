@@ -96,6 +96,17 @@ export function outreachLabel(value: string) {
     )?.[1] ?? value
   );
 }
-export function outreachName(person?: OutreachPerson) {
-  return person ? `${person.firstName} ${person.lastName}` : "Unassigned";
+export function outreachName(person?: OutreachPerson, fallback = "Unassigned") {
+  return person ? `${person.firstName} ${person.lastName}` : fallback;
 }
+/** Outreach values with a translated label under `people.evangelism.labels`. */
+export const OUTREACH_LABEL_VALUES = [
+  ...OUTREACH_STAGES.map(([key]) => key),
+  ...OUTREACH_METHODS.map(([key]) => key),
+  ...OUTREACH_INTERESTS.map(([key]) => key),
+  "administrative",
+  "registration",
+] as const;
+export type OutreachLabelValue = (typeof OUTREACH_LABEL_VALUES)[number];
+export const isOutreachLabelValue = (value: string): value is OutreachLabelValue =>
+  (OUTREACH_LABEL_VALUES as readonly string[]).includes(value);

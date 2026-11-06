@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { MetricCard } from "@/components/metric-card";
 import { OversightRegionEditorCard } from "@/components/oversight-region-editor-card";
 import { PageHeader } from "@/components/page-header";
@@ -41,6 +42,10 @@ export default async function NationalStructureDetailPage({
 }) {
   const user = await requireServerRole("/structure");
   const { id } = await params;
+  const t = await getTranslations("org.structureNational");
+  const tRoles = await getTranslations("roles");
+  const roleLabel = (value: string) =>
+    tRoles.has(value as Parameters<typeof tRoles>[0]) ? tRoles(value as Parameters<typeof tRoles>[0]) : formatRoleLabel(value);
   const region = await serverGet<OversightRegionOption>(`/oversight-regions/${id}`);
   const [structure, districtOptions] = await Promise.all([
     serverGet<OrgStructureSummary>("/branches/structure"),
@@ -72,9 +77,9 @@ export default async function NationalStructureDetailPage({
   return (
     <Shell>
       <div className="space-y-3">
-        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#8a8780]">
+        <nav aria-label={t("breadcrumb")} className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#8a8780]">
           <Link href="/structure" className="rounded-md px-1 py-0.5 font-medium text-[#6b6b6b] transition-colors hover:bg-white hover:text-[#111111]">
-            Structure
+            {t("structure")}
           </Link>
           <span aria-hidden>/</span>
           <span aria-current="page" className="px-1 font-medium text-[#111111]">
@@ -82,16 +87,16 @@ export default async function NationalStructureDetailPage({
           </span>
         </nav>
         <PageHeader
-          eyebrow="National area"
+          eyebrow={t("eyebrow")}
           title={region.name}
-          description="See the whole national area, drill into its districts and manage the national record without losing sight of the branches and leaders in its care."
+          description={t("description")}
           action={
             <div className="flex flex-wrap gap-2">
               <ButtonLink href="/structure" variant="secondary">
-                Back to structure
+                {t("backToStructure")}
               </ButtonLink>
               <ButtonLink href={`/users?oversightRegion=${encodeURIComponent(region.name)}`} icon="users">
-                Open national staff
+                {t("openStaff")}
               </ButtonLink>
             </div>
           }
@@ -100,27 +105,27 @@ export default async function NationalStructureDetailPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Districts"
+          label={t("districts")}
           value={regionStructure.districts.length}
-          delta="Managed districts in this national area"
+          delta={t("districtsCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Branches"
+          label={t("branches")}
           value={regionStructure.branchCount}
-          delta="Branches currently attached here"
+          delta={t("branchesCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Guests and members"
+          label={t("guestsAndMembers")}
           value={regionStructure.guestCount + regionStructure.memberCount}
-          delta={`${regionStructure.guestCount} guests · ${regionStructure.memberCount} members`}
+          delta={t("guestsMembersCaption", { guests: regionStructure.guestCount, members: regionStructure.memberCount })}
           tone="warm"
         />
         <MetricCard
-          label="Leaders"
+          label={t("leaders")}
           value={nationalLeaderCount + districtLeaderCount}
-          delta={`${formatRoleLabel(user.role)} view`}
+          delta={t("roleView", { role: roleLabel(user.role) })}
           tone="cool"
         />
       </section>
@@ -138,31 +143,31 @@ export default async function NationalStructureDetailPage({
                 oversightRegions={[region]}
                 districts={districtOptions}
                 allowedRoles={["national_admin", "national_pastor"]}
-                title="Add national leadership"
-                description="Create national admins and national pastors inside this national area so they get the right scope straight away."
-                submitLabel="Add national leader"
+                title={t("addLeadershipTitle")}
+                description={t("addLeadershipDescription")}
+                submitLabel={t("addLeader")}
               />
             </Card>
           ) : null}
 
           <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
-            <CardHeader label="National leadership" title="Who leads this area" />
+            <CardHeader label={t("leadershipLabel")} title={t("leadershipTitle")} />
             <div className="mt-5 grid gap-4">
               <div className="rounded-2xl bg-[#f6f5f1] p-4">
-                <p className="text-[12px] font-medium text-[#6b6b6b]">National admins</p>
+                <p className="text-[12px] font-medium text-[#6b6b6b]">{t("nationalAdmins")}</p>
                 <div className="mt-3">
                   <TeamPills
                     users={regionStructure.nationalAdmins}
-                    emptyLabel="No national admin assigned in this national area."
+                    emptyLabel={t("noNationalAdmin")}
                   />
                 </div>
               </div>
               <div className="rounded-2xl bg-[#f6f5f1] p-4">
-                <p className="text-[12px] font-medium text-[#6b6b6b]">National pastors</p>
+                <p className="text-[12px] font-medium text-[#6b6b6b]">{t("nationalPastors")}</p>
                 <div className="mt-3">
                   <TeamPills
                     users={regionStructure.nationalPastors}
-                    emptyLabel="No national pastor assigned in this national area."
+                    emptyLabel={t("noNationalPastor")}
                   />
                 </div>
               </div>
@@ -172,19 +177,19 @@ export default async function NationalStructureDetailPage({
 
         <Card className="app-rise self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
           <CardHeader
-            label="District drill-down"
-            title="Districts in this area"
-            description="Open a district to see its branches and teams."
+            label={t("drillLabel")}
+            title={t("drillTitle")}
+            description={t("drillDescription")}
             action={
               <Badge>
-                <span className="tabular-nums">{regionStructure.districts.length}</span> districts
+                {t.rich("districtsBadge", { count: regionStructure.districts.length, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
               </Badge>
             }
           />
           <div className="mt-6 space-y-4">
             {regionStructure.districts.length === 0 ? (
-              <EmptyState icon="pin" title="No districts yet">
-                No districts have been attached to this national area yet.
+              <EmptyState icon="pin" title={t("emptyTitle")}>
+                {t("emptyBody")}
               </EmptyState>
             ) : (
               regionStructure.districts.map((district) => (
@@ -198,38 +203,41 @@ export default async function NationalStructureDetailPage({
                         <Icon name="pin" className="h-[18px] w-[18px]" />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-[12px] text-[#8a8780]">District</p>
+                        <p className="text-[12px] text-[#8a8780]">{t("district")}</p>
                         <h3 className="lp-heading text-[18px]">{district.name}</h3>
                         <p className="mt-1 text-[13px] text-[#6b6b6b]">
-                          <span className="tabular-nums">{district.branchCount}</span> branches ·{" "}
-                          <span className="tabular-nums">{district.guestCount}</span> guests ·{" "}
-                          <span className="tabular-nums">{district.memberCount}</span> members
+                          {t.rich("districtStats", {
+                            branches: district.branchCount,
+                            guests: district.guestCount,
+                            members: district.memberCount,
+                            n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+                          })}
                         </p>
                       </div>
                     </div>
                     {districtIdByName.get(district.name) ? (
                       <ButtonLink href={`/structure/district/${districtIdByName.get(district.name)}`} size="sm">
-                        Open district
+                        {t("openDistrict")}
                       </ButtonLink>
                     ) : null}
                   </div>
 
                   <div className="mt-4 grid gap-4 xl:grid-cols-2">
                     <div className="rounded-2xl bg-[#f6f5f1] p-4">
-                      <p className="text-[12px] font-medium text-[#6b6b6b]">District admins</p>
+                      <p className="text-[12px] font-medium text-[#6b6b6b]">{t("districtAdmins")}</p>
                       <div className="mt-3">
                         <TeamPills
                           users={district.districtAdmins}
-                          emptyLabel="No district admin assigned."
+                          emptyLabel={t("noDistrictAdmin")}
                         />
                       </div>
                     </div>
                     <div className="rounded-2xl bg-[#f6f5f1] p-4">
-                      <p className="text-[12px] font-medium text-[#6b6b6b]">District pastors</p>
+                      <p className="text-[12px] font-medium text-[#6b6b6b]">{t("districtPastors")}</p>
                       <div className="mt-3">
                         <TeamPills
                           users={district.districtPastors}
-                          emptyLabel="No district pastor assigned."
+                          emptyLabel={t("noDistrictPastor")}
                         />
                       </div>
                     </div>
@@ -241,7 +249,7 @@ export default async function NationalStructureDetailPage({
                       variant="secondary"
                       size="sm"
                     >
-                      Focus in overview
+                      {t("focusInOverview")}
                     </ButtonLink>
                     <ButtonLink
                       href={`/users?oversightRegion=${encodeURIComponent(region.name)}&district=${encodeURIComponent(district.name)}`}
@@ -249,7 +257,7 @@ export default async function NationalStructureDetailPage({
                       size="sm"
                       icon="users"
                     >
-                      Open district staff
+                      {t("openDistrictStaff")}
                     </ButtonLink>
                   </div>
                 </article>

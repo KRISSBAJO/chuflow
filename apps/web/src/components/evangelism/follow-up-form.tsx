@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiPatch } from "@/lib/api";
 import {
   OUTREACH_METHODS,
@@ -19,6 +20,9 @@ export function OutreachFollowUpForm({
   users: UserSummary[];
 }) {
   const router = useRouter();
+  const t = useTranslations("people.evangelism.followUpForm");
+  const tLabels = useTranslations("people.evangelism.labels");
+  const tsh = useTranslations("people.shared");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -53,7 +57,7 @@ export function OutreachFollowUpForm({
       setSaved(true);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save follow-up.");
+      setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
     }
@@ -67,15 +71,14 @@ export function OutreachFollowUpForm({
   }
   return (
     <Card className="p-6 sm:p-7">
-      <h2 className="text-xl font-semibold">Record follow-up</h2>
+      <h2 className="text-xl font-semibold">{t("title")}</h2>
       {stopped && (
         <p className="mt-3 rounded-xl bg-orange-50 p-3 text-sm">
-          This person has opted out. Keep any updates administrative; do not
-          call or send messages.
+          {t("optedOut")}
         </p>
       )}
       <form onSubmit={submit} className="mt-5 space-y-5">
-        <Field label="Progress" required>
+        <Field label={t("progress")} required>
           <select
             className="ui-input"
             value={stage}
@@ -83,20 +86,20 @@ export function OutreachFollowUpForm({
           >
             {OUTREACH_STAGES.filter(
               ([key]) => !stopped || key === "do_not_contact",
-            ).map(([key, label]) => (
+            ).map(([key]) => (
               <option key={key} value={key}>
-                {label}
+                {tLabels(key)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Follow-up owner">
+        <Field label={t("owner")}>
           <select
             name="assignedTo"
             className="ui-input"
             defaultValue={contact.assignedTo?._id || ""}
           >
-            <option value="">Unassigned</option>
+            <option value="">{tsh("unassigned")}</option>
             {users.map((person) => (
               <option key={person._id} value={person._id}>
                 {person.firstName} {person.lastName}
@@ -104,7 +107,7 @@ export function OutreachFollowUpForm({
             ))}
           </select>
         </Field>
-        <Field label={stopped ? "Record category" : "Contact method"} required>
+        <Field label={stopped ? t("recordCategory") : t("contactMethod")} required>
           <select
             name="contactMethod"
             className="ui-input"
@@ -113,20 +116,20 @@ export function OutreachFollowUpForm({
             }
           >
             {!stopped &&
-              OUTREACH_METHODS.map(([key, label]) => (
+              OUTREACH_METHODS.map(([key]) => (
                 <option key={key} value={key}>
-                  {label}
+                  {tLabels(key)}
                 </option>
               ))}
-            <option value="administrative">Administrative note</option>
+            <option value="administrative">{tLabels("administrative")}</option>
           </select>
         </Field>
         <Field
-          label="Next action date and time"
+          label={t("nextAction")}
           hint={
             closed
-              ? "Closing or opting out clears scheduled follow-up."
-              : "Uses your local time zone. Leave blank to clear the schedule."
+              ? t("hintClosed")
+              : t("hintOpen")
           }
         >
           <input
@@ -137,7 +140,7 @@ export function OutreachFollowUpForm({
             disabled={closed}
           />
         </Field>
-        <Field label="What happened, and what comes next?" required>
+        <Field label={t("whatHappened")} required>
           <textarea
             name="note"
             rows={4}
@@ -153,11 +156,11 @@ export function OutreachFollowUpForm({
         )}
         {saved && (
           <p role="status" className="text-sm text-green-700">
-            Follow-up saved.
+            {t("saved")}
           </p>
         )}
         <Button type="submit" disabled={busy}>
-          {busy ? "Saving…" : "Save follow-up"}
+          {busy ? tsh("savingEllipsis") : t("save")}
         </Button>
       </form>
     </Card>

@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { useMemberFormLabels } from "@/lib/member-form-options";
 import { isBranchScopedRole } from "@/lib/permissions";
 import type { BranchSummary, ServiceTypeSummary } from "@/lib/types";
 import { Button, Field } from "@/components/ui/ui";
@@ -34,6 +36,9 @@ export function ServiceScheduleCreateForm({
   currentUserRole: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.serviceSchedules");
+  const tCommon = useTranslations("common");
+  const labels = useMemberFormLabels();
   const [loading, setLoading] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState(
     defaultBranchId || branches[0]?._id || "",
@@ -80,18 +85,17 @@ export function ServiceScheduleCreateForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create service schedule");
+        throw new Error(result.message || t("createError"));
       }
 
-      toast.success("Service schedule created", {
-        description:
-          "Attendance and finance can now attach entries to this real branch service.",
+      toast.success(t("createdTitle"), {
+        description: t("createdBody"),
       });
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to create service schedule";
-      toast.error("Service schedule not created", {
+        error instanceof Error ? error.message : t("createError");
+      toast.error(t("createFailed"), {
         description: message,
       });
     } finally {
@@ -102,15 +106,15 @@ export function ServiceScheduleCreateForm({
   return (
     <form action={handleSubmit}>
       <div>
-        <h3 className="lp-heading text-[18px]">Create service schedule</h3>
+        <h3 className="lp-heading text-[18px]">{t("heading")}</h3>
         <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">
-          Define recurring branch services so attendance and finance attach to a real service, not a loose name.
+          {t("intro")}
         </p>
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {!isBranchScopedRole(currentUserRole) ? (
-          <Field label="Branch" required>
+          <Field label={tCommon("branch")} required>
             <select
               name="branchId"
               value={selectedBranchId}
@@ -118,7 +122,7 @@ export function ServiceScheduleCreateForm({
               className="ui-input"
               required
             >
-              <option value="">Select branch</option>
+              <option value="">{tCommon("selectBranch")}</option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -130,9 +134,9 @@ export function ServiceScheduleCreateForm({
           <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
         )}
 
-        <Field label="Service type" required>
+        <Field label={t("serviceType")} required>
           <select name="serviceTypeId" className="ui-input" required>
-            <option value="">Select service type</option>
+            <option value="">{t("selectServiceType")}</option>
             {filteredServiceTypes.map((serviceType) => (
               <option key={serviceType._id} value={serviceType._id}>
                 {serviceType.name}
@@ -141,59 +145,59 @@ export function ServiceScheduleCreateForm({
           </select>
         </Field>
 
-        <Field label="Schedule name" required>
+        <Field label={t("scheduleName")} required>
           <input
             name="name"
-            placeholder="First service, Sunday worship, Midweek recharge..."
+            placeholder={t("scheduleNamePlaceholder")}
             className="ui-input"
             required
           />
         </Field>
 
-        <Field label="Day of week" required>
+        <Field label={t("dayOfWeek")} required>
           <select name="dayOfWeek" defaultValue="sunday" className="ui-input" required>
             {weekdayOptions.map((day) => (
               <option key={day} value={day}>
-                {day.charAt(0).toUpperCase() + day.slice(1)}
+                {labels.weekday(day)}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="Start time" required>
+        <Field label={t("startTime")} required>
           <input name="startTime" type="time" className="ui-input" required />
         </Field>
 
-        <Field label="End time">
+        <Field label={t("endTime")}>
           <input name="endTime" type="time" className="ui-input" />
         </Field>
 
-        <Field label="Timezone" className="md:col-span-2">
+        <Field label={t("timezone")} className="md:col-span-2">
           <input name="timezone" defaultValue="America/Chicago" placeholder="America/Chicago" className="ui-input" />
         </Field>
       </div>
 
-      <Field label="Location notes" className="mt-4">
-        <textarea name="locationNotes" placeholder="Optional room, campus or service notes" className="ui-input" />
+      <Field label={t("locationNotes")} className="mt-4">
+        <textarea name="locationNotes" placeholder={t("locationNotesPlaceholder")} className="ui-input" />
       </Field>
 
       <div className="mt-4 grid gap-2 rounded-2xl bg-[#f6f5f1] p-4 md:grid-cols-3">
         <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
           <input type="checkbox" name="attendanceEntryEnabled" defaultChecked className="h-4 w-4 accent-[#111111]" />
-          Use for attendance
+          {t("useForAttendance")}
         </label>
         <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
           <input type="checkbox" name="financeEntryEnabled" defaultChecked className="h-4 w-4 accent-[#111111]" />
-          Use for finance
+          {t("useForFinance")}
         </label>
         <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
           <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4 accent-[#111111]" />
-          Active schedule
+          {t("activeSchedule")}
         </label>
       </div>
 
       <Button type="submit" disabled={loading} className="mt-5">
-        {loading ? "Creating..." : "Create service schedule"}
+        {loading ? t("creating") : t("create")}
       </Button>
     </form>
   );

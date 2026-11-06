@@ -1,4 +1,5 @@
 import { FilterPanel } from "@/components/filter-panel";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { CommunicationTemplateManagementCard } from "@/components/communication-template-management-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -10,7 +11,6 @@ import {
   Card,
   CardHeader,
   EmptyState,
-  formatStatus,
   Pagination,
   Stat,
   statusTone,
@@ -54,7 +54,7 @@ function buildQueryString(
   return query ? `?${query}` : "";
 }
 
-function getCommunicationBranch(item: CommunicationItem) {
+function getCommunicationBranch(item: CommunicationItem, fallback: string) {
   const directBranch = item.branchId;
   if (directBranch?.name) {
     return directBranch.name;
@@ -69,43 +69,15 @@ function getCommunicationBranch(item: CommunicationItem) {
       ? item.memberId.branchId
       : undefined;
 
-  return guestBranch?.name || memberBranch?.name || "Scoped record";
+  return guestBranch?.name || memberBranch?.name || fallback;
 }
 
-function getCommunicationSender(item: CommunicationItem) {
+function getCommunicationSender(item: CommunicationItem, fallback: string) {
   if (item.sentBy?.firstName || item.sentBy?.lastName) {
     return `${item.sentBy?.firstName ?? ""} ${item.sentBy?.lastName ?? ""}`.trim();
   }
 
-  return item.sentBy?.email || "System record";
-}
-
-function formatDeliveryMode(mode?: string) {
-  switch (mode) {
-    case "system_email":
-      return "System email";
-    case "preview_email":
-      return "Preview email";
-    case "manual_sms":
-      return "Manual SMS";
-    case "manual_call":
-      return "Manual call";
-    default:
-      return "Tracked send";
-  }
-}
-
-function formatChannel(channel?: string) {
-  switch (channel) {
-    case "email":
-      return "Email";
-    case "sms":
-      return "SMS";
-    case "phone_call":
-      return "Phone call";
-    default:
-      return formatStatus(channel);
-  }
+  return item.sentBy?.email || fallback;
 }
 
 function communicationTone(status?: string): BadgeTone {
@@ -121,6 +93,39 @@ export default async function CommunicationsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await requireServerRole("/communications");
+  const t = await getTranslations("admin.communications");
+  const tc = await getTranslations("common");
+  const ts = await getTranslations("statuses");
+  const format = await getFormatter();
+  type StatusKey = Parameters<typeof ts>[0];
+  const statusLabel = (value?: string | null) => {
+    if (!value) return "";
+    const key = value.toLowerCase() as StatusKey;
+    if (ts.has(key)) return ts(key);
+    const text = value.replace(/_/g, " ").toLowerCase();
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
+  const formatDeliveryMode = (mode?: string) => {
+    switch (mode) {
+      case "system_email":
+      case "preview_email":
+      case "manual_sms":
+      case "manual_call":
+        return t(`deliveryModes.${mode}`);
+      default:
+        return t("deliveryModes.tracked");
+    }
+  };
+  const formatChannel = (channel?: string) => {
+    switch (channel) {
+      case "email":
+      case "sms":
+      case "phone_call":
+        return t(`channels.${channel}`);
+      default:
+        return statusLabel(channel);
+    }
+  };
   const resolvedSearchParams = (await searchParams) ?? {};
   const page = Number(
     typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : "1",
@@ -194,31 +199,31 @@ export default async function CommunicationsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Communications"
-        title="Templates and message history"
-        description="Keep shared message templates tidy and review outreach across the scope you supervise."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)]">
         <Card className="app-rise min-w-0 p-6 sm:p-7">
           <CardHeader
-            label="History"
-            title="Outreach timeline"
-            description="Search, filter and review messages without jumping between guest and member records."
+            label={t("historyLabel")}
+            title={t("historyTitle")}
+            description={t("historyDescription")}
           />
 
           <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat label="Total" value={history.summary.total} />
+            <Stat label={t("stats.total")} value={history.summary.total} />
             <Stat
-              label="Email / SMS"
+              label={t("stats.emailSms")}
               value={`${history.summary.email} / ${history.summary.sms}`}
             />
             <Stat
-              label="Sent / preview / failed"
+              label={t("stats.sentPreviewFailed")}
               value={`${history.summary.sent} / ${history.summary.preview} / ${history.summary.failed}`}
             />
             <Stat
-              label="System / manual"
+              label={t("stats.systemManual")}
               value={`${history.summary.systemEmail} / ${history.summary.manualSms + history.summary.manualCall}`}
             />
           </div>
@@ -230,8 +235,8 @@ export default async function CommunicationsPage({
             <input
               name="search"
               defaultValue={search || ""}
-              placeholder="Search recipient, subject or message"
-              aria-label="Search communications"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchAria")}
               className="ui-input sm:col-span-2 xl:col-span-3"
             />
 
@@ -239,10 +244,10 @@ export default async function CommunicationsPage({
               <select
                 name="branchId"
                 defaultValue={branchId || ""}
-                aria-label="Branch"
+                aria-label={tc("branch")}
                 className="ui-input"
               >
-                <option value="">All branches</option>
+                <option value="">{tc("allBranches")}</option>
                 {branches.map((branch) => (
                   <option key={branch._id} value={branch._id}>
                     {branch.name}
@@ -251,41 +256,41 @@ export default async function CommunicationsPage({
               </select>
             ) : null}
 
-            <select name="channel" defaultValue={channel || ""} aria-label="Channel" className="ui-input">
-              <option value="">All channels</option>
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-              <option value="phone_call">Phone call</option>
+            <select name="channel" defaultValue={channel || ""} aria-label={t("channel")} className="ui-input">
+              <option value="">{t("allChannels")}</option>
+              <option value="email">{t("channels.email")}</option>
+              <option value="sms">{t("channels.sms")}</option>
+              <option value="phone_call">{t("channels.phone_call")}</option>
             </select>
 
-            <select name="status" defaultValue={status || ""} aria-label="Status" className="ui-input">
-              <option value="">All statuses</option>
-              <option value="sent">Sent</option>
-              <option value="preview">Preview</option>
-              <option value="queued">Queued</option>
-              <option value="failed">Failed</option>
+            <select name="status" defaultValue={status || ""} aria-label={tc("status")} className="ui-input">
+              <option value="">{t("allStatuses")}</option>
+              <option value="sent">{t("statuses.sent")}</option>
+              <option value="preview">{t("statuses.preview")}</option>
+              <option value="queued">{t("statuses.queued")}</option>
+              <option value="failed">{t("statuses.failed")}</option>
             </select>
 
             <select
               name="deliveryMode"
               defaultValue={deliveryMode || ""}
-              aria-label="Delivery mode"
+              aria-label={t("deliveryMode")}
               className="ui-input"
             >
-              <option value="">All delivery modes</option>
-              <option value="system_email">System email</option>
-              <option value="preview_email">Preview email</option>
-              <option value="manual_sms">Manual SMS</option>
-              <option value="manual_call">Manual call</option>
+              <option value="">{t("allDeliveryModes")}</option>
+              <option value="system_email">{t("deliveryModes.system_email")}</option>
+              <option value="preview_email">{t("deliveryModes.preview_email")}</option>
+              <option value="manual_sms">{t("deliveryModes.manual_sms")}</option>
+              <option value="manual_call">{t("deliveryModes.manual_call")}</option>
             </select>
 
             <select
               name="templateName"
               defaultValue={templateName || ""}
-              aria-label="Template"
+              aria-label={t("template")}
               className="ui-input"
             >
-              <option value="">All templates</option>
+              <option value="">{t("allTemplates")}</option>
               {templates.map((template) => (
                 <option key={template._id} value={template.key}>
                   {template.name}
@@ -295,29 +300,29 @@ export default async function CommunicationsPage({
 
             <div className="flex items-center justify-end gap-2 sm:col-span-2 xl:col-span-3">
               <ButtonLink href="/communications" variant="ghost">
-                Reset
+                {tc("reset")}
               </ButtonLink>
               <Button type="submit" icon="search">
-                Apply filters
+                {t("applyFilters")}
               </Button>
             </div>
           </form></FilterPanel>
 
           <div className="mt-6">
             {history.items.length === 0 ? (
-              <EmptyState icon="message" title="No messages found">
-                No communications match the current filters.
+              <EmptyState icon="message" title={t("emptyTitle")}>
+                {t("emptyBody")}
               </EmptyState>
             ) : (
               <TableWrap>
                 <table className="ui-table">
                   <thead>
                     <tr>
-                      <th>Recipient</th>
-                      <th>Template and sender</th>
-                      <th>Branch</th>
-                      <th>Tracking</th>
-                      <th>When</th>
+                      <th>{t("headers.recipient")}</th>
+                      <th>{t("headers.templateSender")}</th>
+                      <th>{t("headers.branch")}</th>
+                      <th>{t("headers.tracking")}</th>
+                      <th>{t("headers.when")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -332,13 +337,13 @@ export default async function CommunicationsPage({
                         <td className="min-w-[160px]">
                           <p className="text-[#111111]">{item.templateName}</p>
                           <p className="mt-0.5 text-[12px] text-[#8a8780]">
-                            {formatChannel(item.channel)} · {getCommunicationSender(item)}
+                            {formatChannel(item.channel)} · {getCommunicationSender(item, t("systemRecord"))}
                           </p>
                         </td>
-                        <td className="!text-[#55534e]">{getCommunicationBranch(item)}</td>
+                        <td className="!text-[#55534e]">{getCommunicationBranch(item, t("scopedRecord"))}</td>
                         <td>
                           <Badge tone={communicationTone(item.status)} dot>
-                            {formatStatus(item.status)}
+                            {statusLabel(item.status)}
                           </Badge>
                           <p className="mt-1.5 text-[12px] text-[#8a8780]">
                             {formatDeliveryMode(item.deliveryMode)}
@@ -346,18 +351,18 @@ export default async function CommunicationsPage({
                           {item.errorMessage ? (
                             <p className="mt-1 text-[12px] text-red-700">{item.errorMessage}</p>
                           ) : item.previewUrl ? (
-                            <p className="mt-1 text-[12px] text-amber-700">Preview mode</p>
+                            <p className="mt-1 text-[12px] text-amber-700">{t("previewMode")}</p>
                           ) : null}
                         </td>
                         <td className="whitespace-nowrap text-[13px] !text-[#55534e]">
                           {item.deliveredAt
-                            ? new Date(item.deliveredAt).toLocaleString()
+                            ? format.dateTime(new Date(item.deliveredAt), { dateStyle: "medium", timeStyle: "short" })
                             : item.createdAt
-                              ? new Date(item.createdAt).toLocaleString()
-                              : "No timestamp"}
+                              ? format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short" })
+                              : t("noTimestamp")}
                           {item.externalMessageId ? (
                             <p className="mt-0.5 text-[11px] text-[#8a8780]">
-                              Ref: {item.externalMessageId}
+                              {t("ref", { id: item.externalMessageId })}
                             </p>
                           ) : null}
                         </td>
@@ -371,8 +376,13 @@ export default async function CommunicationsPage({
 
           <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[13px] text-[#8a8780]">
-              Showing <span className="tabular-nums text-[#111111]">{startItem}–{endItem}</span> of{" "}
-              <span className="tabular-nums">{history.pagination.total}</span>
+              {t.rich("showing", {
+                start: startItem,
+                end: endItem,
+                total: history.pagination.total,
+                range: (chunks) => <span className="tabular-nums text-[#111111]">{chunks}</span>,
+                sum: (chunks) => <span className="tabular-nums">{chunks}</span>,
+              })}
             </p>
             <Pagination
               page={history.pagination.page}

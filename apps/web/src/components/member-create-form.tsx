@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
@@ -11,6 +12,7 @@ import {
   MEMBER_COURSE_GROUPS,
   MEMBER_TITLE_OPTIONS,
   MEMBERSHIP_STATUS_OPTIONS,
+  useMemberFormLabels,
   YES_NO_OPTIONS,
 } from "@/lib/member-form-options";
 import type {
@@ -44,6 +46,9 @@ export function MemberCreateForm({
   defaultBranchId?: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.memberForm");
+  const tCommon = useTranslations("common");
+  const labels = useMemberFormLabels();
   const [loading, setLoading] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState(
     defaultBranchId || branches[0]?._id || "",
@@ -112,19 +117,18 @@ export function MemberCreateForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create member");
+        throw new Error(result.message || t("createError"));
       }
 
-      toast.success("Member saved", {
-        description:
-          "The member profile has been created in the selected branch.",
+      toast.success(t("createdTitle"), {
+        description: t("createdBody"),
       });
-      router.push(createdHref(`/members/${result._id}`, result, "Member"));
+      router.push(createdHref(`/members/${result._id}`, result, t("entityName")));
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to create member";
-      toast.error("Member not saved", {
+        error instanceof Error ? error.message : t("createError");
+      toast.error(t("createFailed"), {
         description: message,
       });
     } finally {
@@ -136,7 +140,7 @@ export function MemberCreateForm({
     <form action={handleSubmit} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         {branches.length > 0 ? (
-          <Field label="Branch" required>
+          <Field label={tCommon("branch")} required>
             <select
               name="branchId"
               value={selectedBranchId}
@@ -144,7 +148,7 @@ export function MemberCreateForm({
               className="ui-input"
               required
             >
-              <option value="">Select branch</option>
+              <option value="">{tCommon("selectBranch")}</option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -153,14 +157,14 @@ export function MemberCreateForm({
             </select>
           </Field>
         ) : (
-          <Field label="Branch">
+          <Field label={tCommon("branch")}>
             <input
               type="hidden"
               name="branchId"
               value={defaultBranchId ?? ""}
             />
             <input
-              value="Current branch scope"
+              value={t("currentBranchScope")}
               readOnly
               disabled
               className="ui-input"
@@ -169,11 +173,11 @@ export function MemberCreateForm({
         )}
 
         <Field
-          label="Linked guest record"
-          hint="Optional. Public member intake submits directly as a member without creating a guest first."
+          label={t("linkedGuest")}
+          hint={t("linkedGuestHint")}
         >
           <select name="guestId" className="ui-input">
-            <option value="">No guest record attached</option>
+            <option value="">{t("noGuest")}</option>
             {scopedGuests.map((guest) => (
               <option key={guest._id} value={guest._id}>
                 {guest.firstName} {guest.lastName}
@@ -182,50 +186,50 @@ export function MemberCreateForm({
           </select>
         </Field>
 
-        <Field label="Title">
+        <Field label={t("title")}>
           <select name="title" defaultValue="" className="ui-input">
-            <option value="">No title selected</option>
+            <option value="">{t("noTitle")}</option>
             {MEMBER_TITLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {labels.title(option.value)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="First name" required>
+        <Field label={tCommon("firstName")} required>
           <input
             name="firstName"
-            placeholder="First name"
+            placeholder={tCommon("firstName")}
             className="ui-input"
             required
           />
         </Field>
-        <Field label="Last name" required>
+        <Field label={tCommon("lastName")} required>
           <input
             name="lastName"
-            placeholder="Last name"
+            placeholder={tCommon("lastName")}
             className="ui-input"
             required
           />
         </Field>
-        <Field label="Phone number" required>
+        <Field label={t("phoneNumber")} required>
           <input
             name="phone"
-            placeholder="Phone number"
+            placeholder={t("phoneNumber")}
             className="ui-input"
             required
           />
         </Field>
-        <Field label="Email" required>
+        <Field label={tCommon("email")} required>
           <input
             name="email"
             type="email"
-            placeholder="name@example.com"
+            placeholder={t("emailPlaceholder")}
             className="ui-input"
             required
           />
         </Field>
-        <Field label="Membership status">
+        <Field label={t("membershipStatus")}>
           <select
             name="membershipStatus"
             defaultValue="active"
@@ -233,14 +237,14 @@ export function MemberCreateForm({
           >
             {MEMBERSHIP_STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {labels.membershipStatusOption(option.value)}
               </option>
             ))}
           </select>
         </Field>
         <Field
-          label="Date joined church"
-          hint="This date cannot be in the future."
+          label={t("dateJoined")}
+          hint={t("dateJoinedHint")}
         >
           <input
             name="dateJoinedChurch"
@@ -253,10 +257,10 @@ export function MemberCreateForm({
 
       <section className="rounded-2xl bg-[#f6f5f1] p-5">
         <h3 className="text-[15px] font-semibold text-[#111111]">
-          Service group membership
+          {t("serviceGroupsTitle")}
         </h3>
         <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-          Select all service groups this member belongs to in the selected branch.
+          {t("createServiceGroupsHint")}
         </p>
         <MemberServiceGroups
           key={selectedBranchId}
@@ -264,16 +268,18 @@ export function MemberCreateForm({
         />
       </section>
 
-      {MEMBER_COURSE_GROUPS.map((group) => (
+      {MEMBER_COURSE_GROUPS.map((group) => {
+        const course = labels.course(group);
+        return (
         <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
           <h3 className="text-[15px] font-semibold text-[#111111]">
-            {group.title}
+            {course.title}
           </h3>
           <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-            {group.helperText}
+            {course.helperText}
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label={group.question} className="sm:col-span-2">
+            <Field label={course.question} className="sm:col-span-2">
               <select
                 name={group.statusName}
                 defaultValue="no"
@@ -281,12 +287,12 @@ export function MemberCreateForm({
               >
                 {YES_NO_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {labels.yesNo(option.value)}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Date or year">
+            <Field label={t("dateOrYear")}>
               <input
                 name={group.dateName}
                 type="date"
@@ -294,21 +300,22 @@ export function MemberCreateForm({
                 className="ui-input"
               />
             </Field>
-            <Field label="Location">
+            <Field label={t("location")}>
               <input
                 name={group.locationName}
-                placeholder={`${group.title} location`}
+                placeholder={t("locationPlaceholder", { course: course.title })}
                 className="ui-input"
               />
             </Field>
           </div>
         </section>
-      ))}
+        );
+      })}
 
       <section className="rounded-2xl bg-[#f6f5f1] p-5">
-        <h3 className="text-[15px] font-semibold text-[#111111]">Baptism</h3>
+        <h3 className="text-[15px] font-semibold text-[#111111]">{t("baptism")}</h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Holy Ghost baptism">
+          <Field label={t("holyGhostBaptism")}>
             <select
               name="holySpiritBaptismStatus"
               defaultValue="no"
@@ -316,12 +323,12 @@ export function MemberCreateForm({
             >
               {YES_NO_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {labels.yesNo(option.value)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Water baptism">
+          <Field label={t("waterBaptism")}>
             <select
               name="waterBaptismStatus"
               defaultValue="no"
@@ -329,7 +336,7 @@ export function MemberCreateForm({
             >
               {YES_NO_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {labels.yesNo(option.value)}
                 </option>
               ))}
             </select>
@@ -337,17 +344,17 @@ export function MemberCreateForm({
         </div>
       </section>
 
-      <Field label="Family details">
+      <Field label={t("familyDetails")}>
         <textarea
           name="familyDetails"
-          placeholder="Family details, dependants or pastoral notes"
+          placeholder={t("familyDetailsPlaceholder")}
           className="ui-input"
         />
       </Field>
 
       <div className="flex justify-end border-t border-black/[0.06] pt-5">
         <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save member"}
+          {loading ? tCommon("saving") : t("saveMember")}
         </Button>
       </div>
     </form>

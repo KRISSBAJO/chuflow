@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import { Shell } from "@/components/shell";
@@ -12,6 +13,13 @@ export default async function Page({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireServerRole("/approvals/requests");
+  const t = await getTranslations("admin.approvalRequests");
+  const format = await getFormatter();
+  type Key = Parameters<typeof t>[0];
+  const statusLabel = (value: string) => {
+    const key = `status.${value}` as Key;
+    return t.has(key) ? t(key) : value;
+  };
   const q = await searchParams;
   const params = new URLSearchParams();
   for (const key of ["search", "status", "view", "page"])
@@ -27,12 +35,12 @@ export default async function Page({
   return (
     <Shell>
       <Link href="/approvals" className="text-sm hover:underline">
-        ← Back to approvals
+        {t("backToApprovals")}
       </Link>
       <PageHeader
-        eyebrow="General approvals"
-        title="Requests and decisions"
-        description="Track each request to its designated final approver."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex gap-2">
             {["super_admin", "national_admin"].includes(user.role) && (
@@ -40,14 +48,14 @@ export default async function Page({
                 className={buttonClass("secondary")}
                 href="/approvals/routes"
               >
-                Approval routes
+                {t("routes")}
               </Link>
             )}
             <Link
               className={buttonClass("primary")}
               href="/approvals/requests/new"
             >
-              + New request
+              {t("newRequest")}
             </Link>
           </div>
         }
@@ -57,21 +65,21 @@ export default async function Page({
           <input
             className="ui-input"
             name="search"
-            aria-label="Search requests"
-            placeholder="Search request titles"
+            aria-label={t("searchAria")}
+            placeholder={t("searchPlaceholder")}
             defaultValue={q.search}
           />
           <select
             className="ui-input"
             name="status"
-            aria-label="Request status"
+            aria-label={t("statusAria")}
             defaultValue={q.status || ""}
           >
-            <option value="">All statuses</option>
-            {["pending", "approved", "returned", "rejected", "withdrawn"].map(
+            <option value="">{t("allStatuses")}</option>
+            {(["pending", "approved", "returned", "rejected", "withdrawn"] as const).map(
               (s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {t(`status.${s}`)}
                 </option>
               ),
             )}
@@ -79,34 +87,34 @@ export default async function Page({
           <select
             className="ui-input"
             name="view"
-            aria-label="Request view"
+            aria-label={t("viewAria")}
             defaultValue={q.view || "all"}
           >
-            <option value="all">All accessible requests</option>
-            <option value="mine">My requests</option>
-            <option value="review">Awaiting my review</option>
-            <option value="overdue">Overdue reviews</option>
+            <option value="all">{t("views.all")}</option>
+            <option value="mine">{t("views.mine")}</option>
+            <option value="review">{t("views.review")}</option>
+            <option value="overdue">{t("views.overdue")}</option>
           </select>
-          <Button type="submit">Apply filters</Button>
+          <Button type="submit">{t("applyFilters")}</Button>
           <Link href="/approvals/requests" className="text-sm hover:underline">
-            Reset filters
+            {t("resetFilters")}
           </Link>
         </form>
       </FilterPanel>
       <Card className="p-5">
         <p className="mb-4 text-sm text-[#6b6b6b]">
-          {data.pagination.total} matching requests
+          {t("matching", { count: data.pagination.total })}
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-[#8a8780]">
               <tr>
                 {[
-                  "Request",
-                  "Church",
-                  "Status",
-                  "Current review",
-                  "Final level",
+                  t("headers.request"),
+                  t("headers.church"),
+                  t("headers.status"),
+                  t("headers.currentReview"),
+                  t("headers.finalLevel"),
                 ].map((h) => (
                   <th key={h} className="px-3 py-3 font-medium">
                     {h}
@@ -127,7 +135,7 @@ export default async function Page({
                     <p className="mt-1 text-xs text-[#8a8780]">{r.category}</p>
                   </td>
                   <td className="px-3 py-4">{r.branchName}</td>
-                  <td className="px-3 py-4">{r.status}</td>
+                  <td className="px-3 py-4">{statusLabel(r.status)}</td>
                   <td className="px-3 py-4">
                     {r.status === "pending" ? (
                       <>
@@ -139,17 +147,14 @@ export default async function Page({
                               : "text-xs text-[#8a8780]"
                           }
                         >
-                          Due{" "}
-                          {new Date(r.dueAt).toLocaleDateString("en-US", {
-                            timeZone: "UTC",
-                          })}
+                          {t("due", { date: format.dateTime(new Date(r.dueAt), { timeZone: "UTC" }) })}
                         </p>
                       </>
                     ) : (
                       "—"
                     )}
                   </td>
-                  <td className="px-3 py-4">{r.finalLevel}</td>
+                  <td className="px-3 py-4">{t(`level.${r.finalLevel}`)}</td>
                 </tr>
               ))}
             </tbody>
@@ -157,7 +162,7 @@ export default async function Page({
         </div>
         {!data.items.length && (
           <p className="py-8 text-center text-sm text-[#6b6b6b]">
-            No requests match these filters.
+            {t("noMatch")}
           </p>
         )}
         <Pagination

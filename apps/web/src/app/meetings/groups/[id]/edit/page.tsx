@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { CreatePage } from "@/components/create-page";
 import { MeetingGroupForm } from "@/components/meetings/forms";
 import { requireServerRole } from "@/lib/auth";
@@ -11,13 +12,16 @@ export default async function Page({
 }) {
   await requireServerRole("/meetings");
   const { id } = await params;
-  const options = await serverGet<MeetingOptions>("/meetings/options");
+  const [options, t] = await Promise.all([
+    serverGet<MeetingOptions>("/meetings/options"),
+    getTranslations("services.meetings.pages"),
+  ]);
   if (!options.isAdmin) redirect("/meetings");
   const group = options.groups.find((g) => g._id === id);
   if (!group) notFound();
   return (
     <CreatePage
-      title="Edit meeting group requirements"
+      title={t("editGroup")}
       backHref="/meetings/groups"
     >
       <MeetingGroupForm options={options} group={group} />

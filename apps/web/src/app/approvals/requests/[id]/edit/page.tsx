@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import { Shell } from "@/components/shell";
@@ -15,6 +16,7 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const u = await requireServerRole("/approvals/requests");
+  const t = await getTranslations("admin.approvalRequests");
   const { id } = await params;
   const [options, r] = await Promise.all([
     serverGet<ApprovalOptions>("/approval-workflows/options"),
@@ -30,12 +32,12 @@ export default async function Page({
         href={`/approvals/requests/${id}`}
         className="text-sm hover:underline"
       >
-        ← Back to request
+        {t("backToRequest")}
       </Link>
       <PageHeader
-        eyebrow="General approvals"
-        title="Revise and resubmit"
-        description="Resubmission starts a fresh review using the current route. Previous decisions remain in the history."
+        eyebrow={t("eyebrow")}
+        title={t("reviseTitle")}
+        description={t("reviseDescription")}
       />
       <ApprovalRequestForm options={options} request={r} />
     </Shell>

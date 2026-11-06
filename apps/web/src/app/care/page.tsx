@@ -1,5 +1,6 @@
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { Card, buttonClass } from "@/components/ui/ui";
@@ -8,6 +9,7 @@ import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import {
   careLabel,
+  isCareLabelValue,
   type CareRecord,
   type CareOverview,
   type CareOptions,
@@ -18,6 +20,14 @@ export default async function CareHub({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   await requireServerRole("/care");
+  const [t, tCare, tc, tsh, format] = await Promise.all([
+    getTranslations("people.care.hub"),
+    getTranslations("people.care"),
+    getTranslations("common"),
+    getTranslations("people.shared"),
+    getFormatter(),
+  ]);
+  const label = (value: string) => (isCareLabelValue(value) ? tCare(`labels.${value}`) : careLabel(value));
   const params = await searchParams;
   const query = new URLSearchParams();
   for (const key of ["branchId", "view", "q", "page"])
@@ -44,17 +54,17 @@ export default async function CareHub({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Care & connection"
-        title="Make sure care follows through"
-        description="One history, a named owner and a clear next step for each person."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex gap-2">
             <Link className={buttonClass("secondary")} href="/follow-up">
-              Guest task records
+              {t("guestTasks")}
             </Link>
             {options.isAdmin && (
               <Link className={buttonClass()} href="/care/settings">
-                Automation settings
+                {t("automationSettings")}
               </Link>
             )}
           </div>
@@ -62,22 +72,22 @@ export default async function CareHub({
       />
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["People", report.total, "all"],
-          ["Need an owner", report.unassigned, "unassigned"],
-          ["Overdue tasks", report.overdue, "overdue"],
-          ["Participation gaps", report.retention, "retention"],
+          [t("people"), report.total, "all"],
+          [t("needOwner"), report.unassigned, "unassigned"],
+          [t("overdueTasks"), report.overdue, "overdue"],
+          [t("participationGaps"), report.retention, "retention"],
         ].map(([label, value, view]) => (
           <Link className="app-card p-5" href={href(String(view))} key={label}>
             <p className="text-xs text-[#6b6b6b]">{label}</p>
             <p className="mt-2 text-3xl font-semibold tracking-tight">
-              {value}
+              {format.number(Number(value))}
             </p>
           </Link>
         ))}
       </section>
       <details className="app-card p-5">
         <summary className="cursor-pointer font-medium">
-          Leadership briefing · last 30 days
+          {t("briefing")}
         </summary>
         <div className="mt-4 grid gap-5 lg:grid-cols-2">
           <ul className="space-y-2 text-sm">
@@ -86,26 +96,19 @@ export default async function CareHub({
             ))}
           </ul>
           <div className="space-y-2 text-sm">
-            <p>{report.cohort.guests} newly recorded guests</p>
-            <p>
-              {report.cohort.contacted24h} with a care-hub contact recorded
-              within 24 hours
-            </p>
-            <p>
-              {report.cohort.returned} with a recorded return visit ·{" "}
-              {report.cohort.becameMembers} with linked membership
-            </p>
+            <p>{t("cohortGuests", { count: report.cohort.guests })}</p>
+            <p>{t("cohortContacted", { count: report.cohort.contacted24h })}</p>
+            <p>{t("cohortReturned", { returned: report.cohort.returned, members: report.cohort.becameMembers })}</p>
             <p className="text-xs text-[#8a8780]">
-              Observed records, not proof that follow-up caused a return. Legacy
-              notes are retained without inventing contact dates.
+              {t("observedNote")}
             </p>
           </div>
         </div>
       </details>
-      <details className="app-card p-5"><summary className="cursor-pointer font-medium">Guest connection cohorts · last 90 days</summary><div className="mt-4 overflow-x-auto"><table className="ui-table w-full"><thead><tr><th>Registration week</th><th>Guests</th><th>Contact in 24h</th><th>Recorded return within 30d</th><th>Linked membership</th></tr></thead><tbody>{report.cohorts.map(row=><tr key={row._id}><td>{row._id}</td><td>{row.guests}</td><td>{row.contacted24h}</td><td>{row.returned30}</td><td>{row.members}</td></tr>)}</tbody></table><p className="mt-3 text-xs text-[#8a8780]">Recent cohorts have not had a full 30-day observation period. Missing individual contact dates are not counted as successful contacts.</p></div></details>
+      <details className="app-card p-5"><summary className="cursor-pointer font-medium">{t("cohortsTitle")}</summary><div className="mt-4 overflow-x-auto"><table className="ui-table w-full"><thead><tr><th>{t("registrationWeek")}</th><th>{t("guests")}</th><th>{t("contact24h")}</th><th>{t("return30d")}</th><th>{t("linkedMembership")}</th></tr></thead><tbody>{report.cohorts.map(row=><tr key={row._id}><td>{row._id}</td><td>{row.guests}</td><td>{row.contacted24h}</td><td>{row.returned30}</td><td>{row.members}</td></tr>)}</tbody></table><p className="mt-3 text-xs text-[#8a8780]">{t("cohortsNote")}</p></div></details>
       <nav
         className="flex gap-1 overflow-x-auto border-b border-black/10"
-        aria-label="Care queues"
+        aria-label={t("queuesAria")}
       >
         {[
           "today",
@@ -121,7 +124,7 @@ export default async function CareHub({
             href={href(view)}
             className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm ${(query.get("view") || "all") === view ? "border-[#ed7b19] font-semibold text-[#b94f0a]" : "border-transparent text-[#6b6b6b]"}`}
           >
-            {view === "retention" ? "Participation checks" : careLabel(view)}
+            {view === "retention" ? t("participationChecks") : label(view)}
           </Link>
         ))}
       </nav>
@@ -130,45 +133,45 @@ export default async function CareHub({
           <input type="hidden" name="view" value={query.get("view") || "all"} />
           <input
             className="ui-input min-w-48 flex-1"
-            aria-label="Search care records"
+            aria-label={t("searchAria")}
             name="q"
             defaultValue={query.get("q") || ""}
-            placeholder="Search a person by name or email…"
+            placeholder={t("searchPlaceholder")}
           />
           <select
             className="ui-input max-w-xs"
-            aria-label="Branch"
+            aria-label={tc("branch")}
             name="branchId"
             defaultValue={query.get("branchId") || ""}
           >
-            <option value="">All accessible branches</option>
+            <option value="">{t("allAccessibleBranches")}</option>
             {options.branches.map((b) => (
               <option key={b._id} value={b._id}>
                 {b.name}
               </option>
             ))}
           </select>
-          <button className={buttonClass("secondary")}>Search</button>
+          <button className={buttonClass("secondary")}>{tc("search")}</button>
         </form></FilterPanel>
       </Card>
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm">{list.total} matching people</p>
+          <p className="text-sm">{t("matching", { count: list.total })}</p>
           <span className="text-xs text-[#8a8780]">
-            Sources sync in the background
+            {t("sourcesSync")}
           </span>
         </div>
         <div className="overflow-x-auto">
           <table className="ui-table w-full">
             <thead>
               <tr>
-                <th>Person</th>
-                <th>Journey</th>
-                <th>Owner</th>
-                <th>Next action</th>
-                <th>Stage</th>
+                <th>{t("person")}</th>
+                <th>{t("journey")}</th>
+                <th>{t("owner")}</th>
+                <th>{t("nextAction")}</th>
+                <th>{tsh("stage")}</th>
                 <th>
-                  <span className="sr-only">Open</span>
+                  <span className="sr-only">{tc("open")}</span>
                 </th>
               </tr>
             </thead>
@@ -182,38 +185,35 @@ export default async function CareHub({
                     <p className="text-xs text-[#8a8780]">
                       {typeof c.branchId === "object"
                         ? c.branchId.name
-                        : careLabel(c.personType)}
+                        : label(c.personType)}
                     </p>
                   </td>
-                  <td>{careLabel(c.journey)}</td>
+                  <td>{label(c.journey)}</td>
                   <td>
                     {typeof c.ownerId === "object"
                       ? `${c.ownerId.firstName} ${c.ownerId.lastName}`
-                      : "Unassigned"}
+                      : tsh("unassigned")}
                   </td>
                   <td>
                     {c.nextTask ? (
                       <>
                         <p>{c.nextTask.title}</p>
                         <p className="text-xs text-[#8a8780]">
-                          {new Date(c.nextTask.dueAt).toLocaleDateString(
-                            "en-US",
-                            { timeZone: "UTC" },
-                          )}{" "}
-                          UTC{c.nextTask.escalated ? " · Escalated" : ""}
+                          {tsh("utc", { date: format.dateTime(new Date(c.nextTask.dueAt), { timeZone: "UTC", dateStyle: "short" }) })}
+                          {c.nextTask.escalated ? ` · ${t("escalated")}` : ""}
                         </p>
                       </>
                     ) : (
-                      "No open task"
+                      t("noOpenTask")
                     )}
                   </td>
                   <td>
-                    {c.stopContact ? "Contact stopped" : careLabel(c.stage)}
+                    {c.stopContact ? t("contactStopped") : label(c.stage)}
                   </td>
                   <td>
                     <Link
                       href={"/care/" + c._id}
-                      aria-label={`Open care for ${c.firstName} ${c.lastName}`}
+                      aria-label={t("openCare", { name: `${c.firstName} ${c.lastName}` })}
                       className={buttonClass("ghost", "sm")}
                     >
                       <Icon name="arrowUpRight" />
@@ -225,15 +225,13 @@ export default async function CareHub({
           </table>
           {!list.items.length && (
             <p className="py-8 text-center text-sm text-[#8a8780]">
-              No matching care records. Existing people appear as background
-              synchronization runs; automation remains off until a branch
-              enables it.
+              {t("empty")}
             </p>
           )}
         </div>
         <div className="mt-4 flex items-center justify-between text-sm">
           <span>
-            Page {list.page} of {list.totalPages}
+            {tc("pageOf", { page: list.page, total: list.totalPages })}
           </span>
           <div className="flex gap-2">
             {list.page > 1 && (
@@ -241,7 +239,7 @@ export default async function CareHub({
                 className={buttonClass("secondary", "sm")}
                 href={href(query.get("view") || "all", list.page - 1)}
               >
-                Previous
+                {tc("previous")}
               </Link>
             )}
             {list.page < list.totalPages && (
@@ -249,7 +247,7 @@ export default async function CareHub({
                 className={buttonClass("secondary", "sm")}
                 href={href(query.get("view") || "all", list.page + 1)}
               >
-                Next
+                {tc("next")}
               </Link>
             )}
           </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 
 export function ChangePasswordForm() {
+  const t = useTranslations("admin.settings.password");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +19,7 @@ export function ChangePasswordForm() {
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
     if (newPassword !== confirmPassword) {
-      setStatus("New password and confirmation do not match.");
+      setStatus(t("mismatch"));
       setLoading(false);
       return;
     }
@@ -34,9 +36,9 @@ export function ChangePasswordForm() {
         throw new Error(await response.text());
       }
 
-      setStatus("Password changed successfully.");
+      setStatus(t("changed"));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Password change failed");
+      setStatus(error instanceof Error ? error.message : t("failed"));
     } finally {
       setLoading(false);
     }
@@ -46,31 +48,31 @@ export function ChangePasswordForm() {
     <Card className="p-6 sm:p-7">
       <form action={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Current password" required className="md:col-span-2">
+          <Field label={t("current")} required className="md:col-span-2">
             <input
               name="currentPassword"
               type="password"
-              placeholder="Current password"
+              placeholder={t("current")}
               autoComplete="current-password"
               className="ui-input"
               required
             />
           </Field>
-          <Field label="New password" required>
+          <Field label={t("new")} required>
             <input
               name="newPassword"
               type="password"
-              placeholder="New password"
+              placeholder={t("new")}
               autoComplete="new-password"
               className="ui-input"
               required
             />
           </Field>
-          <Field label="Confirm new password" required>
+          <Field label={t("confirm")} required>
             <input
               name="confirmPassword"
               type="password"
-              placeholder="Confirm new password"
+              placeholder={t("confirm")}
               autoComplete="new-password"
               className="ui-input"
               required
@@ -84,7 +86,7 @@ export function ChangePasswordForm() {
             </p>
           ) : null}
           <Button type="submit" disabled={loading}>
-            {loading ? "Updating..." : "Update password"}
+            {loading ? t("updating") : t("update")}
           </Button>
         </div>
       </form>

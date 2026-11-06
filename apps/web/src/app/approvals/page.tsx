@@ -1,5 +1,6 @@
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { AttendanceSubmissionQueue } from "@/components/attendance-submission-queue";
 import { AuditLogFeed } from "@/components/audit-log-feed";
 import { ExpenseEntriesTable } from "@/components/expense-entries-table";
@@ -57,6 +58,9 @@ export default async function ApprovalsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireServerRole("/approvals");
+  const t = await getTranslations("admin.approvals");
+  const tc = await getTranslations("common");
+  const ts = await getTranslations("statuses");
   const params = await searchParams;
   const isSuperAdmin = user.role === "super_admin";
   const canApproveExpenses = canApproveExpenseEntries(user.role);
@@ -168,25 +172,25 @@ export default async function ApprovalsPage({
   const tabs = [
     {
       key: "attendance",
-      label: "Attendance",
+      label: t("tabs.attendance"),
       count: attendanceSubmissions.summary.pending,
       visible: true,
     },
     {
       key: "finance",
-      label: "Finance",
+      label: t("tabs.finance"),
       count: pendingExpenses.summary.pendingCount,
       visible: canApproveExpenses,
     },
     {
       key: "workspace",
-      label: "Workspace",
+      label: t("tabs.workspace"),
       count: workspaceRequests?.summary.total ?? 0,
       visible: Boolean(isSuperAdmin && workspaceRequests),
     },
     {
       key: "governance",
-      label: "Governance",
+      label: t("tabs.governance"),
       count: alertsSummary.items.length + auditLogs.pagination.total,
       visible: true,
     },
@@ -200,35 +204,35 @@ export default async function ApprovalsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Approvals"
-        title="Approvals and governance"
-        description="Review attendance, finance, onboarding, and operational oversight in one place."
-        action={<Link href="/approvals/requests" className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-3 text-sm font-medium text-white">General requests →</Link>}
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+        action={<Link href="/approvals/requests" className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-3 text-sm font-medium text-white">{t("generalRequests")}</Link>}
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Pending approvals"
+          label={t("metrics.pendingApprovals")}
           value={alertsSummary.quickStats.pendingApprovals}
-          delta="Attendance, finance and onboarding combined"
+          delta={t("metrics.pendingApprovalsDelta")}
           tone="warm"
         />
         <MetricCard
-          label="Expense approvals"
+          label={t("metrics.expenseApprovals")}
           value={alertsSummary.counts.pendingExpenseApprovals}
-          delta="Finance requests awaiting approval"
+          delta={t("metrics.expenseApprovalsDelta")}
           tone="warm"
         />
         <MetricCard
-          label="Overdue follow-up"
+          label={t("metrics.overdueFollowUp")}
           value={alertsSummary.counts.overdueFollowUp}
-          delta="Past their next-action date"
+          delta={t("metrics.overdueFollowUpDelta")}
           tone="cool"
         />
         <MetricCard
-          label="Leadership gaps"
+          label={t("metrics.leadershipGaps")}
           value={alertsSummary.counts.branchesMissingLeadership}
-          delta="Branches missing pastoral coverage"
+          delta={t("metrics.leadershipGapsDelta")}
           tone="warm"
         />
       </section>
@@ -246,12 +250,12 @@ export default async function ApprovalsPage({
       {activeTab === "attendance" ? (
         <Card className="app-rise p-6 sm:p-7">
           <CardHeader
-            label="Attendance review"
-            title="Pending attendance submissions"
-            description="Service reports waiting for a leader to approve."
+            label={t("attendance.label")}
+            title={t("attendance.title")}
+            description={t("attendance.description")}
             action={
               <Badge tone={attendanceSubmissions.summary.pending ? "warning" : "neutral"}>
-                {attendanceSubmissions.summary.pending} pending
+                {t("pendingCount", { count: attendanceSubmissions.summary.pending })}
               </Badge>
             }
           />
@@ -264,12 +268,12 @@ export default async function ApprovalsPage({
       {activeTab === "finance" && canApproveExpenses ? (
         <Card className="app-rise p-6 sm:p-7">
           <CardHeader
-            label="Finance approvals"
-            title="Submitted expense requests"
-            description="Expenses waiting for approval before they post to the ledger."
+            label={t("finance.label")}
+            title={t("finance.title")}
+            description={t("finance.description")}
             action={
               <Badge tone={pendingExpenses.summary.pendingCount ? "warning" : "neutral"}>
-                {pendingExpenses.summary.pendingCount} pending
+                {t("pendingCount", { count: pendingExpenses.summary.pendingCount })}
               </Badge>
             }
           />
@@ -295,9 +299,9 @@ export default async function ApprovalsPage({
       {activeTab === "workspace" && isSuperAdmin && workspaceRequests ? (
         <Card className="app-rise p-6 sm:p-7">
           <CardHeader
-            label="Workspace onboarding"
-            title="Workspace requests"
-            description="Review new churches asking for a workspace and record your decision before provisioning."
+            label={t("workspace.label")}
+            title={t("workspace.title")}
+            description={t("workspace.description")}
           />
 
           <FilterPanel><form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
@@ -308,20 +312,20 @@ export default async function ApprovalsPage({
               type="text"
               name="workspaceSearch"
               defaultValue={workspaceSearch}
-              placeholder="Search organization, contact or city"
-              aria-label="Search workspace requests"
+              placeholder={t("workspace.searchPlaceholder")}
+              aria-label={t("workspace.searchAria")}
               className="ui-input"
             />
-            <select name="workspaceStatus" defaultValue={workspaceStatus || ""} aria-label="Status" className="ui-input">
-              <option value="">All statuses</option>
-              <option value="new">New</option>
-              <option value="in_review">In review</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="provisioned">Provisioned</option>
+            <select name="workspaceStatus" defaultValue={workspaceStatus || ""} aria-label={tc("status")} className="ui-input">
+              <option value="">{t("workspace.allStatuses")}</option>
+              <option value="new">{ts("new")}</option>
+              <option value="in_review">{ts("in_review")}</option>
+              <option value="approved">{ts("approved")}</option>
+              <option value="rejected">{ts("rejected")}</option>
+              <option value="provisioned">{t("workspace.provisioned")}</option>
             </select>
             <Button type="submit" variant="secondary" icon="search">
-              Filter
+              {tc("filter")}
             </Button>
           </form></FilterPanel>
 
@@ -341,7 +345,7 @@ export default async function ApprovalsPage({
       {activeTab === "governance" ? (
         <section className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <Card className="app-rise p-6 sm:p-7">
-            <CardHeader label="Live alerts" title="Operational watchlist" description="Active issues that need leadership attention." />
+            <CardHeader label={t("alerts.label")} title={t("alerts.title")} description={t("alerts.description")} />
             <div className="mt-6">
               {alertsSummary.items.length > 0 ? (
                 <ul className="divide-y divide-black/[0.05]">
@@ -360,15 +364,15 @@ export default async function ApprovalsPage({
                   ))}
                 </ul>
               ) : (
-                <EmptyState icon="approvals" title="All clear">
-                  No live operational alerts in the current scope.
+                <EmptyState icon="approvals" title={t("alerts.emptyTitle")}>
+                  {t("alerts.emptyBody")}
                 </EmptyState>
               )}
             </div>
           </Card>
 
           <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
-            <CardHeader label="Audit trail" title="Recent governance activity" description="Search recent changes by person, summary or record type." />
+            <CardHeader label={t("audit.label")} title={t("audit.title")} description={t("audit.description")} />
 
             <FilterPanel><form method="get" className="mt-6 grid gap-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_auto]">
               <input type="hidden" name="tab" value="governance" />
@@ -378,23 +382,23 @@ export default async function ApprovalsPage({
                 type="text"
                 name="auditSearch"
                 defaultValue={auditSearch}
-                placeholder="Search person or summary"
-                aria-label="Search audit trail"
+                placeholder={t("audit.searchPlaceholder")}
+                aria-label={t("audit.searchAria")}
                 className="ui-input"
               />
-              <select name="auditEntityType" defaultValue={auditEntityType || ""} aria-label="Record type" className="ui-input">
-                <option value="">All records</option>
-                <option value="attendance">Attendance</option>
-                <option value="attendance_submission">Attendance submission</option>
-                <option value="expense_entry">Expense entry</option>
-                <option value="workspace_request">Workspace request</option>
-                <option value="follow_up">Follow-up</option>
-                <option value="user">User</option>
-                <option value="settings">Settings</option>
-                <option value="service_schedule">Service schedule</option>
+              <select name="auditEntityType" defaultValue={auditEntityType || ""} aria-label={t("audit.recordType")} className="ui-input">
+                <option value="">{t("audit.allRecords")}</option>
+                <option value="attendance">{t("audit.types.attendance")}</option>
+                <option value="attendance_submission">{t("audit.types.attendance_submission")}</option>
+                <option value="expense_entry">{t("audit.types.expense_entry")}</option>
+                <option value="workspace_request">{t("audit.types.workspace_request")}</option>
+                <option value="follow_up">{t("audit.types.follow_up")}</option>
+                <option value="user">{t("audit.types.user")}</option>
+                <option value="settings">{t("audit.types.settings")}</option>
+                <option value="service_schedule">{t("audit.types.service_schedule")}</option>
               </select>
               <Button type="submit" variant="secondary" icon="search">
-                Filter
+                {tc("filter")}
               </Button>
             </form></FilterPanel>
 

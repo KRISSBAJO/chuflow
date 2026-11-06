@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, CardHeader, EmptyState, Field, formatStatus, statusTone } from "@/components/ui/ui";
+import { useTranslations } from "next-intl";
+import { Badge, Button, CardHeader, EmptyState, Field, statusTone } from "@/components/ui/ui";
+import { useAppFormat, useStatusLabel } from "@/i18n/labels";
 import { API_URL } from "@/lib/api";
 import { communicationTemplates } from "@/lib/communication-templates";
 import type { CommunicationItem, CommunicationTemplateItem } from "@/lib/types";
@@ -12,7 +14,7 @@ export function CommunicationPanel({
   recipientId,
   recipient,
   communications,
-  title = "Send and review outreach history",
+  title,
 }: {
   recipientType: "guest" | "member";
   recipientId: string;
@@ -20,12 +22,27 @@ export function CommunicationPanel({
   communications: CommunicationItem[];
   title?: string;
 }) {
+  const t = useTranslations("admin.communicationPanel");
+  const tcm = useTranslations("admin.communications");
+  const { dateTime } = useAppFormat();
+  const statusLabel = useStatusLabel();
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
   const [loading, startTransition] = useTransition();
   const [templates, setTemplates] = useState<
     Array<{ id: string; label: string; subject: string; message: string }>
-  >(communicationTemplates);
+  >(() =>
+    communicationTemplates.map((template) => {
+      type Key = Parameters<typeof t>[0];
+      const key = (field: "label" | "subject" | "message") => `defaults.${template.id}.${field}` as Key;
+      return {
+        id: template.id,
+        label: t.has(key("label")) ? t(key("label")) : template.label,
+        subject: t.has(key("subject")) ? t(key("subject")) : template.subject,
+        message: t.has(key("message")) ? t(key("message")) : template.message,
+      };
+    }),
+  );
   const [templateId, setTemplateId] = useState(
     communicationTemplates[0]?.id ?? "welcome_first_timer",
   );
@@ -104,31 +121,31 @@ export function CommunicationPanel({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to send communication");
+        throw new Error(result.message || t("sendError"));
       }
 
       setStatus(
         result.status === "failed"
-          ? "Communication attempt was logged as failed."
+          ? t("loggedFailed")
           : result.status === "preview"
-            ? "Communication saved in preview mode."
-            : "Communication sent and logged.",
+            ? t("savedPreview")
+            : t("sentLogged"),
       );
       startTransition(() => {
         router.refresh();
       });
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to send communication");
+      setStatus(error instanceof Error ? error.message : t("sendError"));
     }
   }
 
   return (
     <div>
-      <CardHeader label="Communications" title={title} />
+      <CardHeader label={t("label")} title={title ?? t("defaultTitle")} />
 
       <form action={handleSubmit} className="mt-5 rounded-2xl bg-[#f6f5f1] p-5">
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Template">
+          <Field label={t("template")}>
             <select
               name="templateName"
               value={templateId}
@@ -142,20 +159,20 @@ export function CommunicationPanel({
               ))}
             </select>
           </Field>
-          <Field label="Channel">
+          <Field label={t("channel")}>
             <select name="channel" defaultValue="email" className="ui-input">
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-              <option value="phone_call">Phone call</option>
+              <option value="email">{tcm("channels.email")}</option>
+              <option value="sms">{tcm("channels.sms")}</option>
+              <option value="phone_call">{tcm("channels.phone_call")}</option>
             </select>
           </Field>
-          <Field label="Subject" className="md:col-span-2">
+          <Field label={t("subject")} className="md:col-span-2">
             <input name="subject" defaultValue={activeTemplate.subject} key={`${templateId}-subject`} className="ui-input" />
           </Field>
-          <Field label="Recipient" className="md:col-span-2">
+          <Field label={t("recipient")} className="md:col-span-2">
             <input name="recipient" defaultValue={recipient} className="ui-input" />
           </Field>
-          <Field label="Message" className="md:col-span-2">
+          <Field label={t("message")} className="md:col-span-2">
             <textarea
               name="message"
               defaultValue={activeTemplate.message}
@@ -167,16 +184,16 @@ export function CommunicationPanel({
         <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
           {status ? <p className="text-[13px] text-[#55534e] sm:mr-auto">{status}</p> : null}
           <Button type="submit" disabled={loading}>
-            {loading ? "Sending..." : "Send communication"}
+            {loading ? t("sending") : t("send")}
           </Button>
         </div>
       </form>
 
       <div className="mt-5">
-        <p className="mb-3 text-[13px] font-medium text-[#6b6b6b]">History</p>
+        <p className="mb-3 text-[13px] font-medium text-[#6b6b6b]">{t("history")}</p>
         {communications.length === 0 ? (
-          <EmptyState icon="message" title="No messages yet">
-            No communication history yet.
+          <EmptyState icon="message" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         ) : (
           <ul className="space-y-2.5">
@@ -185,24 +202,24 @@ export function CommunicationPanel({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[14px] font-medium text-[#111111]">{item.subject || item.templateName}</p>
-                    <p className="mt-0.5 text-[12px] text-[#8a8780]">{formatStatus(item.templateName)}</p>
+                    <p className="mt-0.5 text-[12px] text-[#8a8780]">{statusLabel(item.templateName)}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge>{formatStatus(item.channel)}</Badge>
+                    <Badge>{statusLabel(item.channel)}</Badge>
                     <Badge tone={communicationTone(item.status)} dot>
-                      {formatStatus(item.status)}
+                      {statusLabel(item.status)}
                     </Badge>
                   </div>
                 </div>
                 <p className="mt-2 text-[14px] leading-[1.6] text-[#55534e]">{item.message}</p>
                 <p className="mt-2 text-[12px] text-[#8a8780]">
                   {item.deliveredAt
-                    ? `Delivered ${new Date(item.deliveredAt).toLocaleString()}`
+                    ? t("delivered", { date: dateTime(item.deliveredAt) })
                     : item.createdAt
-                      ? new Date(item.createdAt).toLocaleString()
-                      : "No timestamp"}
+                      ? dateTime(item.createdAt)
+                      : t("noTimestamp")}
                   {item.deliveryMode ? ` · ${item.deliveryMode.replace(/_/g, " ")}` : ""}
-                  {item.previewUrl ? " · SMTP preview mode" : ""}
+                  {item.previewUrl ? ` · ${t("smtpPreview")}` : ""}
                   {item.errorMessage ? ` · ${item.errorMessage}` : ""}
                 </p>
               </li>

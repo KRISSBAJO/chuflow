@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiPatch, apiPost } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import { approvalLevels, type ApprovalPolicy } from "@/lib/approval-workflows";
@@ -11,6 +12,8 @@ export function ApprovalPolicyForm({
   policy?: ApprovalPolicy;
   regions: string[];
 }) {
+  const t = useTranslations("admin.policyForm");
+  const tr = useTranslations("admin.approvalRequests");
   const router = useRouter();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -43,14 +46,14 @@ export function ApprovalPolicyForm({
       router.push("/approvals/routes?saved=1");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save route.");
+      setError(e instanceof Error ? e.message : t("saveError"));
       setBusy(false);
     }
   }
   return (
     <Card className="max-w-3xl p-6">
       <form onSubmit={submit} className="space-y-5">
-        <Field label="National area" required>
+        <Field label={t("nationalArea")} required>
           <input
             name="oversightRegion"
             className="ui-input"
@@ -65,29 +68,29 @@ export function ApprovalPolicyForm({
             ))}
           </datalist>
         </Field>
-        <Field label="Route name" required>
+        <Field label={t("routeName")} required>
           <input
             name="name"
             className="ui-input"
             defaultValue={policy?.name}
-            placeholder="For example, Local welfare request"
+            placeholder={t("routeNamePlaceholder")}
             minLength={2}
             maxLength={100}
             required
           />
         </Field>
-        <Field label="Request category" required>
+        <Field label={t("category")} required>
           <input
             name="category"
             className="ui-input"
             defaultValue={policy?.category}
-            placeholder="Staff matters, welfare, events"
+            placeholder={t("categoryPlaceholder")}
             minLength={2}
             maxLength={80}
             required
           />
         </Field>
-        <Field label="Final approval level" required>
+        <Field label={t("finalLevel")} required>
           <select
             name="finalLevel"
             className="ui-input"
@@ -95,31 +98,24 @@ export function ApprovalPolicyForm({
             required
           >
             <option value="" disabled>
-              Choose where approval ends
+              {t("chooseFinal")}
             </option>
             {approvalLevels.map((l) => (
               <option key={l} value={l}>
-                {l === "zone"
-                  ? "Zonal pastor"
-                  : l === "church"
-                    ? "Local church"
-                    : `${l[0].toUpperCase() + l.slice(1)} pastor`}
+                {t(`levels.${l}`)}
               </option>
             ))}
           </select>
         </Field>
         <p className="text-sm text-[#6b6b6b]">
-          Church → Area → Zone → District → National, stopping at the chosen
-          final level. Unassigned intermediate levels are skipped; a missing
-          final level or reviewer blocks submission. Requesters cannot approve
-          their own requests.
+          {t("flowHelp")}
         </p>
         <details className="rounded-xl border border-black/10 p-4">
           <summary className="cursor-pointer font-medium">
-            Amount-based escalation (optional)
+            {t("escalationSummary")}
           </summary>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label="Above this amount">
+            <Field label={t("aboveAmount")}>
               <input
                 name="thresholdAmount"
                 type="number"
@@ -130,16 +126,16 @@ export function ApprovalPolicyForm({
                 defaultValue={policy?.thresholdAmount}
               />
             </Field>
-            <Field label="Higher final level">
+            <Field label={t("higherFinalLevel")}>
               <select
                 name="aboveThresholdLevel"
                 className="ui-input"
                 defaultValue={policy?.aboveThresholdLevel || ""}
               >
-                <option value="">Choose a higher level</option>
+                <option value="">{t("chooseHigher")}</option>
                 {approvalLevels.slice(1).map((l) => (
                   <option key={l} value={l}>
-                    {l}
+                    {tr(`level.${l}`)}
                   </option>
                 ))}
               </select>
@@ -147,7 +143,7 @@ export function ApprovalPolicyForm({
           </div>
         </details>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Currency" required>
+          <Field label={t("currency")} required>
             <input
               name="currency"
               className="ui-input uppercase"
@@ -157,7 +153,7 @@ export function ApprovalPolicyForm({
               required
             />
           </Field>
-          <Field label="Days allowed per review" required>
+          <Field label={t("reviewDays")} required>
             <input
               name="reviewDays"
               type="number"
@@ -175,11 +171,10 @@ export function ApprovalPolicyForm({
             name="isActive"
             defaultChecked={policy?.isActive ?? true}
           />
-          Active route
+          {t("activeRoute")}
         </label>
         <p className="text-sm text-[#6b6b6b]">
-          Changes apply to new and resubmitted requests. Existing requests
-          retain their recorded route.
+          {t("changesNote")}
         </p>
         {error && (
           <p role="alert" className="text-sm text-red-700">
@@ -187,7 +182,7 @@ export function ApprovalPolicyForm({
           </p>
         )}
         <Button type="submit" disabled={busy}>
-          {busy ? "Saving…" : "Save route"}
+          {busy ? t("saving") : t("save")}
         </Button>
       </form>
     </Card>

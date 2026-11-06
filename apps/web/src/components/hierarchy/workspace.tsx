@@ -3,6 +3,7 @@ import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import type {
@@ -11,8 +12,17 @@ import type {
   HierarchyChurch,
 } from "@/lib/hierarchy";
 type Pastor = { _id: string; firstName: string; lastName: string };
+type UnitKind = HierarchyUnit["kind"];
+
+function isUnitKind(value: string): value is UnitKind {
+  return value === "district" || value === "zone" || value === "area";
+}
+
 export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; unitId?: string }) {
   const router = useRouter();
+  const t = useTranslations("org.hierarchy");
+  const tCommon = useTranslations("common");
+  const kindLabel = (kind: string) => (isUnitKind(kind) ? t(`kinds.${kind}`) : kind);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [kind, setKind] = useState("zone"),
@@ -25,12 +35,10 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
     setMessage("");
     try {
       await action();
-      setMessage(
-        "Saved. Church records remain connected to their existing local church.",
-      );
+      setMessage(t("saved"));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save.");
+      setError(e instanceof Error ? e.message : t("saveError"));
     } finally {
       setBusy(false);
     }
@@ -50,6 +58,16 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
   const matchingUnits = listedUnits.filter((u) => u.name.toLowerCase().includes(levelSearch.toLowerCase()));
   const levelPages = Math.max(1, Math.ceil(matchingUnits.length / 20));
   const currentLevelPage = Math.min(levelPage, levelPages);
+  const unitStats = (unit: HierarchyUnit) =>
+    t("unitStats", { churches: unit.churches, members: unit.members, guests: unit.guests }) +
+    (unit.partial ? t("partialSuffix") : "");
+  const sectionHeading = selected
+    ? selected.kind === "district"
+      ? t("headingZones")
+      : selected.kind === "zone"
+        ? t("headingAreas")
+        : t("headingAreaChurches")
+    : t("headingDistricts");
   return (
     <div className="space-y-6">
       {error && (
@@ -71,37 +89,39 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
       {selected && (
         <>
           <Link className="inline-flex items-center gap-2 text-sm hover:underline" href={selected.parentId ? unitHref(selected.parentId) : `/hierarchy?districtId=${data.selectedDistrictId}`}>
-            ← Back to {data.units.find((u) => u._id === selected.parentId)?.name || "hierarchy"}
+            {t("backTo", { name: data.units.find((u) => u._id === selected.parentId)?.name || t("hierarchyFallback") })}
           </Link>
           <Card className="p-6">
-            <p className="text-xs uppercase tracking-wide text-[#b95c18]">{selected.kind}{!selected.isActive ? " · Inactive" : ""}</p>
+            <p className="text-xs uppercase tracking-wide text-[#b95c18]">{kindLabel(selected.kind)}{!selected.isActive ? t("inactiveSuffix") : ""}</p>
             <h2 className="mt-2 text-2xl font-semibold">{selected.name}</h2>
-            <p className="mt-2 text-sm text-[#6b6b6b]">{selected.churches} churches · {selected.members} member records · {selected.guests} guest records{selected.partial ? " · Your accessible churches only" : ""}</p>
-            <p className="mt-4 text-sm">Headquarters: {selected.headquartersBranchId?.name || "Not appointed"}</p>
-            <p className="mt-1 text-sm">Resident & {selected.kind === "zone" ? "zonal" : selected.kind} pastor: {selected.pastorUserId ? `${selected.pastorUserId.firstName} ${selected.pastorUserId.lastName}` : "Not appointed"}</p>
-            {data.canManage && <details className="mt-5 border-t border-black/5 pt-4"><summary className="cursor-pointer text-sm font-medium">Manage appointment</summary><Appointment key={`${selected._id}-${selected.revision}`} unit={selected} churches={data.branches} busy={busy} save={save} /></details>}
+            <p className="mt-2 text-sm text-[#6b6b6b]">{unitStats(selected)}</p>
+            <p className="mt-4 text-sm">{t("headquarters", { name: selected.headquartersBranchId?.name || t("notAppointed") })}</p>
+            <p className="mt-1 text-sm">
+              {t("residentPastorLine", {
+                level: t(`levelAdjective.${selected.kind}`),
+                name: selected.pastorUserId ? `${selected.pastorUserId.firstName} ${selected.pastorUserId.lastName}` : t("notAppointed"),
+              })}
+            </p>
+            {data.canManage && <details className="mt-5 border-t border-black/5 pt-4"><summary className="cursor-pointer text-sm font-medium">{t("manageAppointment")}</summary><Appointment key={`${selected._id}-${selected.revision}`} unit={selected} churches={data.branches} busy={busy} save={save} /></details>}
           </Card>
         </>
       )}
       <Card className="p-5">
-        <p className="text-sm leading-6 text-[#6b6b6b]">
-          District → Zones → Areas → Local churches. Headquarters are existing
-          churches, so members, giving and attendance are counted once. Churches
-          awaiting placement remain in their current district.
-        </p>
+        <p className="text-sm leading-6 text-[#6b6b6b]">{t("intro")}</p>
         {data.context.assignments.length > 0 && (
           <p className="mt-3 text-sm font-medium">
-            Your oversight:{" "}
-            {data.context.assignments
-              .map((a) => `${a.name} (${a.kind})`)
-              .join(" · ")}
+            {t("yourOversight", {
+              list: data.context.assignments
+                .map((a) => `${a.name} (${kindLabel(a.kind)})`)
+                .join(" · "),
+            })}
           </p>
         )}
       </Card>
       {data.canManage && data.selectedDistrictId && (
         <details className="app-card p-5">
           <summary className="cursor-pointer font-medium">
-            Add an oversight level
+            {t("addLevel")}
           </summary>
           <form
             className="mt-4 grid gap-4 sm:grid-cols-2"
@@ -120,19 +140,19 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
               );
             }}
           >
-            <Field label="Level">
+            <Field label={t("level")}>
               <select
                 className="ui-input"
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
               >
-                <option value="district">District headquarters level</option>
-                <option value="zone">Zone</option>
-                <option value="area">Area</option>
+                <option value="district">{t("levelDistrict")}</option>
+                <option value="zone">{t("levelZone")}</option>
+                <option value="area">{t("levelArea")}</option>
               </select>
             </Field>
             {kind !== "district" && (
-              <Field label="Parent">
+              <Field label={t("parent")}>
                 <select
                   className="ui-input"
                   name="parentId"
@@ -140,7 +160,7 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
                   key={kind}
                 >
                   <option value="">
-                    Choose {kind === "zone" ? "district" : "zone"}
+                    {kind === "zone" ? t("chooseDistrict") : t("chooseZone")}
                   </option>
                   {data.units
                     .filter(
@@ -157,7 +177,7 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
               </Field>
             )}
             {kind !== "district" && (
-              <Field label="Name">
+              <Field label={tCommon("name")}>
                 <input
                   className="ui-input"
                   name="name"
@@ -168,43 +188,40 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
               </Field>
             )}
             <div className="self-end">
-              <Button type="submit" disabled={busy}>Add level</Button>
+              <Button type="submit" disabled={busy}>{t("addLevelButton")}</Button>
             </div>
           </form>
         </details>
       )}
-      <section className="space-y-4" aria-label="Oversight levels">
+      <section className="space-y-4" aria-label={t("sectionLevels")}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">{selected ? selected.kind === "district" ? "Zones" : selected.kind === "zone" ? "Areas" : "Area churches" : "Districts"}</h2>
-          {listedUnits.length > 0 && <input className="ui-input max-w-sm" aria-label="Search oversight levels" placeholder="Search levels…" value={levelSearch} onChange={(e) => { setLevelSearch(e.target.value); setLevelPage(1); }} />}
+          <h2 className="text-lg font-semibold">{sectionHeading}</h2>
+          {listedUnits.length > 0 && <input className="ui-input max-w-sm" aria-label={t("searchLevels")} placeholder={t("searchLevelsPlaceholder")} value={levelSearch} onChange={(e) => { setLevelSearch(e.target.value); setLevelPage(1); }} />}
         </div>
         {matchingUnits.slice((currentLevelPage - 1) * 20, currentLevelPage * 20).map((unit) => (
           <Link key={unit._id} href={unitHref(unit._id)} className="flex items-center justify-between gap-4 rounded-2xl border border-black/[0.06] bg-white p-5 transition hover:border-orange-300">
             <div>
-              <p className="text-xs uppercase tracking-wide text-[#b95c18]">{unit.kind}{!unit.isActive ? " · Inactive" : ""}</p>
+              <p className="text-xs uppercase tracking-wide text-[#b95c18]">{kindLabel(unit.kind)}{!unit.isActive ? t("inactiveSuffix") : ""}</p>
               <h3 className="mt-1 text-lg font-semibold">{unit.name}</h3>
-              <p className="mt-2 text-sm text-[#6b6b6b]">{unit.churches} churches · {unit.members} member records · {unit.guests} guest records{unit.partial ? " · Your accessible churches only" : ""}</p>
+              <p className="mt-2 text-sm text-[#6b6b6b]">{unitStats(unit)}</p>
             </div>
             <span aria-hidden="true" className="text-xl text-[#b95c18]">→</span>
           </Link>
         ))}
-        {!matchingUnits.length && selected?.kind !== "area" && <p className="text-sm text-[#6b6b6b]">{levelSearch ? "No matching levels." : "No oversight levels configured here. Churches awaiting placement remain in their district."}</p>}
-        {levelPages > 1 && <div className="flex items-center justify-between text-sm"><span>Page {currentLevelPage} of {levelPages}</span><div className="flex gap-2"><Button variant="secondary" disabled={currentLevelPage === 1} onClick={() => setLevelPage(currentLevelPage - 1)}>Previous</Button><Button variant="secondary" disabled={currentLevelPage === levelPages} onClick={() => setLevelPage(currentLevelPage + 1)}>Next</Button></div></div>}
+        {!matchingUnits.length && selected?.kind !== "area" && <p className="text-sm text-[#6b6b6b]">{levelSearch ? t("noMatchingLevels") : t("noLevels")}</p>}
+        {levelPages > 1 && <div className="flex items-center justify-between text-sm"><span>{tCommon("pageOf", { page: currentLevelPage, total: levelPages })}</span><div className="flex gap-2"><Button variant="secondary" disabled={currentLevelPage === 1} onClick={() => setLevelPage(currentLevelPage - 1)}>{tCommon("previous")}</Button><Button variant="secondary" disabled={currentLevelPage === levelPages} onClick={() => setLevelPage(currentLevelPage + 1)}>{tCommon("next")}</Button></div></div>}
       </section>
       {selected && (
       <Card className="p-5">
         <div className="flex flex-wrap justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Local churches · {selected.name}</h2>
-            <p className="mt-1 text-sm text-[#6b6b6b]">
-              Assign existing churches without recreating or moving their
-              records.
-            </p>
+            <h2 className="text-lg font-semibold">{t("localChurches", { name: selected.name })}</h2>
+            <p className="mt-1 text-sm text-[#6b6b6b]">{t("assignHint")}</p>
           </div>
           <FilterPanel className="w-full p-3 sm:max-w-sm"><input
             className="ui-input max-w-sm"
-            aria-label="Search churches"
-            placeholder="Search local churches…"
+            aria-label={t("searchChurches")}
+            placeholder={t("searchChurchesPlaceholder")}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -229,10 +246,10 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
                   </Link>
                   <p className="mt-1 text-xs text-[#8a8780]">
                     {data.units.find((u) => u._id === c.zoneId)?.name ||
-                      "Zone not assigned"}{" "}
+                      t("zoneNotAssigned")}{" "}
                     ·{" "}
                     {data.units.find((u) => u._id === c.areaId)?.name ||
-                      "Area not assigned"}
+                      t("areaNotAssigned")}
                   </p>
                 </div>
                 {data.canManage && (
@@ -249,7 +266,7 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
         </div>
         <div className="mt-4 flex items-center justify-between text-sm">
           <span>
-            {visibleChurches.length} churches · Page {currentPage} of {pages}
+            {t("churchesPage", { count: visibleChurches.length, page: currentPage, total: pages })}
           </span>
           <div className="flex gap-2">
             <Button
@@ -257,14 +274,14 @@ export function HierarchyWorkspace({ data, unitId }: { data: HierarchyOverview; 
               disabled={currentPage === 1}
               onClick={() => setPage(currentPage - 1)}
             >
-              Previous
+              {tCommon("previous")}
             </Button>
             <Button
               variant="secondary"
               disabled={currentPage === pages}
               onClick={() => setPage(currentPage + 1)}
             >
-              Next
+              {tCommon("next")}
             </Button>
           </div>
         </div>
@@ -284,6 +301,8 @@ function Placement({
   busy: boolean;
   save: (fn: () => Promise<unknown>) => Promise<void>;
 }) {
+  const t = useTranslations("org.hierarchy");
+  const tCommon = useTranslations("common");
   const [unit, setUnit] = useState(church.areaId || church.zoneId || "");
   return (
     <form
@@ -299,17 +318,17 @@ function Placement({
       }}
     >
       <select
-        aria-label={`Placement for ${church.name}`}
+        aria-label={t("placementFor", { name: church.name })}
         className="ui-input max-w-xs"
         value={unit}
         onChange={(e) => setUnit(e.target.value)}
       >
-        <option value="">Unassigned in district</option>
+        <option value="">{t("unassigned")}</option>
         {units
           .filter((u) => u.kind !== "district" && u.isActive)
           .map((u) => (
             <option key={u._id} value={u._id}>
-              {u.kind}: {u.name}
+              {t(`kinds.${u.kind}`)}: {u.name}
               {u.kind === "area"
                 ? ` · ${units.find((parent) => parent._id === u.parentId)?.name || ""}`
                 : ""}
@@ -317,7 +336,7 @@ function Placement({
           ))}
       </select>
       <Button type="submit" variant="secondary" disabled={busy}>
-        Save
+        {tCommon("save")}
       </Button>
     </form>
   );
@@ -333,6 +352,7 @@ function Appointment({
   busy: boolean;
   save: (fn: () => Promise<unknown>) => Promise<void>;
 }) {
+  const t = useTranslations("org.hierarchy");
   const [churchId, setChurchId] = useState(
       unit.headquartersBranchId?._id || "",
     ),
@@ -361,7 +381,7 @@ function Appointment({
     } catch (e) {
       if (current !== requestId.current) return;
       setSearchError(
-        e instanceof Error ? e.message : "Could not load the resident pastor.",
+        e instanceof Error ? e.message : t("pastorLoadError"),
       );
     }
   }
@@ -380,14 +400,14 @@ function Appointment({
           );
         }}
       >
-        <Field label="Headquarters church">
+        <Field label={t("headquartersChurch")}>
           <select
             className="ui-input"
             required
             value={churchId}
             onChange={(e) => void selectChurch(e.target.value)}
           >
-            <option value="">Choose a placed church</option>
+            <option value="">{t("choosePlacedChurch")}</option>
             {candidates.map((c) => (
               <option value={c._id} key={c._id}>
                 {c.name}
@@ -395,14 +415,14 @@ function Appointment({
             ))}
           </select>
         </Field>
-        <Field label="Resident pastor">
+        <Field label={t("residentPastor")}>
           <select
             className="ui-input"
             required
             value={pastorId}
             onChange={(e) => setPastorId(e.target.value)}
           >
-            <option value="">Select church to load pastor</option>
+            <option value="">{t("selectChurchToLoad")}</option>
             {!pastors.length &&
               unit.pastorUserId &&
               pastorId === unit.pastorUserId._id && (
@@ -418,7 +438,7 @@ function Appointment({
           </select>
         </Field>
         <div className="self-end">
-          <Button type="submit" disabled={busy || !pastorId}>Save appointment</Button>
+          <Button type="submit" disabled={busy || !pastorId}>{t("saveAppointment")}</Button>
         </div>
       </form>
       {searchError && (
@@ -426,10 +446,7 @@ function Appointment({
           {searchError}
         </p>
       )}
-      <p className="text-xs text-[#8a8780]">
-        If no resident pastor appears, appoint the resident pastor to that local
-        church in Users first.
-      </p>
+      <p className="text-xs text-[#8a8780]">{t("pastorHint")}</p>
       <div className="flex flex-wrap gap-2">
         {unit.pastorUserId && (
           <Button
@@ -444,7 +461,7 @@ function Appointment({
               )
             }
           >
-            Clear oversight appointment
+            {t("clearAppointment")}
           </Button>
         )}
         <Button
@@ -459,7 +476,7 @@ function Appointment({
             )
           }
         >
-          {unit.isActive ? "Deactivate level" : "Reactivate level"}
+          {unit.isActive ? t("deactivate") : t("reactivate")}
         </Button>
       </div>
     </div>

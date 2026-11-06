@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { DistrictEditorCard } from "@/components/district-editor-card";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -39,6 +40,8 @@ export default async function DistrictStructureDetailPage({
 }) {
   const user = await requireServerRole("/structure");
   const { id } = await params;
+  const t = await getTranslations("org.structureDistrict");
+  const tCommon = await getTranslations("common");
 
   const [district, oversightRegions, structure] = await Promise.all([
     serverGet<DistrictOption>(`/districts/${id}`),
@@ -79,26 +82,27 @@ export default async function DistrictStructureDetailPage({
     <Shell>
       <div className="space-y-3">
         <HierarchyTrail
+          ariaLabel={t("breadcrumb")}
           items={[
-            { label: "Structure", href: "/structure" },
+            { label: t("structure"), href: "/structure" },
             { label: district.oversightRegion, href: nationalAreaHref },
             { label: district.name },
           ]}
         />
         <PageHeader
-          eyebrow="District detail"
+          eyebrow={t("eyebrow")}
           title={district.name}
-          description="See this district's branches, district leadership and branch support teams in one place."
+          description={t("description")}
           action={
             <div className="flex flex-wrap gap-2">
               <ButtonLink href={nationalAreaHref} variant="secondary">
-                Back to national area
+                {t("backToNational")}
               </ButtonLink>
               <ButtonLink
                 href={`/users?oversightRegion=${encodeURIComponent(district.oversightRegion)}&district=${encodeURIComponent(district.name)}`}
                 icon="users"
               >
-                Open district staff
+                {t("openStaff")}
               </ButtonLink>
             </div>
           }
@@ -107,27 +111,27 @@ export default async function DistrictStructureDetailPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Branches"
+          label={t("branches")}
           value={districtStructure.branchCount}
-          delta="Branches in this district"
+          delta={t("branchesCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Guests"
+          label={t("guests")}
           value={districtStructure.guestCount}
-          delta="Guest records across district branches"
+          delta={t("guestsCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Members"
+          label={t("members")}
           value={districtStructure.memberCount}
-          delta="Member records across district branches"
+          delta={t("membersCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Leaders and support"
+          label={t("leadersAndSupport")}
           value={districtLeaderCount + supportStaffCount}
-          delta={`${districtLeaderCount} district leaders · ${supportStaffCount} support staff`}
+          delta={t("leadersCaption", { leaders: districtLeaderCount, support: supportStaffCount })}
           tone="cool"
         />
       </section>
@@ -153,31 +157,31 @@ export default async function DistrictStructureDetailPage({
                 )}
                 districts={[district]}
                 allowedRoles={["district_admin", "district_pastor"]}
-                title="Add district leadership"
-                description="Create district admins and district pastors inside this district so their access stays scoped to it."
-                submitLabel="Add district leader"
+                title={t("addLeadershipTitle")}
+                description={t("addLeadershipDescription")}
+                submitLabel={t("addLeader")}
               />
             </Card>
           ) : null}
 
           <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
-            <CardHeader label="District leadership" title="Who leads this district" />
+            <CardHeader label={t("leadershipLabel")} title={t("leadershipTitle")} />
             <div className="mt-5 grid gap-4">
               <div className="rounded-2xl bg-[#f6f5f1] p-4">
-                <p className="text-[12px] font-medium text-[#6b6b6b]">District admins</p>
+                <p className="text-[12px] font-medium text-[#6b6b6b]">{t("districtAdmins")}</p>
                 <div className="mt-3">
                   <TeamPills
                     users={districtStructure.districtAdmins}
-                    emptyLabel="No district admin assigned."
+                    emptyLabel={t("noDistrictAdmin")}
                   />
                 </div>
               </div>
               <div className="rounded-2xl bg-[#f6f5f1] p-4">
-                <p className="text-[12px] font-medium text-[#6b6b6b]">District pastors</p>
+                <p className="text-[12px] font-medium text-[#6b6b6b]">{t("districtPastors")}</p>
                 <div className="mt-3">
                   <TeamPills
                     users={districtStructure.districtPastors}
-                    emptyLabel="No district pastor assigned."
+                    emptyLabel={t("noDistrictPastor")}
                   />
                 </div>
               </div>
@@ -189,7 +193,7 @@ export default async function DistrictStructureDetailPage({
                   <Icon name="structure" className="h-[18px] w-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[12px] text-[#8a8780]">National area</span>
+                  <span className="block text-[12px] text-[#8a8780]">{tCommon("nationalArea")}</span>
                   <span className="block text-[14px] font-medium text-[#111111]">{district.oversightRegion}</span>
                 </span>
                 <Icon
@@ -203,19 +207,19 @@ export default async function DistrictStructureDetailPage({
 
         <Card className="app-rise self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
           <CardHeader
-            label="Branches in district"
-            title="Branches"
-            description="Each branch with its status, load and leadership coverage."
+            label={t("branchesLabel")}
+            title={t("branchesTitle")}
+            description={t("branchesDescription")}
             action={
               <Badge>
-                <span className="tabular-nums">{districtStructure.branches.length}</span> branches
+                {t.rich("branchesBadge", { count: districtStructure.branches.length, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
               </Badge>
             }
           />
           <div className="mt-6 grid gap-4">
             {districtStructure.branches.length === 0 ? (
-              <EmptyState icon="branches" title="No branches yet">
-                No branches are currently attached to this district.
+              <EmptyState icon="branches" title={t("emptyTitle")}>
+                {t("emptyBody")}
               </EmptyState>
             ) : (
               districtStructure.branches.map((branch) => (
@@ -229,9 +233,9 @@ export default async function DistrictStructureDetailPage({
   );
 }
 
-function HierarchyTrail({ items }: { items: { label: string; href?: string }[] }) {
+function HierarchyTrail({ items, ariaLabel }: { items: { label: string; href?: string }[]; ariaLabel: string }) {
   return (
-    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#8a8780]">
+    <nav aria-label={ariaLabel} className="flex flex-wrap items-center gap-1.5 text-[13px] text-[#8a8780]">
       {items.map((item, index) => (
         <span key={`${item.label}-${index}`} className="inline-flex items-center gap-1.5">
           {index > 0 ? <span aria-hidden>/</span> : null}

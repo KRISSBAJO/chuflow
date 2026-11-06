@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button, buttonClass } from "@/components/ui/ui";
 
 export function ShareLinkCard({
@@ -12,6 +13,7 @@ export function ShareLinkCard({
   url: string;
   description?: string;
 }) {
+  const t = useTranslations("people.shareLink");
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -38,10 +40,10 @@ export function ShareLinkCard({
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={handleCopy}>
-            {copied ? "Copied" : "Copy link"}
+            {copied ? t("copied") : t("copyLink")}
           </Button>
           <a href={url} target="_blank" rel="noreferrer" className={buttonClass("primary", "sm")}>
-            Open form
+            {t("openForm")}
           </a>
         </div>
       </div>

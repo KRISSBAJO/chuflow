@@ -46,6 +46,9 @@ export const FOLLOW_UP_CONTACT_METHOD_OPTIONS = [
   { value: "attendance", label: "Attendance" },
 ] as const;
 
+/** Contact method API values, for typed `people.followUpOptions.methods.*` lookups. */
+export const FOLLOW_UP_CONTACT_METHOD_VALUES = FOLLOW_UP_CONTACT_METHOD_OPTIONS.map((option) => option.value);
+
 export function formatFollowUpValue(value?: string | null) {
   if (!value) {
     return "Not set";

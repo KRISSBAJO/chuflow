@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiPost } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import type {
@@ -17,6 +18,8 @@ export function ApprovalRequestForm({
   request?: ApprovalRequest;
   homeBranchId?: string;
 }) {
+  const t = useTranslations("admin.requestForm");
+  const tr = useTranslations("admin.approvalRequests");
   const router = useRouter();
   const [branchId, setBranch] = useState(
     request?.branchId || homeBranchId || options.branches[0]?._id || "",
@@ -72,7 +75,7 @@ export function ApprovalRequestForm({
         router.refresh();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not submit.");
+      setError(e instanceof Error ? e.message : t("submitError"));
       setBusy(false);
     }
   }
@@ -83,7 +86,7 @@ export function ApprovalRequestForm({
         onChange={() => setPreview(null)}
         className="space-y-5"
       >
-        <Field label="Church" required>
+        <Field label={t("church")} required>
           <select
             className="ui-input"
             value={branchId}
@@ -101,37 +104,40 @@ export function ApprovalRequestForm({
             ))}
           </select>
         </Field>
-        <Field label="Approval route" required>
+        <Field label={t("route")} required>
           <select
             className="ui-input"
             value={policyId}
             onChange={(e) => setPolicy(e.target.value)}
             required
           >
-            <option value="">Choose a route</option>
+            <option value="">{t("chooseRoute")}</option>
             {policies.map((p) => (
               <option key={p._id} value={p._id}>
-                {p.name} · Ends at {p.finalLevel}
+                {t("routeOption", { name: p.name, level: tr(`level.${p.finalLevel}`) })}
               </option>
             ))}
           </select>
         </Field>
         {!policies.length && (
           <p role="status" className="text-sm text-amber-800">
-            No active routes for this church. Ask the national or overall
-            administrator to configure a route.
+            {t("noRoutes")}
           </p>
         )}
         {policy && (
           <p className="rounded-xl bg-orange-50 p-3 text-sm">
-            {policy.category} · Final approval: {policy.finalLevel}
+            {t("policySummary", { category: policy.category, level: tr(`level.${policy.finalLevel}`) })}
             {policy.thresholdAmount !== undefined
-              ? `; amounts above ${policy.currency} ${policy.thresholdAmount} go to ${policy.aboveThresholdLevel}`
+              ? t("thresholdNote", {
+                  currency: policy.currency,
+                  amount: policy.thresholdAmount,
+                  level: policy.aboveThresholdLevel ? tr(`level.${policy.aboveThresholdLevel}`) : "",
+                })
               : ""}
-            . Review target: {policy.reviewDays} days per stage.
+            {t("reviewTarget", { days: policy.reviewDays })}
           </p>
         )}
-        <Field label="Request title" required>
+        <Field label={t("title")} required>
           <input
             name="title"
             className="ui-input"
@@ -141,7 +147,7 @@ export function ApprovalRequestForm({
             required
           />
         </Field>
-        <Field label="Details and recommendation" required>
+        <Field label={t("details")} required>
           <textarea
             name="details"
             className="ui-input min-h-40"
@@ -152,7 +158,7 @@ export function ApprovalRequestForm({
           />
         </Field>
         <Field
-          label={`Amount (${policy?.currency || "route currency"})`}
+          label={t("amount", { currency: policy?.currency || t("routeCurrency") })}
           required={policy?.thresholdAmount !== undefined}
         >
           <input
@@ -167,8 +173,8 @@ export function ApprovalRequestForm({
           />
         </Field>
         <Field
-          label="Supporting document links"
-          hint="One HTTPS link per line, up to 10. Make sure assigned reviewers can open the documents."
+          label={t("documentLinks")}
+          hint={t("documentLinksHint")}
         >
           <textarea
             name="documentLinks"
@@ -178,7 +184,7 @@ export function ApprovalRequestForm({
         </Field>
         {preview && (
           <div className="rounded-xl border border-orange-200 p-4">
-            <h2 className="font-semibold">Your approval route</h2>
+            <h2 className="font-semibold">{t("yourRoute")}</h2>
             <ol className="mt-3 space-y-3">
               {preview.map((s, i) => (
                 <li key={s.level} className="text-sm">
@@ -188,8 +194,8 @@ export function ApprovalRequestForm({
                   <p className="text-[#6b6b6b]">
                     {s.reviewerNames.join(", ")} ·{" "}
                     {i === preview.length - 1
-                      ? "Final approval"
-                      : "Review and recommendation"}
+                      ? t("finalApproval")
+                      : t("reviewRecommendation")}
                   </p>
                 </li>
               ))}
@@ -208,14 +214,14 @@ export function ApprovalRequestForm({
             value="preview"
             disabled={busy || !policy}
           >
-            Preview route
+            {t("previewRoute")}
           </Button>
           <Button type="submit" value="submit" disabled={busy || !policy}>
             {busy
-              ? "Working…"
+              ? t("working")
               : request
-                ? "Resubmit request"
-                : "Submit request"}
+                ? t("resubmit")
+                : t("submit")}
           </Button>
         </div>
       </form>

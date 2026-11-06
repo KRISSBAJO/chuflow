@@ -1,5 +1,6 @@
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -18,9 +19,11 @@ import {
 } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import {
+  FOLLOW_UP_CONTACT_METHOD_VALUES,
   FOLLOW_UP_STATUS_OPTIONS,
   formatFollowUpValue,
 } from "@/lib/follow-up-options";
+import { formatStatus } from "@/components/ui/ui";
 import {
   canFilterAcrossBranches,
   isGlobalRole,
@@ -47,6 +50,25 @@ export default async function FollowUpPage({
   }>;
 }) {
   const user = await requireServerRole("/follow-up");
+  const [t, tc, ts, tsh, tOptions, format] = await Promise.all([
+    getTranslations("people.followUp.list"),
+    getTranslations("common"),
+    getTranslations("statuses"),
+    getTranslations("people.shared"),
+    getTranslations("people.followUpOptions"),
+    getFormatter(),
+  ]);
+  type StatusKey = Parameters<typeof ts>[0];
+  const statusLabel = (value?: string | null) => {
+    if (!value) return tOptions("notSet");
+    const key = value.toLowerCase();
+    return ts.has(key as StatusKey) ? ts(key as StatusKey) : formatStatus(value);
+  };
+  type MethodKey = (typeof FOLLOW_UP_CONTACT_METHOD_VALUES)[number];
+  const methodLabel = (value?: string | null) =>
+    value && (FOLLOW_UP_CONTACT_METHOD_VALUES as readonly string[]).includes(value)
+      ? tOptions(`methods.${value as MethodKey}`)
+      : formatFollowUpValue(value);
   const params = await searchParams;
   const search = params.search?.trim();
   const canChooseBranch = canFilterAcrossBranches(user.role, user.hasOversight);
@@ -105,14 +127,14 @@ export default async function FollowUpPage({
 
   const selectedBranch = branches.find((branch) => branch._id === effectiveBranchId);
   const scopeLabel = selectedBranch
-    ? `${selectedBranch.name} care queue`
+    ? t("scopeBranch", { name: selectedBranch.name })
     : canChooseBranch
       ? requestedDistrict
-        ? `${requestedDistrict} district queue`
+        ? t("scopeDistrict", { name: requestedDistrict })
         : requestedOversightRegion
-          ? `${requestedOversightRegion} national queue`
-          : "All visible branches"
-      : "Current branch";
+          ? t("scopeNational", { name: requestedOversightRegion })
+          : t("allVisibleBranches")
+      : t("currentBranch");
   const paginationQueryBase = new URLSearchParams();
 
   if (search) {
@@ -158,21 +180,21 @@ export default async function FollowUpPage({
   );
 
   const secondaryStages = [
-    { label: "Prayed with", value: followUpList.summary.prayedWith },
-    { label: "Invited back", value: followUpList.summary.invitedBack },
-    { label: "Converted", value: followUpList.summary.converted },
+    { label: ts("prayed_with"), value: followUpList.summary.prayedWith },
+    { label: ts("invited_back"), value: followUpList.summary.invitedBack },
+    { label: ts("converted"), value: followUpList.summary.converted },
   ];
 
   return (
     <Shell>
       <PageHeader
-        eyebrow="Follow-up"
-        title="Care workflow"
-        description="Help every guest move from first contact to return, prayer and next steps, with clear ownership in each branch."
-        action={<div className="flex flex-wrap gap-2"><Link href="/care" className={buttonClass("secondary")}>Care & connection hub</Link>
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+        action={<div className="flex flex-wrap gap-2"><Link href="/care" className={buttonClass("secondary")}>{t("careHub")}</Link>
           <a href={buildCreateHref()} className={buttonClass("primary")}>
             <Icon name="plus" className="h-4 w-4" />
-            Add follow-up
+            {t("addFollowUp")}
           </a></div>
         }
       />
@@ -193,36 +215,36 @@ export default async function FollowUpPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="New"
+          label={ts("new")}
           value={followUpList.summary.new}
-          delta="Fresh care tasks awaiting first touch"
+          delta={t("newCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Assigned"
+          label={ts("assigned")}
           value={followUpList.summary.assigned}
-          delta="Guests already owned by a care worker"
+          delta={t("assignedCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Contacted"
+          label={ts("contacted")}
           value={followUpList.summary.contacted}
-          delta="Reached and actively progressing"
+          delta={t("contactedCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Returned"
+          label={ts("returned")}
           value={followUpList.summary.returned}
-          delta="Guests who came back again"
+          delta={t("returnedCaption")}
           tone="warm"
         />
       </section>
 
       <Card className="app-rise p-6 sm:p-7">
         <CardHeader
-          label="Care queue"
-          title="Follow-up tasks"
-          description={`${scopeLabel}. Search notes or guest details, narrow to a stage, and page through the queue.`}
+          label={t("queueLabel")}
+          title={t("queueTitle")}
+          description={t("queueDescription", { scope: scopeLabel })}
           action={secondaryStages.map((stage) => (
             <Badge key={stage.label}>
               {stage.label} <span className="tabular-nums">{stage.value}</span>
@@ -243,21 +265,21 @@ export default async function FollowUpPage({
           <input
             name="search"
             defaultValue={search}
-            placeholder="Search guest name, phone, email or note"
-            aria-label="Search follow-up tasks"
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchAria")}
             className="ui-input"
           />
-          <select name="status" defaultValue={selectedStatus || ""} aria-label="Stage" className="ui-input">
-            <option value="">All stages</option>
+          <select name="status" defaultValue={selectedStatus || ""} aria-label={tsh("stage")} className="ui-input">
+            <option value="">{tsh("allStages")}</option>
             {FOLLOW_UP_STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {ts(option.value)}
               </option>
             ))}
           </select>
           <input type="hidden" name="page" value="1" />
           <Button type="submit" variant="secondary" icon="search">
-            Apply
+            {tc("apply")}
           </Button>
         </form></FilterPanel>
 
@@ -267,14 +289,14 @@ export default async function FollowUpPage({
               <table className="ui-table">
                 <thead>
                   <tr>
-                    <th>Stage</th>
-                    <th>Guest</th>
-                    <th>Owner</th>
-                    <th>Next action</th>
-                    <th>Method</th>
-                    <th>Note</th>
+                    <th>{tsh("stage")}</th>
+                    <th>{t("guest")}</th>
+                    <th>{t("owner")}</th>
+                    <th>{t("nextAction")}</th>
+                    <th>{t("method")}</th>
+                    <th>{t("note")}</th>
                     <th className="text-right">
-                      <span className="sr-only">Open</span>
+                      <span className="sr-only">{tc("open")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -282,39 +304,39 @@ export default async function FollowUpPage({
                   {followUpList.items.map((item) => {
                     const guestName = item.guestId
                       ? `${item.guestId.firstName} ${item.guestId.lastName}`
-                      : "Guest record unavailable";
+                      : t("guestUnavailable");
                     const branchName = item.guestId?.branchId?.name;
                     const assignedName = item.assignedTo
                       ? `${item.assignedTo.firstName} ${item.assignedTo.lastName}`
-                      : "Unassigned";
+                      : tsh("unassigned");
 
                     return (
                       <tr key={item._id} className="align-top">
                         <td>
                           <Badge tone={statusTone(item.status)} dot>
-                            {formatFollowUpValue(item.status)}
+                            {statusLabel(item.status)}
                           </Badge>
                         </td>
                         <td>
                           <p className="font-medium text-[#111111]">{guestName}</p>
-                          <p className="mt-0.5 text-[12px] text-[#8a8780]">{branchName || "Branch"}</p>
+                          <p className="mt-0.5 text-[12px] text-[#8a8780]">{branchName || tc("branch")}</p>
                         </td>
                         <td className="whitespace-nowrap !text-[#55534e]">{assignedName}</td>
                         <td className="!text-[#55534e]">
                           {item.nextActionDate
-                            ? new Date(item.nextActionDate).toLocaleString()
-                            : "No next action date"}
+                            ? format.dateTime(new Date(item.nextActionDate), { dateStyle: "short", timeStyle: "short" })
+                            : t("noNextAction")}
                           <span className="mt-0.5 block text-[12px] text-[#8a8780]">
-                            Updated {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "recently"}
+                            {t("updated", { when: item.updatedAt ? format.dateTime(new Date(item.updatedAt), { dateStyle: "short" }) : t("recently") })}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap !text-[#55534e]">{formatFollowUpValue(item.contactMethod)}</td>
+                        <td className="whitespace-nowrap !text-[#55534e]">{methodLabel(item.contactMethod)}</td>
                         <td className="max-w-md text-[13px] leading-[1.6] !text-[#6b6b6b]">{item.note}</td>
                         <td className="text-right">
                           {item.guestId?._id ? (
                             <Link
                               href={`/guests/${item.guestId._id}`}
-                              aria-label={`Open ${guestName}`}
+                              aria-label={t("openGuest", { name: guestName })}
                               className={buttonClass("ghost", "sm", "w-8 px-0")}
                             >
                               <Icon name="arrowUpRight" className="h-4 w-4" />
@@ -328,16 +350,21 @@ export default async function FollowUpPage({
               </table>
             </TableWrap>
           ) : (
-            <EmptyState icon="care" title="No follow-up tasks">
-              No follow-up tasks match the current filters.
+            <EmptyState icon="care" title={t("noneTitle")}>
+              {t("noneBody")}
             </EmptyState>
           )}
         </div>
 
         <div className="mt-5 flex flex-col gap-2 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] text-[#8a8780]">
-            Showing <span className="tabular-nums text-[#111111]">{startItem}–{endItem}</span> of{" "}
-            <span className="tabular-nums">{followUpList.pagination.total}</span>
+            {tsh.rich("showing", {
+              from: startItem,
+              to: endItem,
+              total: followUpList.pagination.total,
+              range: (chunks) => <span className="tabular-nums text-[#111111]">{chunks}</span>,
+              count: (chunks) => <span className="tabular-nums">{chunks}</span>,
+            })}
           </p>
           <Pagination
             page={followUpList.pagination.page}

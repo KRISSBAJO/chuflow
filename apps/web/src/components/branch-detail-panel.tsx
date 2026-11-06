@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import { Icon } from "@/components/app/icons";
 import { PastoralLeadershipCard, TeamPills } from "@/components/structure-cards";
@@ -44,6 +45,8 @@ export function BranchDetailPanel({
   templates: IntakeTemplate[];
 }) {
   const router = useRouter();
+  const t = useTranslations("org.branchPanel");
+  const tCommon = useTranslations("common");
   const canEdit = canManageBranchStructure(currentUserRole);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -134,13 +137,13 @@ export function BranchDetailPanel({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update branch");
+        throw new Error(result.message || t("updateError"));
       }
 
-      setStatus("Branch updated successfully.");
+      setStatus(t("updated"));
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to update branch");
+      setStatus(error instanceof Error ? error.message : t("updateError"));
     } finally {
       setLoading(false);
     }
@@ -150,13 +153,13 @@ export function BranchDetailPanel({
     <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-4">
         <Card className="app-rise p-6 sm:p-7">
-          <CardHeader label="Operating snapshot" title="Branch at a glance" />
+          <CardHeader label={t("snapshotLabel")} title={t("snapshotTitle")} />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {[
-              ["Guests", branch.metrics.guestCount],
-              ["Members", branch.metrics.memberCount],
-              ["Branch admins", branch.metrics.branchAdminCount],
-              ["Support team", branch.metrics.followUpCount + branch.metrics.usherCount],
+              [t("guests"), branch.metrics.guestCount],
+              [t("members"), branch.metrics.memberCount],
+              [t("branchAdmins"), branch.metrics.branchAdminCount],
+              [t("supportTeam"), branch.metrics.followUpCount + branch.metrics.usherCount],
             ].map(([label, value]) => (
               <Stat key={label} label={String(label)} value={value} />
             ))}
@@ -165,27 +168,27 @@ export function BranchDetailPanel({
 
         <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
           <CardHeader
-            label="Leadership"
-            title="Branch team"
-            description="Who leads and supports this branch today."
+            label={t("leadershipLabel")}
+            title={t("teamTitle")}
+            description={t("teamDescription")}
           />
           <div className="mt-5 space-y-4">
-            <TeamBlock title="Branch admins" users={branch.admins} empty="No branch admin assigned." />
+            <TeamBlock title={t("branchAdmins")} users={branch.admins} empty={t("noAdmin")} />
             <PastoralLeadershipCard
               residentPastors={branch.residentPastors}
               associatePastors={branch.associatePastors}
             />
-            <TeamBlock title="Follow-up team" users={branch.followUpTeam} empty="No follow-up staff assigned." />
-            <TeamBlock title="Usher team" users={branch.ushers} empty="No usher staff assigned." />
+            <TeamBlock title={t("followUpTeam")} users={branch.followUpTeam} empty={t("noFollowUp")} />
+            <TeamBlock title={t("usherTeam")} users={branch.ushers} empty={t("noUsher")} />
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <a href={`/users?branchId=${branch._id}`} className={buttonClass("primary", "md")}>
               <Icon name="users" className="h-4 w-4" />
-              Open branch staff
+              {t("openStaff")}
             </a>
             <a href={`/guests?branchId=${branch._id}`} className={buttonClass("secondary", "md")}>
               <Icon name="guests" className="h-4 w-4" />
-              Open branch guests
+              {t("openGuests")}
             </a>
           </div>
         </Card>
@@ -193,30 +196,30 @@ export function BranchDetailPanel({
         {attendanceShareUrl || weeklyReportShareUrl || maagReportShareUrl ? (
           <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
             <CardHeader
-              label="Share links"
-              title="Reporting forms"
-              description="Branch-scoped links you can send to leaders and service teams."
+              label={t("shareLabel")}
+              title={t("shareTitle")}
+              description={t("shareDescription")}
             />
             <div className="mt-5 space-y-3">
               {attendanceShareUrl ? (
                 <ShareLinkCard
-                  title="Attendance entry link"
+                  title={t("attendanceLink")}
                   url={attendanceShareUrl}
-                  description="Share this with branch staff or service leads for attendance submission."
+                  description={t("attendanceLinkDescription")}
                 />
               ) : null}
               {weeklyReportShareUrl ? (
                 <ShareLinkCard
-                  title="Weekly report link"
+                  title={t("weeklyLink")}
                   url={weeklyReportShareUrl}
-                  description="Send this branch-scoped spiritual indices report to branch leaders for weekly district reporting."
+                  description={t("weeklyLinkDescription")}
                 />
               ) : null}
               {maagReportShareUrl ? (
                 <ShareLinkCard
-                  title="MAAG monthly report link"
+                  title={t("maagLink")}
                   url={maagReportShareUrl}
-                  description="Send this branch-scoped MAAG form to branch leaders for monthly district reporting."
+                  description={t("maagLinkDescription")}
                 />
               ) : null}
             </div>
@@ -226,22 +229,22 @@ export function BranchDetailPanel({
 
       <Card className="app-rise self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
         <CardHeader
-          label="Branch profile"
-          title="Manage branch details"
-          description="Update the branch name, location, contact details and operating status."
+          label={t("profileLabel")}
+          title={t("profileTitle")}
+          description={t("profileDescription")}
         />
 
         {canEdit ? (
           <form action={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
-            <Field label="Branch name">
+            <Field label={t("branchName")}>
               <input name="name" defaultValue={branch.name} className="ui-input" />
             </Field>
-            <Field label="Status">
+            <Field label={tCommon("status")}>
               <input name="status" defaultValue={branch.status} className="ui-input" />
             </Field>
 
             {isGlobalRole(currentUserRole) ? (
-              <Field label="National area">
+              <Field label={tCommon("nationalArea")}>
                 <select
                   name="oversightRegion"
                   value={selectedRegion}
@@ -256,26 +259,26 @@ export function BranchDetailPanel({
                 </select>
               </Field>
             ) : (
-              <Field label="National area">
+              <Field label={tCommon("nationalArea")}>
                 <input type="hidden" name="oversightRegion" value={defaultOversightRegion ?? branch.oversightRegion} />
                 <input value={defaultOversightRegion || branch.oversightRegion} readOnly className={READ_ONLY_INPUT} />
               </Field>
             )}
 
             {isDistrictRole(currentUserRole) ? (
-              <Field label="District">
+              <Field label={tCommon("district")}>
                 <input type="hidden" name="district" value={defaultDistrict ?? branch.district} />
                 <input value={defaultDistrict || branch.district} readOnly className={READ_ONLY_INPUT} />
               </Field>
             ) : (
-              <Field label="District">
+              <Field label={tCommon("district")}>
                 <select
                   name="district"
                   defaultValue={branch.district}
                   disabled={availableDistricts.length === 0}
                   className="ui-input"
                 >
-                  {availableDistricts.length === 0 ? <option value="">Create district first</option> : null}
+                  {availableDistricts.length === 0 ? <option value="">{t("createDistrictFirst")}</option> : null}
                   {availableDistricts.map((district) => (
                     <option key={district._id} value={district.name}>
                       {district.name}
@@ -285,37 +288,39 @@ export function BranchDetailPanel({
               </Field>
             )}
 
-            <Field label="City">
+            <Field label={t("city")}>
               <input name="city" defaultValue={branch.city} className="ui-input" />
             </Field>
-            <Field label="State">
+            <Field label={t("state")}>
               <input name="state" defaultValue={branch.state} className="ui-input" />
             </Field>
-            <Field label="Country">
+            <Field label={t("country")}>
               <input name="country" defaultValue={branch.country} className="ui-input" />
             </Field>
-            <Field label="Service times">
+            <Field label={t("serviceTimes")}>
               <input name="serviceTimes" defaultValue={branch.serviceTimes} className="ui-input" />
             </Field>
-            <Field label="Contact info" className="md:col-span-2">
+            <Field label={t("contactInfo")} className="md:col-span-2">
               <input name="contactInfo" defaultValue={branch.contactInfo} className="ui-input" />
             </Field>
-            <Field label="Address" className="md:col-span-2">
+            <Field label={t("address")} className="md:col-span-2">
               <input name="address" defaultValue={branch.address} className="ui-input" />
             </Field>
             <p className="text-[13px] leading-[1.6] text-[#8a8780] md:col-span-2">
-              National areas and districts are managed from{" "}
-              <a href="/structure" className="font-medium text-[#111111] underline underline-offset-2">
-                Structure
-              </a>
-              .
+              {t.rich("managedFrom", {
+                link: (chunks) => (
+                  <a href="/structure" className="font-medium text-[#111111] underline underline-offset-2">
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
             <div className="md:col-span-2">
               <Button
                 type="submit"
                 disabled={loading || (!isDistrictRole(currentUserRole) && availableDistricts.length === 0)}
               >
-                {loading ? "Saving..." : "Update branch"}
+                {loading ? tCommon("saving") : t("update")}
               </Button>
             </div>
             {status ? (
@@ -326,7 +331,7 @@ export function BranchDetailPanel({
           </form>
         ) : (
           <p className="mt-6 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">
-            You can review staffing, regional placement, member load and guest movement here. Structural edits to this branch are handled by admins for this scope.
+            {t("readOnly")}
           </p>
         )}
       </Card>

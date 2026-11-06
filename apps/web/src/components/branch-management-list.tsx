@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/app/icons";
-import { Badge, formatStatus, statusTone } from "@/components/ui/ui";
+import { Badge, statusTone } from "@/components/ui/ui";
+import { useStatusLabel } from "@/i18n/labels";
 import type { BranchOverview } from "@/lib/types";
 
 export function BranchManagementList({
@@ -10,6 +12,9 @@ export function BranchManagementList({
 }: {
   branches: BranchOverview[];
 }) {
+  const t = useTranslations("org.branchList");
+  const tCommon = useTranslations("common");
+  const statusLabel = useStatusLabel();
   return (
     <div className="space-y-3">
       {branches.map((branch) => {
@@ -36,10 +41,10 @@ export function BranchManagementList({
                       {branch.name}
                     </h3>
                     <Badge tone={statusTone(branch.status)} dot>
-                      {formatStatus(branch.status)}
+                      {statusLabel(branch.status)}
                     </Badge>
                     {hasPastoralGap ? (
-                      <Badge tone="warning">Pastoral gap</Badge>
+                      <Badge tone="warning">{t("pastoralGap")}</Badge>
                     ) : null}
                   </div>
                   <p className="mt-1 text-[13px] text-[#6b6b6b]">
@@ -52,10 +57,10 @@ export function BranchManagementList({
               <div className="flex items-center gap-4">
                 <dl className="grid flex-1 grid-cols-4 gap-2 lg:min-w-[360px]">
                   {[
-                    ["Guests", branch.metrics.guestCount],
-                    ["Members", branch.metrics.memberCount],
-                    ["Admins", branch.metrics.branchAdminCount],
-                    ["Pastors", pastorCount],
+                    [t("guests"), branch.metrics.guestCount],
+                    [t("members"), branch.metrics.memberCount],
+                    [t("admins"), branch.metrics.branchAdminCount],
+                    [t("pastors"), pastorCount],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-xl bg-[#f6f5f1] px-3 py-2">
                       <dt className="text-[12px] text-[#8a8780]">{label}</dt>
@@ -65,7 +70,7 @@ export function BranchManagementList({
                 </dl>
 
                 <span className="hidden items-center gap-1 text-[13px] font-medium text-[#55534e] group-hover:text-[#111111] lg:inline-flex">
-                  Open
+                  {tCommon("open")}
                   <Icon name="arrowRight" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>

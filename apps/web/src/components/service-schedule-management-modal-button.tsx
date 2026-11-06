@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ModalShell } from "@/components/modal-shell";
 import { Button } from "@/components/ui/ui";
 import { ServiceScheduleCreateForm } from "@/components/service-schedule-create-form";
@@ -20,19 +21,20 @@ export function ServiceScheduleManagementModalButton({
   defaultBranchId?: string;
   currentUserRole: string;
 }) {
+  const t = useTranslations("org.serviceSchedules");
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Button variant="secondary" onClick={() => setOpen(true)}>
-        Manage service schedules
+        {t("manage")}
       </Button>
       <ModalShell
         open={open}
         onClose={() => setOpen(false)}
-        eyebrow="Service scheduling"
-        title="Define recurring branch services"
-        description="Set up first service, second service, midweek and other repeating gatherings so attendance and finance attach to the right service."
+        eyebrow={t("modalEyebrow")}
+        title={t("modalTitle")}
+        description={t("modalDescription")}
         maxWidthClass="max-w-6xl"
       >
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
@@ -46,8 +48,8 @@ export function ServiceScheduleManagementModalButton({
           </div>
           <div className="rounded-2xl border border-black/[0.06] p-5">
             <div className="mb-4">
-              <p className="text-[13px] font-medium text-[#6b6b6b]">Existing schedules</p>
-              <h3 className="lp-heading mt-1 text-[18px]">Review and update the service rhythm</h3>
+              <p className="text-[13px] font-medium text-[#6b6b6b]">{t("existing")}</p>
+              <h3 className="lp-heading mt-1 text-[18px]">{t("reviewTitle")}</h3>
             </div>
             <ServiceScheduleManagementList
               schedules={serviceSchedules}

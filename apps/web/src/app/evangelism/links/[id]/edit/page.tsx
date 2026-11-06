@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { Icon } from "@/components/app/icons";
@@ -14,17 +15,18 @@ export default async function EditOutreachLink({
   params: Promise<{ id: string }>;
 }) {
   await requireServerRole("/evangelism");
+  const t = await getTranslations("people.evangelism.links");
   const { id } = await params;
   const link = await serverGet<OutreachLink>(`/evangelism/links/${id}`);
   return (
     <Shell>
       <Link href="/evangelism/links" className={buttonClass("secondary", "sm")}>
-        <Icon name="arrowLeft" /> Back to shareable links
+        <Icon name="arrowLeft" /> {t("editBack")}
       </Link>
       <PageHeader
-        eyebrow="Evangelism"
-        title="Edit shareable link"
-        description="Update the church name and internal link label without changing the URL or QR code."
+        eyebrow={t("eyebrow")}
+        title={t("editTitle")}
+        description={t("editDescription")}
       />
       <div className="mx-auto w-full max-w-3xl">
         <OutreachLinkForm branches={[link.branchId]} link={link} />

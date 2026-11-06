@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useAppFormat } from "@/i18n/labels";
 import { API_URL } from "@/lib/api";
 import { communicationTemplates } from "@/lib/communication-templates";
 import type { CommunicationItem, CommunicationTemplateItem } from "@/lib/types";
@@ -14,6 +16,10 @@ export function GuestCommunicationPanel({
   recipient: string;
   communications: CommunicationItem[];
 }) {
+  const t = useTranslations("people.guests.communication");
+  const tc = useTranslations("common");
+  const tsh = useTranslations("people.shared");
+  const { dateTime } = useAppFormat();
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<
@@ -95,19 +101,19 @@ export function GuestCommunicationPanel({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to send communication");
+        throw new Error(result.message || t("errorSend"));
       }
 
       setStatus(
         result.status === "failed"
-          ? "Communication attempt was logged as failed."
+          ? t("loggedFailed")
           : result.status === "preview"
-            ? "Communication saved in preview mode."
-            : "Communication logged successfully.",
+            ? t("savedPreview")
+            : t("logged"),
       );
       window.location.reload();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to send communication");
+      setStatus(error instanceof Error ? error.message : t("errorSend"));
     } finally {
       setLoading(false);
     }
@@ -115,8 +121,8 @@ export function GuestCommunicationPanel({
 
   return (
     <section className="surface rounded-[32px] p-6">
-      <p className="eyebrow">Communications</p>
-      <h2 className="mt-3 text-2xl font-semibold text-slate-950">Send and review outreach history</h2>
+      <p className="eyebrow">{t("eyebrow")}</p>
+      <h2 className="mt-3 text-2xl font-semibold text-slate-950">{t("title")}</h2>
 
       <form action={handleSubmit} className="mt-5 rounded-[28px] bg-white p-5">
         <div className="grid gap-3 md:grid-cols-2">
@@ -133,30 +139,30 @@ export function GuestCommunicationPanel({
             ))}
           </select>
           <select name="channel" defaultValue="email" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none">
-            <option value="email">Email</option>
-            <option value="sms">SMS</option>
-            <option value="phone_call">Phone call</option>
+            <option value="email">{tc("email")}</option>
+            <option value="sms">{t("sms")}</option>
+            <option value="phone_call">{t("phoneCall")}</option>
           </select>
           <input name="recipient" defaultValue={recipient} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none md:col-span-2" />
           <textarea
             name="message"
             defaultValue={
               activeTemplate?.message ||
-              "Thank you for worshipping with us. We are glad you came and would love to stay connected."
+              t("defaultMessage")
             }
             key={`${templateId}-message`}
             className="min-h-28 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none md:col-span-2"
           />
         </div>
         <button type="submit" disabled={loading} className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
-          {loading ? "Saving..." : "Log communication"}
+          {loading ? tc("saving") : t("logCommunication")}
         </button>
       </form>
 
       <div className="mt-5 space-y-3">
         {communications.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-            No communication history yet for this guest.
+            {t("noHistory")}
           </div>
         ) : (
           communications.map((item) => (
@@ -169,7 +175,7 @@ export function GuestCommunicationPanel({
               </div>
               <p className="mt-2 text-sm text-slate-600">{item.message}</p>
               <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-400">
-                {item.createdAt ? new Date(item.createdAt).toLocaleString() : "No timestamp"} · {item.status}
+                {item.createdAt ? dateTime(item.createdAt) : tsh("noTimestamp")} · {item.status}
                 {item.deliveryMode ? ` · ${item.deliveryMode.replace(/_/g, " ")}` : ""}
               </p>
               {item.errorMessage ? (

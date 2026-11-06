@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Badge, Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { OversightRegionOption } from "@/lib/types";
@@ -14,6 +15,9 @@ export function OversightRegionEditorCard({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.regionEditor");
+  const tCommon = useTranslations("common");
+  const tStatuses = useTranslations("statuses");
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -35,14 +39,14 @@ export function OversightRegionEditorCard({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update national area");
+        throw new Error(result.message || t("updateError"));
       }
 
-      setStatus("National area updated successfully.");
+      setStatus(t("updated"));
       router.refresh();
     } catch (error) {
       setStatus(
-        error instanceof Error ? error.message : "Unable to update national area",
+        error instanceof Error ? error.message : t("updateError"),
       );
     } finally {
       setSaving(false);
@@ -52,24 +56,23 @@ export function OversightRegionEditorCard({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="National area"
+        label={tCommon("nationalArea")}
         title={region.name}
-        description={
-          <>
-            <span className="tabular-nums">{region.districtCount}</span> districts ·{" "}
-            <span className="tabular-nums">{region.branchCount}</span> branches
-          </>
-        }
+        description={t.rich("summary", {
+          districts: region.districtCount,
+          branches: region.branchCount,
+          n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+        })}
         action={
           <Badge tone={region.isActive ? "success" : "neutral"} dot>
-            {region.isActive ? "Active" : "Inactive"}
+            {region.isActive ? tStatuses("active") : tStatuses("inactive")}
           </Badge>
         }
       />
 
       {canEdit ? (
         <form action={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
-          <Field label="National area name" required>
+          <Field label={t("name")} required>
             <input
               name="name"
               defaultValue={region.name}
@@ -77,25 +80,25 @@ export function OversightRegionEditorCard({
               required
             />
           </Field>
-          <Field label="Status">
+          <Field label={tCommon("status")}>
             <select
               name="isActive"
               defaultValue={region.isActive ? "active" : "inactive"}
               className="ui-input"
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{tStatuses("active")}</option>
+              <option value="inactive">{tStatuses("inactive")}</option>
             </select>
           </Field>
           <div>
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save national area"}
+              {saving ? tCommon("saving") : t("save")}
             </Button>
           </div>
         </form>
       ) : (
         <p className="mt-6 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">
-          You can view this national area, but only a national admin or overall oversight admin can edit it.
+          {t("readOnly")}
         </p>
       )}
 

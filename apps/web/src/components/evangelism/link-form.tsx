@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiPost, apiPatch } from "@/lib/api";
 import type { BranchSummary } from "@/lib/types";
 import { Button, Card, Field } from "@/components/ui/ui";
@@ -19,6 +20,9 @@ export function OutreachLinkForm({
   link?: OutreachLink;
 }) {
   const router = useRouter();
+  const t = useTranslations("people.evangelism.linkForm");
+  const tc = useTranslations("common");
+  const tsh = useTranslations("people.shared");
   const [headerTextColor, setHeaderTextColor] = useState(
     link?.headerTextColor || "",
   );
@@ -55,12 +59,12 @@ export function OutreachLinkForm({
         createdHref(
           "/evangelism/links",
           result,
-          link ? "Link changes" : "Shareable link",
+          link ? t("entityChanges") : t("entityLink"),
         ),
       );
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create link.");
+      setError(e instanceof Error ? e.message : t("errorCreate"));
     } finally {
       setBusy(false);
     }
@@ -68,7 +72,7 @@ export function OutreachLinkForm({
   return (
     <Card className="p-6">
       <form onSubmit={submit} className="space-y-5">
-        <Field label="Branch" required>
+        <Field label={tc("branch")} required>
           <select
             name="branchId"
             className="ui-input"
@@ -86,9 +90,9 @@ export function OutreachLinkForm({
           </select>
         </Field>
         <Field
-          label="Church name shown on the public form"
+          label={t("churchName")}
           required
-          hint="Shown above the form, in the permission text, and in the thank-you message."
+          hint={t("churchNameHint")}
         >
           <input
             name="churchName"
@@ -97,13 +101,13 @@ export function OutreachLinkForm({
             minLength={2}
             maxLength={150}
             defaultValue={link?.churchName || (link ? link.branchId.name : "")}
-            placeholder="Your church’s name"
+            placeholder={t("churchNamePlaceholder")}
           />
         </Field>
         <Field
-          label="Link name"
+          label={t("linkName")}
           required
-          hint="Use a name your team can recognize, such as Saturday outreach or My invitation link."
+          hint={t("linkNameHint")}
         >
           <input
             name="name"
@@ -114,7 +118,7 @@ export function OutreachLinkForm({
             maxLength={100}
           />
         </Field>
-        <Field label="Link type" required>
+        <Field label={t("linkType")} required>
           <select
             name="kind"
             className="ui-input"
@@ -122,20 +126,20 @@ export function OutreachLinkForm({
             disabled={!!link}
           >
             <option value="personal">
-              My personal link — assign new contacts to me
+              {t("personal")}
             </option>
             <option value="branch">
-              Branch link — add contacts to the shared unassigned queue
+              {t("branchKind")}
             </option>
           </select>
         </Field>
 
         <fieldset className="space-y-4 rounded-xl border border-black/[0.06] p-4">
           <legend className="px-2 text-sm font-medium">
-            Optional form colors
+            {t("colors")}
           </legend>
           <p className="text-xs text-[#8a8780]">
-            Leave customization off to keep the current default colors.
+            {t("colorsHint")}
           </p>
           <label className="flex items-center gap-3 text-sm">
             <input
@@ -145,10 +149,10 @@ export function OutreachLinkForm({
                 setHeaderColor(event.target.checked ? "#111111" : "")
               }
             />{" "}
-            Customize header
+            {t("customizeHeader")}
             <input
               type="color"
-              aria-label="Header color"
+              aria-label={t("headerColor")}
               disabled={!headerColor}
               value={headerColor || "#ffffff"}
               onChange={(event) => setHeaderColor(event.target.value)}
@@ -162,10 +166,10 @@ export function OutreachLinkForm({
                 setButtonColor(event.target.checked ? "#111111" : "")
               }
             />{" "}
-            Customize buttons
+            {t("customizeButtons")}
             <input
               type="color"
-              aria-label="Button color"
+              aria-label={t("buttonColor")}
               disabled={!buttonColor}
               value={buttonColor || "#111111"}
               onChange={(event) => setButtonColor(event.target.value)}
@@ -184,10 +188,10 @@ export function OutreachLinkForm({
                 )
               }
             />{" "}
-            Customize header text
+            {t("customizeHeaderText")}
             <input
               type="color"
-              aria-label="Header text color"
+              aria-label={t("headerTextColor")}
               disabled={!headerTextColor}
               value={headerTextColor || formTextColor(headerColor || "#ffffff")}
               onChange={(event) => setHeaderTextColor(event.target.value)}
@@ -205,18 +209,17 @@ export function OutreachLinkForm({
                 )
               }
             />{" "}
-            Customize button text
+            {t("customizeButtonText")}
             <input
               type="color"
-              aria-label="Button text color"
+              aria-label={t("buttonTextColor")}
               disabled={!buttonTextColor}
               value={buttonTextColor || formTextColor(buttonColor || "#111111")}
               onChange={(event) => setButtonTextColor(event.target.value)}
             />
           </label>
           <p className="text-xs text-[#8a8780]">
-            Leave text customization off for automatic readable colors. Preview
-            your choices below.
+            {t("textHint")}
           </p>
           <div
             className="rounded-xl p-4"
@@ -225,7 +228,7 @@ export function OutreachLinkForm({
               color: headerTextColor || formTextColor(headerColor || "#ffffff"),
             }}
           >
-            <p className="font-semibold">Your church header</p>
+            <p className="font-semibold">{t("headerPreview")}</p>
           </div>
           <div
             className="inline-flex rounded-xl px-4 py-2 text-sm"
@@ -234,7 +237,7 @@ export function OutreachLinkForm({
               color: buttonTextColor || formTextColor(buttonColor || "#111111"),
             }}
           >
-            Button preview
+            {t("buttonPreview")}
           </div>
           <Button
             variant="secondary"
@@ -246,18 +249,16 @@ export function OutreachLinkForm({
               setButtonColor("");
             }}
           >
-            Restore default colors
+            {t("restoreColors")}
           </Button>
         </fieldset>
         {link && (
           <p className="text-sm text-[#6b6b6b]">
-            Saving updates the existing public form. The shareable URL and QR
-            code stay the same.
+            {t("savingNote")}
           </p>
         )}
         <p className="text-sm text-[#6b6b6b]">
-          Anyone with the link can submit their details without signing in. They
-          cannot see your contact list or private follow-up notes.
+          {t("anyoneNote")}
         </p>
         {error && (
           <p role="alert" className="text-sm text-red-700">
@@ -266,10 +267,10 @@ export function OutreachLinkForm({
         )}
         <Button type="submit" disabled={busy || !branches.length}>
           {busy
-            ? "Saving…"
+            ? tsh("savingEllipsis")
             : link
-              ? "Save link changes"
-              : "Create shareable link"}
+              ? t("saveChanges")
+              : t("create")}
         </Button>
       </form>
     </Card>
@@ -284,6 +285,8 @@ export function OutreachLinkToggle({
   active: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("people.evangelism.linkForm");
+  const tsh = useTranslations("people.shared");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function toggle() {
@@ -293,7 +296,7 @@ export function OutreachLinkToggle({
       await apiPatch(`/evangelism/links/${id}`, { isActive: !active });
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not change link.");
+      setError(e instanceof Error ? e.message : t("errorChange"));
     } finally {
       setBusy(false);
     }
@@ -301,7 +304,7 @@ export function OutreachLinkToggle({
   return (
     <div>
       <Button variant="secondary" size="sm" disabled={busy} onClick={toggle}>
-        {busy ? "Saving…" : active ? "Pause link" : "Reactivate link"}
+        {busy ? tsh("savingEllipsis") : active ? t("pause") : t("reactivate")}
       </Button>
       {error && (
         <p role="alert" className="mt-2 text-sm text-red-700">

@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { ExportTableButtons } from "@/components/table-export";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useAppFormat } from "@/i18n/labels";
 import { API_URL } from "@/lib/api";
 import { Icon } from "@/components/app/icons";
 import {
@@ -11,7 +13,6 @@ import {
   Button,
   EmptyState,
   Field,
-  formatStatus,
 } from "@/components/ui/ui";
 import type {
   AttendanceItem,
@@ -34,6 +35,8 @@ export function AttendanceManagementTable({
   canEdit?: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("services.attendance.cleanup");
+  const { dateTime } = useAppFormat();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -67,22 +70,21 @@ export function AttendanceManagementTable({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update attendance");
+        throw new Error(result.message || t("updateFailed"));
       }
 
-      toast.success("Attendance record updated", {
-        description:
-          "The service type, person link, and service date were saved.",
+      toast.success(t("toastUpdated"), {
+        description: t("toastUpdatedBody"),
       });
       startTransition(() => {
         router.refresh();
       });
     } catch (error) {
-      toast.error("Attendance update failed", {
+      toast.error(t("toastFailed"), {
         description:
           error instanceof Error
             ? error.message
-            : "Unable to update attendance",
+            : t("updateFailed"),
       });
     } finally {
       setLoadingId(null);
@@ -91,8 +93,8 @@ export function AttendanceManagementTable({
 
   if (records.length === 0) {
     return (
-      <EmptyState icon="attendance" title="No records found">
-        No attendance records match the current filters.
+      <EmptyState icon="attendance" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
@@ -110,18 +112,18 @@ export function AttendanceManagementTable({
               <p className="truncate text-[14px] font-medium text-[#111111]">
                 {record.personType === "guest"
                   ? `${record.guestId?.firstName ?? ""} ${record.guestId?.lastName ?? ""}`.trim() ||
-                    "Guest record"
+                    t("guestRecord")
                   : `${record.memberId?.firstName ?? ""} ${record.memberId?.lastName ?? ""}`.trim() ||
-                    "Member record"}
+                    t("memberRecord")}
               </p>
               <p className="mt-0.5 text-[12px] text-[#8a8780]">
-                {new Date(record.serviceDate).toLocaleString()}
+                {dateTime(record.serviceDate)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge>{record.serviceTypeLabel || record.serviceType}</Badge>
               <Badge tone={record.personType === "guest" ? "flame" : "info"}>
-                {formatStatus(record.personType)}
+                {record.personType === "guest" ? t("guest") : t("member")}
               </Badge>
               <Icon
                 name="chevronDown"
@@ -134,7 +136,7 @@ export function AttendanceManagementTable({
               action={(formData) => updateRecord(record._id, formData)}
               className="grid gap-4 md:grid-cols-2"
             >
-              <Field label="Service date">
+              <Field label={t("serviceDate")}>
                 <input
                   name={`serviceDate-${record._id}`}
                   type="datetime-local"
@@ -145,7 +147,7 @@ export function AttendanceManagementTable({
                   className="ui-input"
                 />
               </Field>
-              <Field label="Service type">
+              <Field label={t("serviceType")}>
                 <select
                   name={`serviceTypeId-${record._id}`}
                   defaultValue={record.serviceTypeId?._id || ""}
@@ -153,8 +155,7 @@ export function AttendanceManagementTable({
                   className="ui-input"
                 >
                   <option value="">
-                    {record.serviceTypeLabel || record.serviceType} (keep
-                    current)
+                    {t("keepCurrent", { label: record.serviceTypeLabel || record.serviceType })}
                   </option>
                   {serviceTypes.map((serviceType) => (
                     <option key={serviceType._id} value={serviceType._id}>
@@ -163,25 +164,25 @@ export function AttendanceManagementTable({
                   ))}
                 </select>
               </Field>
-              <Field label="Person type">
+              <Field label={t("personType")}>
                 <select
                   name={`personType-${record._id}`}
                   defaultValue={record.personType}
                   disabled={!canEdit}
                   className="ui-input"
                 >
-                  <option value="guest">Guest</option>
-                  <option value="member">Member</option>
+                  <option value="guest">{t("guest")}</option>
+                  <option value="member">{t("member")}</option>
                 </select>
               </Field>
-              <Field label="Guest">
+              <Field label={t("guest")}>
                 <select
                   name={`guestId-${record._id}`}
                   defaultValue={record.guestId?._id || ""}
                   disabled={!canEdit}
                   className="ui-input"
                 >
-                  <option value="">Guest</option>
+                  <option value="">{t("guest")}</option>
                   {guests.map((guest) => (
                     <option key={guest._id} value={guest._id}>
                       {guest.firstName} {guest.lastName}
@@ -189,14 +190,14 @@ export function AttendanceManagementTable({
                   ))}
                 </select>
               </Field>
-              <Field label="Member">
+              <Field label={t("member")}>
                 <select
                   name={`memberId-${record._id}`}
                   defaultValue={record.memberId?._id || ""}
                   disabled={!canEdit}
                   className="ui-input"
                 >
-                  <option value="">Member</option>
+                  <option value="">{t("member")}</option>
                   {members.map((member) => (
                     <option key={member._id} value={member._id}>
                       {member.firstName} {member.lastName}
@@ -211,13 +212,12 @@ export function AttendanceManagementTable({
                     size="sm"
                     disabled={loadingId === record._id || pending}
                   >
-                    {loadingId === record._id ? "Saving..." : "Update record"}
+                    {loadingId === record._id ? t("saving") : t("updateRecord")}
                   </Button>
                 </div>
               ) : (
                 <p className="text-[13px] text-[#8a8780] md:col-span-2">
-                  Your role can review these older records but cannot edit them
-                  here.
+                  {t("readOnly")}
                 </p>
               )}
             </form>

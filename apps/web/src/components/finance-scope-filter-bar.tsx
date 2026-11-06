@@ -3,6 +3,7 @@ import { FilterPanel } from "@/components/filter-panel";
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/app/icons";
 import { Button } from "@/components/ui/ui";
 import type {
@@ -97,6 +98,8 @@ export function FinanceScopeFilterBar({
   offeringTypes,
   accounts,
 }: FinanceScopeFilterBarProps) {
+  const t = useTranslations("admin.financeFilters");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedRegion, setSelectedRegion] = useState(oversightRegion || "");
@@ -166,7 +169,7 @@ export function FinanceScopeFilterBar({
     >
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         <label className="block">
-          <span className="sr-only">National area</span>
+          <span className="sr-only">{tc("nationalArea")}</span>
           <select
             value={selectedRegion}
             disabled={!canChooseRegion || isPending}
@@ -185,7 +188,7 @@ export function FinanceScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All national areas</option>
+            <option value="">{tc("allNationalAreas")}</option>
             {oversightRegions.map((region) => (
               <option key={region._id} value={region.name}>
                 {region.name}
@@ -195,7 +198,7 @@ export function FinanceScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">District</span>
+          <span className="sr-only">{tc("district")}</span>
           <select
             value={selectedDistrict}
             disabled={!canChooseDistrict || isPending}
@@ -212,7 +215,7 @@ export function FinanceScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All districts</option>
+            <option value="">{tc("allDistricts")}</option>
             {filteredDistricts.map((item) => (
               <option key={item._id} value={item.name}>
                 {item.name}
@@ -222,7 +225,7 @@ export function FinanceScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">Branch</span>
+          <span className="sr-only">{tc("branch")}</span>
           <select
             value={selectedBranchId}
             disabled={!canChooseBranch || isPending}
@@ -233,7 +236,7 @@ export function FinanceScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All branches</option>
+            <option value="">{tc("allBranches")}</option>
             {filteredBranches.map((item) => (
               <option key={item._id} value={item._id}>
                 {item.name}
@@ -243,7 +246,7 @@ export function FinanceScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">Account</span>
+          <span className="sr-only">{t("account")}</span>
           <select
             value={selectedAccountId}
             disabled={isPending}
@@ -254,7 +257,7 @@ export function FinanceScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All accounts</option>
+            <option value="">{t("allAccounts")}</option>
             {accounts.map((item) => (
               <option key={item._id} value={item._id}>
                 {item.name}
@@ -264,7 +267,7 @@ export function FinanceScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">Offering type</span>
+          <span className="sr-only">{t("offeringType")}</span>
           <select
             value={selectedOfferingTypeId}
             disabled={isPending}
@@ -275,7 +278,7 @@ export function FinanceScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All offering types</option>
+            <option value="">{t("allOfferingTypes")}</option>
             {offeringTypes.map((item) => (
               <option key={item._id} value={item._id}>
                 {item.name}
@@ -288,7 +291,7 @@ export function FinanceScopeFilterBar({
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         <form onSubmit={submitSearchAndDates} className="flex min-w-0 flex-1 gap-2">
           <label className="relative block min-w-0 flex-1">
-            <span className="sr-only">Search</span>
+            <span className="sr-only">{tc("search")}</span>
             <Icon
               name="search"
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8780]"
@@ -296,18 +299,18 @@ export function FinanceScopeFilterBar({
             <input
               value={searchDraft}
               onChange={(event) => setSearchDraft(event.target.value)}
-              placeholder="Search service, note or type"
+              placeholder={t("searchPlaceholder")}
               className="ui-input !pl-9"
             />
           </label>
           <Button type="submit" variant="secondary">
-            Search
+            {tc("search")}
           </Button>
         </form>
 
         <form onSubmit={submitSearchAndDates} className="flex flex-wrap items-center gap-2">
           <label className="block w-full sm:w-[160px]">
-            <span className="sr-only">From</span>
+            <span className="sr-only">{t("from")}</span>
             <input
               type="date"
               value={fromDraft}
@@ -315,9 +318,9 @@ export function FinanceScopeFilterBar({
               className="ui-input"
             />
           </label>
-          <span className="text-[13px] text-[#8a8780]">to</span>
+          <span className="text-[13px] text-[#8a8780]">{t("toSeparator")}</span>
           <label className="block w-full sm:w-[160px]">
-            <span className="sr-only">To</span>
+            <span className="sr-only">{t("to")}</span>
             <input
               type="date"
               value={toDraft}
@@ -325,13 +328,13 @@ export function FinanceScopeFilterBar({
               className="ui-input"
             />
           </label>
-          <Button type="submit">Apply dates</Button>
+          <Button type="submit">{t("applyDates")}</Button>
         </form>
 
         {isPending ? (
           <span className="flex h-8 items-center gap-2 px-2 text-[13px] text-[#8a8780]" role="status">
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#e4e3df] border-t-[#ea580c]" />
-            Updating
+            {tc("updating")}
           </span>
         ) : null}
       </div>

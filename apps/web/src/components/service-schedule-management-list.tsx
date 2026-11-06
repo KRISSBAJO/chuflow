@@ -3,8 +3,10 @@ import { ExportTableButtons } from "@/components/table-export";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { useMemberFormLabels } from "@/lib/member-form-options";
 import { isBranchScopedRole } from "@/lib/permissions";
 import type {
   BranchSummary,
@@ -17,7 +19,6 @@ import {
   Button,
   EmptyState,
   Field,
-  formatStatus,
 } from "@/components/ui/ui";
 
 const weekdayOptions = [
@@ -54,6 +55,10 @@ export function ServiceScheduleManagementList({
   currentUserRole: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.serviceSchedules");
+  const tCommon = useTranslations("common");
+  const tStatuses = useTranslations("statuses");
+  const labels = useMemberFormLabels();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleSubmit(scheduleId: string, formData: FormData) {
@@ -88,20 +93,19 @@ export function ServiceScheduleManagementList({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update service schedule");
+        throw new Error(result.message || t("updateError"));
       }
 
-      toast.success("Service schedule updated", {
-        description:
-          "Attendance and finance will use the updated branch service definition immediately.",
+      toast.success(t("updatedTitle"), {
+        description: t("updatedBody"),
       });
       router.refresh();
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to update service schedule";
-      toast.error("Service schedule update failed", {
+          : t("updateError");
+      toast.error(t("updateFailed"), {
         description: message,
       });
     } finally {
@@ -111,8 +115,8 @@ export function ServiceScheduleManagementList({
 
   if (schedules.length === 0) {
     return (
-      <EmptyState icon="clock" title="No service schedules yet">
-        Create one so branches can track multiple services cleanly.
+      <EmptyState icon="clock" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
@@ -143,24 +147,24 @@ export function ServiceScheduleManagementList({
                   {schedule.name}
                 </p>
                 <p className="mt-0.5 text-[12px] text-[#8a8780]">
-                  {getBranchName(schedule.branchId) || "Branch scope"} ·{" "}
+                  {getBranchName(schedule.branchId) || t("branchScope")} ·{" "}
                   {schedule.serviceTypeLabel} ·{" "}
-                  {formatStatus(schedule.dayOfWeek)} · {schedule.startTime}
+                  {labels.weekday(schedule.dayOfWeek)} · {schedule.startTime}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge tone={schedule.isActive ? "success" : "neutral"} dot>
-                  {schedule.isActive ? "Active" : "Inactive"}
+                  {schedule.isActive ? tStatuses("active") : tStatuses("inactive")}
                 </Badge>
                 <Badge
                   tone={schedule.attendanceEntryEnabled ? "info" : "neutral"}
                 >
-                  Attendance
+                  {t("attendance")}
                 </Badge>
                 <Badge
                   tone={schedule.financeEntryEnabled ? "warning" : "neutral"}
                 >
-                  Finance
+                  {t("finance")}
                 </Badge>
                 <Icon
                   name="chevronDown"
@@ -174,13 +178,13 @@ export function ServiceScheduleManagementList({
                 className="grid gap-4 md:grid-cols-2"
               >
                 {!isBranchScopedRole(currentUserRole) ? (
-                  <Field label="Branch">
+                  <Field label={tCommon("branch")}>
                     <select
                       name={`branchId-${schedule._id}`}
                       defaultValue={branchId}
                       className="ui-input"
                     >
-                      <option value="">Select branch</option>
+                      <option value="">{tCommon("selectBranch")}</option>
                       {branches.map((branch) => (
                         <option key={branch._id} value={branch._id}>
                           {branch.name}
@@ -196,7 +200,7 @@ export function ServiceScheduleManagementList({
                   />
                 )}
 
-                <Field label="Service type">
+                <Field label={t("serviceType")}>
                   <select
                     name={`serviceTypeId-${schedule._id}`}
                     defaultValue={
@@ -214,7 +218,7 @@ export function ServiceScheduleManagementList({
                   </select>
                 </Field>
 
-                <Field label="Schedule name">
+                <Field label={t("scheduleName")}>
                   <input
                     name={`name-${schedule._id}`}
                     defaultValue={schedule.name}
@@ -222,7 +226,7 @@ export function ServiceScheduleManagementList({
                   />
                 </Field>
 
-                <Field label="Day of week">
+                <Field label={t("dayOfWeek")}>
                   <select
                     name={`dayOfWeek-${schedule._id}`}
                     defaultValue={schedule.dayOfWeek}
@@ -230,13 +234,13 @@ export function ServiceScheduleManagementList({
                   >
                     {weekdayOptions.map((day) => (
                       <option key={day} value={day}>
-                        {day.charAt(0).toUpperCase() + day.slice(1)}
+                        {labels.weekday(day)}
                       </option>
                     ))}
                   </select>
                 </Field>
 
-                <Field label="Start time">
+                <Field label={t("startTime")}>
                   <input
                     name={`startTime-${schedule._id}`}
                     type="time"
@@ -245,7 +249,7 @@ export function ServiceScheduleManagementList({
                   />
                 </Field>
 
-                <Field label="End time">
+                <Field label={t("endTime")}>
                   <input
                     name={`endTime-${schedule._id}`}
                     type="time"
@@ -254,7 +258,7 @@ export function ServiceScheduleManagementList({
                   />
                 </Field>
 
-                <Field label="Timezone" className="md:col-span-2">
+                <Field label={t("timezone")} className="md:col-span-2">
                   <input
                     name={`timezone-${schedule._id}`}
                     defaultValue={schedule.timezone}
@@ -262,7 +266,7 @@ export function ServiceScheduleManagementList({
                   />
                 </Field>
 
-                <Field label="Location notes" className="md:col-span-2">
+                <Field label={t("locationNotes")} className="md:col-span-2">
                   <textarea
                     name={`locationNotes-${schedule._id}`}
                     defaultValue={schedule.locationNotes || ""}
@@ -278,7 +282,7 @@ export function ServiceScheduleManagementList({
                       defaultChecked={schedule.attendanceEntryEnabled}
                       className="h-4 w-4 accent-[#111111]"
                     />
-                    Use for attendance
+                    {t("useForAttendance")}
                   </label>
                   <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
                     <input
@@ -287,7 +291,7 @@ export function ServiceScheduleManagementList({
                       defaultChecked={schedule.financeEntryEnabled}
                       className="h-4 w-4 accent-[#111111]"
                     />
-                    Use for finance
+                    {t("useForFinance")}
                   </label>
                   <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
                     <input
@@ -296,7 +300,7 @@ export function ServiceScheduleManagementList({
                       defaultChecked={schedule.isActive}
                       className="h-4 w-4 accent-[#111111]"
                     />
-                    Active schedule
+                    {t("activeSchedule")}
                   </label>
                 </div>
 
@@ -307,8 +311,8 @@ export function ServiceScheduleManagementList({
                     disabled={loadingId === schedule._id}
                   >
                     {loadingId === schedule._id
-                      ? "Saving..."
-                      : "Update service schedule"}
+                      ? tCommon("saving")
+                      : t("update")}
                   </Button>
                 </div>
               </form>

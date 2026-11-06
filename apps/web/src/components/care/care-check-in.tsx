@@ -1,8 +1,12 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { apiPost } from "@/lib/api";
 import { Wordmark } from "@/components/brand/wordmark";
+import { LanguagePicker } from "@/components/i18n/language-picker";
 import { Button, Field } from "@/components/ui/ui";
+
+const RESPONSES = ["well", "away", "request_call", "prayer", "moved", "other"] as const;
 export function CareCheckIn({
   token,
   info,
@@ -10,12 +14,15 @@ export function CareCheckIn({
   token: string;
   info: { churchName: string; kind: string };
 }) {
-  const [language, setLanguage] = useState("en");
+  const t = useTranslations("people.care.checkIn");
+  const tsh = useTranslations("people.shared");
+  const locale = useLocale();
+  // The care API stores the person's preferred language as en/es only.
+  const language = locale === "es" ? "es" : "en";
   const [response, setResponse] = useState("well");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const es = language === "es";
   const stop = info.kind === "unsubscribe";
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,7 +45,7 @@ export function CareCheckIn({
       setDone(true);
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Could not save your response.",
+        e instanceof Error ? e.message : t("errorSave"),
       );
     } finally {
       setBusy(false);
@@ -49,94 +56,39 @@ export function CareCheckIn({
       <section className="mx-auto max-w-lg rounded-3xl bg-white p-6 sm:p-8">
         <div className="flex items-center justify-between gap-3">
           <Wordmark />
-          <select
-            className="rounded-lg border border-black/10 px-2 py-1 text-sm"
-            aria-label="Language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-          >
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
+          <LanguagePicker />
         </div>
         <p className="lp-label mt-8">{info.churchName}</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-          {done
-            ? es
-              ? "Gracias por responder"
-              : "Thank you for letting us know"
-            : stop
-              ? es
-                ? "Dejar de recibir mensajes"
-                : "Stop care messages"
-              : es
-                ? "¿Cómo podemos apoyarle?"
-                : "How can we support you?"}
+          {done ? t("thanks") : stop ? t("stopTitle") : t("supportTitle")}
         </h1>
         {done ? (
           <p className="mt-4 text-sm leading-7 text-[#6b6b6b]">
-            {stop
-              ? es
-                ? "Se ha registrado su solicitud. Los mensajes automáticos de cuidado se detendrán."
-                : "Your request has been recorded. Automated care messages will stop."
-              : es
-                ? "Su respuesta se ha compartido con el equipo correspondiente de su iglesia."
-                : "Your response has been shared with the appropriate church care team."}
+            {stop ? t("doneStop") : t("doneShared")}
           </p>
         ) : (
           <form onSubmit={submit} className="mt-6 space-y-5">
             {stop ? (
               <p className="text-sm leading-7 text-[#6b6b6b]">
-                {es
-                  ? "Confirme que desea dejar de recibir mensajes de cuidado de su iglesia."
-                  : "Confirm that you want your church to stop care contact and automated care messages."}
+                {t("confirmStop")}
               </p>
             ) : (
               <>
-                <Field
-                  label={
-                    es
-                      ? "¿Qué desea compartir?"
-                      : "What would you like to share?"
-                  }
-                >
+                <Field label={t("shareLabel")}>
                   <select
                     className="ui-input"
                     value={response}
                     onChange={(e) => setResponse(e.target.value)}
                   >
-                    {[
-                      ["well", "I’m doing well", "Estoy bien"],
-                      [
-                        "away",
-                        "I’m temporarily away",
-                        "Estoy fuera temporalmente",
-                      ],
-                      [
-                        "request_call",
-                        "I would appreciate a call",
-                        "Me gustaría recibir una llamada",
-                      ],
-                      [
-                        "prayer",
-                        "I have a prayer request",
-                        "Tengo una petición de oración",
-                      ],
-                      ["moved", "I have moved", "Me he mudado"],
-                      ["other", "Something else", "Otra cosa"],
-                    ].map(([value, en, spanish]) => (
+                    {RESPONSES.map((value) => (
                       <option key={value} value={value}>
-                        {es ? spanish : en}
+                        {t(`responses.${value}`)}
                       </option>
                     ))}
                   </select>
                 </Field>
                 {response === "away" && (
-                  <Field
-                    label={
-                      es ? "Disponible nuevamente el" : "Available again on"
-                    }
-                  >
+                  <Field label={t("availableAgain")}>
                     <input
                       className="ui-input"
                       name="until"
@@ -145,34 +97,24 @@ export function CareCheckIn({
                     />
                   </Field>
                 )}
-                <Field label={es ? "Mensaje opcional" : "Optional message"}>
+                <Field label={t("optionalMessage")}>
                   <textarea
                     className="ui-input min-h-32"
                     name="note"
                     maxLength={2000}
-                    placeholder={
-                      es
-                        ? "Comparta solo lo que desee."
-                        : "Share only what you are comfortable sharing."
-                    }
+                    placeholder={t("messagePlaceholder")}
                   />
                 </Field>
                 <label className="flex items-start gap-2 text-sm">
                   <input type="checkbox" name="contactRequested" />
-                  {es
-                    ? "Me gustaría que el equipo me contactara sobre mi respuesta."
-                    : "I would like the team to contact me about my response."}
+                  {t("contactRequested")}
                 </label>
                 <label className="flex items-start gap-2 text-sm">
                   <input type="checkbox" name="emailAllowed" />
-                  {es
-                    ? "Doy permiso para recibir correos de cuidado de mi iglesia."
-                    : "I give permission for my church to email me care messages."}
+                  {t("emailAllowed")}
                 </label>
                 <p className="text-xs leading-6 text-[#8a8780]">
-                  {es
-                    ? "Las peticiones de oración se restringen al liderazgo. Esta respuesta no registra asistencia a un servicio."
-                    : "Prayer requests are restricted to leadership. This response does not record church attendance."}
+                  {t("privacyNote")}
                 </p>
               </>
             )}
@@ -182,17 +124,7 @@ export function CareCheckIn({
               </p>
             )}
             <Button type="submit" variant="flame" disabled={busy}>
-              {busy
-                ? es
-                  ? "Guardando…"
-                  : "Saving…"
-                : stop
-                  ? es
-                    ? "Confirmar y detener mensajes"
-                    : "Confirm and stop contact"
-                  : es
-                    ? "Enviar respuesta"
-                    : "Send response"}
+              {busy ? tsh("savingEllipsis") : stop ? t("confirmAndStop") : t("send")}
             </Button>
           </form>
         )}

@@ -1,14 +1,13 @@
 "use client";
-import { useState, type CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Wordmark } from "@/components/brand/wordmark";
-import { FormLanguagePicker } from "@/components/form-language-picker";
+import { LanguageRow } from "@/components/i18n/language-picker";
+import { setLocaleAction } from "@/i18n/actions";
+import { isLocale } from "@/i18n/config";
 import { OutreachContactForm } from "./contact-form";
 import { validFormColor, formTextColor } from "@/lib/form-colors";
-import {
-  formText,
-  setFormLanguageInUrl,
-  type FormLanguage,
-} from "@/lib/form-language";
 
 export type PublicOutreachInfo = {
   branchName: string;
@@ -21,14 +20,25 @@ export type PublicOutreachInfo = {
 export function OutreachPublicView({
   token,
   info,
-  initialLanguage,
+  requestedLanguage,
 }: {
   token: string;
   info: PublicOutreachInfo;
-  initialLanguage: FormLanguage;
+  /** `?lang=` from a shared or QR link; applied once to the language cookie, then dropped from the URL. */
+  requestedLanguage?: string;
 }) {
-  const [language, setLanguage] = useState(initialLanguage);
-  const t = (value: string) => formText(value, language);
+  const t = useTranslations("people.evangelism.publicView");
+  const locale = useLocale();
+  const router = useRouter();
+  useEffect(() => {
+    if (!requestedLanguage) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("lang");
+    window.history.replaceState(window.history.state, "", url.toString());
+    if (isLocale(requestedLanguage) && requestedLanguage !== locale) {
+      void setLocaleAction(requestedLanguage).then(() => router.refresh());
+    }
+  }, [requestedLanguage, locale, router]);
   const headerColor = validFormColor(info.headerColor);
   const headerText =
     validFormColor(info.headerTextColor) ||
@@ -36,18 +46,12 @@ export function OutreachPublicView({
   const churchName = info.churchName || info.branchName;
   return (
     <div
-      lang={language}
+      lang={locale}
       className="app-root min-h-screen bg-[#faf9f6] px-4 py-8 sm:py-12"
     >
       <main className="mx-auto max-w-2xl">
         <div className="mb-5 flex justify-end">
-          <FormLanguagePicker
-            value={language}
-            onChange={(value) => {
-              setLanguage(value);
-              setFormLanguageInUrl(value);
-            }}
-          />
+          <LanguageRow />
         </div>
         <header
           style={
@@ -75,15 +79,13 @@ export function OutreachPublicView({
             </p>
           )}
           <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-            {t("Let’s stay connected.")}
+            {t("title")}
           </h1>
           <p
             className="mb-7 mt-4 text-base leading-7"
             style={{ color: headerText || "#6b6b6b" }}
           >
-            {t(
-              "It was a pleasure connecting with you. Leave your details so our team can follow up, pray with you, or help you take your next step.",
-            )}
+            {t("intro")}
           </p>
         </header>
         <OutreachContactForm
@@ -91,12 +93,9 @@ export function OutreachPublicView({
           branchName={churchName}
           buttonColor={info.buttonColor}
           buttonTextColor={info.buttonTextColor}
-          language={language}
         />
         <p className="mt-6 text-center text-xs leading-6 text-[#8a8780]">
-          {t(
-            "Your details go to this church’s care team. You do not need a ChuFlow account.",
-          )}
+          {t("footer")}
         </p>
       </main>
     </div>

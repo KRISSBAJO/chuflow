@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button, Card, CardHeader, EmptyState, Field } from "@/components/ui/ui";
@@ -13,6 +14,9 @@ export function FinanceAccountManagementCard({
 }: {
   accounts: FinanceAccountSummary[];
 }) {
+  const t = useTranslations("admin.accounts");
+  const tc = useTranslations("common");
+  const ts = useTranslations("statuses");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -36,16 +40,16 @@ export function FinanceAccountManagementCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create account");
+        throw new Error(result.message || t("createError"));
       }
 
-      toast.success("Finance account created", {
-        description: "This account is now available across branch ledger workflows.",
+      toast.success(t("createdTitle"), {
+        description: t("createdDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Finance account not created", {
-        description: error instanceof Error ? error.message : "Unable to create account",
+      toast.error(t("createFailedTitle"), {
+        description: error instanceof Error ? error.message : t("createError"),
       });
     } finally {
       setLoading(false);
@@ -71,16 +75,16 @@ export function FinanceAccountManagementCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update account");
+        throw new Error(result.message || t("updateError"));
       }
 
-      toast.success("Finance account updated", {
-        description: "Ledger routing will now use the latest account setup.",
+      toast.success(t("updatedTitle"), {
+        description: t("updatedDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Finance account update failed", {
-        description: error instanceof Error ? error.message : "Unable to update account",
+      toast.error(t("updateFailedTitle"), {
+        description: error instanceof Error ? error.message : t("updateError"),
       });
     } finally {
       setLoadingId(null);
@@ -90,43 +94,43 @@ export function FinanceAccountManagementCard({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="Accounts and funds"
-        title="Finance accounts"
-        description="Shared accounts that offerings and expenses are posted to."
-        action={<Badge>{accounts.length} accounts</Badge>}
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
+        action={<Badge>{t("count", { count: accounts.length })}</Badge>}
       />
 
       <form action={createAccount} className="mt-6 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
-        <p className="text-[14px] font-semibold text-[#111111]">Add an account</p>
+        <p className="text-[14px] font-semibold text-[#111111]">{t("addTitle")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_120px]">
-          <Field label="Account name" required>
-            <input name="name" placeholder="e.g. Building fund" className="ui-input" required />
+          <Field label={t("name")} required>
+            <input name="name" placeholder={t("namePlaceholder")} className="ui-input" required />
           </Field>
-          <Field label="Key">
-            <input name="key" placeholder="Optional" className="ui-input" />
+          <Field label={t("key")}>
+            <input name="key" placeholder={t("keyPlaceholder")} className="ui-input" />
           </Field>
-          <Field label="Sort order">
+          <Field label={t("sortOrder")}>
             <input name="sortOrder" type="number" defaultValue={0} className="ui-input tabular-nums" />
           </Field>
-          <Field label="Description" className="sm:col-span-3">
-            <textarea name="description" placeholder="Optional description" className="ui-input" />
+          <Field label={t("descriptionLabel")} className="sm:col-span-3">
+            <textarea name="description" placeholder={t("descriptionPlaceholder")} className="ui-input" />
           </Field>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-[14px] text-[#55534e]">
             <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4 accent-[#111111]" />
-            Active immediately
+            {t("activeImmediately")}
           </label>
           <Button type="submit" icon="plus" disabled={loading}>
-            {loading ? "Creating..." : "Create account"}
+            {loading ? t("creating") : t("create")}
           </Button>
         </div>
       </form>
 
       <div className="mt-5 space-y-3">
         {accounts.length === 0 ? (
-          <EmptyState icon="finance" title="No accounts yet">
-            Create the first account above.
+          <EmptyState icon="finance" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         ) : null}
         {accounts.map((account) => (
@@ -139,11 +143,11 @@ export function FinanceAccountManagementCard({
                 <p className="truncate text-[14px] font-medium text-[#111111]">{account.name}</p>
                 <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                   {account.key}
-                  {account.isSeeded ? " · Default" : ""}
+                  {account.isSeeded ? ` · ${t("default")}` : ""}
                 </p>
               </div>
               <Badge tone={account.isActive ? "success" : "neutral"} dot>
-                {account.isActive ? "Active" : "Inactive"}
+                {account.isActive ? ts("active") : ts("inactive")}
               </Badge>
               <Icon
                 name="chevronDown"
@@ -155,13 +159,13 @@ export function FinanceAccountManagementCard({
                 action={(formData) => updateAccount(account._id, formData)}
                 className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_120px]"
               >
-                <Field label="Account name">
+                <Field label={t("name")}>
                   <input name={`name-${account._id}`} defaultValue={account.name} className="ui-input" />
                 </Field>
-                <Field label="Key">
+                <Field label={t("key")}>
                   <input name={`key-${account._id}`} defaultValue={account.key} className="ui-input" />
                 </Field>
-                <Field label="Sort order">
+                <Field label={t("sortOrder")}>
                   <input
                     name={`sortOrder-${account._id}`}
                     type="number"
@@ -169,7 +173,7 @@ export function FinanceAccountManagementCard({
                     className="ui-input tabular-nums"
                   />
                 </Field>
-                <Field label="Description" className="sm:col-span-3">
+                <Field label={t("descriptionLabel")} className="sm:col-span-3">
                   <textarea
                     name={`description-${account._id}`}
                     defaultValue={account.description || ""}
@@ -184,10 +188,10 @@ export function FinanceAccountManagementCard({
                       defaultChecked={account.isActive}
                       className="h-4 w-4 accent-[#111111]"
                     />
-                    Active account
+                    {t("activeAccount")}
                   </label>
                   <Button type="submit" size="sm" disabled={loadingId === account._id}>
-                    {loadingId === account._id ? "Saving..." : "Update account"}
+                    {loadingId === account._id ? tc("saving") : t("update")}
                   </Button>
                 </div>
               </form>

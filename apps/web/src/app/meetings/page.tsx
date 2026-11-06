@@ -1,11 +1,16 @@
 import { Icon } from "@/components/app/icons";
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { Card, buttonClass } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type { Meeting, MeetingOptions } from "@/lib/meetings";
+
+const MEETING_STATUSES = ["scheduled", "ongoing", "completed", "cancelled"] as const;
+const MINUTES_STATUSES = ["overdue", "draft", "submitted", "approved", "changes_requested"] as const;
+
 export default async function MeetingsPage({
   searchParams,
 }: {
@@ -29,12 +34,22 @@ export default async function MeetingsPage({
   ])
     if (typeof raw[key] === "string" && raw[key].trim())
       query.set(key, raw[key]);
-  const [result, options] = await Promise.all([
+  const [result, options, t, tStatus, tMinutes, format] = await Promise.all([
     serverGet<{ items: Meeting[]; total: number; page: number; limit: number }>(
       `/meetings?${query}`,
     ),
     serverGet<MeetingOptions>("/meetings/options?mode=form"),
+    getTranslations("services.meetings.list"),
+    getTranslations("services.meetings.statuses"),
+    getTranslations("services.meetings.minutesStatuses"),
+    getFormatter(),
   ]);
+  const statusLabel = (value: string) =>
+    tStatus.has(value as (typeof MEETING_STATUSES)[number]) ? tStatus(value as (typeof MEETING_STATUSES)[number]) : value;
+  const minutesLabel = (value: string) =>
+    tMinutes.has(value as (typeof MINUTES_STATUSES)[number])
+      ? tMinutes(value as (typeof MINUTES_STATUSES)[number])
+      : value.replaceAll("_", " ");
   const activeFilters = [...query].filter(
     ([key, value]) => key !== "page" && (key !== "sort" || value !== "newest"),
   ).length;
@@ -46,9 +61,9 @@ export default async function MeetingsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Meetings"
-        title="Meet, decide and follow through"
-        description="Schedule group meetings, record attendance, submit minutes and track actions."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex flex-wrap gap-2">
             {options.isAdmin && (
@@ -56,11 +71,11 @@ export default async function MeetingsPage({
                 href="/meetings/groups"
                 className={buttonClass("secondary")}
               >
-                Group settings
+                {t("groupSettings")}
               </Link>
             )}
             <Link href="/meetings/new" className={buttonClass()}>
-              + Schedule meeting
+              {t("schedule")}
             </Link>
           </div>
         }
@@ -70,16 +85,16 @@ export default async function MeetingsPage({
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-500 [&::-webkit-details-marker]:hidden">
             <span className="flex items-center gap-2.5 text-sm font-medium">
               <Icon name="filter" className="h-4 w-4 text-[#df6d13]" />
-              Filters
+              {t("filters")}
               {activeFilters > 0 && (
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs text-[#b94f0a]">
-                  {activeFilters} active
+                  {t("activeCount", { count: activeFilters })}
                 </span>
               )}
             </span>
             <span className="flex items-center gap-3">
               <span className="hidden text-xs text-[#8a8780] sm:inline">
-                Search, dates and status
+                {t("filtersHint")}
               </span>
               <Icon
                 name="chevronDown"
@@ -91,17 +106,17 @@ export default async function MeetingsPage({
             <input
               name="q"
               className="ui-input"
-              placeholder="Search meetings"
-              aria-label="Search meetings"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchAria")}
               defaultValue={query.get("q") || ""}
             />
             <select
               name="branchId"
               className="ui-input"
-              aria-label="Branch"
+              aria-label={t("branchAria")}
               defaultValue={query.get("branchId") || ""}
             >
-              <option value="">All accessible branches</option>
+              <option value="">{t("allAccessibleBranches")}</option>
               {options.branches.map((b) => (
                 <option value={b._id} key={b._id}>
                   {b.name}
@@ -111,10 +126,10 @@ export default async function MeetingsPage({
             <select
               name="groupId"
               className="ui-input"
-              aria-label="Meeting group"
+              aria-label={t("groupAria")}
               defaultValue={query.get("groupId") || ""}
             >
-              <option value="">All meeting groups</option>
+              <option value="">{t("allGroups")}</option>
               {options.groups.map((g) => (
                 <option value={g._id} key={g._id}>
                   {g.name}
@@ -124,44 +139,40 @@ export default async function MeetingsPage({
             <select
               name="status"
               className="ui-input"
-              aria-label="Meeting status"
+              aria-label={t("statusAria")}
               defaultValue={query.get("status") || ""}
             >
-              <option value="">All meeting statuses</option>
-              {["scheduled", "ongoing", "completed", "cancelled"].map((s) => (
-                <option key={s}>{s}</option>
+              <option value="">{t("allStatuses")}</option>
+              {MEETING_STATUSES.map((s) => (
+                <option value={s} key={s}>
+                  {tStatus(s)}
+                </option>
               ))}
             </select>
             <select
               name="minutes"
               className="ui-input"
-              aria-label="Minutes status"
+              aria-label={t("minutesAria")}
               defaultValue={query.get("minutes") || ""}
             >
-              <option value="">All minutes statuses</option>
-              {[
-                "overdue",
-                "draft",
-                "submitted",
-                "approved",
-                "changes_requested",
-              ].map((s) => (
+              <option value="">{t("allMinutesStatuses")}</option>
+              {MINUTES_STATUSES.map((s) => (
                 <option value={s} key={s}>
-                  {s.replaceAll("_", " ")}
+                  {tMinutes(s)}
                 </option>
               ))}
             </select>
             <select
               name="sort"
               className="ui-input"
-              aria-label="Sort meetings"
+              aria-label={t("sortAria")}
               defaultValue={query.get("sort") || "newest"}
             >
-              <option value="newest">Latest first</option>
-              <option value="oldest">Earliest first</option>
+              <option value="newest">{t("latestFirst")}</option>
+              <option value="oldest">{t("earliestFirst")}</option>
             </select>
             <label className="text-sm">
-              From (UTC)
+              {t("fromUtc")}
               <input
                 name="from"
                 type="date"
@@ -170,7 +181,7 @@ export default async function MeetingsPage({
               />
             </label>
             <label className="text-sm">
-              To (UTC)
+              {t("toUtc")}
               <input
                 name="to"
                 type="date"
@@ -181,41 +192,41 @@ export default async function MeetingsPage({
             <select
               className="ui-input"
               name="actions"
-              aria-label="Actions"
+              aria-label={t("actionsAria")}
               defaultValue={query.get("actions") || ""}
             >
-              <option value="">All actions</option>
-              <option value="due">My overdue actions</option>
+              <option value="">{t("allActions")}</option>
+              <option value="due">{t("myOverdueActions")}</option>
             </select>
             <select
               className="ui-input"
               name="upcoming"
-              aria-label="Upcoming"
+              aria-label={t("upcomingAria")}
               defaultValue={query.get("upcoming") || ""}
             >
-              <option value="">All dates</option>
-              <option value="true">Next 24 hours</option>
+              <option value="">{t("allDates")}</option>
+              <option value="true">{t("next24Hours")}</option>
             </select>
-            <button className={buttonClass()}>Apply filters</button>
+            <button className={buttonClass()}>{t("applyFilters")}</button>
             <Link className={buttonClass("secondary")} href="/meetings">
-              Clear filters
+              {t("clearFilters")}
             </Link>
           </form>
         </details>
       </Card>
       <Card className="p-5 overflow-x-auto">
-        <p className="mb-4 text-sm">{result.total} meetings</p>
+        <p className="mb-4 text-sm">{t("total", { count: result.total })}</p>
         <table className="ui-table w-full">
           <thead>
             <tr>
-              <th>Meeting</th>
-              <th>Branch / group</th>
-              <th>Starts</th>
-              <th>Status</th>
-              <th>Minutes</th>
-              <th>Actions</th>
+              <th>{t("headers.meeting")}</th>
+              <th>{t("headers.branchGroup")}</th>
+              <th>{t("headers.starts")}</th>
+              <th>{t("headers.status")}</th>
+              <th>{t("headers.minutes")}</th>
+              <th>{t("headers.actions")}</th>
               <th>
-                <span className="sr-only">Open meeting</span>
+                <span className="sr-only">{t("headers.open")}</span>
               </th>
             </tr>
           </thead>
@@ -236,24 +247,29 @@ export default async function MeetingsPage({
                   {typeof m.groupId === "object" ? m.groupId.name : ""}
                 </td>
                 <td>
-                  {new Date(m.startsAt).toLocaleString("en-US", {
-                    timeZone: "UTC",
-                  })}{" "}
-                  UTC
+                  {t("startsUtc", {
+                    date: format.dateTime(new Date(m.startsAt), {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                      timeZone: "UTC",
+                    }),
+                  })}
                 </td>
-                <td>{m.status}</td>
+                <td>{statusLabel(m.status)}</td>
                 <td className={m.minutesOverdue ? "text-red-700" : ""}>
-                  {m.minutesOverdue ? "Overdue · " : ""}
-                  {m.minutesStatus.replaceAll("_", " ")}
+                  {m.minutesOverdue ? t("overduePrefix") : ""}
+                  {minutesLabel(m.minutesStatus)}
                 </td>
                 <td>
-                  {m.actions.filter((a) => a.status === "open").length} open
+                  {t("openCount", {
+                    count: m.actions.filter((a) => a.status === "open").length,
+                  })}
                 </td>
                 <td className="text-right">
                   <Link
                     href={`/meetings/${m._id}`}
-                    aria-label={`Open meeting: ${m.title}`}
-                    title={`Open ${m.title}`}
+                    aria-label={t("openMeetingAria", { title: m.title })}
+                    title={t("openTitle", { title: m.title })}
                     className={buttonClass(
                       "secondary",
                       "sm",
@@ -268,15 +284,14 @@ export default async function MeetingsPage({
           </tbody>
         </table>
         {!result.items.length && (
-          <p className="py-8 text-center text-[#6b6b6b]">
-            No meetings match these filters. Enable a group in Group settings to
-            get started.
-          </p>
+          <p className="py-8 text-center text-[#6b6b6b]">{t("empty")}</p>
         )}
         <div className="mt-4 flex items-center justify-between">
           <span>
-            Page {result.page} of{" "}
-            {Math.max(1, Math.ceil(result.total / result.limit))}
+            {t("pageOf", {
+              page: result.page,
+              total: Math.max(1, Math.ceil(result.total / result.limit)),
+            })}
           </span>
           <div className="flex gap-2">
             {result.page > 1 && (
@@ -284,7 +299,7 @@ export default async function MeetingsPage({
                 href={pageLink(result.page - 1)}
                 className={buttonClass("secondary", "sm")}
               >
-                Previous
+                {t("previous")}
               </Link>
             )}
             {result.page * result.limit < result.total && (
@@ -292,7 +307,7 @@ export default async function MeetingsPage({
                 href={pageLink(result.page + 1)}
                 className={buttonClass("secondary", "sm")}
               >
-                Next
+                {t("next")}
               </Link>
             )}
           </div>

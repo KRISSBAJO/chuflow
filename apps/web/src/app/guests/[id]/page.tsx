@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Icon } from "@/components/app/icons";
 import { CommunicationPanel } from "@/components/communication-panel";
 import { ConvertGuestButton } from "@/components/convert-guest-button";
@@ -18,18 +19,6 @@ import type {
   UserSummary,
   VisitItem,
 } from "@/lib/types";
-
-function formatDateTime(value?: string) {
-  if (!value) {
-    return "No timestamp";
-  }
-
-  return new Date(value).toLocaleString();
-}
-
-function formatValue(value?: string) {
-  return value?.replace(/_/g, " ") || "Not recorded";
-}
 
 function WorkSection({
   title,
@@ -68,6 +57,25 @@ export default async function GuestDetailPage({
 }) {
   const user = await requireServerRole("/guests");
   const { id } = await params;
+  const [t, tc, ts, tsh, format] = await Promise.all([
+    getTranslations("people.guests.detail"),
+    getTranslations("common"),
+    getTranslations("statuses"),
+    getTranslations("people.shared"),
+    getFormatter(),
+  ]);
+  type StatusKey = Parameters<typeof ts>[0];
+  const statusLabel = (value?: string | null) => {
+    if (!value) return "";
+    const key = value.toLowerCase();
+    return ts.has(key as StatusKey) ? ts(key as StatusKey) : formatStatus(value);
+  };
+  const formatDateTime = (value?: string) => {
+    if (!value) return tsh("noTimestamp");
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? tsh("noTimestamp") : format.dateTime(date, { dateStyle: "short", timeStyle: "short" });
+  };
+  const formatValue = (value?: string) => value?.replace(/_/g, " ") || tsh("notRecorded");
 
   const [guest, followUpList, visits, communications, users] = await Promise.all([
     serverGet<GuestListItem & {
@@ -122,39 +130,39 @@ export default async function GuestDetailPage({
     ...visits.map((visit) => ({
       id: `visit-${visit._id}`,
       when: visit.visitDate,
-      type: "visit",
-      text: `Visit recorded for ${visit.serviceType}${visit.notes ? ` · ${visit.notes}` : ""}`,
+      type: t("types.visit"),
+      text: `${t("visitRecorded", { serviceType: visit.serviceType })}${visit.notes ? ` · ${visit.notes}` : ""}`,
     })),
     ...followUps.map((followUp) => ({
       id: `follow-${followUp._id}`,
       when: followUp.updatedAt || followUp.nextActionDate || "",
-      type: "follow-up",
-      text: `${followUp.status.replace("_", " ")} · ${followUp.note}`,
+      type: t("types.followUp"),
+      text: `${statusLabel(followUp.status)} · ${followUp.note}`,
     })),
     ...communications.map((communication) => ({
       id: `communication-${communication._id}`,
       when: communication.createdAt || "",
-      type: "communication",
+      type: t("types.communication"),
       text: `${communication.channel} · ${communication.templateName}`,
     })),
   ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
 
   const facts = [
-    ["Phone", guest.phone],
-    ["Email", guest.email || "Not provided"],
-    ["Branch", branchName || "Unassigned"],
-    ["Visit status", formatValue(guest.visitStatus)],
-    ["Invited by", guest.invitedBy || "Not recorded"],
-    ["Heard through", guest.heardAboutChurch || "Not recorded"],
-    ["Address", [guest.address, guest.city, guest.state].filter(Boolean).join(", ") || "Not recorded"],
+    [tc("phone"), guest.phone],
+    [tc("email"), guest.email || tsh("notProvided")],
+    [tc("branch"), branchName || tsh("unassigned")],
+    [t("visitStatus"), formatValue(guest.visitStatus)],
+    [t("invitedBy"), guest.invitedBy || tsh("notRecorded")],
+    [t("heardThrough"), guest.heardAboutChurch || tsh("notRecorded")],
+    [t("address"), [guest.address, guest.city, guest.state].filter(Boolean).join(", ") || tsh("notRecorded")],
   ];
 
   return (
     <Shell>
       <PageHeader
-        eyebrow="Guest"
+        eyebrow={t("eyebrow")}
         title={`${guest.firstName} ${guest.lastName}`}
-        description="Profile details, care work, return visits, communication history and conversion for this guest."
+        description={t("description")}
       />
 
       <section className="app-card app-rise overflow-hidden">
@@ -162,9 +170,9 @@ export default async function GuestDetailPage({
           <div className="border-b border-black/[0.06] p-6 sm:p-7 lg:border-b-0 lg:border-r">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={statusTone(guest.visitStatus)} dot>
-                {formatStatus(guest.visitStatus) || "Not recorded"}
+                {statusLabel(guest.visitStatus) || tsh("notRecorded")}
               </Badge>
-              <Badge>{branchName || "Unassigned branch"}</Badge>
+              <Badge>{branchName || t("unassignedBranch")}</Badge>
             </div>
             <dl className="mt-5 divide-y divide-black/[0.05]">
               {facts.map(([label, value]) => (
@@ -176,7 +184,7 @@ export default async function GuestDetailPage({
             </dl>
             {guest.prayerRequest ? (
               <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3.5 text-[14px] text-orange-950">
-                <p className="text-[12px] font-medium text-orange-800">Prayer request</p>
+                <p className="text-[12px] font-medium text-orange-800">{t("prayerRequest")}</p>
                 <p className="mt-1 leading-[1.6]">{guest.prayerRequest}</p>
               </div>
             ) : null}
@@ -184,12 +192,12 @@ export default async function GuestDetailPage({
 
           <div className="flex flex-col gap-4 p-6 sm:p-7">
             <div className="grid grid-cols-3 gap-3">
-              <Stat label="Visits" value={visits.length} />
-              <Stat label="Follow-ups" value={followUps.length} />
-              <Stat label="Messages" value={communications.length} />
+              <Stat label={t("visits")} value={visits.length} />
+              <Stat label={t("followUps")} value={followUps.length} />
+              <Stat label={t("messages")} value={communications.length} />
             </div>
             <div className="rounded-2xl border border-black/[0.06] px-4 py-3">
-              <p className="text-[12px] text-[#8a8780]">Guest ID</p>
+              <p className="text-[12px] text-[#8a8780]">{t("guestId")}</p>
               <p className="mt-0.5 break-all font-mono text-[13px] text-[#55534e]">{id}</p>
             </div>
             {!guest.convertedToMember && canConvertGuests(user.role) ? <ConvertGuestButton guestId={id} /> : null}
@@ -200,8 +208,8 @@ export default async function GuestDetailPage({
       <section className="flex flex-col gap-4">
         {canManageFollowUp ? (
           <WorkSection
-            title="Care and follow-up"
-            description="Assign care workers and keep each follow-up record current."
+            title={t("careTitle")}
+            description={t("careDescription")}
             count={followUps.length}
             defaultOpen
           >
@@ -209,35 +217,35 @@ export default async function GuestDetailPage({
           </WorkSection>
         ) : null}
 
-        <WorkSection title="Profile details" description="Keep the guest's contact and background details accurate.">
+        <WorkSection title={t("profileTitle")} description={t("profileDescription")}>
           <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />
         </WorkSection>
 
-        <WorkSection title="Return visit" description="Record attendance and mark the guest as returned.">
+        <WorkSection title={t("returnTitle")} description={t("returnDescription")}>
           <GuestReturnVisitForm guestId={id} branchId={branchId} followUpId={latestFollowUp?._id} />
         </WorkSection>
 
         {canCommunicate ? (
-          <WorkSection title="Communications" description="Send a message and review outreach history." count={communications.length}>
+          <WorkSection title={t("commsTitle")} description={t("commsDescription")} count={communications.length}>
             <CommunicationPanel
               recipientType="guest"
               recipientId={id}
               recipient={guest.email || guest.phone}
               communications={communications}
-              title="Send and review outreach history"
+              title={t("commsPanelTitle")}
             />
           </WorkSection>
         ) : null}
 
-        <WorkSection title="Timeline" description="Visits, follow-ups and messages, newest first." count={timeline.length}>
+        <WorkSection title={t("timelineTitle")} description={t("timelineDescription")} count={timeline.length}>
           {timeline.length > 0 ? (
             <TableWrap>
               <table className="ui-table">
                 <thead>
                   <tr>
-                    <th>When</th>
-                    <th>Type</th>
-                    <th>Details</th>
+                    <th>{t("when")}</th>
+                    <th>{t("type")}</th>
+                    <th>{t("details")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -245,7 +253,7 @@ export default async function GuestDetailPage({
                     <tr key={item.id}>
                       <td className="whitespace-nowrap tabular-nums text-[#55534e]">{formatDateTime(item.when)}</td>
                       <td>
-                        <Badge>{formatStatus(item.type)}</Badge>
+                        <Badge>{item.type}</Badge>
                       </td>
                       <td className="text-[#55534e]">{item.text}</td>
                     </tr>
@@ -254,8 +262,8 @@ export default async function GuestDetailPage({
               </table>
             </TableWrap>
           ) : (
-            <EmptyState icon="clock" title="No activity yet">
-              No activity has been recorded for this guest yet.
+            <EmptyState icon="clock" title={t("noActivityTitle")}>
+              {t("noActivityBody")}
             </EmptyState>
           )}
         </WorkSection>

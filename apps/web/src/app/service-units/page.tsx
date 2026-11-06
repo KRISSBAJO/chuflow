@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import {
   DirectoryControls,
   DirectoryPagination,
@@ -19,19 +20,10 @@ import type {
   ServiceUnitSummary,
 } from "@/lib/types";
 
-const OPERATIONS_NOTES: { icon: IconName; text: string }[] = [
-  {
-    icon: "members",
-    text: "Service units feed directly into member placement, so a member's ministry is picked from a list instead of typed in.",
-  },
-  {
-    icon: "users",
-    text: "Leaders and secretaries can only be chosen from members of the same branch.",
-  },
-  {
-    icon: "arrowRight",
-    text: "Public member sign-ups land people in the right branch and service structure faster.",
-  },
+const OPERATIONS_NOTES: { icon: IconName; key: "noteMembers" | "noteUsers" | "noteSignups" }[] = [
+  { icon: "members", key: "noteMembers" },
+  { icon: "users", key: "noteUsers" },
+  { icon: "arrowRight", key: "noteSignups" },
 ];
 
 export default async function ServiceUnitsPage({
@@ -41,6 +33,9 @@ export default async function ServiceUnitsPage({
 }) {
   const params = await searchParams;
   const user = await requireServerRole("/service-units");
+  const t = await getTranslations("org.serviceUnits");
+  const tCommon = await getTranslations("common");
+  const tStatuses = await getTranslations("statuses");
 
   const [serviceUnits, branches, members] = await Promise.all([
     serverGet<ServiceUnitSummary[]>("/service-units"),
@@ -81,15 +76,15 @@ export default async function ServiceUnitsPage({
   const directoryFilters = [
     {
       key: "status",
-      label: "Status",
+      label: tCommon("status"),
       options: [
-        { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" },
+        { value: "active", label: tStatuses("active") },
+        { value: "inactive", label: tStatuses("inactive") },
       ],
     },
     {
       key: "branchId",
-      label: "Branch",
+      label: tCommon("branch"),
       options: branches.map((branch) => ({
         value: branch._id,
         label: branch.name,
@@ -99,13 +94,13 @@ export default async function ServiceUnitsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Service units"
-        title="Service units and staffing"
-        description="Create the ministry teams for each branch, appoint leaders, and connect members to the units they serve in."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex flex-wrap gap-2">
             <Link href="/meetings/groups" className={buttonClass("secondary")}>
-              Meeting requirements
+              {t("meetingRequirements")}
             </Link>
             <ServiceUnitCreateModalButton
               branches={branches}
@@ -119,27 +114,27 @@ export default async function ServiceUnitsPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Service units"
+          label={t("units")}
           value={String(serviceUnits.length)}
-          delta="Visible in the current branch scope"
+          delta={t("unitsCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Active units"
+          label={t("activeUnits")}
           value={String(activeUnits)}
-          delta={`${Math.max(serviceUnits.length - activeUnits, 0)} inactive`}
+          delta={t("inactiveCount", { count: Math.max(serviceUnits.length - activeUnits, 0) })}
           tone="warm"
         />
         <MetricCard
-          label="Fully staffed"
+          label={t("fullyStaffed")}
           value={String(staffedUnits)}
-          delta="Leader and secretary assigned"
+          delta={t("fullyStaffedCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Group memberships"
+          label={t("groupMemberships")}
           value={String(assignedMembers)}
-          delta="Members serving in two groups count once in each group"
+          delta={t("groupMembershipsCaption")}
           tone="warm"
         />
       </section>
@@ -147,10 +142,10 @@ export default async function ServiceUnitsPage({
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.8fr)] xl:items-start">
         <Card className="app-rise p-6 sm:p-7">
           <CardHeader
-            label="Directory"
-            title="Service units"
-            description="Edit structure, officers, meeting days, and notes without leaving the branch scope."
-            action={<Badge>Branch isolated</Badge>}
+            label={t("directoryLabel")}
+            title={t("directoryTitle")}
+            description={t("directoryDescription")}
+            action={<Badge>{t("branchIsolated")}</Badge>}
           />
           <div className="mt-6">
             <DirectoryControls
@@ -176,18 +171,18 @@ export default async function ServiceUnitsPage({
           className="app-rise p-6 sm:p-7"
           style={{ animationDelay: "60ms" }}
         >
-          <CardHeader label="How it works" title="Ministry operations" />
+          <CardHeader label={t("howItWorks")} title={t("operations")} />
           <ul className="mt-5 space-y-3">
             {OPERATIONS_NOTES.map((note) => (
               <li
-                key={note.text}
+                key={note.key}
                 className="flex gap-3 rounded-2xl bg-[#f6f5f1] p-4"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#ea580c] shadow-[0_1px_2px_rgba(17,17,17,0.06)]">
                   <Icon name={note.icon} className="h-4 w-4" />
                 </span>
                 <p className="text-[14px] leading-[1.6] text-[#55534e]">
-                  {note.text}
+                  {t(note.key)}
                 </p>
               </li>
             ))}

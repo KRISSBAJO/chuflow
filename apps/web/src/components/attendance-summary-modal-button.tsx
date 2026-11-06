@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { AttendanceCreateForm } from "@/components/attendance-create-form";
 import { ModalShell } from "@/components/modal-shell";
 import { Button } from "@/components/ui/ui";
@@ -21,19 +22,20 @@ export function AttendanceSummaryModalButton({
   serviceSchedules: ServiceScheduleSummary[];
   defaultBranchId?: string;
 }) {
+  const t = useTranslations("services.attendance.modal");
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Button icon="plus" onClick={() => setOpen(true)}>
-        Record service summary
+        {t("button")}
       </Button>
       <ModalShell
         open={open}
         onClose={() => setOpen(false)}
-        eyebrow="Attendance"
-        title="Record service attendance summary"
-        description="Capture totals for men, women, children, adults, first timers, new converts and Holy Spirit baptism in one place."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       >
         <AttendanceCreateForm
           branches={branches}

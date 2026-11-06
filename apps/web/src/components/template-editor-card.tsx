@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { formTextColor } from "@/lib/form-colors";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
@@ -371,6 +372,7 @@ export function TemplateEditorCard({
   defaultDistrict?: string;
   readonly?: boolean;
 }) {
+  const t = useTranslations("admin.templateEditor");
   const router = useRouter();
   const baseTemplate = template
     ? toEditableTemplate(template)
@@ -513,20 +515,20 @@ export function TemplateEditorCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to save template");
+        throw new Error(result.message || t("saveError"));
       }
 
-      const message = template?._id ? "Template updated." : "Template created.";
+      const message = template?._id ? t("updated") : t("created");
       setStatus(message);
       toast.success(message);
       if (!template?._id)
-        router.push(createdHref("/templates?sort=newest", result, "Template"));
+        router.push(createdHref("/templates?sort=newest", result, t("entityName")));
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to save template";
+        error instanceof Error ? error.message : t("saveError");
       setStatus(message);
-      toast.error("Template save failed", {
+      toast.error(t("saveFailedTitle"), {
         description: message,
       });
     } finally {
@@ -556,10 +558,10 @@ export function TemplateEditorCard({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create branch version");
+        throw new Error(result.message || t("branchVersionError"));
       }
 
-      const message = "Branch version created.";
+      const message = t("branchVersionCreated");
       setStatus(message);
       toast.success(message);
       router.refresh();
@@ -567,9 +569,9 @@ export function TemplateEditorCard({
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to create branch version";
+          : t("branchVersionError");
       setStatus(message);
-      toast.error("Branch version unavailable", {
+      toast.error(t("branchVersionFailedTitle"), {
         description: message,
       });
     } finally {
@@ -602,10 +604,10 @@ export function TemplateEditorCard({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create district version");
+        throw new Error(result.message || t("districtVersionError"));
       }
 
-      const message = "District version created.";
+      const message = t("districtVersionCreated");
       setStatus(message);
       toast.success(message);
       router.refresh();
@@ -613,9 +615,9 @@ export function TemplateEditorCard({
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to create district version";
+          : t("districtVersionError");
       setStatus(message);
-      toast.error("District version unavailable", {
+      toast.error(t("districtVersionFailedTitle"), {
         description: message,
       });
     } finally {
@@ -635,7 +637,7 @@ export function TemplateEditorCard({
         <TemplateQrCard
           allowSpanish={draft.kind === "guest" || draft.kind === "member"}
           url={template.shareUrl}
-          title={`${draft.name} share link`}
+          title={t("shareLinkTitle", { name: draft.name })}
         />
       ) : null}
       {template ? (
@@ -644,19 +646,19 @@ export function TemplateEditorCard({
             <div>
               <p className="text-[14px] font-medium text-[#111111]">
                 {isGlobalBaseTemplate
-                  ? "Global base template"
+                  ? t("scope.globalBase")
                   : isDistrictVersion
-                    ? "District version"
+                    ? t("scope.districtVersion")
                     : isBranchVersion
-                      ? "Branch version"
-                      : "Template"}
+                      ? t("scope.branchVersion")
+                      : t("scope.template")}
               </p>
               <p className="mt-0.5 text-[13px] leading-[1.6] text-[#6b6b6b]">
                 {isGlobalBaseTemplate
-                  ? "This shared template stays centrally managed."
+                  ? t("scope.globalBaseHelp")
                   : isDistrictVersion
-                    ? `This version applies to ${template?.district || "the selected district"}.`
-                    : `This version only applies to ${branchLabel || "the selected branch"}.`}
+                    ? t("scope.districtHelp", { district: template?.district || t("scope.selectedDistrict") })
+                    : t("scope.branchHelp", { branch: branchLabel || t("scope.selectedBranch") })}
               </p>
             </div>
             {isDistrictVersion && template?.district ? (
@@ -669,23 +671,21 @@ export function TemplateEditorCard({
           {canCreateBranchVersion ? (
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
               <p>
-                Start a branch version to customise this template for your
-                branch.
+                {t("scope.startBranchVersion")}
               </p>
               <Button
                 size="sm"
                 onClick={handleCreateBranchVersion}
                 disabled={overrideLoading}
               >
-                {overrideLoading ? "Creating..." : "Create branch version"}
+                {overrideLoading ? t("scope.creating") : t("scope.createBranchVersion")}
               </Button>
             </div>
           ) : null}
           {canCreateDistrictVersion ? (
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
               <p>
-                Adopt this template for {defaultDistrict} so every branch in the
-                district uses the district version.
+                {t("scope.adoptDistrict", { district: defaultDistrict ?? "" })}
               </p>
               <Button
                 size="sm"
@@ -693,8 +693,8 @@ export function TemplateEditorCard({
                 disabled={districtOverrideLoading}
               >
                 {districtOverrideLoading
-                  ? "Creating..."
-                  : "Create district version"}
+                  ? t("scope.creating")
+                  : t("scope.createDistrictVersion")}
               </Button>
             </div>
           ) : null}
@@ -702,30 +702,30 @@ export function TemplateEditorCard({
       ) : null}
 
       <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
-        <p className="text-[14px] font-medium text-[#111111]">Basics</p>
+        <p className="text-[14px] font-medium text-[#111111]">{t("basics.title")}</p>
         <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-          Name, public link, form type and branch.
+          {t("basics.description")}
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Template name">
+          <Field label={t("basics.name")}>
             <input
               value={draft.name}
               onChange={(event) => updateDraft("name", event.target.value)}
-              placeholder="Template name"
+              placeholder={t("basics.namePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Public link slug">
+          <Field label={t("basics.slug")}>
             <input
               value={draft.slug}
               onChange={(event) => updateDraft("slug", event.target.value)}
-              placeholder="public-slug"
+              placeholder={t("basics.slugPlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Form type">
+          <Field label={t("basics.formType")}>
             <select
               value={draft.kind}
               onChange={(event) =>
@@ -734,14 +734,14 @@ export function TemplateEditorCard({
               disabled={readonly}
               className="ui-input"
             >
-              <option value="guest">First timer</option>
-              <option value="member">Member</option>
-              <option value="attendance">Attendance summary</option>
-              <option value="weekly_report">Weekly report</option>
-              <option value="maag_report">MAAG monthly report</option>
+              <option value="guest">{t("basics.kinds.guest")}</option>
+              <option value="member">{t("basics.kinds.member")}</option>
+              <option value="attendance">{t("basics.kinds.attendance")}</option>
+              <option value="weekly_report">{t("basics.kinds.weekly_report")}</option>
+              <option value="maag_report">{t("basics.kinds.maag_report")}</option>
             </select>
           </Field>
-          <Field label="Branch">
+          <Field label={t("basics.branch")}>
             {!isBranchScopedRole(currentUserRole) ? (
               <select
                 value={draft.branchId || ""}
@@ -751,7 +751,7 @@ export function TemplateEditorCard({
                 disabled={readonly}
                 className="ui-input"
               >
-                <option value="">No branch selected</option>
+                <option value="">{t("basics.noBranch")}</option>
                 {branches.map((branch) => (
                   <option key={branch._id} value={branch._id}>
                     {branch.name}
@@ -760,17 +760,17 @@ export function TemplateEditorCard({
               </select>
             ) : (
               <input
-                value={branchLabel || "Current branch scope"}
+                value={branchLabel || t("basics.currentBranchScope")}
                 readOnly
                 className="ui-input !bg-[#f6f5f1] !text-[#8a8780]"
               />
             )}
           </Field>
-          <Field label="Badge">
+          <Field label={t("basics.badge")}>
             <input
               value={draft.badge || ""}
               onChange={(event) => updateDraft("badge", event.target.value)}
-              placeholder="Short label above the title"
+              placeholder={t("basics.badgePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
@@ -785,80 +785,80 @@ export function TemplateEditorCard({
               disabled={readonly}
               className="h-4 w-4 accent-[#111111]"
             />
-            Active public template
+            {t("basics.activeTemplate")}
           </label>
         </div>
       </section>
 
       <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
         <p className="text-[14px] font-medium text-[#111111]">
-          Public page wording
+          {t("wording.title")}
         </p>
         <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-          What visitors read before and after they submit.
+          {t("wording.description")}
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Public title" className="sm:col-span-2">
+          <Field label={t("wording.publicTitle")} className="sm:col-span-2">
             <input
               value={draft.title}
               onChange={(event) => updateDraft("title", event.target.value)}
-              placeholder="Public title"
+              placeholder={t("wording.publicTitlePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Subtitle" className="sm:col-span-2">
+          <Field label={t("wording.subtitle")} className="sm:col-span-2">
             <input
               value={draft.subtitle || ""}
               onChange={(event) => updateDraft("subtitle", event.target.value)}
-              placeholder="Public subtitle"
+              placeholder={t("wording.subtitlePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Intro title" className="sm:col-span-2">
+          <Field label={t("wording.introTitle")} className="sm:col-span-2">
             <input
               value={draft.introTitle || ""}
               onChange={(event) =>
                 updateDraft("introTitle", event.target.value)
               }
-              placeholder="Intro title"
+              placeholder={t("wording.introTitlePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Intro text" className="sm:col-span-2">
+          <Field label={t("wording.introText")} className="sm:col-span-2">
             <textarea
               value={draft.introBody || ""}
               onChange={(event) => updateDraft("introBody", event.target.value)}
-              placeholder="Intro body"
+              placeholder={t("wording.introTextPlaceholder")}
               disabled={readonly}
               className="ui-input !min-h-24"
             />
           </Field>
-          <Field label="Closing text" className="sm:col-span-2">
+          <Field label={t("wording.closingText")} className="sm:col-span-2">
             <textarea
               value={draft.closingText || ""}
               onChange={(event) =>
                 updateDraft("closingText", event.target.value)
               }
-              placeholder="Closing text"
+              placeholder={t("wording.closingTextPlaceholder")}
               disabled={readonly}
               className="ui-input !min-h-20"
             />
           </Field>
-          <Field label="Submit button label">
+          <Field label={t("wording.submitLabel")}>
             <input
               value={draft.submitLabel || ""}
               onChange={(event) =>
                 updateDraft("submitLabel", event.target.value)
               }
-              placeholder="Submit label"
+              placeholder={t("wording.submitLabelPlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Logo path">
+          <Field label={t("wording.logoPath")}>
             <input
               value={draft.logoPath || ""}
               onChange={(event) => updateDraft("logoPath", event.target.value)}
@@ -867,24 +867,24 @@ export function TemplateEditorCard({
               className="ui-input"
             />
           </Field>
-          <Field label="Success title">
+          <Field label={t("wording.successTitle")}>
             <input
               value={draft.successTitle || ""}
               onChange={(event) =>
                 updateDraft("successTitle", event.target.value)
               }
-              placeholder="Success title"
+              placeholder={t("wording.successTitlePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
           </Field>
-          <Field label="Success message">
+          <Field label={t("wording.successMessage")}>
             <input
               value={draft.successMessage || ""}
               onChange={(event) =>
                 updateDraft("successMessage", event.target.value)
               }
-              placeholder="Success message"
+              placeholder={t("wording.successMessagePlaceholder")}
               disabled={readonly}
               className="ui-input"
             />
@@ -894,12 +894,10 @@ export function TemplateEditorCard({
         {(draft.kind === "guest" || draft.kind === "member") && (
           <details className="mt-5 rounded-xl border border-black/[0.06] p-4">
             <summary className="cursor-pointer text-sm font-medium">
-              Optional Spanish wording
+              {t("wording.spanishSummary")}
             </summary>
             <p className="mt-2 text-xs text-[#8a8780]">
-              Standard labels are translated automatically. Add Spanish wording
-              here for your custom introduction and confirmation. Church names
-              stay unchanged unless you provide a translated title.
+              {t("wording.spanishHelp")}
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {(
@@ -916,7 +914,7 @@ export function TemplateEditorCard({
               ).map((key) => (
                 <Field
                   key={key}
-                  label={`${key.replace(/([A-Z])/g, " $1")} (Spanish)`}
+                  label={t("wording.spanishField", { field: key.replace(/([A-Z])/g, " $1") })}
                 >
                   <textarea
                     className="ui-input"
@@ -939,7 +937,7 @@ export function TemplateEditorCard({
           </details>
         )}
         <p className="mt-6 text-[13px] font-medium text-[#6b6b6b]">
-          Theme colours
+          {t("theme.title")}
         </p>
         <div className="mt-3 rounded-xl border border-black/[0.06] p-4">
           <label className="flex items-center gap-2 text-sm">
@@ -954,12 +952,12 @@ export function TemplateEditorCard({
                 )
               }
             />{" "}
-            Customize header color
+            {t("theme.customizeHeader")}
           </label>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <input
               type="color"
-              aria-label="Header background color"
+              aria-label={t("theme.headerBackgroundAria")}
               value={draft.theme?.headerColor || "#ffffff"}
               disabled={readonly || !draft.theme?.headerColor}
               onChange={(event) =>
@@ -973,7 +971,7 @@ export function TemplateEditorCard({
               disabled={readonly}
               onClick={() => updateTheme("headerColor", "")}
             >
-              Use default header
+              {t("theme.useDefaultHeader")}
             </Button>
           </div>
 
@@ -998,14 +996,14 @@ export function TemplateEditorCard({
                 }
               />
               {key === "headerTextColor"
-                ? "Customize header text"
-                : "Customize button text"}
+                ? t("theme.customizeHeaderText")
+                : t("theme.customizeButtonText")}
               <input
                 type="color"
                 aria-label={
                   key === "headerTextColor"
-                    ? "Header text color"
-                    : "Button text color"
+                    ? t("theme.headerTextAria")
+                    : t("theme.buttonTextAria")
                 }
                 disabled={readonly || !draft.theme?.[key]}
                 value={
@@ -1027,7 +1025,7 @@ export function TemplateEditorCard({
               updateTheme("buttonTextColor", "");
             }}
           >
-            Use automatic text colors
+            {t("theme.useAutomaticText")}
           </Button>
           <div
             className="mt-3 rounded-xl p-4 text-sm font-medium"
@@ -1038,11 +1036,11 @@ export function TemplateEditorCard({
                 formTextColor(draft.theme?.headerColor || "#ffffff"),
             }}
           >
-            Header preview — {draft.name || "Your church form"}
+            {t("theme.headerPreview", { name: draft.name || t("theme.yourChurchForm") })}
           </div>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-3">
-          <Field label="Accent / buttons">
+          <Field label={t("theme.accent")}>
             <input
               type="color"
               value={draft.theme?.accentColor || "#dc2626"}
@@ -1053,7 +1051,7 @@ export function TemplateEditorCard({
               className={colorInputClass}
             />
           </Field>
-          <Field label="Dark">
+          <Field label={t("theme.dark")}>
             <input
               type="color"
               value={draft.theme?.darkColor || "#111827"}
@@ -1062,7 +1060,7 @@ export function TemplateEditorCard({
               className={colorInputClass}
             />
           </Field>
-          <Field label="Soft">
+          <Field label={t("theme.soft")}>
             <input
               type="color"
               value={draft.theme?.softColor || "#fff7ed"}
@@ -1078,13 +1076,13 @@ export function TemplateEditorCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[14px] font-medium text-[#111111]">
-              Form fields{" "}
+              {t("fields.title")}{" "}
               <span className="ml-1 text-[#8a8780] tabular-nums">
                 {draft.fields.length}
               </span>
             </p>
             <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-              Edit labels, field types, options and required rules.
+              {t("fields.description")}
             </p>
           </div>
           {!readonly ? (
@@ -1094,7 +1092,7 @@ export function TemplateEditorCard({
               icon="plus"
               onClick={addField}
             >
-              Add field
+              {t("fields.add")}
             </Button>
           ) : null}
         </div>
@@ -1109,7 +1107,7 @@ export function TemplateEditorCard({
                   <span className="mr-1.5 text-[#8a8780] tabular-nums">
                     {index + 1}.
                   </span>
-                  {field.label || "Untitled field"}
+                  {field.label || t("fields.untitled")}
                 </p>
                 {!readonly ? (
                   <Button
@@ -1118,34 +1116,34 @@ export function TemplateEditorCard({
                     className="text-red-700 hover:bg-red-50 hover:text-red-800"
                     onClick={() => removeField(index)}
                   >
-                    Remove field
+                    {t("fields.remove")}
                   </Button>
                 ) : null}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Label">
+                <Field label={t("fields.label")}>
                   <input
                     value={field.label}
                     onChange={(event) =>
                       updateField(index, { label: event.target.value })
                     }
                     disabled={readonly}
-                    placeholder="Field label"
+                    placeholder={t("fields.labelPlaceholder")}
                     className="ui-input"
                   />
                 </Field>
-                <Field label="Key">
+                <Field label={t("fields.key")}>
                   <input
                     value={field.key}
                     onChange={(event) =>
                       updateField(index, { key: event.target.value })
                     }
                     disabled={readonly}
-                    placeholder="field_key"
+                    placeholder={t("fields.keyPlaceholder")}
                     className="ui-input"
                   />
                 </Field>
-                <Field label="Type">
+                <Field label={t("fields.type")}>
                   <select
                     value={field.type}
                     onChange={(event) =>
@@ -1161,7 +1159,7 @@ export function TemplateEditorCard({
                     ))}
                   </select>
                 </Field>
-                <Field label="Width">
+                <Field label={t("fields.width")}>
                   <select
                     value={field.width || "half"}
                     onChange={(event) =>
@@ -1170,29 +1168,29 @@ export function TemplateEditorCard({
                     disabled={readonly}
                     className="ui-input"
                   >
-                    <option value="half">Half width</option>
-                    <option value="full">Full width</option>
+                    <option value="half">{t("fields.halfWidth")}</option>
+                    <option value="full">{t("fields.fullWidth")}</option>
                   </select>
                 </Field>
-                <Field label="Placeholder">
+                <Field label={t("fields.placeholder")}>
                   <input
                     value={field.placeholder || ""}
                     onChange={(event) =>
                       updateField(index, { placeholder: event.target.value })
                     }
                     disabled={readonly}
-                    placeholder="Placeholder"
+                    placeholder={t("fields.placeholderPlaceholder")}
                     className="ui-input"
                   />
                 </Field>
-                <Field label="Default value">
+                <Field label={t("fields.defaultValue")}>
                   <input
                     value={field.defaultValue || ""}
                     onChange={(event) =>
                       updateField(index, { defaultValue: event.target.value })
                     }
                     disabled={readonly}
-                    placeholder="Default value"
+                    placeholder={t("fields.defaultValuePlaceholder")}
                     className="ui-input"
                   />
                 </Field>
@@ -1206,22 +1204,22 @@ export function TemplateEditorCard({
                     disabled={readonly}
                     className="h-4 w-4 accent-[#111111]"
                   />
-                  Required field
+                  {t("fields.required")}
                 </label>
-                <Field label="Helper text" className="sm:col-span-2">
+                <Field label={t("fields.helperText")} className="sm:col-span-2">
                   <textarea
                     value={field.helpText || ""}
                     onChange={(event) =>
                       updateField(index, { helpText: event.target.value })
                     }
                     disabled={readonly}
-                    placeholder="Helper text"
+                    placeholder={t("fields.helperTextPlaceholder")}
                     className="ui-input !min-h-20"
                   />
                 </Field>
                 <details className="mt-3 rounded-xl bg-[#f6f5f1] p-3">
                   <summary className="cursor-pointer text-xs font-medium">
-                    Spanish field wording (optional)
+                    {t("fields.spanishSummary")}
                   </summary>
                   <div className="mt-3 grid gap-3">
                     {(["labelEs", "placeholderEs", "helpTextEs"] as const).map(
@@ -1230,10 +1228,10 @@ export function TemplateEditorCard({
                           key={key}
                           label={
                             key === "labelEs"
-                              ? "Spanish label"
+                              ? t("fields.spanishLabel")
                               : key === "placeholderEs"
-                                ? "Spanish placeholder"
-                                : "Spanish help text"
+                                ? t("fields.spanishPlaceholder")
+                                : t("fields.spanishHelp")
                           }
                         >
                           <input
@@ -1249,7 +1247,7 @@ export function TemplateEditorCard({
                     )}
                   </div>
                   {["radio", "select", "checkbox"].includes(field.type) && (
-                    <Field label="Spanish option labels (one per line, in the same order as the English options)">
+                    <Field label={t("fields.spanishOptions")}>
                       <textarea
                         className="ui-input"
                         rows={3}
@@ -1268,8 +1266,8 @@ export function TemplateEditorCard({
                 field.type === "radio" ||
                 field.type === "checkbox" ? (
                   <Field
-                    label="Options"
-                    hint="Separate options with commas."
+                    label={t("fields.options")}
+                    hint={t("fields.optionsHint")}
                     className="sm:col-span-2"
                   >
                     <input
@@ -1283,7 +1281,7 @@ export function TemplateEditorCard({
                         })
                       }
                       disabled={readonly}
-                      placeholder="Option 1, Option 2, Option 3"
+                      placeholder={t("fields.optionsPlaceholder")}
                       className="ui-input"
                     />
                   </Field>
@@ -1298,10 +1296,10 @@ export function TemplateEditorCard({
         <div className="flex flex-wrap items-center gap-3">
           <Button onClick={handleSubmit} disabled={loading}>
             {loading
-              ? "Saving..."
+              ? t("saving")
               : template?._id
-                ? "Update template"
-                : "Create template"}
+                ? t("update")
+                : t("create")}
           </Button>
           {status ? (
             <p className="text-[13px] text-[#6b6b6b]">{status}</p>
@@ -1310,8 +1308,8 @@ export function TemplateEditorCard({
       ) : (
         <p className="rounded-2xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">
           {canCreateBranchVersion
-            ? "This shared template stays locked at the global level. Create a branch version to make local changes."
-            : "This shared template is locked at the global level."}
+            ? t("lockedCreateBranch")
+            : t("locked")}
         </p>
       )}
     </div>

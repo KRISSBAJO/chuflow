@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiGet, apiPost } from "@/lib/api";
 import { Button } from "@/components/ui/ui";
 
@@ -15,6 +16,7 @@ type Match = {
 
 export function OutreachGuestLink({ contactId }: { contactId: string }) {
   const router = useRouter();
+  const t = useTranslations("people.evangelism.guestLink");
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +32,7 @@ export function OutreachGuestLink({ contactId }: { contactId: string }) {
       );
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Could not check for a guest record.",
+        e instanceof Error ? e.message : t("errorCheck"),
       );
     } finally {
       setBusy(false);
@@ -45,33 +47,31 @@ export function OutreachGuestLink({ contactId }: { contactId: string }) {
       });
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not link guest record.");
+      setError(e instanceof Error ? e.message : t("errorLink"));
     } finally {
       setBusy(false);
     }
   }
   return (
     <div className="mt-6 space-y-3 border-t pt-5">
-      <h3 className="text-sm font-semibold">Continue their church journey</h3>
+      <h3 className="text-sm font-semibold">{t("title")}</h3>
       <p className="text-sm text-[#6b6b6b]">
-        If this person has attended church, link their existing guest record to
-        keep their outreach history connected. Confirm their identity before
-        linking.
+        {t("description")}
       </p>
       {matches === null ? (
         <Button variant="secondary" size="sm" disabled={busy} onClick={find}>
-          {busy ? "Checking…" : "Find matching guest record"}
+          {busy ? t("checking") : t("find")}
         </Button>
       ) : matches.length ? (
         <>
           <label className="block text-sm">
-            Matching guest
+            {t("matchingGuest")}
             <select
               className="ui-input mt-1"
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
             >
-              <option value="">Choose the same person</option>
+              <option value="">{t("chooseSame")}</option>
               {matches.map((match) => (
                 <option key={match._id} value={match._id}>
                   {match.firstName} {match.lastName} · {match.phone}
@@ -85,17 +85,18 @@ export function OutreachGuestLink({ contactId }: { contactId: string }) {
             disabled={!selected || busy}
             onClick={link}
           >
-            {busy ? "Linking…" : "Confirm and link guest"}
+            {busy ? t("linking") : t("confirmLink")}
           </Button>
         </>
       ) : (
         <p className="text-sm">
-          No guest record matches this phone or email in the same branch. If
-          they have visited,{" "}
-          <Link href="/guests/new" className="underline">
-            register their church visit
-          </Link>
-          , then return here to link it.
+          {t.rich("noMatch", {
+            link: (chunks) => (
+              <Link href="/guests/new" className="underline">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       )}
       {error && (

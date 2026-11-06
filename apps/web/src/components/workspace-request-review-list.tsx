@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { apiPatch } from "@/lib/api";
-import { Badge, Button, buttonClass, EmptyState, formatStatus, statusTone } from "@/components/ui/ui";
+import { Badge, Button, buttonClass, EmptyState, statusTone } from "@/components/ui/ui";
+import { useAppFormat, useStatusLabel } from "@/i18n/labels";
 import type { WorkspaceRequestItem } from "@/lib/types";
 
 export function WorkspaceRequestReviewList({
@@ -13,6 +15,9 @@ export function WorkspaceRequestReviewList({
   items: WorkspaceRequestItem[];
 }) {
   const router = useRouter();
+  const t = useTranslations("org.workspaceRequests");
+  const statusLabel = useStatusLabel();
+  const { dateTime } = useAppFormat();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [decisionNotes, setDecisionNotes] = useState<Record<string, string>>({});
@@ -25,13 +30,13 @@ export function WorkspaceRequestReviewList({
         status,
         decisionNotes: decisionNotes[id] || undefined,
       });
-      toast.success(`Workspace request marked ${formatStatus(status)}`);
+      toast.success(t("marked", { status: statusLabel(status) }));
       startTransition(() => {
         router.refresh();
       });
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Workspace request update failed",
+        error instanceof Error ? error.message : t("updateFailed"),
       );
     } finally {
       setLoadingId(null);
@@ -40,8 +45,8 @@ export function WorkspaceRequestReviewList({
 
   if (items.length === 0) {
     return (
-      <EmptyState icon="branches" title="No requests waiting">
-        No workspace requests are waiting right now.
+      <EmptyState icon="branches" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
@@ -61,42 +66,42 @@ export function WorkspaceRequestReviewList({
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="lp-heading text-[18px]">{item.organizationName}</h3>
                   <Badge tone={statusTone(item.status)} dot>
-                    {formatStatus(item.status)}
+                    {statusLabel(item.status)}
                   </Badge>
-                  {item.branchCount ? <Badge>{item.branchCount} branches</Badge> : null}
+                  {item.branchCount ? <Badge>{t("branchesCount", { count: item.branchCount })}</Badge> : null}
                 </div>
 
                 <dl className="grid gap-x-6 gap-y-3 text-[14px] sm:grid-cols-2">
                   <div>
-                    <dt className="text-[12px] text-[#8a8780]">Contact</dt>
+                    <dt className="text-[12px] text-[#8a8780]">{t("contact")}</dt>
                     <dd className="mt-0.5 font-medium text-[#111111]">{item.contactName}</dd>
                     <dd className="text-[#55534e]">{item.email}</dd>
                     {item.phone ? <dd className="text-[#55534e]">{item.phone}</dd> : null}
                   </div>
                   <div>
-                    <dt className="text-[12px] text-[#8a8780]">Location</dt>
+                    <dt className="text-[12px] text-[#8a8780]">{t("location")}</dt>
                     <dd className="mt-0.5 font-medium text-[#111111]">
-                      {[item.city, item.state, item.country].filter(Boolean).join(", ") || "Not provided"}
+                      {[item.city, item.state, item.country].filter(Boolean).join(", ") || t("notProvided")}
                     </dd>
                     {item.createdAt ? (
-                      <dd className="text-[13px] text-[#8a8780]">Requested {new Date(item.createdAt).toLocaleString()}</dd>
+                      <dd className="text-[13px] text-[#8a8780]">{t("requested", { when: dateTime(item.createdAt) })}</dd>
                     ) : null}
                   </div>
                 </dl>
 
                 {item.notes ? (
                   <div className="rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] text-[#55534e]">
-                    <p className="text-[12px] text-[#8a8780]">Notes from the church</p>
+                    <p className="text-[12px] text-[#8a8780]">{t("notesFromChurch")}</p>
                     <p className="mt-1 leading-[1.6]">{item.notes}</p>
                   </div>
                 ) : null}
 
                 {item.reviewedAt || item.reviewedBy || item.decisionNotes ? (
                   <div className="rounded-xl border border-black/[0.06] px-4 py-3 text-[14px] text-[#55534e]">
-                    <p className="text-[12px] text-[#8a8780]">Review</p>
+                    <p className="text-[12px] text-[#8a8780]">{t("review")}</p>
                     <p className="mt-1">
-                      {reviewer ?? "Not reviewed yet"}
-                      {item.reviewedAt ? ` · ${new Date(item.reviewedAt).toLocaleString()}` : ""}
+                      {reviewer ?? t("notReviewed")}
+                      {item.reviewedAt ? ` · ${dateTime(item.reviewedAt)}` : ""}
                     </p>
                     {item.decisionNotes ? <p className="mt-1 text-[#6b6b6b]">{item.decisionNotes}</p> : null}
                   </div>
@@ -112,29 +117,29 @@ export function WorkspaceRequestReviewList({
                       [item._id]: event.target.value,
                     }))
                   }
-                  placeholder="Optional review note"
-                  aria-label={`Review note for ${item.organizationName}`}
+                  placeholder={t("notePlaceholder")}
+                  aria-label={t("noteFor", { name: item.organizationName })}
                   className="ui-input"
                 />
 
                 <div className="flex flex-wrap gap-2">
                   {item.status !== "approved" && item.status !== "provisioned" ? (
                     <Button size="sm" onClick={() => updateStatus(item._id, "approved")} disabled={busy}>
-                      {loadingId === item._id ? "Working..." : "Approve"}
+                      {loadingId === item._id ? t("working") : t("approve")}
                     </Button>
                   ) : null}
                   {item.status === "approved" ? (
                     <Button size="sm" variant="flame" onClick={() => updateStatus(item._id, "provisioned")} disabled={busy}>
-                      {loadingId === item._id ? "Working..." : "Mark provisioned"}
+                      {loadingId === item._id ? t("working") : t("markProvisioned")}
                     </Button>
                   ) : null}
                   {item.status === "new" ? (
                     <Button size="sm" variant="secondary" onClick={() => updateStatus(item._id, "in_review")} disabled={busy}>
-                      {loadingId === item._id ? "Working..." : "Start review"}
+                      {loadingId === item._id ? t("working") : t("startReview")}
                     </Button>
                   ) : null}
                   <a href={`mailto:${item.email}`} className={buttonClass("ghost", "sm")}>
-                    Email contact
+                    {t("emailContact")}
                   </a>
                   {item.status !== "rejected" && item.status !== "provisioned" ? (
                     <Button
@@ -144,7 +149,7 @@ export function WorkspaceRequestReviewList({
                       onClick={() => updateStatus(item._id, "rejected")}
                       disabled={busy}
                     >
-                      {loadingId === item._id ? "Working..." : "Reject"}
+                      {loadingId === item._id ? t("working") : t("reject")}
                     </Button>
                   ) : null}
                 </div>

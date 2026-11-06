@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
-import { WEEKDAY_OPTIONS } from "@/lib/member-form-options";
+import { useMemberFormLabels, WEEKDAY_OPTIONS } from "@/lib/member-form-options";
 import { isBranchScopedRole } from "@/lib/permissions";
 import type { BranchSummary, MemberListItem } from "@/lib/types";
 
@@ -34,6 +35,9 @@ export function ServiceUnitCreateForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.serviceUnitForm");
+  const tCommon = useTranslations("common");
+  const labels = useMemberFormLabels();
   const [loading, setLoading] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState(
     defaultBranchId || branches[0]?._id || "",
@@ -70,19 +74,19 @@ export function ServiceUnitCreateForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create service unit");
+        throw new Error(result.message || t("createError"));
       }
 
-      toast.success("Service unit created", {
-        description: "The branch service unit is now ready for member assignment.",
+      toast.success(t("createdTitle"), {
+        description: t("createdBody"),
       });
       onSuccess?.();
-      router.push(createdHref("/service-units?sort=newest", result, "Service unit"));
+      router.push(createdHref("/service-units?sort=newest", result, t("entityName")));
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to create service unit";
-      toast.error("Service unit not created", {
+        error instanceof Error ? error.message : t("createError");
+      toast.error(t("createFailed"), {
         description: message,
       });
     } finally {
@@ -96,16 +100,16 @@ export function ServiceUnitCreateForm({
     <form action={handleSubmit} className={showHeader ? "rounded-2xl bg-white p-5 sm:p-6" : undefined}>
       {showHeader ? (
         <div className="mb-5">
-          <h3 className="lp-heading text-[18px] leading-tight">Create service unit</h3>
+          <h3 className="lp-heading text-[18px] leading-tight">{t("heading")}</h3>
           <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">
-            Set up a ministry team for a branch, then assign members to it from their member record.
+            {t("intro")}
           </p>
         </div>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         {!isBranchScopedRole(currentUserRole) ? (
-          <Field label="Branch" required>
+          <Field label={tCommon("branch")} required>
             <select
               name="branchId"
               value={selectedBranchId}
@@ -113,7 +117,7 @@ export function ServiceUnitCreateForm({
               className="ui-input"
               required
             >
-              <option value="">Select branch</option>
+              <option value="">{tCommon("selectBranch")}</option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -125,13 +129,13 @@ export function ServiceUnitCreateForm({
           <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
         )}
 
-        <Field label="Unit name" required>
-          <input name="name" placeholder="Ushering, choir, technical..." className="ui-input" required />
+        <Field label={t("unitName")} required>
+          <input name="name" placeholder={t("unitNamePlaceholder")} className="ui-input" required />
         </Field>
 
-        <Field label="Leader" required={leadershipRequired}>
+        <Field label={t("leader")} required={leadershipRequired}>
           <select name="leaderMemberId" className="ui-input" required={leadershipRequired}>
-            <option value="">Select leader</option>
+            <option value="">{t("selectLeader")}</option>
             {filteredMembers.map((member) => (
               <option key={member._id} value={member._id}>
                 {getMemberName(member)}
@@ -140,9 +144,9 @@ export function ServiceUnitCreateForm({
           </select>
         </Field>
 
-        <Field label="Secretary" required={leadershipRequired}>
+        <Field label={t("secretary")} required={leadershipRequired}>
           <select name="secretaryMemberId" className="ui-input" required={leadershipRequired}>
-            <option value="">Select secretary</option>
+            <option value="">{t("selectSecretary")}</option>
             {filteredMembers.map((member) => (
               <option key={member._id} value={member._id}>
                 {getMemberName(member)}
@@ -151,48 +155,46 @@ export function ServiceUnitCreateForm({
           </select>
         </Field>
 
-        <Field label="Meeting day" required>
+        <Field label={t("meetingDay")} required>
           <select name="meetingDay" defaultValue="Saturday" className="ui-input" required>
             {WEEKDAY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {labels.weekday(option.value)}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="Prayer day" required>
+        <Field label={t("prayerDay")} required>
           <select name="prayerDay" defaultValue="Friday" className="ui-input" required>
             {WEEKDAY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {labels.weekday(option.value)}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="Notes" className="md:col-span-2">
+        <Field label={tCommon("notes")} className="md:col-span-2">
           <textarea
             name="notes"
-            placeholder="Meeting venue, reporting rhythm, prayer focus, or other notes"
+            placeholder={t("notesPlaceholder")}
             className="ui-input"
           />
         </Field>
       </div>
 
       <p className="mt-4 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">
-        {leadershipRequired
-          ? "Leader and secretary lists only show members of the selected branch."
-          : "Add members to this branch first if you want to assign a leader and secretary now."}
+        {leadershipRequired ? t("leadershipHint") : t("noMembersHint")}
       </p>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-5">
         <label className="flex items-center gap-2.5 text-[14px] text-[#55534e]">
           <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
-          Active service unit
+          {t("activeUnit")}
         </label>
         <Button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create service unit"}
+          {loading ? t("creating") : t("create")}
         </Button>
       </div>
     </form>

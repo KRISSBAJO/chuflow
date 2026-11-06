@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
@@ -21,6 +22,8 @@ export function HierarchyCatalogPanel({
   districts: DistrictOption[];
 }) {
   const router = useRouter();
+  const t = useTranslations("org.hierarchyCatalog");
+  const tCommon = useTranslations("common");
   const [loading, setLoading] = useState<"region" | "district" | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState(
@@ -56,16 +59,16 @@ export function HierarchyCatalogPanel({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create oversight region");
+        throw new Error(result.message || t("createRegionError"));
       }
 
-      setStatus("Oversight region created successfully.");
+      setStatus(t("regionCreated"));
       router.refresh();
     } catch (error) {
       setStatus(
         error instanceof Error
           ? error.message
-          : "Unable to create oversight region",
+          : t("createRegionError"),
       );
     } finally {
       setLoading(null);
@@ -91,14 +94,14 @@ export function HierarchyCatalogPanel({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create district");
+        throw new Error(result.message || t("createDistrictError"));
       }
 
-      setStatus("District created successfully.");
+      setStatus(t("districtCreated"));
       router.refresh();
     } catch (error) {
       setStatus(
-        error instanceof Error ? error.message : "Unable to create district",
+        error instanceof Error ? error.message : t("createDistrictError"),
       );
     } finally {
       setLoading(null);
@@ -108,9 +111,9 @@ export function HierarchyCatalogPanel({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="Hierarchy catalog"
-        title="National areas and districts"
-        description="Create national areas first, then attach districts and branches underneath them."
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
       />
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
         <div className="rounded-2xl border border-black/[0.06] p-5">
@@ -120,15 +123,14 @@ export function HierarchyCatalogPanel({
                 <Icon name="structure" className="h-[18px] w-[18px]" />
               </span>
               <div className="min-w-0">
-                <h3 className="lp-heading text-[17px]">National areas</h3>
+                <h3 className="lp-heading text-[17px]">{t("nationalAreas")}</h3>
                 <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">
-                  The top level of your structure. Districts and branches sit
-                  underneath each area.
+                  {t("nationalAreasHint")}
                 </p>
               </div>
             </div>
             <Badge tone="flame">
-              <span className="tabular-nums">{oversightRegions.length}</span> areas
+              {t.rich("areasCount", { count: oversightRegions.length, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
             </Badge>
           </div>
 
@@ -139,13 +141,13 @@ export function HierarchyCatalogPanel({
             >
               <input
                 name="regionName"
-                placeholder="New national area name"
-                aria-label="New national area name"
+                placeholder={t("newAreaName")}
+                aria-label={t("newAreaName")}
                 className="ui-input flex-1"
                 required
               />
               <Button type="submit" icon="plus" disabled={loading === "region"}>
-                {loading === "region" ? "Creating..." : "Create"}
+                {loading === "region" ? t("creating") : tCommon("create")}
               </Button>
             </form>
           ) : null}
@@ -162,8 +164,11 @@ export function HierarchyCatalogPanel({
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-medium text-[#111111]">{region.name}</span>
                         <span className="block text-[13px] text-[#6b6b6b]">
-                          <span className="tabular-nums">{region.districtCount}</span> districts ·{" "}
-                          <span className="tabular-nums">{region.branchCount}</span> branches
+                          {t.rich("regionSummary", {
+                            districts: region.districtCount,
+                            branches: region.branchCount,
+                            n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+                          })}
                         </span>
                       </span>
                       <Icon
@@ -175,8 +180,8 @@ export function HierarchyCatalogPanel({
                 ))}
               </ul>
             ) : (
-              <EmptyState icon="structure" title="No national areas yet">
-                Create the first national area to start building your structure.
+              <EmptyState icon="structure" title={t("noAreasTitle")}>
+                {t("noAreasBody")}
               </EmptyState>
             )}
           </div>
@@ -189,15 +194,14 @@ export function HierarchyCatalogPanel({
                 <Icon name="pin" className="h-[18px] w-[18px]" />
               </span>
               <div className="min-w-0">
-                <h3 className="lp-heading text-[17px]">Districts</h3>
+                <h3 className="lp-heading text-[17px]">{t("districts")}</h3>
                 <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">
-                  Districts sit inside a national area, and branches are created
-                  under the district you select.
+                  {t("districtsHint")}
                 </p>
               </div>
             </div>
             <Badge>
-              <span className="tabular-nums">{districts.length}</span> districts
+              {t.rich("districtsCount", { count: districts.length, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
             </Badge>
           </div>
 
@@ -208,11 +212,11 @@ export function HierarchyCatalogPanel({
                   name="districtOversightRegion"
                   value={selectedRegion}
                   onChange={(event) => setSelectedRegion(event.target.value)}
-                  aria-label="National area"
+                  aria-label={tCommon("nationalArea")}
                   className="ui-input"
                   required
                 >
-                  <option value="">Select national area</option>
+                  <option value="">{t("selectNationalArea")}</option>
                   {oversightRegions.map((region) => (
                     <option key={region._id} value={region.name}>
                       {region.name}
@@ -227,9 +231,9 @@ export function HierarchyCatalogPanel({
                     value={defaultOversightRegion || ""}
                   />
                   <input
-                    value={defaultOversightRegion || "Current national area"}
+                    value={defaultOversightRegion || t("currentNationalArea")}
                     readOnly
-                    aria-label="National area"
+                    aria-label={tCommon("nationalArea")}
                     className="ui-input bg-[#f6f5f1] text-[#6b6b6b]"
                   />
                 </>
@@ -238,13 +242,13 @@ export function HierarchyCatalogPanel({
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   name="districtName"
-                  placeholder="New district name"
-                  aria-label="New district name"
+                  placeholder={t("newDistrictName")}
+                  aria-label={t("newDistrictName")}
                   className="ui-input flex-1"
                   required
                 />
                 <Button type="submit" icon="plus" disabled={loading === "district"}>
-                  {loading === "district" ? "Creating..." : "Create"}
+                  {loading === "district" ? t("creating") : tCommon("create")}
                 </Button>
               </div>
             </form>
@@ -262,8 +266,11 @@ export function HierarchyCatalogPanel({
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-medium text-[#111111]">{district.name}</span>
                         <span className="block text-[13px] text-[#6b6b6b]">
-                          {district.oversightRegion} ·{" "}
-                          <span className="tabular-nums">{district.branchCount}</span> branches
+                          {t.rich("districtSummary", {
+                            region: district.oversightRegion,
+                            count: district.branchCount,
+                            n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+                          })}
                         </span>
                       </span>
                       <Icon
@@ -275,8 +282,8 @@ export function HierarchyCatalogPanel({
                 ))}
               </ul>
             ) : (
-              <EmptyState icon="pin" title="No districts here yet">
-                No districts are available in the selected national area yet.
+              <EmptyState icon="pin" title={t("noDistrictsTitle")}>
+                {t("noDistrictsBody")}
               </EmptyState>
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Badge, Button, Card, CardHeader, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { DistrictOption, OversightRegionOption } from "@/lib/types";
@@ -18,6 +19,9 @@ export function DistrictEditorCard({
   canChangeOversightRegion: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.districtEditor");
+  const tCommon = useTranslations("common");
+  const tStatuses = useTranslations("statuses");
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -40,13 +44,13 @@ export function DistrictEditorCard({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update district");
+        throw new Error(result.message || t("updateError"));
       }
 
-      setStatus("District updated successfully.");
+      setStatus(t("updated"));
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to update district");
+      setStatus(error instanceof Error ? error.message : t("updateError"));
     } finally {
       setSaving(false);
     }
@@ -55,17 +59,16 @@ export function DistrictEditorCard({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="District"
+        label={tCommon("district")}
         title={district.name}
-        description={
-          <>
-            {district.oversightRegion} ·{" "}
-            <span className="tabular-nums">{district.branchCount}</span> branches
-          </>
-        }
+        description={t.rich("summary", {
+          region: district.oversightRegion,
+          count: district.branchCount,
+          n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+        })}
         action={
           <Badge tone={district.isActive ? "success" : "neutral"} dot>
-            {district.isActive ? "Active" : "Inactive"}
+            {district.isActive ? tStatuses("active") : tStatuses("inactive")}
           </Badge>
         }
       />
@@ -73,7 +76,7 @@ export function DistrictEditorCard({
       {canEdit ? (
         <form action={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
           {canChangeOversightRegion ? (
-            <Field label="National area">
+            <Field label={tCommon("nationalArea")}>
               <select
                 name="oversightRegion"
                 defaultValue={district.oversightRegion}
@@ -87,7 +90,7 @@ export function DistrictEditorCard({
               </select>
             </Field>
           ) : (
-            <Field label="National area">
+            <Field label={tCommon("nationalArea")}>
               <input
                 type="hidden"
                 name="oversightRegion"
@@ -100,7 +103,7 @@ export function DistrictEditorCard({
               />
             </Field>
           )}
-          <Field label="District name" required>
+          <Field label={t("districtName")} required>
             <input
               name="name"
               defaultValue={district.name}
@@ -108,25 +111,25 @@ export function DistrictEditorCard({
               required
             />
           </Field>
-          <Field label="Status">
+          <Field label={tCommon("status")}>
             <select
               name="isActive"
               defaultValue={district.isActive ? "active" : "inactive"}
               className="ui-input"
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{tStatuses("active")}</option>
+              <option value="inactive">{tStatuses("inactive")}</option>
             </select>
           </Field>
           <div className="flex items-end">
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save district"}
+              {saving ? tCommon("saving") : t("save")}
             </Button>
           </div>
         </form>
       ) : (
         <p className="mt-6 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">
-          You can view this district, but only a district admin, national admin or overall oversight admin can edit it.
+          {t("readOnly")}
         </p>
       )}
 

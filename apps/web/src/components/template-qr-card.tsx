@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { useTranslations } from "next-intl";
 import { localizedFormUrl, type FormLanguage } from "@/lib/form-language";
 import { Button } from "@/components/ui/ui";
 
@@ -14,6 +15,7 @@ export function TemplateQrCard({
   title: string;
   allowSpanish?: boolean;
 }) {
+  const t = useTranslations("admin.templateQr");
   const [language, setLanguage] = useState<FormLanguage>("en");
   const shareUrl = allowSpanish ? localizedFormUrl(url, language) : url;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -66,12 +68,12 @@ export function TemplateQrCard({
           </p>
         </div>
         <Button size="sm" variant="secondary" onClick={handleCopy}>
-          {copied ? "Copied" : "Copy link"}
+          {copied ? t("copied") : t("copyLink")}
         </Button>
       </div>
       {allowSpanish && (
         <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-          Share form in
+          {t("shareFormIn")}
           <select
             className="rounded-xl border border-black/10 bg-white px-3 py-2"
             value={language}
@@ -81,8 +83,8 @@ export function TemplateQrCard({
               setQrDataUrl(null);
             }}
           >
-            <option value="en">English</option>
-            <option value="es">Español</option>
+            <option value="en">{t("english")}</option>
+            <option value="es">{t("spanish")}</option>
           </select>
         </label>
       )}
@@ -90,17 +92,17 @@ export function TemplateQrCard({
         {qrDataUrl ? (
           <img
             src={qrDataUrl}
-            alt={`QR code for ${title}`}
+            alt={t("qrAlt", { title })}
             className="h-28 w-28 shrink-0 rounded-xl border border-black/[0.06] bg-white p-2"
           />
         ) : (
           <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-[#f6f5f1] text-[12px] text-[#8a8780]">
-            Loading QR
+            {t("loadingQr")}
           </div>
         )}
         <div className="space-y-1.5 text-[13px] leading-[1.6] text-[#6b6b6b]">
-          <p>Scan this code to open the public form instantly.</p>
-          <p>Great for a screen slide, standee or printed welcome desk card.</p>
+          <p>{t("scanHint")}</p>
+          <p>{t("useHint")}</p>
         </div>
       </div>
     </section>

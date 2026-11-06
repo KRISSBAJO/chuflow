@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { FollowUpCreateForm } from "@/components/follow-up-create-form";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
@@ -49,6 +50,7 @@ export default async function NewFollowUpPage({
   }>;
 }) {
   const user = await requireServerRole("/follow-up/new");
+  const t = await getTranslations("people.followUp.new");
   const params = await searchParams;
   const canChooseBranch = canFilterAcrossBranches(user.role, user.hasOversight);
   const requestedOversightRegion = isGlobalRole(user.role)
@@ -116,27 +118,27 @@ export default async function NewFollowUpPage({
 
   const assignmentDisabled = canChooseBranch && !createBranchScopeId;
   const assignmentHint = assignmentDisabled
-    ? "Return to the queue and choose a branch first so guests and care workers stay in the same branch."
-    : "Assigning a care worker automatically moves this record from New to Assigned.";
+    ? t("hintChooseBranch")
+    : t("hintAutoAssign");
 
   return (
     <Shell>
       <div className="space-y-3">
         <Link
           href={returnHref}
-          aria-label="Return to follow-up queue"
+          aria-label={t("returnAria")}
           className={buttonClass("ghost", "sm", "-ml-2")}
         >
           <Icon name="arrowRight" className="h-4 w-4 rotate-180" />
-          Back to follow-up queue
+          {t("backToQueue")}
         </Link>
         <PageHeader
-          eyebrow="Follow-up"
-          title="Add follow-up"
+          eyebrow={t("eyebrow")}
+          title={t("title")}
           description={
             selectedBranch
-              ? `Create a care task for ${selectedBranch.name}.`
-              : "Choose a branch from the follow-up queue before creating a care task for it."
+              ? t("descriptionBranch", { name: selectedBranch.name })
+              : t("descriptionChoose")
           }
         />
       </div>
@@ -150,9 +152,9 @@ export default async function NewFollowUpPage({
           guestSelectionDisabled={assignmentDisabled}
           guestSelectionHint={
             assignmentDisabled
-              ? "A branch is required before choosing a guest for follow-up."
+              ? t("guestNeedsBranch")
               : guestOptions.items.length === 0
-                ? "No guests are available in the selected branch yet."
+                ? t("noGuests")
                 : undefined
           }
           assignmentDisabled={assignmentDisabled}

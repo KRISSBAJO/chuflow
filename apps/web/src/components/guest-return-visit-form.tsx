@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 
@@ -15,6 +16,8 @@ export function GuestReturnVisitForm({
   followUpId?: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("people.guests.returnVisit");
+  const tc = useTranslations("common");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -56,11 +59,11 @@ export function GuestReturnVisitForm({
       const visitResult = await visitResponse.json();
 
       if (!attendanceResponse.ok) {
-        throw new Error(attendanceResult.message || "Unable to record attendance");
+        throw new Error(attendanceResult.message || t("errorAttendance"));
       }
 
       if (!visitResponse.ok) {
-        throw new Error(visitResult.message || "Unable to record visit");
+        throw new Error(visitResult.message || t("errorVisit"));
       }
 
       await fetch(`${API_URL}/guests/${guestId}`, {
@@ -80,15 +83,15 @@ export function GuestReturnVisitForm({
           body: JSON.stringify({
             status: "returned",
             contactMethod: "attendance",
-            note: formData.get("notes") || "Return visit recorded from guest profile.",
+            note: formData.get("notes") || t("defaultNote"),
           }),
         });
       }
 
-      setStatus("Attendance and return visit recorded.");
+      setStatus(t("recorded"));
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to record return visit");
+      setStatus(error instanceof Error ? error.message : t("errorReturn"));
     } finally {
       setLoading(false);
     }
@@ -97,25 +100,25 @@ export function GuestReturnVisitForm({
   return (
     <form action={handleSubmit}>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Service date and time" required>
+        <Field label={t("serviceDateTime")} required>
           <input name="serviceDate" type="datetime-local" required className="ui-input" />
         </Field>
-        <Field label="Service type">
+        <Field label={t("serviceType")}>
           <input name="serviceType" defaultValue="Sunday service" className="ui-input" />
         </Field>
-        <Field label="Note" className="md:col-span-2">
-          <textarea name="notes" placeholder="Optional note about the return visit" className="ui-input" />
+        <Field label={t("note")} className="md:col-span-2">
+          <textarea name="notes" placeholder={t("notePlaceholder")} className="ui-input" />
         </Field>
       </div>
       <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="space-y-1 sm:mr-auto">
           {!branchId ? (
-            <p className="text-[13px] text-red-700">Branch information is required before attendance can be recorded.</p>
+            <p className="text-[13px] text-red-700">{t("branchRequired")}</p>
           ) : null}
           {status ? <p className="text-[13px] text-[#55534e]">{status}</p> : null}
         </div>
         <Button type="submit" disabled={loading || !branchId}>
-          {loading ? "Saving..." : "Record return visit"}
+          {loading ? tc("saving") : t("record")}
         </Button>
       </div>
     </form>

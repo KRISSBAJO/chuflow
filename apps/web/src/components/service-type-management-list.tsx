@@ -3,6 +3,7 @@ import { ExportTableButtons } from "@/components/table-export";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { isBranchScopedRole } from "@/lib/permissions";
@@ -28,6 +29,9 @@ export function ServiceTypeManagementList({
   currentUserRole: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.serviceTypes");
+  const tCommon = useTranslations("common");
+  const tStatuses = useTranslations("statuses");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleSubmit(serviceTypeId: string, formData: FormData) {
@@ -54,20 +58,19 @@ export function ServiceTypeManagementList({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update service type");
+        throw new Error(result.message || t("updateError"));
       }
 
-      toast.success("Service type updated", {
-        description:
-          "Attendance dropdowns will use the latest version immediately.",
+      toast.success(t("updatedTitle"), {
+        description: t("updatedBody"),
       });
       router.refresh();
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to update service type";
-      toast.error("Service type update failed", {
+          : t("updateError");
+      toast.error(t("updateFailed"), {
         description: message,
       });
     } finally {
@@ -77,8 +80,8 @@ export function ServiceTypeManagementList({
 
   if (serviceTypes.length === 0) {
     return (
-      <EmptyState icon="attendance" title="No service types yet">
-        Create your first one so attendance can use a consistent dropdown.
+      <EmptyState icon="attendance" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
@@ -101,11 +104,11 @@ export function ServiceTypeManagementList({
                 </p>
                 <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                   {serviceType.key} ·{" "}
-                  {getBranchName(serviceType.branchId) || "Branch scope"}
+                  {getBranchName(serviceType.branchId) || t("branchScope")}
                 </p>
               </div>
               <Badge tone={serviceType.isActive ? "success" : "neutral"} dot>
-                {serviceType.isActive ? "Active" : "Inactive"}
+                {serviceType.isActive ? tStatuses("active") : tStatuses("inactive")}
               </Badge>
               <Icon
                 name="chevronDown"
@@ -118,13 +121,13 @@ export function ServiceTypeManagementList({
                 className="grid gap-4 md:grid-cols-2"
               >
                 {!isBranchScopedRole(currentUserRole) ? (
-                  <Field label="Branch">
+                  <Field label={tCommon("branch")}>
                     <select
                       name={`branchId-${serviceType._id}`}
                       defaultValue={branchId}
                       className="ui-input"
                     >
-                      <option value="">Select branch</option>
+                      <option value="">{tCommon("selectBranch")}</option>
                       {branches.map((branch) => (
                         <option key={branch._id} value={branch._id}>
                           {branch.name}
@@ -140,7 +143,7 @@ export function ServiceTypeManagementList({
                   />
                 )}
 
-                <Field label="Display name">
+                <Field label={t("displayName")}>
                   <input
                     name={`name-${serviceType._id}`}
                     defaultValue={serviceType.name}
@@ -148,7 +151,7 @@ export function ServiceTypeManagementList({
                   />
                 </Field>
 
-                <Field label="Key">
+                <Field label={t("key")}>
                   <input
                     name={`key-${serviceType._id}`}
                     defaultValue={serviceType.key}
@@ -156,7 +159,7 @@ export function ServiceTypeManagementList({
                   />
                 </Field>
 
-                <Field label="Notes" className="md:col-span-2">
+                <Field label={tCommon("notes")} className="md:col-span-2">
                   <textarea
                     name={`notes-${serviceType._id}`}
                     defaultValue={serviceType.notes || ""}
@@ -172,7 +175,7 @@ export function ServiceTypeManagementList({
                       defaultChecked={serviceType.isActive}
                       className="h-4 w-4 accent-[#111111]"
                     />
-                    Active service type
+                    {t("activeType")}
                   </label>
 
                   <Button
@@ -181,8 +184,8 @@ export function ServiceTypeManagementList({
                     disabled={loadingId === serviceType._id}
                   >
                     {loadingId === serviceType._id
-                      ? "Saving..."
-                      : "Update service type"}
+                      ? tCommon("saving")
+                      : t("update")}
                   </Button>
                 </div>
               </form>

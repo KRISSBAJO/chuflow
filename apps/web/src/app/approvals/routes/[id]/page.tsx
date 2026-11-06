@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import { Shell } from "@/components/shell";
@@ -12,6 +13,7 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   await requireServerRole("/approvals/routes");
+  const t = await getTranslations("admin.approvalRoutes");
   const { id } = await params;
   const data = await serverGet<ApprovalOptions>("/approval-workflows/options");
   if (!data.canManage) redirect("/unauthorized");
@@ -20,12 +22,12 @@ export default async function Page({
   return (
     <Shell>
       <Link href="/approvals/routes" className="text-sm hover:underline">
-        ← Back to routes
+        {t("backToRoutes")}
       </Link>
       <PageHeader
-        eyebrow="Approval settings"
+        eyebrow={t("eyebrow")}
         title={p.name}
-        description="Changes affect future submissions, preserving existing decision histories."
+        description={t("editDescription")}
       />
       <ApprovalPolicyForm regions={data.regions} policy={p} />
     </Shell>

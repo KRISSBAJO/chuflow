@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, Field } from "@/components/ui/ui";
+import { useRoleLabel } from "@/i18n/labels";
 import type { BranchSettingsOverview, BranchSummary } from "@/lib/types";
 
 const TIMEZONE_OPTIONS = [
@@ -18,12 +20,7 @@ const TIMEZONE_OPTIONS = [
 
 const CURRENCY_OPTIONS = ["USD", "NGN", "GHS", "KES", "GBP"];
 
-const APPROVAL_ROLE_OPTIONS = [
-  { value: "branch_admin", label: "Branch admin" },
-  { value: "resident_pastor", label: "Resident pastor" },
-  { value: "associate_pastor", label: "Associate pastor" },
-  { value: "follow_up", label: "Follow-up" },
-];
+const APPROVAL_ROLE_OPTIONS = ["branch_admin", "resident_pastor", "associate_pastor", "follow_up"];
 
 export function BranchSettingsForm({
   branches,
@@ -37,6 +34,9 @@ export function BranchSettingsForm({
   canSelectBranch: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("org.branchSettings");
+  const tCommon = useTranslations("common");
+  const roleLabel = useRoleLabel();
   const [loading, setLoading] = useState(false);
   const activeBranchId = selectedBranchId || overview?.branch._id || branches[0]?._id;
 
@@ -100,19 +100,19 @@ export function BranchSettingsForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to save branch settings");
+        throw new Error(result.message || t("saveError"));
       }
 
-      toast.success("Branch settings saved", {
-        description: `${overview.branch.name} defaults were updated.`,
+      toast.success(t("savedTitle"), {
+        description: t("savedBody", { branch: overview.branch.name }),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Branch settings update failed", {
+      toast.error(t("saveFailed"), {
         description:
           error instanceof Error
             ? error.message
-            : "Unable to save branch settings",
+            : t("saveError"),
       });
     } finally {
       setLoading(false);
@@ -127,7 +127,7 @@ export function BranchSettingsForm({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="lp-heading text-[18px]">{overview.branch.name}</p>
-              {!overview.canEdit ? <Badge>View only</Badge> : null}
+              {!overview.canEdit ? <Badge>{t("viewOnly")}</Badge> : null}
             </div>
             <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
               {overview.branch.city}, {overview.branch.state} · {overview.branch.district} ·{" "}
@@ -139,7 +139,7 @@ export function BranchSettingsForm({
         )}
 
         {canSelectBranch && branches.length > 1 ? (
-          <Field label="Branch" className="w-full sm:w-64">
+          <Field label={tCommon("branch")} className="w-full sm:w-64">
             <select
               value={activeBranchId}
               onChange={(event) => handleBranchChange(event.target.value)}
@@ -158,7 +158,7 @@ export function BranchSettingsForm({
       {overview ? (
         <form action={handleSubmit} className="mt-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Timezone">
+            <Field label={t("timezone")}>
               <select
                 name="timezone"
                 defaultValue={overview.settings.timezone}
@@ -173,7 +173,7 @@ export function BranchSettingsForm({
               </select>
             </Field>
 
-            <Field label="Currency">
+            <Field label={t("currency")}>
               <select
                 name="currency"
                 defaultValue={overview.settings.currency}
@@ -188,7 +188,7 @@ export function BranchSettingsForm({
               </select>
             </Field>
 
-            <Field label="Locale">
+            <Field label={t("locale")}>
               <input
                 name="locale"
                 defaultValue={overview.settings.locale}
@@ -197,7 +197,7 @@ export function BranchSettingsForm({
               />
             </Field>
 
-            <Field label="Default service duration" hint="In minutes, between 30 and 600.">
+            <Field label={t("defaultDuration")} hint={t("defaultDurationHint")}>
               <input
                 type="number"
                 min={30}
@@ -211,60 +211,60 @@ export function BranchSettingsForm({
           </div>
 
           <div>
-            <p className="text-[13px] font-medium text-[#111111]">Attendance approval owners</p>
-            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Roles that can approve attendance for this branch.</p>
+            <p className="text-[13px] font-medium text-[#111111]">{t("approvalOwners")}</p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">{t("approvalOwnersHint")}</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {APPROVAL_ROLE_OPTIONS.map((role) => (
                 <label
-                  key={role.value}
+                  key={role}
                   className="flex items-center gap-3 rounded-xl border border-black/[0.06] px-4 py-3 text-[14px] text-[#111111] transition-colors hover:bg-[#faf9f6]"
                 >
                   <input
                     type="checkbox"
                     name="attendanceApprovalRoles"
-                    value={role.value}
-                    defaultChecked={selectedApprovalRoles.has(role.value)}
+                    value={role}
+                    defaultChecked={selectedApprovalRoles.has(role)}
                     disabled={!overview.canEdit}
                     className="h-4 w-4 accent-[#111111]"
                   />
-                  {role.label}
+                  {roleLabel(role)}
                 </label>
               ))}
             </div>
           </div>
 
           <div>
-            <p className="text-[13px] font-medium text-[#111111]">Public links</p>
-            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">Which public forms can be shared for this branch.</p>
+            <p className="text-[13px] font-medium text-[#111111]">{t("publicLinks")}</p>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">{t("publicLinksHint")}</p>
             <div className="mt-3 divide-y divide-black/[0.05] rounded-2xl border border-black/[0.06]">
               <CheckRow
                 name="publicGuestIntakeEnabled"
                 defaultChecked={overview.settings.publicGuestIntakeEnabled}
                 disabled={!overview.canEdit}
               >
-                Public guest intake can stay live for this branch.
+                {t("publicGuestIntake")}
               </CheckRow>
               <CheckRow
                 name="publicMemberIntakeEnabled"
                 defaultChecked={overview.settings.publicMemberIntakeEnabled}
                 disabled={!overview.canEdit}
               >
-                Public member intake links are enabled for this branch.
+                {t("publicMemberIntake")}
               </CheckRow>
               <CheckRow
                 name="publicAttendanceEntryEnabled"
                 defaultChecked={overview.settings.publicAttendanceEntryEnabled}
                 disabled={!overview.canEdit}
               >
-                Shareable attendance entry links are enabled for this branch.
+                {t("publicAttendance")}
               </CheckRow>
             </div>
           </div>
 
           <div>
-            <p className="text-[13px] font-medium text-[#111111]">Notifications</p>
+            <p className="text-[13px] font-medium text-[#111111]">{t("notifications")}</p>
             <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-              Which branch operations should raise alerts and digest reminders.
+              {t("notificationsHint")}
             </p>
             <div className="mt-3 divide-y divide-black/[0.05] rounded-2xl border border-black/[0.06]">
               <CheckRow
@@ -272,35 +272,35 @@ export function BranchSettingsForm({
                 defaultChecked={overview.settings.notifyOnMissingAttendance}
                 disabled={!overview.canEdit}
               >
-                Alert this branch when attendance submissions are missing.
+                {t("notifyMissingAttendance")}
               </CheckRow>
               <CheckRow
                 name="notifyOnFollowUpBacklog"
                 defaultChecked={overview.settings.notifyOnFollowUpBacklog}
                 disabled={!overview.canEdit}
               >
-                Alert this branch when follow-up backlog is building.
+                {t("notifyFollowUpBacklog")}
               </CheckRow>
               <CheckRow
                 name="notifyOnFinanceApprovals"
                 defaultChecked={overview.settings.notifyOnFinanceApprovals}
                 disabled={!overview.canEdit}
               >
-                Alert this branch when finance approvals need attention.
+                {t("notifyFinanceApprovals")}
               </CheckRow>
               <CheckRow
                 name="dailySummaryEnabled"
                 defaultChecked={overview.settings.dailySummaryEnabled}
                 disabled={!overview.canEdit}
               >
-                Enable daily branch summary reminders.
+                {t("dailySummary")}
               </CheckRow>
               <CheckRow
                 name="weeklyLeadershipDigestEnabled"
                 defaultChecked={overview.settings.weeklyLeadershipDigestEnabled}
                 disabled={!overview.canEdit}
               >
-                Enable weekly leadership digest reminders.
+                {t("weeklyDigest")}
               </CheckRow>
             </div>
           </div>
@@ -308,19 +308,19 @@ export function BranchSettingsForm({
           <div className="flex justify-end border-t border-black/[0.06] pt-5">
             {overview.canEdit ? (
               <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save branch settings"}
+                {loading ? tCommon("saving") : t("save")}
               </Button>
             ) : (
               <p className="text-[13px] text-[#6b6b6b]">
-                You can view this branch configuration, but only branch and oversight admins can edit it.
+                {t("readOnly")}
               </p>
             )}
           </div>
         </form>
       ) : (
         <div className="mt-6">
-          <EmptyState icon="branches" title="No branch settings">
-            No branch settings are available in your current scope yet.
+          <EmptyState icon="branches" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         </div>
       )}

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { FilterPanel } from "@/components/filter-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -9,36 +11,33 @@ import { canFilterAcrossBranches } from "@/lib/permissions";
 import { serverGet } from "@/lib/server-api";
 import type { BranchSummary, MaagReportListResponse } from "@/lib/types";
 
-function formatNumber(value?: number) {
-  return new Intl.NumberFormat("en-US").format(value ?? 0);
-}
-
-function money(value?: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value ?? 0);
-}
-
-const MAAG_TEXT_COLUMNS_START = ["Month", "Station", "Status", "Facility", "Head"];
+const MAAG_TEXT_COLUMNS_START = ["month", "station", "status", "facility", "head"] as const;
 
 const MAAG_NUMBER_COLUMNS = [
-  "Main cap",
-  "Main chairs",
-  "Services",
-  "Avg att'd",
-  "Highest",
-  "Adult",
-  "Children",
-  "CHOP",
-  "Income",
-  "ROF",
-  "Expense",
-  "WSF",
-  "FT",
-  "WOFBI",
-  "NC",
-  "BFC",
-  "HGB",
-  "WB",
-];
+  "mainCap",
+  "mainChairs",
+  "services",
+  "avgAttended",
+  "highest",
+  "adult",
+  "children",
+  "chop",
+  "income",
+  "rof",
+  "expense",
+  "wsf",
+  "ft",
+  "wofbi",
+  "nc",
+  "bfc",
+  "hgb",
+  "wb",
+] as const;
+
+const DISTRICT_COLUMNS = ["reports", "avgAttended", "income", "ft", "nc"] as const;
+const BRANCH_COLUMNS = ["reports", "avgAttended", "income", "expense", "ft", "nc"] as const;
+
+type StatusKey = Parameters<Awaited<ReturnType<typeof getTranslations<"statuses">>>>[0];
 
 export default async function MaagReportsPage({
   searchParams,
@@ -64,10 +63,17 @@ export default async function MaagReportsPage({
     if (value) query.set(key, value);
   }
 
-  const [report, branches] = await Promise.all([
+  const [report, branches, t, tStatus, format] = await Promise.all([
     serverGet<MaagReportListResponse>(`/intake-templates/maag-reports?${query.toString()}`),
     serverGet<BranchSummary[]>("/branches").catch(() => []),
+    getTranslations("services.maagReports"),
+    getTranslations("statuses"),
+    getFormatter(),
   ]);
+  const formatNumber = (value?: number) => format.number(value ?? 0);
+  const money = (value?: number) => format.number(value ?? 0, { style: "currency", currency: "USD" });
+  const statusLabel = (value: string) =>
+    tStatus.has(value.toLowerCase() as StatusKey) ? tStatus(value.toLowerCase() as StatusKey) : formatStatus(value);
   const scopedBranches = report.scope.branches.length > 0 ? report.scope.branches : branches;
   const nationalAreas = Array.from(new Set(scopedBranches.map((branch) => branch.oversightRegion).filter(Boolean))).sort();
   const districts = Array.from(
@@ -90,12 +96,12 @@ export default async function MaagReportsPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="MAAG reports"
-        title="Monthly MAAG reports"
-        description="Collate monthly branch MAAG reports across facility, attendance, finance, spiritual indices and pastor details."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <a href={exportUrl} className={buttonClass("primary")}>
-            Export CSV
+            {t("exportCsv")}
           </a>
         }
       />
@@ -104,60 +110,60 @@ export default async function MaagReportsPage({
         className="app-rise grid gap-2 rounded-2xl border border-black/[0.06] bg-white p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center"
         style={{ animationDelay: "60ms" }}
       >
-        <input name="monthFrom" type="month" aria-label="From month" defaultValue={report.filters.monthFrom} className="ui-input lg:w-auto" />
-        <input name="monthTo" type="month" aria-label="To month" defaultValue={report.filters.monthTo} className="ui-input lg:w-auto" />
+        <input name="monthFrom" type="month" aria-label={t("fromMonth")} defaultValue={report.filters.monthFrom} className="ui-input lg:w-auto" />
+        <input name="monthTo" type="month" aria-label={t("toMonth")} defaultValue={report.filters.monthTo} className="ui-input lg:w-auto" />
         {canCrossFilter ? (
           <>
-            <select name="oversightRegion" aria-label="National area" defaultValue={oversightRegion || ""} className="ui-input lg:w-auto lg:min-w-[170px] lg:flex-1">
-              <option value="">All national areas</option>
+            <select name="oversightRegion" aria-label={t("nationalArea")} defaultValue={oversightRegion || ""} className="ui-input lg:w-auto lg:min-w-[170px] lg:flex-1">
+              <option value="">{t("allNationalAreas")}</option>
               {nationalAreas.map((area) => <option key={area} value={area}>{area}</option>)}
             </select>
-            <select name="district" aria-label="District" defaultValue={district || ""} className="ui-input lg:w-auto lg:min-w-[150px] lg:flex-1">
-              <option value="">All districts</option>
+            <select name="district" aria-label={t("district")} defaultValue={district || ""} className="ui-input lg:w-auto lg:min-w-[150px] lg:flex-1">
+              <option value="">{t("allDistricts")}</option>
               {districts.map((districtName) => <option key={districtName} value={districtName}>{districtName}</option>)}
             </select>
-            <select name="branchId" aria-label="Branch" defaultValue={branchId || ""} className="ui-input lg:w-auto lg:min-w-[150px] lg:flex-1">
-              <option value="">All branches</option>
+            <select name="branchId" aria-label={t("branch")} defaultValue={branchId || ""} className="ui-input lg:w-auto lg:min-w-[150px] lg:flex-1">
+              <option value="">{t("allBranches")}</option>
               {branchOptions.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
             </select>
           </>
         ) : null}
-        <select name="status" aria-label="Status" defaultValue={params.status || ""} className="ui-input lg:w-auto lg:min-w-[140px]">
-          <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
+        <select name="status" aria-label={t("status")} defaultValue={params.status || ""} className="ui-input lg:w-auto lg:min-w-[140px]">
+          <option value="">{t("allStatuses")}</option>
+          <option value="pending">{t("pending")}</option>
+          <option value="approved">{t("approved")}</option>
+          <option value="rejected">{t("rejected")}</option>
         </select>
         <Button type="submit" variant="secondary" icon="search">
-          Apply
+          {t("apply")}
         </Button>
       </form></FilterPanel>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard label="Reports" value={String(report.totals.reports ?? 0)} delta={`${report.totals.pending ?? 0} pending`} tone="cool" />
-        <MetricCard label="Avg attendance" value={formatNumber(report.totals.averageAttendance)} delta={`Highest ${formatNumber(report.totals.highestAttendance)}`} tone="warm" />
-        <MetricCard label="Income" value={money(report.totals.incomeAmount)} delta={`Expense ${money(report.totals.expenseAmount)}`} tone="cool" />
-        <MetricCard label="First timers" value={formatNumber(report.totals.firstTimersCount)} delta={`${formatNumber(report.totals.newConvertsCount)} new converts`} tone="warm" />
-        <MetricCard label="Baptisms" value={formatNumber((report.totals.holyGhostBaptismCount ?? 0) + (report.totals.waterBaptismCount ?? 0))} delta="Holy Ghost + water" tone="cool" />
+        <MetricCard label={t("metrics.reports")} value={String(report.totals.reports ?? 0)} delta={t("metrics.pending", { count: report.totals.pending ?? 0 })} tone="cool" />
+        <MetricCard label={t("metrics.avgAttendance")} value={formatNumber(report.totals.averageAttendance)} delta={t("metrics.highest", { count: formatNumber(report.totals.highestAttendance) })} tone="warm" />
+        <MetricCard label={t("metrics.income")} value={money(report.totals.incomeAmount)} delta={t("metrics.expense", { amount: money(report.totals.expenseAmount) })} tone="cool" />
+        <MetricCard label={t("metrics.firstTimers")} value={formatNumber(report.totals.firstTimersCount)} delta={t("metrics.newConverts", { count: formatNumber(report.totals.newConvertsCount) })} tone="warm" />
+        <MetricCard label={t("metrics.baptisms")} value={formatNumber((report.totals.holyGhostBaptismCount ?? 0) + (report.totals.waterBaptismCount ?? 0))} delta={t("metrics.baptismsHint")} tone="cool" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card className="app-rise min-w-0 p-6 sm:p-7">
-          <CardHeader label="District totals" title="By district" />
+          <CardHeader label={t("districts.label")} title={t("districts.title")} />
           <div className="mt-6">
             {report.districtTotals.length === 0 ? (
-              <EmptyState icon="structure" title="No district totals">
-                District totals will appear once reports are submitted.
+              <EmptyState icon="structure" title={t("districts.emptyTitle")}>
+                {t("districts.emptyBody")}
               </EmptyState>
             ) : (
               <TableWrap>
                 <table className="ui-table">
                   <thead>
                     <tr>
-                      <th>District</th>
-                      {["Reports", "Avg att'd", "Income", "FT", "NC"].map((column) => (
+                      <th>{t("district")}</th>
+                      {DISTRICT_COLUMNS.map((column) => (
                         <th key={column} className="text-right">
-                          {column}
+                          {t(`columns.${column}`)}
                         </th>
                       ))}
                     </tr>
@@ -181,11 +187,11 @@ export default async function MaagReportsPage({
         </Card>
 
         <Card className="app-rise min-w-0 p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
-          <CardHeader label="Monthly trend" title="Average attendance by month" />
+          <CardHeader label={t("trend.label")} title={t("trend.title")} />
           <div className="mt-6">
             {report.trends.length === 0 ? (
-              <EmptyState icon="maag" title="No reports yet">
-                No MAAG reports in this range.
+              <EmptyState icon="maag" title={t("trend.emptyTitle")}>
+                {t("trend.emptyBody")}
               </EmptyState>
             ) : (
               <ul className="space-y-4">
@@ -207,7 +213,10 @@ export default async function MaagReportsPage({
                       />
                     </span>
                     <p className="mt-1.5 text-[12px] text-[#8a8780]">
-                      Income <span className="tabular-nums">{money(trend.incomeAmount)}</span>
+                      {t.rich("trend.income", {
+                        amount: money(trend.incomeAmount),
+                        n: (chunks: ReactNode) => <span className="tabular-nums">{chunks}</span>,
+                      })}
                     </p>
                   </li>
                 ))}
@@ -219,25 +228,25 @@ export default async function MaagReportsPage({
 
       <Card className="app-rise min-w-0 p-6 sm:p-7">
         <CardHeader
-          label="Branch rollup"
-          title="All branches in scope"
-          action={<Badge>{report.scope.branchCount} branches watched</Badge>}
+          label={t("branches.label")}
+          title={t("branches.title")}
+          action={<Badge>{t("branches.watched", { count: report.scope.branchCount })}</Badge>}
         />
         <div className="mt-6">
           {report.branchTotals.length === 0 ? (
-            <EmptyState icon="branches" title="No branch totals">
-              Branch totals will appear once reports are submitted.
+            <EmptyState icon="branches" title={t("branches.emptyTitle")}>
+              {t("branches.emptyBody")}
             </EmptyState>
           ) : (
             <TableWrap>
               <table className="ui-table min-w-[900px]">
                 <thead>
                   <tr>
-                    <th>Branch</th>
-                    <th>District</th>
-                    {["Reports", "Avg att'd", "Income", "Expense", "FT", "NC"].map((column) => (
+                    <th>{t("branch")}</th>
+                    <th>{t("district")}</th>
+                    {BRANCH_COLUMNS.map((column) => (
                       <th key={column} className="text-right">
-                        {column}
+                        {t(`columns.${column}`)}
                       </th>
                     ))}
                   </tr>
@@ -264,9 +273,9 @@ export default async function MaagReportsPage({
 
       <Card className="app-rise min-w-0 p-6 sm:p-7">
         <CardHeader
-          label="Submissions"
-          title="Monthly MAAG submissions"
-          action={<Badge>Matches the CSV export</Badge>}
+          label={t("submissions.label")}
+          title={t("submissions.title")}
+          action={<Badge>{t("submissions.matchesCsv")}</Badge>}
         />
         <div className="mt-6">
           <TableWrap>
@@ -274,22 +283,22 @@ export default async function MaagReportsPage({
               <thead>
                 <tr>
                   {MAAG_TEXT_COLUMNS_START.map((column) => (
-                    <th key={column}>{column}</th>
+                    <th key={column}>{t(`columns.${column}`)}</th>
                   ))}
                   {MAAG_NUMBER_COLUMNS.map((column) => (
                     <th key={column} className="text-right">
-                      {column}
+                      {t(`columns.${column}`)}
                     </th>
                   ))}
-                  <th>Pastor</th>
-                  <th>Remarks</th>
+                  <th>{t("columns.pastor")}</th>
+                  <th>{t("columns.remarks")}</th>
                 </tr>
               </thead>
               <tbody>
                 {report.items.length === 0 ? (
                   <tr>
                     <td colSpan={25} className="py-10 text-center text-[#8a8780]">
-                      No MAAG reports match the current filters.
+                      {t("submissions.empty")}
                     </td>
                   </tr>
                 ) : (
@@ -302,7 +311,7 @@ export default async function MaagReportsPage({
                       </td>
                       <td>
                         <Badge tone={statusTone(item.status)} dot>
-                          {formatStatus(item.status)}
+                          {statusLabel(item.status)}
                         </Badge>
                       </td>
                       <td className="text-[#55534e]">{item.facilityType}</td>

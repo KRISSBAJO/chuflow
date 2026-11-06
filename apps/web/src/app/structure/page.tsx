@@ -1,13 +1,14 @@
 import { FilterPanel } from "@/components/filter-panel";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Icon, type IconName } from "@/components/app/icons";
 import { HierarchyCatalogPanel } from "@/components/hierarchy-catalog-panel";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
-import { Avatar, Badge, Button, ButtonLink, Card, CardHeader, EmptyState, formatStatus, Stat, statusTone } from "@/components/ui/ui";
-import { requireServerRole } from "@/lib/auth";
-import { formatRoleLabel, getUserScopeLabel } from "@/lib/permissions";
+import { Avatar, Badge, Button, ButtonLink, Card, CardHeader, EmptyState, Stat, statusTone } from "@/components/ui/ui";
+import { useRoleLabel, useScopeLabel, useStatusLabel } from "@/i18n/labels";
+import { requireServerRole, type SessionUser } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type {
     BranchOverview,
@@ -210,6 +211,7 @@ function TeamPills({
   users: UserSummary[];
   emptyLabel: string;
 }) {
+  const t = useTranslations("org.structure");
   const visibleUsers = list(users);
 
   if (visibleUsers.length === 0) {
@@ -219,7 +221,7 @@ function TeamPills({
   return (
     <div className="flex flex-wrap gap-2">
       {visibleUsers.map((user) => {
-        const name = `${text(user.firstName, "Unknown")} ${text(user.lastName, "User")}`;
+        const name = `${text(user.firstName, t("unknownFirst"))} ${text(user.lastName, t("unknownLast"))}`;
         return (
           <span
             key={user._id}
@@ -273,7 +275,11 @@ function CountLine({ items }: { items: [number, string][] }) {
 }
 
 function BranchCard({ branch }: { branch: BranchOverview }) {
+  const t = useTranslations("org.structure");
+  const tCards = useTranslations("org.structureCards");
+  const statusLabel = useStatusLabel();
   const status = text(branch.status, "active");
+  const tabular = (chunks: ReactNode) => <span className="tabular-nums">{chunks}</span>;
 
   return (
     <article className="rounded-2xl border border-black/[0.06] bg-white p-5">
@@ -282,51 +288,51 @@ function BranchCard({ branch }: { branch: BranchOverview }) {
           <LevelIcon name="branches" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-[15px] font-semibold text-[#111111]">{text(branch.name, "Unnamed branch")}</h4>
+              <h4 className="text-[15px] font-semibold text-[#111111]">{text(branch.name, t("unnamedBranch"))}</h4>
               <Badge tone={statusTone(status)} dot>
-                {formatStatus(status)}
+                {statusLabel(status)}
               </Badge>
             </div>
             <p className="mt-1 text-[13px] text-[#55534e]">
-              {text(branch.city, "City not set")}, {text(branch.state, "State not set")} · {text(branch.serviceTimes, "Service times not set")}
+              {text(branch.city, t("cityNotSet"))}, {text(branch.state, t("stateNotSet"))} · {text(branch.serviceTimes, t("serviceTimesNotSet"))}
             </p>
-            <p className="mt-0.5 text-[13px] text-[#8a8780]">{text(branch.contactInfo, "Contact information not set")}</p>
+            <p className="mt-0.5 text-[13px] text-[#8a8780]">{text(branch.contactInfo, t("contactNotSet"))}</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge tone="flame">
-            <span className="tabular-nums">{branch.metrics.guestCount}</span> guests
+            {tCards.rich("guestsBadge", { count: branch.metrics.guestCount, n: tabular })}
           </Badge>
           <Badge>
-            <span className="tabular-nums">{branch.metrics.memberCount}</span> members
+            {tCards.rich("membersBadge", { count: branch.metrics.memberCount, n: tabular })}
           </Badge>
           <Badge>
-            <span className="tabular-nums">{branch.metrics.activeUserCount}</span> active staff
+            {tCards.rich("activeStaffBadge", { count: branch.metrics.activeUserCount, n: tabular })}
           </Badge>
         </div>
       </div>
 
       <div className="mt-4 grid gap-3 xl:grid-cols-2">
-        <TeamGroup label="Branch admins">
-          <TeamPills users={list(branch.admins)} emptyLabel="No branch admin assigned yet." />
+        <TeamGroup label={tCards("branchAdmins")}>
+          <TeamPills users={list(branch.admins)} emptyLabel={tCards("noBranchAdmin")} />
         </TeamGroup>
-        <TeamGroup label="Resident pastors">
-          <TeamPills users={list(branch.residentPastors)} emptyLabel="No resident pastor assigned yet." />
+        <TeamGroup label={tCards("residentPastors")}>
+          <TeamPills users={list(branch.residentPastors)} emptyLabel={tCards("noResidentPastor")} />
         </TeamGroup>
-        <TeamGroup label="Follow-up team">
-          <TeamPills users={list(branch.followUpTeam)} emptyLabel="No follow-up team assigned." />
+        <TeamGroup label={tCards("followUpTeam")}>
+          <TeamPills users={list(branch.followUpTeam)} emptyLabel={tCards("noFollowUpTeam")} />
         </TeamGroup>
-        <TeamGroup label="Ushers">
-          <TeamPills users={list(branch.ushers)} emptyLabel="No usher team assigned." />
+        <TeamGroup label={tCards("ushers")}>
+          <TeamPills users={list(branch.ushers)} emptyLabel={tCards("noUsherTeam")} />
         </TeamGroup>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <ButtonLink href="/branches" variant="secondary" size="sm" icon="branches">
-          Open branches
+          {tCards("openBranches")}
         </ButtonLink>
         <ButtonLink href={`/users?branchId=${branch._id}`} size="sm" icon="users">
-          Open branch staff
+          {tCards("openBranchStaff")}
         </ButtonLink>
       </div>
     </article>
@@ -344,6 +350,8 @@ function RegionSection({
   regionIdByName: Map<string, string>;
   districtIdByKey: Map<string, string>;
 }) {
+  const t = useTranslations("org.structure");
+  const tCommon = useTranslations("common");
   const regionId = regionIdByName.get(region.name);
   const districts = list(region.districts);
 
@@ -359,9 +367,9 @@ function RegionSection({
               <Icon name="structure" className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-[#6b6b6b]">National area</p>
+              <p className="text-[13px] font-medium text-[#6b6b6b]">{tCommon("nationalArea")}</p>
               <h2 className="lp-heading mt-0.5 flex items-center gap-2 text-[22px] leading-tight">
-                {text(region.name, "Unnamed region")}
+                {text(region.name, t("unnamedRegion"))}
                 <Icon
                   name="chevronDown"
                   className="h-4 w-4 text-[#8a8780] transition-transform group-open/region:rotate-180"
@@ -369,27 +377,27 @@ function RegionSection({
               </h2>
               <CountLine
                 items={[
-                  [region.branchCount, "branches"],
-                  [region.districtCount, "districts"],
-                  [region.guestCount, "guests"],
-                  [region.memberCount, "members"],
+                  [region.branchCount, t("countBranches")],
+                  [region.districtCount, t("countDistricts")],
+                  [region.guestCount, t("countGuests")],
+                  [region.memberCount, t("countMembers")],
                 ]}
               />
               {regionId ? (
                 <div className="mt-3">
                   <ButtonLink href={`/structure/national/${regionId}`} variant="secondary" size="sm">
-                    Open national detail
+                    {t("openNationalDetail")}
                   </ButtonLink>
                 </div>
               ) : null}
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:min-w-[420px] xl:max-w-[520px]">
-            <TeamGroup label="National admins">
-              <TeamPills users={list(region.nationalAdmins)} emptyLabel="No national admin assigned." />
+            <TeamGroup label={t("nationalAdmins")}>
+              <TeamPills users={list(region.nationalAdmins)} emptyLabel={t("noNationalAdmin")} />
             </TeamGroup>
-            <TeamGroup label="National pastors">
-              <TeamPills users={list(region.nationalPastors)} emptyLabel="No national pastor assigned." />
+            <TeamGroup label={t("nationalPastors")}>
+              <TeamPills users={list(region.nationalPastors)} emptyLabel={t("noNationalPastor")} />
             </TeamGroup>
           </div>
         </div>
@@ -413,9 +421,9 @@ function RegionSection({
                       <Icon name="pin" className="h-[18px] w-[18px]" />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[12px] font-medium text-[#8a8780]">District</p>
+                      <p className="text-[12px] font-medium text-[#8a8780]">{tCommon("district")}</p>
                       <h3 className="lp-heading mt-0.5 flex items-center gap-2 text-[18px] leading-tight">
-                        {text(district.name, "Unnamed district")}
+                        {text(district.name, t("unnamedDistrict"))}
                         <Icon
                           name="chevronDown"
                           className="h-4 w-4 text-[#8a8780] transition-transform group-open/district:rotate-180"
@@ -423,26 +431,26 @@ function RegionSection({
                       </h3>
                       <CountLine
                         items={[
-                          [district.branchCount, "branches"],
-                          [district.guestCount, "guests"],
-                          [district.memberCount, "members"],
+                          [district.branchCount, t("countBranches")],
+                          [district.guestCount, t("countGuests")],
+                          [district.memberCount, t("countMembers")],
                         ]}
                       />
                       {districtId ? (
                         <div className="mt-3">
                           <ButtonLink href={`/structure/district/${districtId}`} variant="secondary" size="sm">
-                            Open district detail
+                            {t("openDistrictDetail")}
                           </ButtonLink>
                         </div>
                       ) : null}
                     </div>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 xl:min-w-[400px] xl:max-w-[500px]">
-                    <TeamGroup label="District admins" className="bg-white">
-                      <TeamPills users={list(district.districtAdmins)} emptyLabel="No district admin assigned." />
+                    <TeamGroup label={t("districtAdmins")} className="bg-white">
+                      <TeamPills users={list(district.districtAdmins)} emptyLabel={t("noDistrictAdmin")} />
                     </TeamGroup>
-                    <TeamGroup label="District pastors" className="bg-white">
-                      <TeamPills users={list(district.districtPastors)} emptyLabel="No district pastor assigned." />
+                    <TeamGroup label={t("districtPastors")} className="bg-white">
+                      <TeamPills users={list(district.districtPastors)} emptyLabel={t("noDistrictPastor")} />
                     </TeamGroup>
                   </div>
                 </div>
@@ -485,6 +493,41 @@ export default async function StructurePage({
         : "/districts",
     ).catch(() => []),
   ]);
+
+  return (
+    <StructureView
+      user={user}
+      structure={structure}
+      oversightRegions={oversightRegions}
+      districts={districts}
+      selectedRegion={selectedRegion}
+      selectedDistrict={selectedDistrict}
+      search={search}
+    />
+  );
+}
+
+function StructureView({
+  user,
+  structure,
+  oversightRegions,
+  districts,
+  selectedRegion,
+  selectedDistrict,
+  search,
+}: {
+  user: SessionUser;
+  structure: OrgStructureSummary;
+  oversightRegions: OversightRegionOption[];
+  districts: DistrictOption[];
+  selectedRegion?: string;
+  selectedDistrict?: string;
+  search?: string;
+}) {
+  const t = useTranslations("org.structure");
+  const tCommon = useTranslations("common");
+  const roleLabel = useRoleLabel();
+  const scopeLabelFor = useScopeLabel();
   const filteredStructure = filterStructure(
     structure,
     selectedRegion,
@@ -496,7 +539,7 @@ export default async function StructurePage({
   const districtOptions = structure.oversightRegions
     .filter((region) => !selectedRegion || region.name === selectedRegion)
     .flatMap((region) => region.districts.map((district) => district.name));
-  const scopeLabel = getUserScopeLabel({
+  const scopeLabel = scopeLabelFor({
     role: user.role,
     oversightRegion: user.oversightRegion,
     district: user.district,
@@ -514,9 +557,9 @@ export default async function StructurePage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Structure"
-        title="National to district to branch structure"
-        description="See the live church hierarchy in one place: who carries oversight, where branches sit, and how staffing and branch load are spread."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <Card className="app-rise p-4 sm:p-5">
@@ -524,18 +567,18 @@ export default async function StructurePage({
           <input
             name="search"
             defaultValue={search || ""}
-            placeholder="Search branch, district or leader"
-            aria-label="Search structure"
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchLabel")}
             className="ui-input lg:min-w-[260px] lg:flex-1"
           />
           {regionOptions.length > 1 ? (
             <select
               name="oversightRegion"
               defaultValue={selectedRegion || ""}
-              aria-label="National area"
+              aria-label={tCommon("nationalArea")}
               className="ui-input lg:w-auto lg:min-w-[200px]"
             >
-              <option value="">All regions</option>
+              <option value="">{t("allRegions")}</option>
               {regionOptions.map((region) => (
                 <option key={region} value={region}>
                   {region}
@@ -547,10 +590,10 @@ export default async function StructurePage({
             <select
               name="district"
               defaultValue={selectedDistrict || ""}
-              aria-label="District"
+              aria-label={tCommon("district")}
               className="ui-input lg:w-auto lg:min-w-[200px]"
             >
-              <option value="">All districts</option>
+              <option value="">{tCommon("allDistricts")}</option>
               {districtOptions.map((district) => (
                 <option key={district} value={district}>
                   {district}
@@ -560,11 +603,11 @@ export default async function StructurePage({
           ) : null}
           <div className="flex gap-2">
             <Button type="submit" variant="secondary" icon="search">
-              Filter
+              {tCommon("filter")}
             </Button>
             {selectedRegion || selectedDistrict || search ? (
               <ButtonLink href="/structure" variant="ghost">
-                Clear
+                {t("clear")}
               </ButtonLink>
             ) : null}
           </div>
@@ -573,38 +616,38 @@ export default async function StructurePage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
-          label="Overall heads"
+          label={t("overallHeads")}
           value={filteredStructure.summary.overallHeadCount}
-          delta="Platform-wide oversight accounts"
+          delta={t("overallHeadsCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Regions"
+          label={t("regions")}
           value={filteredStructure.summary.oversightRegionCount}
-          delta="Visible oversight regions"
+          delta={t("regionsCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Districts"
+          label={t("districts")}
           value={filteredStructure.summary.districtCount}
-          delta="Visible districts in scope"
+          delta={t("districtsCaption")}
           tone="warm"
         />
         <MetricCard
-          label="Branches"
+          label={t("branches")}
           value={filteredStructure.summary.branchCount}
-          delta="Branches in current hierarchy view"
+          delta={t("branchesCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Leaders and support"
+          label={t("leadersAndSupport")}
           value={
             filteredStructure.summary.nationalLeaderCount +
             filteredStructure.summary.districtLeaderCount +
             filteredStructure.summary.branchLeaderCount +
             filteredStructure.summary.supportStaffCount
           }
-          delta={`Scope: ${scopeLabel || formatRoleLabel(user.role)}`}
+          delta={t("scopeCaption", { scope: scopeLabel || roleLabel(user.role) })}
           tone="warm"
         />
       </section>
@@ -618,22 +661,22 @@ export default async function StructurePage({
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <Card className="app-rise self-start p-6 sm:p-7">
-          <CardHeader label="Oversight summary" title={scopeLabel || formatRoleLabel(user.role)} description="This view is limited to the branches, districts and regions your account can see." />
+          <CardHeader label={t("summaryLabel")} title={scopeLabel || roleLabel(user.role)} description={t("summaryDescription")} />
           <div className="mt-6 space-y-4">
-            <TeamGroup label="Overall oversight admin">
+            <TeamGroup label={t("overallAdmin")}>
               <TeamPills
                 users={filteredStructure.overallHeads}
-                emptyLabel="No overall oversight admin found in the current scope."
+                emptyLabel={t("noOverallAdmin")}
               />
             </TeamGroup>
 
             <div>
-              <p className="text-[13px] font-medium text-[#6b6b6b]">Leadership distribution</p>
+              <p className="text-[13px] font-medium text-[#6b6b6b]">{t("distribution")}</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <Stat label="National" value={filteredStructure.summary.nationalLeaderCount} />
-                <Stat label="District" value={filteredStructure.summary.districtLeaderCount} />
-                <Stat label="Branch leaders" value={filteredStructure.summary.branchLeaderCount} />
-                <Stat label="Support staff" value={filteredStructure.summary.supportStaffCount} />
+                <Stat label={t("national")} value={filteredStructure.summary.nationalLeaderCount} />
+                <Stat label={t("district")} value={filteredStructure.summary.districtLeaderCount} />
+                <Stat label={t("branchLeaders")} value={filteredStructure.summary.branchLeaderCount} />
+                <Stat label={t("supportStaff")} value={filteredStructure.summary.supportStaffCount} />
               </div>
             </div>
           </div>
@@ -642,8 +685,8 @@ export default async function StructurePage({
         <div className="space-y-4">
           {filteredStructure.oversightRegions.length === 0 ? (
             <Card className="app-rise p-6 sm:p-7">
-              <EmptyState icon="structure" title="Nothing matched">
-                No structure matched the current filters.
+              <EmptyState icon="structure" title={t("nothingMatched")}>
+                {t("noStructure")}
               </EmptyState>
             </Card>
           ) : (

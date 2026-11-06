@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 
 export function ConvertGuestButton({ guestId }: { guestId: string }) {
   const router = useRouter();
+  const t = useTranslations("people.guests.convert");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -22,13 +24,13 @@ export function ConvertGuestButton({ guestId }: { guestId: string }) {
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to convert guest");
+        throw new Error(result.message || t("errorConvert"));
       }
 
-      setStatus("Guest converted to member.");
+      setStatus(t("converted"));
       router.push(`/members/${result._id || result.id}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to convert guest");
+      setStatus(error instanceof Error ? error.message : t("errorConvert"));
     } finally {
       setLoading(false);
     }
@@ -36,13 +38,13 @@ export function ConvertGuestButton({ guestId }: { guestId: string }) {
 
   return (
     <section className="rounded-2xl bg-[#f6f5f1] p-5">
-      <p className="text-[13px] font-medium text-[#6b6b6b]">Conversion</p>
-      <h2 className="lp-heading mt-1 text-[18px] leading-tight">Welcome this guest into membership</h2>
+      <p className="text-[13px] font-medium text-[#6b6b6b]">{t("label")}</p>
+      <h2 className="lp-heading mt-1 text-[18px] leading-tight">{t("title")}</h2>
       <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">
-        Use this when the guest has returned and is ready to become a member.
+        {t("description")}
       </p>
       <Button variant="flame" onClick={handleConvert} disabled={loading} className="mt-4">
-        {loading ? "Converting..." : "Convert guest to member"}
+        {loading ? t("converting") : t("convertToMember")}
       </Button>
       {status ? <p className="mt-3 text-[13px] text-[#55534e]">{status}</p> : null}
     </section>

@@ -2,15 +2,21 @@
 
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { validFormColor, formTextColor } from "@/lib/form-colors";
-import { formText, type FormLanguage } from "@/lib/form-language";
 import { apiPost } from "@/lib/api";
 import { OUTREACH_INTERESTS, OUTREACH_METHODS } from "@/lib/evangelism";
+
+/** API validation messages that have a translation, keyed by their English text. */
+const API_ERROR_KEYS = {
+  "Enter a valid phone number, including country code": "phoneInvalid",
+  "Permission to follow up is required": "consentRequired",
+  "An email address is required when email is the preferred contact method": "emailRequired",
+} as const;
 import type { BranchSummary } from "@/lib/types";
 import { Button, Card, Field } from "@/components/ui/ui";
 
 export function OutreachContactForm({
-  language = "en",
   token,
   branchName,
   branches = [],
@@ -18,7 +24,6 @@ export function OutreachContactForm({
   buttonColor,
   buttonTextColor,
 }: {
-  language?: FormLanguage;
   token?: string;
   branchName?: string;
   branches?: BranchSummary[];
@@ -27,7 +32,10 @@ export function OutreachContactForm({
   buttonTextColor?: string;
 }) {
   const router = useRouter();
-  const t = (value: string) => formText(value, language);
+  const t = useTranslations("people.evangelism.contactForm");
+  const tLabels = useTranslations("people.evangelism.labels");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const accent = validFormColor(buttonColor);
   const buttonText = validFormColor(buttonTextColor);
   const [busy, setBusy] = useState(false);
@@ -51,13 +59,14 @@ export function OutreachContactForm({
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
       >("input, select, textarea")) {
         field.setCustomValidity("");
-        if (language === "es") {
+        // English keeps the browser's own messages; other languages use translated ones.
+        if (locale !== "en") {
           if (field.validity.valueMissing)
-            field.setCustomValidity("Complete este campo obligatorio.");
+            field.setCustomValidity(t("valueMissing"));
           else if (field.validity.typeMismatch)
-            field.setCustomValidity("Ingrese un valor válido para este campo.");
+            field.setCustomValidity(t("typeMismatch"));
           else if (field.validity.tooShort)
-            field.setCustomValidity("El valor ingresado es demasiado corto.");
+            field.setCustomValidity(t("tooShort"));
         }
       }
     if (
@@ -104,9 +113,7 @@ export function OutreachContactForm({
         router.refresh();
       }
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not save. Please try again.",
-      );
+      setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
     }
@@ -115,12 +122,10 @@ export function OutreachContactForm({
     return (
       <Card className="p-8" role="status">
         <h2 className="text-2xl font-semibold">
-          {t("Thank you for connecting.")}
+          {t("thanks")}
         </h2>
         <p className="mt-3 text-[#6b6b6b]">
-          {language === "es"
-            ? `${branchName || "La iglesia"} ha recibido sus datos. Esperamos poder acompañarle pronto.`
-            : `Your details have been received by ${branchName || "the church team"}. We look forward to connecting with you.`}
+          {t("received", { name: branchName || t("theChurchTeam") })}
         </p>
       </Card>
     );
@@ -140,14 +145,14 @@ export function OutreachContactForm({
         noValidate
         className="space-y-5"
       >
-        <nav aria-label={t("Form progress")} className="flex gap-3 text-sm">
+        <nav aria-label={t("progress")} className="flex gap-3 text-sm">
           <span
             aria-current={step === 1 ? "step" : undefined}
             className={
               step === 1 ? "font-semibold text-[#111111]" : "text-[#8a8780]"
             }
           >
-            1. {t("Your details")}
+            {t("step1")}
           </span>
           <span aria-hidden="true">/</span>
           <span
@@ -156,7 +161,7 @@ export function OutreachContactForm({
               step === 2 ? "font-semibold text-[#111111]" : "text-[#8a8780]"
             }
           >
-            2. {t("How we can help")}
+            {t("step2")}
           </span>
         </nav>
         <h2
@@ -165,17 +170,16 @@ export function OutreachContactForm({
           className="text-xl font-semibold outline-none"
         >
           {step === 1
-            ? t("Tell us about yourself")
-            : t("How can we support you?")}
+            ? t("tellUs")
+            : t("howSupport")}
         </h2>
         <p className="text-xs text-[#8a8780]">
-          {language === "es" ? "Paso" : "Step"} {step}{" "}
-          {language === "es" ? "de" : "of"} 2
+          {t("stepOf", { step, total: 2 })}
         </p>
         <fieldset data-step="1" hidden={step !== 1} className="space-y-5">
-          <legend className="sr-only">Your details</legend>
+          <legend className="sr-only">{t("yourDetails")}</legend>
           {!token && (
-            <Field label={t("Branch")} required>
+            <Field label={tc("branch")} required>
               <select
                 name="branchId"
                 defaultValue={defaultBranchId || branches[0]?._id}
@@ -191,7 +195,7 @@ export function OutreachContactForm({
             </Field>
           )}
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label={t("First name")} required>
+            <Field label={tc("firstName")} required>
               <input
                 name="firstName"
                 autoComplete="given-name"
@@ -200,7 +204,7 @@ export function OutreachContactForm({
                 maxLength={80}
               />
             </Field>
-            <Field label={t("Last name")} required>
+            <Field label={tc("lastName")} required>
               <input
                 name="lastName"
                 autoComplete="family-name"
@@ -210,9 +214,9 @@ export function OutreachContactForm({
               />
             </Field>
             <Field
-              label={t("Phone, including country code")}
+              label={t("phoneLabel")}
               required
-              hint={t("For example, +1 615 555 0123")}
+              hint={t("phoneHint")}
             >
               <input
                 name="phone"
@@ -224,7 +228,7 @@ export function OutreachContactForm({
                 maxLength={30}
               />
             </Field>
-            <Field label={t("Email")} required={method === "email"}>
+            <Field label={tc("email")} required={method === "email"}>
               <input
                 name="email"
                 type="email"
@@ -234,7 +238,7 @@ export function OutreachContactForm({
                 maxLength={150}
               />
             </Field>
-            <Field label={t("City or area")}>
+            <Field label={t("cityArea")}>
               <input
                 name="city"
                 autoComplete="address-level2"
@@ -242,15 +246,15 @@ export function OutreachContactForm({
                 maxLength={150}
               />
             </Field>
-            <Field label={t("Preferred way to connect")} required>
+            <Field label={t("preferredWay")} required>
               <select
                 className="ui-input"
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
               >
-                {OUTREACH_METHODS.map(([key, label]) => (
+                {OUTREACH_METHODS.map(([key]) => (
                   <option key={key} value={key}>
-                    {t(label)}
+                    {tLabels(key)}
                   </option>
                 ))}
               </select>
@@ -258,35 +262,33 @@ export function OutreachContactForm({
           </div>
         </fieldset>
         <fieldset data-step="2" hidden={step !== 2} className="space-y-5">
-          <legend className="sr-only">How we can help</legend>
+          <legend className="sr-only">{t("howWeCanHelp")}</legend>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label={t("What would you like help with?")}>
+            <Field label={t("helpWith")}>
               <select name="interest" className="ui-input" defaultValue="">
-                <option value="">{t("Choose if you wish")}</option>
-                {OUTREACH_INTERESTS.map(([key, label]) => (
+                <option value="">{t("chooseIfWish")}</option>
+                {OUTREACH_INTERESTS.map(([key]) => (
                   <option key={key} value={key}>
-                    {t(label)}
+                    {tLabels(key)}
                   </option>
                 ))}
               </select>
             </Field>
             <Field
-              label={t("Best time to contact you")}
-              hint={t("Include your time zone if helpful.")}
+              label={t("bestTime")}
+              hint={t("bestTimeHint")}
             >
               <input
                 name="preferredContactTime"
                 className="ui-input"
                 maxLength={150}
-                placeholder={t("For example, weekday evenings")}
+                placeholder={t("bestTimePlaceholder")}
               />
             </Field>
           </div>
           <Field
-            label={t("How can we pray for you?")}
-            hint={t(
-              "Optional. Only share what you’re comfortable sharing with the church care team.",
-            )}
+            label={t("prayFor")}
+            hint={t("prayHint")}
           >
             <textarea
               name="prayerRequest"
@@ -305,16 +307,14 @@ export function OutreachContactForm({
             <input type="checkbox" name="consent" required className="mt-1" />
             <span>
               {token
-                ? language === "es"
-                  ? `Acepto que ${branchName || "esta iglesia"} use estos datos para contactarme sobre mi solicitud y las actividades de la iglesia. Puedo pedir al equipo que deje de contactarme en cualquier momento.`
-                  : `I agree that ${branchName || "this church"} may use these details to contact me about my request and church activities. I can ask the team to stop contacting me at any time.`
-                : "The person has given permission for this church to record these details and contact them. They understand they can ask us to stop."}
+                ? t("consentPublic", { name: branchName || t("thisChurch") })
+                : t("consentStaff")}
             </span>
           </label>
         </fieldset>
         {error && (
           <p role="alert" className="text-sm text-red-700">
-            {t(error)}
+            {error in API_ERROR_KEYS ? t(`apiErrors.${API_ERROR_KEYS[error as keyof typeof API_ERROR_KEYS]}`) : error}
           </p>
         )}
         <div className="flex items-center justify-between gap-3">
@@ -327,7 +327,7 @@ export function OutreachContactForm({
                 setStep(1);
               }}
             >
-              {t("Back")}
+              {tc("back")}
             </Button>
           )}
           <Button
@@ -343,12 +343,12 @@ export function OutreachContactForm({
             }
           >
             {step === 1
-              ? t("Continue")
+              ? t("continue")
               : busy
-                ? t("Submitting…")
+                ? t("submitting")
                 : token
-                  ? t("Connect with us")
-                  : t("Add outreach contact")}
+                  ? t("connect")
+                  : t("addContact")}
           </Button>
         </div>
       </form>

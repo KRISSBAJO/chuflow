@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { buttonClass } from "@/components/ui/ui";
 import type {
   BranchSummary,
@@ -16,5 +17,6 @@ export function UserCreateModalButton(props: {
   districts: DistrictOption[];
 }) {
 void props;
-return <Link href="/users/new" className={buttonClass("primary")}>{"Create user"}</Link>;
+const t = useTranslations("org.userForm");
+return <Link href="/users/new" className={buttonClass("primary")}>{t("submit")}</Link>;
 }

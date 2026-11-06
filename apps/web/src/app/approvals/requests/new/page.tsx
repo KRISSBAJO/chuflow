@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import { Shell } from "@/components/shell";
@@ -7,18 +8,19 @@ import { ApprovalRequestForm } from "@/components/approval-workflows/request-for
 import type { ApprovalOptions } from "@/lib/approval-workflows";
 export default async function Page() {
   const u = await requireServerRole("/approvals/requests/new");
+  const t = await getTranslations("admin.approvalRequests");
   const options = await serverGet<ApprovalOptions>(
     "/approval-workflows/options",
   );
   return (
     <Shell>
       <Link href="/approvals/requests" className="text-sm hover:underline">
-        ← Back to requests
+        {t("backToRequests")}
       </Link>
       <PageHeader
-        eyebrow="General approvals"
-        title="New request"
-        description="Choose the configured route and preview the people who will review your request."
+        eyebrow={t("eyebrow")}
+        title={t("newTitle")}
+        description={t("newDescription")}
       />
       <ApprovalRequestForm options={options} homeBranchId={u.branchId} />
     </Shell>

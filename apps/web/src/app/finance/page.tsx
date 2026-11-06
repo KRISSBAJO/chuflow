@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Icon } from "@/components/app/icons";
 import { ExpenseCategoryManagementCard } from "@/components/expense-category-management-card";
 import { ExpenseEntriesTable } from "@/components/expense-entries-table";
@@ -47,15 +48,6 @@ import type {
   ServiceTypeSummary,
 } from "@/lib/types";
 
-function formatMoney(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
 function appendScopeParams(
   query: URLSearchParams,
   filters: {
@@ -82,6 +74,15 @@ export default async function FinancePage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireServerRole("/finance");
+  const t = await getTranslations("admin.finance");
+  const format = await getFormatter();
+  const formatMoney = (amount: number, currency = "USD") =>
+    format.number(amount, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   const params = await searchParams;
   const activeTab =
     params.tab === "offerings" ||
@@ -302,24 +303,24 @@ export default async function FinancePage({
   const tabs = [
     {
       id: "ledger",
-      label: "Ledger",
+      label: t("tabs.ledger"),
       count: ledger.pagination.total,
     },
     {
       id: "offerings",
-      label: "Offerings",
+      label: t("tabs.offerings"),
       count: offeringList.pagination.total,
     },
     {
       id: "expenses",
-      label: "Expenses",
+      label: t("tabs.expenses"),
       count: expenseList.pagination.total,
     },
     ...(canManageTypes || canManageLocks
       ? [
           {
             id: "setup",
-            label: "Finance setup",
+            label: t("tabs.setup"),
             count:
               accounts.length +
               expenseCategories.length +
@@ -351,18 +352,18 @@ export default async function FinancePage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Finance"
-        title="Ledger, offerings and expenses"
-        description="Record offerings and expenses, route them to the right account, approve spending and lock closed months, all in one scoped ledger."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           canCreateOfferings || canCreateExpenses ? (
             <Link href="/finance/new" className={buttonClass("primary", "md")}>
               <Icon name="plus" className="h-4 w-4" />
-              New finance entry
+              {t("newEntry")}
             </Link>
           ) : (
             <a href="#ledger" className={buttonClass("secondary", "md")}>
-              Review ledger
+              {t("reviewLedger")}
             </a>
           )
         }
@@ -371,9 +372,9 @@ export default async function FinancePage({
       {savedOffering && (
         <Card className="p-6">
           <CardHeader
-            label="Just created"
-            title="Your saved offering"
-            description="Review this entry here, including entries dated before the current list page."
+            label={t("justCreated")}
+            title={t("savedOfferingTitle")}
+            description={t("savedOfferingDescription")}
           />
           <OfferingEntriesTable
             entries={[savedOffering]}
@@ -386,9 +387,9 @@ export default async function FinancePage({
       {savedExpense && (
         <Card className="p-6">
           <CardHeader
-            label="Just created"
-            title="Your saved expense"
-            description="Review the saved entry and its approval status."
+            label={t("justCreated")}
+            title={t("savedExpenseTitle")}
+            description={t("savedExpenseDescription")}
           />
           <ExpenseEntriesTable
             entries={[savedExpense]}
@@ -420,33 +421,33 @@ export default async function FinancePage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
-          label="Total credits"
+          label={t("metrics.totalCredits")}
           value={formatMoney(ledger.summary.totalCredits)}
-          delta="Approved giving in this scope"
+          delta={t("metrics.totalCreditsDelta")}
           tone="cool"
         />
         <MetricCard
-          label="Total debits"
+          label={t("metrics.totalDebits")}
           value={formatMoney(ledger.summary.totalDebits)}
-          delta="Approved spending in this scope"
+          delta={t("metrics.totalDebitsDelta")}
           tone="warm"
         />
         <MetricCard
-          label="Net balance"
+          label={t("metrics.netBalance")}
           value={formatMoney(ledger.summary.netBalance)}
-          delta="Credits less debits"
+          delta={t("metrics.netBalanceDelta")}
           tone="cool"
         />
         <MetricCard
-          label="Pending expenses"
+          label={t("metrics.pendingExpenses")}
           value={ledger.summary.pendingExpenseApprovals}
-          delta={`${formatMoney(expenseList.summary.pendingAmount)} awaiting approval`}
+          delta={t("metrics.pendingExpensesDelta", { amount: formatMoney(expenseList.summary.pendingAmount) })}
           tone="warm"
         />
         <MetricCard
-          label="Locked periods"
+          label={t("metrics.lockedPeriods")}
           value={ledger.summary.lockedPeriods}
-          delta="Closed months in this scope"
+          delta={t("metrics.lockedPeriodsDelta")}
           tone="warm"
         />
       </section>
@@ -485,9 +486,9 @@ export default async function FinancePage({
             style={{ animationDelay: "60ms" }}
           >
             <CardHeader
-              label="Branch balance"
-              title="Balance by branch"
-              description="Where funds are building up or running low."
+              label={t("branchBalance.label")}
+              title={t("branchBalance.title")}
+              description={t("branchBalance.description")}
             />
             <div className="mt-6">
               {ledger.byBranch.length > 0 ? (
@@ -516,8 +517,8 @@ export default async function FinancePage({
                   ))}
                 </ul>
               ) : (
-                <EmptyState icon="branches" title="No balances yet">
-                  No branch balance data exists in this scope yet.
+                <EmptyState icon="branches" title={t("branchBalance.emptyTitle")}>
+                  {t("branchBalance.emptyBody")}
                 </EmptyState>
               )}
             </div>
@@ -532,10 +533,10 @@ export default async function FinancePage({
             style={{ animationDelay: "60ms" }}
           >
             <CardHeader
-              label="Offering records"
-              title="Branch offerings"
-              description="Giving by service, offering type and finance account."
-              action={<Badge>{offeringList.pagination.total} entries</Badge>}
+              label={t("offerings.label")}
+              title={t("offerings.title")}
+              description={t("offerings.description")}
+              action={<Badge>{t("entries", { count: offeringList.pagination.total })}</Badge>}
             />
 
             <div className="mt-6">
@@ -572,9 +573,9 @@ export default async function FinancePage({
                   style={{ animationDelay: "60ms" }}
                 >
                   <CardHeader
-                    label="Expense approvals"
-                    title="Waiting for approval"
-                    description="Review submitted expenses before they post to the ledger."
+                    label={t("expenseApprovals.label")}
+                    title={t("expenseApprovals.title")}
+                    description={t("expenseApprovals.description")}
                     action={
                       <Badge
                         tone={
@@ -583,7 +584,7 @@ export default async function FinancePage({
                             : "neutral"
                         }
                       >
-                        {pendingExpenses.summary.pendingCount} pending
+                        {t("pendingCount", { count: pendingExpenses.summary.pendingCount })}
                       </Badge>
                     }
                   />
@@ -607,10 +608,10 @@ export default async function FinancePage({
             style={{ animationDelay: "120ms" }}
           >
             <CardHeader
-              label="Expense records"
-              title="All expenses"
-              description="Spending by category and account, with approval history."
-              action={<Badge>{expenseList.pagination.total} entries</Badge>}
+              label={t("expenseRecords.label")}
+              title={t("expenseRecords.title")}
+              description={t("expenseRecords.description")}
+              action={<Badge>{t("entries", { count: expenseList.pagination.total })}</Badge>}
             />
 
             <div className="mt-6">
@@ -665,9 +666,8 @@ export default async function FinancePage({
               </>
             ) : (
               <Card className="p-6 sm:p-7">
-                <EmptyState icon="settings" title="Limited access">
-                  Shared accounts, expense categories and offering types are
-                  managed by finance administrators.
+                <EmptyState icon="settings" title={t("limitedAccessTitle")}>
+                  {t("limitedAccessBody")}
                 </EmptyState>
               </Card>
             )}

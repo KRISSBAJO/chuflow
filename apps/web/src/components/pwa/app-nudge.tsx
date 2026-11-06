@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { enablePush, getPushConfig, pushSupported } from "@/lib/pwa";
@@ -29,23 +30,28 @@ function snooze(key: string) {
 
 /** Steps for installing from iPhone/iPad Safari, which has no install button of its own. */
 export function IOSInstallSteps({ className = "" }: { className?: string }) {
+  const t = useTranslations("admin.pwa.iosSteps");
+  const bold = (chunks: React.ReactNode) => <b className="font-medium text-[var(--lp-ink)]">{chunks}</b>;
   return (
     <ol className={`space-y-2.5 text-[14px] leading-[1.5] text-[#55534e] ${className}`}>
       <li className="flex items-start gap-3">
         <span className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[var(--lp-ink)]">1</span>
         <span>
-          Tap <Icon name="share" className="mx-0.5 inline h-4 w-4 -translate-y-px text-[#0a84ff]" /> <b className="font-medium text-[var(--lp-ink)]">Share</b> in Safari&apos;s toolbar.
+          {t.rich("share", {
+            icon: () => <Icon name="share" className="mx-0.5 inline h-4 w-4 -translate-y-px text-[#0a84ff]" />,
+            b: bold,
+          })}
         </span>
       </li>
       <li className="flex items-start gap-3">
         <span className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[var(--lp-ink)]">2</span>
         <span>
-          Choose <b className="font-medium text-[var(--lp-ink)]">Add to Home Screen</b>, then tap Add.
+          {t.rich("addToHome", { b: bold })}
         </span>
       </li>
       <li className="flex items-start gap-3">
         <span className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[var(--lp-ink)]">3</span>
-        <span>Open ChuFlow from your home screen and turn on alerts.</span>
+        <span>{t("openApp")}</span>
       </li>
     </ol>
   );
@@ -58,6 +64,7 @@ type Nudge = "install" | "push" | null;
  * receive them, "turn on alerts". Each can be snoozed for two weeks.
  */
 export function AppNudge() {
+  const t = useTranslations("admin.pwa.nudge");
   const install = useInstallState();
   const [pushReady, setPushReady] = useState(false);
   const [hidden, setHidden] = useState<{ install: boolean; push: boolean } | null>(null);
@@ -101,10 +108,10 @@ export function AppNudge() {
     setBusy(true);
     try {
       await enablePush();
-      toast.success("Alerts are on for this device.");
+      toast.success(t("alertsOn"));
       setPushReady(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't turn on alerts.");
+      toast.error(error instanceof Error ? error.message : t("alertsError"));
       dismiss();
     } finally {
       setBusy(false);
@@ -114,14 +121,14 @@ export function AppNudge() {
   const copy =
     nudge === "install"
       ? {
-          title: "Get the ChuFlow app",
-          body: "Add it to your home screen for one-tap access, full-screen pages and alerts.",
-          action: install.manualIOS ? (showSteps ? "Hide steps" : "Show me how") : "Install",
+          title: t("installTitle"),
+          body: t("installBody"),
+          action: install.manualIOS ? (showSteps ? t("hideSteps") : t("showMeHow")) : t("install"),
         }
       : {
-          title: "Turn on alerts",
-          body: "Get a ping when a first-timer registers, a follow-up is assigned to you or a report needs approval.",
-          action: busy ? "Turning on..." : "Turn on",
+          title: t("pushTitle"),
+          body: t("pushBody"),
+          action: busy ? t("turningOn") : t("turnOn"),
         };
 
   return (
@@ -147,7 +154,7 @@ export function AppNudge() {
               onClick={dismiss}
               className="inline-flex h-9 items-center rounded-full px-3 text-[13.5px] font-medium text-[#6b6b6b] hover:text-[var(--lp-ink)]"
             >
-              Not now
+              {t("notNow")}
             </button>
           </div>
           {nudge === "install" && showSteps ? <IOSInstallSteps className="mt-4" /> : null}
@@ -155,7 +162,7 @@ export function AppNudge() {
         <button
           type="button"
           onClick={dismiss}
-          aria-label="Dismiss"
+          aria-label={t("dismiss")}
           className="-mr-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#8a8780] hover:bg-black/[0.04] hover:text-[var(--lp-ink)]"
         >
           <Icon name="close" className="h-4 w-4" />

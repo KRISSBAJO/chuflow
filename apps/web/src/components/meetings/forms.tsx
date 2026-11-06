@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { API_URL, apiPost, apiPatch } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import {
@@ -23,6 +24,9 @@ export function MemberPicker({
   onChange: (people: MeetingPerson[]) => void;
   kind?: "members" | "staff";
 }) {
+  const t = useTranslations("services.meetings.picker");
+  const tMeetings = useTranslations("services.meetings");
+  const name = (person?: MeetingPerson) => meetingName(person, tMeetings("userUnavailable"));
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<{
@@ -39,9 +43,9 @@ export function MemberPicker({
   const listId = useId();
   const search = query.trim();
   const ready = search.length >= 2;
-  const noun = kind === "staff" ? "staff users" : "members";
+  const noun = kind === "staff" ? t("nouns.staff") : t("nouns.members");
   const filtered = selected.filter((p) =>
-    `${meetingName(p)} ${p.email || ""}`
+    `${name(p)} ${p.email || ""}`
       .toLowerCase()
       .includes(selectedQuery.toLowerCase()),
   );
@@ -73,7 +77,7 @@ export function MemberPicker({
           `${API_URL}/meetings/participants?branchId=${encodeURIComponent(branchId)}&q=${encodeURIComponent(search)}&page=${page}&kind=${kind}`,
           { credentials: "include", signal: controller.signal },
         );
-        if (!response.ok) throw new Error(`Could not search ${noun}.`);
+        if (!response.ok) throw new Error(t("searchFailed", { noun }));
         const data = (await response.json()) as {
           items: MeetingPerson[];
           total: number;
@@ -84,7 +88,7 @@ export function MemberPicker({
         }
       } catch (e) {
         if (!controller.signal.aborted)
-          setError(e instanceof Error ? e.message : "Search failed");
+          setError(e instanceof Error ? e.message : t("searchFailedGeneric"));
       } finally {
         if (!controller.signal.aborted) setBusy(false);
       }
@@ -93,7 +97,7 @@ export function MemberPicker({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [branchId, search, page, kind, noun]);
+  }, [branchId, search, page, kind, noun, t]);
   return (
     <div className="space-y-3">
       <div className="relative">
@@ -102,12 +106,10 @@ export function MemberPicker({
           value={query}
           autoComplete="off"
           placeholder={
-            kind === "staff"
-              ? "Search staff by name or email…"
-              : "Search members by name or email…"
+            kind === "staff" ? t("placeholderStaff") : t("placeholderMembers")
           }
           role="combobox"
-          aria-label={`Search ${noun}`}
+          aria-label={t("searchAria", { noun })}
           aria-autocomplete="list"
           aria-expanded={open && ready}
           aria-controls={listId}
@@ -168,7 +170,7 @@ export function MemberPicker({
           >
             {busy ? (
               <p className="p-3 text-sm" role="status">
-                Searching…
+                {t("searching")}
               </p>
             ) : error ? (
               <p className="p-3 text-sm text-red-700" role="alert">
@@ -179,13 +181,11 @@ export function MemberPicker({
                 <div
                   id={listId}
                   role="listbox"
-                  aria-label={`Matching ${noun}`}
+                  aria-label={t("matchingAria", { noun })}
                   className="max-h-72 overflow-y-auto"
                 >
                   {items.length === 0 && (
-                    <p className="p-3 text-sm">
-                      No matching {noun}. Try another name or email.
-                    </p>
+                    <p className="p-3 text-sm">{t("noMatches", { noun })}</p>
                   )}
                   {items.map((p, index) => (
                     <button
@@ -199,14 +199,14 @@ export function MemberPicker({
                       onClick={() => choose(p)}
                     >
                       <span>
-                        {meetingName(p)}
+                        {name(p)}
                         <span className="block text-xs text-[#6b6b6b]">
-                          {p.email || "No email recorded"}
+                          {p.email || t("noEmail")}
                         </span>
                       </span>
                       <span>
                         {selected.some((x) => x._id === p._id)
-                          ? "Selected"
+                          ? t("selected")
                           : "+"}
                       </span>
                     </button>
@@ -214,10 +214,7 @@ export function MemberPicker({
                 </div>
                 {result.total > 8 && (
                   <div className="mt-2 flex items-center justify-between gap-2 border-t border-black/5 pt-2 text-xs">
-                    <span>
-                      {result.total.toLocaleString()} matches · refine your
-                      search
-                    </span>
+                    <span>{t("matchesRefine", { count: result.total })}</span>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -228,7 +225,7 @@ export function MemberPicker({
                           setBusy(true);
                         }}
                       >
-                        Previous
+                        {t("previous")}
                       </Button>
                       <Button
                         size="sm"
@@ -239,7 +236,7 @@ export function MemberPicker({
                           setBusy(true);
                         }}
                       >
-                        Next
+                        {t("next")}
                       </Button>
                     </div>
                   </div>
@@ -249,9 +246,7 @@ export function MemberPicker({
           </div>
         )}
       </div>
-      <p className="text-xs text-[#6b6b6b]">
-        Type at least 2 characters. Only 8 matching {noun} are loaded at a time.
-      </p>
+      <p className="text-xs text-[#6b6b6b]">{t("hint", { noun })}</p>
       {selected.length > 0 && (
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -260,29 +255,29 @@ export function MemberPicker({
                 key={p._id}
                 size="sm"
                 variant="secondary"
-                aria-label={`Remove ${meetingName(p)}`}
+                aria-label={t("removeAria", { name: name(p) })}
                 onClick={() =>
                   onChange(selected.filter((x) => x._id !== p._id))
                 }
               >
-                {meetingName(p)} ×
+                {name(p)} ×
               </Button>
             ))}
             {selected.length > 3 && (
               <span className="text-sm text-[#6b6b6b]">
-                +{(selected.length - 3).toLocaleString()} more
+                {t("more", { count: selected.length - 3 })}
               </span>
             )}
           </div>
           <details className="text-sm">
             <summary className="cursor-pointer">
-              Review {selected.length.toLocaleString()} selected {noun}
+              {t("reviewSelected", { count: selected.length, noun })}
             </summary>
             <div className="mt-3 space-y-3 rounded-xl bg-white p-3">
               <input
                 className="ui-input"
-                aria-label={`Filter selected ${noun}`}
-                placeholder="Filter selected people…"
+                aria-label={t("filterSelectedAria", { noun })}
+                placeholder={t("filterPlaceholder")}
                 value={selectedQuery}
                 onChange={(e) => {
                   setSelectedQuery(e.target.value);
@@ -294,7 +289,7 @@ export function MemberPicker({
                   className="flex items-center justify-between gap-2"
                   key={p._id}
                 >
-                  <span>{meetingName(p)}</span>
+                  <span>{name(p)}</span>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -302,7 +297,7 @@ export function MemberPicker({
                       onChange(selected.filter((x) => x._id !== p._id))
                     }
                   >
-                    Remove
+                    {t("remove")}
                   </Button>
                 </div>
               ))}
@@ -314,7 +309,7 @@ export function MemberPicker({
                     disabled={currentSelectedPage <= 1}
                     onClick={() => setSelectedPage(currentSelectedPage - 1)}
                   >
-                    Previous
+                    {t("previous")}
                   </Button>
                   <span>
                     {currentSelectedPage} / {selectedPages}
@@ -325,7 +320,7 @@ export function MemberPicker({
                     disabled={currentSelectedPage >= selectedPages}
                     onClick={() => setSelectedPage(currentSelectedPage + 1)}
                   >
-                    Next
+                    {t("next")}
                   </Button>
                 </div>
               )}
@@ -345,6 +340,8 @@ export function UserChoices({
   name: string;
   chosen?: string[];
 }) {
+  const t = useTranslations("services.meetings.picker");
+  const tMeetings = useTranslations("services.meetings");
   return (
     <div className="max-h-52 overflow-y-auto space-y-2 rounded-xl bg-white p-3">
       {users.length ? (
@@ -356,11 +353,11 @@ export function UserChoices({
               value={u._id}
               defaultChecked={chosen.includes(u._id)}
             />
-            {meetingName(u)}
+            {meetingName(u, tMeetings("userUnavailable"))}
           </label>
         ))
       ) : (
-        <p className="text-sm">No users in this branch.</p>
+        <p className="text-sm">{t("noUsers")}</p>
       )}
     </div>
   );
@@ -373,6 +370,7 @@ export function MeetingGroupForm({
   group?: MeetingGroup;
 }) {
   const router = useRouter();
+  const t = useTranslations("services.meetings.groupForm");
   const [branch, setBranch] = useState(
     group ? referenceId(group.branchId) : options.branches[0]?._id || "",
   );
@@ -406,7 +404,7 @@ export function MeetingGroupForm({
       router.push("/meetings/groups");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save group");
+      setError(e instanceof Error ? e.message : t("saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -414,7 +412,7 @@ export function MeetingGroupForm({
   return (
     <Card className="p-6">
       <form onSubmit={submit} className="space-y-5">
-        <Field label="Branch" required>
+        <Field label={t("branch")} required>
           <select
             className="ui-input"
             value={branch}
@@ -428,7 +426,7 @@ export function MeetingGroupForm({
             ))}
           </select>
         </Field>
-        <Field label="Meeting group name" required>
+        <Field label={t("name")} required>
           <input
             className="ui-input"
             name="name"
@@ -436,17 +434,17 @@ export function MeetingGroupForm({
             minLength={2}
             maxLength={150}
             defaultValue={group?.name}
-            placeholder="Choir, ushers, leadership council…"
+            placeholder={t("namePlaceholder")}
           />
         </Field>
-        <Field label="Related service group (optional)">
+        <Field label={t("relatedUnit")}>
           <select
             key={branch}
             className="ui-input"
             name="serviceUnitId"
             defaultValue={group?.serviceUnitId || ""}
           >
-            <option value="">Other meeting group</option>
+            <option value="">{t("otherGroup")}</option>
             {options.serviceUnits
               .filter((x) => x.branchId === branch)
               .map((x) => (
@@ -462,7 +460,7 @@ export function MeetingGroupForm({
             type="checkbox"
             defaultChecked={group?.enabled ?? true}
           />
-          Enable meetings for this group
+          {t("enable")}
         </label>
         <label className="flex gap-2">
           <input
@@ -470,9 +468,9 @@ export function MeetingGroupForm({
             type="checkbox"
             defaultChecked={group?.minutesRequired ?? true}
           />
-          Require minutes for each new meeting
+          {t("requireMinutes")}
         </label>
-        <Field label="Minutes due within this many hours after the meeting">
+        <Field label={t("dueHours")}>
           <input
             type="number"
             className="ui-input"
@@ -483,14 +481,10 @@ export function MeetingGroupForm({
             defaultValue={group?.minutesDueHours || 72}
           />
         </Field>
-        <p className="text-sm text-[#6b6b6b]">
-          Requirements are saved with each meeting. Changes here apply to new
-          meetings. Disabling a group stops new scheduling; existing meetings
-          remain available.
-        </p>
+        <p className="text-sm text-[#6b6b6b]">{t("note")}</p>
         <Field
-          label="Submitters"
-          hint="These users can schedule meetings, record attendance and submit minutes for this group."
+          label={t("submitters")}
+          hint={t("submittersHint")}
         >
           <UserChoices
             key={`${branch}-s`}
@@ -500,8 +494,8 @@ export function MeetingGroupForm({
           />
         </Field>
         <Field
-          label="Reviewers"
-          hint="These users can approve or return submitted minutes. Branch leadership can also review."
+          label={t("reviewers")}
+          hint={t("reviewersHint")}
         >
           <UserChoices
             key={`${branch}-r`}
@@ -516,7 +510,7 @@ export function MeetingGroupForm({
           </p>
         )}
         <Button type="submit" disabled={busy || !branch}>
-          {busy ? "Saving…" : "Save group settings"}
+          {busy ? t("saving") : t("save")}
         </Button>
       </form>
     </Card>
@@ -530,6 +524,7 @@ export function MeetingForm({
   meeting?: Meeting;
 }) {
   const router = useRouter();
+  const t = useTranslations("services.meetings.form");
   const available = options.groups.filter(
     (g) =>
       g.enabled &&
@@ -621,13 +616,13 @@ export function MeetingForm({
         });
         const body = await response.json();
         if (!response.ok)
-          throw new Error(body.message || "Could not preview audience");
+          throw new Error(body.message || t("previewFailed"));
         if (!controller.signal.aborted) setPreview(body);
       } catch (e) {
         if (!controller.signal.aborted) {
           setPreview(null);
           setPreviewError(
-            e instanceof Error ? e.message : "Could not preview audience",
+            e instanceof Error ? e.message : t("previewFailed"),
           );
         }
       } finally {
@@ -638,7 +633,7 @@ export function MeetingForm({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [previewPayload, groupId, branch, audienceMode, audienceGroups.length]);
+  }, [previewPayload, groupId, branch, audienceMode, audienceGroups.length, t]);
   function local(value?: string) {
     if (!value) return "";
     const d = new Date(value);
@@ -725,7 +720,7 @@ export function MeetingForm({
       router.push(`/meetings/${result._id}`);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save meeting");
+      setError(e instanceof Error ? e.message : t("saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -739,7 +734,7 @@ export function MeetingForm({
               step === 1 ? "font-semibold text-[#111]" : "text-[#6b6b6b]"
             }
           >
-            1. Meeting details
+            {t("step1")}
           </span>
           <span className="text-[#b5b1aa]">→</span>
           <span
@@ -747,7 +742,7 @@ export function MeetingForm({
               step === 2 ? "font-semibold text-[#111]" : "text-[#6b6b6b]"
             }
           >
-            2. People & invitations
+            {t("step2")}
           </span>
         </div>
         <fieldset
@@ -756,7 +751,7 @@ export function MeetingForm({
           className="space-y-5"
         >
           {!meeting && (
-            <Field label="Meeting group" required>
+            <Field label={t("group")} required>
               <select
                 className="ui-input"
                 value={groupId}
@@ -769,25 +764,24 @@ export function MeetingForm({
                 }}
               >
                 {options.isAdmin && (
-                  <option value="__church__">Church / general meeting</option>
+                  <option value="__church__">{t("churchGeneral")}</option>
                 )}
                 {available.map((g) => (
                   <option key={g._id} value={g._id}>
-                    {g.name} —{" "}
-                    {typeof g.branchId === "object" ? g.branchId.name : ""}
+                    {t("groupOption", {
+                      name: g.name,
+                      branch: typeof g.branchId === "object" ? g.branchId.name : "",
+                    })}
                   </option>
                 ))}
               </select>
               {!available.length && !options.isAdmin && (
-                <p className="text-sm">
-                  An admin must enable a meeting group and assign a submitter
-                  first.
-                </p>
+                <p className="text-sm">{t("needAdmin")}</p>
               )}
             </Field>
           )}
           {groupId === "__church__" && (
-            <Field label="Church / branch" required>
+            <Field label={t("churchBranch")} required>
               <select
                 className="ui-input"
                 required
@@ -807,7 +801,7 @@ export function MeetingForm({
               </select>
             </Field>
           )}
-          <Field label="Meeting title" required>
+          <Field label={t("title")} required>
             <input
               className="ui-input"
               name="title"
@@ -818,7 +812,7 @@ export function MeetingForm({
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Starts (your local time)" required>
+            <Field label={t("starts")} required>
               <input
                 className="ui-input"
                 name="startsAt"
@@ -829,7 +823,7 @@ export function MeetingForm({
                 onChange={(e) => setStartValue(e.target.value)}
               />
             </Field>
-            <Field label="Ends (your local time)" required>
+            <Field label={t("ends")} required>
               <input
                 className="ui-input"
                 name="endsAt"
@@ -841,7 +835,7 @@ export function MeetingForm({
               />
             </Field>
           </div>
-          <Field label="Venue / location">
+          <Field label={t("location")}>
             <input
               className="ui-input"
               name="location"
@@ -850,8 +844,8 @@ export function MeetingForm({
             />
           </Field>
           <Field
-            label="Meeting link"
-            hint="Attach a Zoom, Google Meet, Teams, or other meeting URL."
+            label={t("link")}
+            hint={t("linkHint")}
           >
             <input
               className="ui-input"
@@ -862,7 +856,7 @@ export function MeetingForm({
               placeholder="https://…"
             />
           </Field>
-          <Field label="Agenda">
+          <Field label={t("agenda")}>
             <textarea
               className="ui-input min-h-36"
               name="agenda"
@@ -872,25 +866,21 @@ export function MeetingForm({
           </Field>
         </fieldset>
         <fieldset hidden={step !== 2} className="space-y-5">
-          <Field label="Who is this meeting for?">
+          <Field label={t("audience")}>
             <select
               className="ui-input"
               value={audienceMode}
               onChange={(e) => setAudienceMode(e.target.value)}
             >
-              <option value="individuals">
-                Choose individual church members
-              </option>
-              <option value="service_groups">
-                Members of selected service groups
-              </option>
-              <option value="church">All active church / branch members</option>
+              <option value="individuals">{t("audienceIndividuals")}</option>
+              <option value="service_groups">{t("audienceServiceGroups")}</option>
+              <option value="church">{t("audienceChurch")}</option>
             </select>
           </Field>
           {audienceMode === "service_groups" && (
             <Field
-              label="Service groups"
-              hint="All active members in these groups are included. People belonging to multiple selected groups appear once."
+              label={t("serviceGroups")}
+              hint={t("serviceGroupsHint")}
             >
               <div className="max-h-56 overflow-auto rounded-xl bg-white p-3 space-y-2">
                 {options.serviceUnits
@@ -915,16 +905,13 @@ export function MeetingForm({
             </Field>
           )}
           {audienceMode === "church" && (
-            <p className="text-sm">
-              All active members in this meeting’s church/branch will be
-              included. You can add other members individually below.
-            </p>
+            <p className="text-sm">{t("churchNote")}</p>
           )}
           <Field
             label={
               audienceMode === "individuals"
-                ? "Choose church members"
-                : "Add other members (optional)"
+                ? t("chooseMembers")
+                : t("addOtherMembers")
             }
           >
             <MemberPicker
@@ -935,8 +922,8 @@ export function MeetingForm({
             />
           </Field>
           <Field
-            label="Staff attendees (optional)"
-            hint="Selected users can open this meeting and receive invitations. An email shared with a member record receives only one invitation."
+            label={t("staff")}
+            hint={t("staffHint")}
           >
             <MemberPicker
               key={`${branch}-staff`}
@@ -952,27 +939,24 @@ export function MeetingForm({
               checked={sendInvitations}
               onChange={(e) => setSendInvitations(e.target.checked)}
             />
-            Send email invitations
+            {t("sendInvitations")}
           </label>
-          <p className="text-sm text-[#6b6b6b]">
-            Invitations include the meeting time, location, agenda and join
-            link. Each email address is invited once per meeting, even across
-            several groups or member/staff records. Saving changes emails only
-            new addresses.
-          </p>
+          <p className="text-sm text-[#6b6b6b]">{t("invitationsNote")}</p>
           <div role="status" className="rounded-xl bg-white p-4 text-sm">
             {previewBusy
-              ? "Checking audience…"
+              ? t("checkingAudience")
               : preview
-                ? `${preview.memberCount} unique members · ${preview.staffCount} staff users · ${preview.uniqueEmails} unique email addresses`
+                ? t("previewSummary", {
+                    members: preview.memberCount,
+                    staff: preview.staffCount,
+                    emails: preview.uniqueEmails,
+                  })
                 : audienceMode === "service_groups"
-                  ? "Select at least one service group to preview your audience."
-                  : "Select a meeting group to preview your audience."}
+                  ? t("selectServiceGroup")
+                  : t("selectGroup")}
             {preview && !previewBusy && preview.missingEmail > 0 && (
               <p className="mt-2 text-amber-800">
-                {preview.missingEmail} selected records have no valid email.
-                They remain on the attendance list but cannot receive an email
-                invitation.
+                {t("missingEmail", { count: preview.missingEmail })}
               </p>
             )}
             {previewError && <p className="text-red-700">{previewError}</p>}
@@ -986,14 +970,14 @@ export function MeetingForm({
         <div className="flex items-center justify-between border-t border-black/5 pt-5">
           {step === 2 ? (
             <Button variant="secondary" onClick={() => setStep(1)}>
-              ← Details
+              {t("backToDetails")}
             </Button>
           ) : (
-            <span className="text-xs text-[#6b6b6b]">Step 1 of 2</span>
+            <span className="text-xs text-[#6b6b6b]">{t("stepOf")}</span>
           )}
           {step === 1 ? (
             <Button onClick={(e) => nextStep(e.currentTarget.form!)}>
-              Continue to people →
+              {t("continueToPeople")}
             </Button>
           ) : (
             <>
@@ -1006,10 +990,10 @@ export function MeetingForm({
                 }
               >
                 {busy
-                  ? "Saving…"
+                  ? t("saving")
                   : meeting
-                    ? "Save meeting changes"
-                    : "Schedule meeting"}
+                    ? t("saveChanges")
+                    : t("schedule")}
               </Button>
             </>
           )}

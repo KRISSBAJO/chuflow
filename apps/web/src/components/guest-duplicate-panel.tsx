@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Badge, Button, Card, CardHeader, EmptyState } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { GuestDuplicateGroup } from "@/lib/types";
 
 export function GuestDuplicatePanel({ groups }: { groups: GuestDuplicateGroup[] }) {
   const router = useRouter();
+  const t = useTranslations("people.guests.duplicates");
   const [status, setStatus] = useState<string | null>(null);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -27,15 +29,15 @@ export function GuestDuplicatePanel({ groups }: { groups: GuestDuplicateGroup[] 
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to merge guests");
+        throw new Error(result.message || t("errorMerge"));
       }
 
-      setStatus("Duplicate guests merged successfully.");
+      setStatus(t("merged"));
       startTransition(() => {
         router.refresh();
       });
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to merge guests");
+      setStatus(error instanceof Error ? error.message : t("errorMerge"));
     } finally {
       setLoadingKey(null);
     }
@@ -44,14 +46,14 @@ export function GuestDuplicatePanel({ groups }: { groups: GuestDuplicateGroup[] 
   return (
     <Card className="p-6 sm:p-7">
       <CardHeader
-        label="Duplicate review"
-        title="Possible duplicates"
-        action={<Badge tone={groups.length > 0 ? "warning" : "neutral"}>{groups.length} groups</Badge>}
+        label={t("label")}
+        title={t("title")}
+        action={<Badge tone={groups.length > 0 ? "warning" : "neutral"}>{t("groups", { count: groups.length })}</Badge>}
       />
       <div className="mt-5 space-y-3">
         {groups.length === 0 ? (
-          <EmptyState icon="guests" title="No duplicates">
-            No duplicate groups detected in the current scope.
+          <EmptyState icon="guests" title={t("noneTitle")}>
+            {t("noneBody")}
           </EmptyState>
         ) : (
           groups.slice(0, 6).map((group) => {
@@ -62,21 +64,21 @@ export function GuestDuplicatePanel({ groups }: { groups: GuestDuplicateGroup[] 
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="break-words text-[14px] font-medium text-[#111111]">
-                      {group.type === "email" ? "Shared email" : "Shared phone"} · {group.value}
+                      {group.type === "email" ? t("sharedEmail") : t("sharedPhone")} · {group.value}
                     </p>
-                    <p className="mt-0.5 text-[12px] text-[#8a8780]">Keep the first record and merge the rest into it.</p>
+                    <p className="mt-0.5 text-[12px] text-[#8a8780]">{t("keepFirst")}</p>
                   </div>
                   <Link
                     href={`/guests/${target._id}`}
                     className="text-[13px] font-medium text-[#111111] underline-offset-4 hover:text-[#ea580c] hover:underline"
                   >
-                    Open primary
+                    {t("openPrimary")}
                   </Link>
                 </div>
                 <div className="mt-3 space-y-2">
                   <div className="rounded-xl bg-[#f6f5f1] px-3 py-2.5 text-[14px]">
                     <p className="font-medium text-[#111111]">
-                      <span className="text-[#6b6b6b]">Primary:</span> {target.firstName} {target.lastName}
+                      <span className="text-[#6b6b6b]">{t("primary")}</span> {target.firstName} {target.lastName}
                     </p>
                     <p className="mt-0.5 text-[13px] text-[#6b6b6b]">{target.email || target.phone}</p>
                   </div>
@@ -98,7 +100,7 @@ export function GuestDuplicatePanel({ groups }: { groups: GuestDuplicateGroup[] 
                           disabled={loadingKey === mergeKey || pending}
                           onClick={() => mergeGuests(target._id, guest._id, mergeKey)}
                         >
-                          {loadingKey === mergeKey ? "Merging..." : "Merge into primary"}
+                          {loadingKey === mergeKey ? t("merging") : t("mergeIntoPrimary")}
                         </Button>
                       </div>
                     );

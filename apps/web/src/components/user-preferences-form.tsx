@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
@@ -12,6 +13,8 @@ export function UserPreferencesForm({
 }: {
   preferences: SettingsOverview["preferences"];
 }) {
+  const t = useTranslations("admin.settings.preferences");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -32,17 +35,17 @@ export function UserPreferencesForm({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to save your preferences");
+        throw new Error(result.message || t("saveError"));
       }
 
-      toast.success("Preferences saved", {
-        description: "Your working defaults are now active.",
+      toast.success(t("savedTitle"), {
+        description: t("savedDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Preferences update failed", {
+      toast.error(t("saveFailedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to save your preferences",
+          error instanceof Error ? error.message : t("saveError"),
       });
     } finally {
       setLoading(false);
@@ -53,13 +56,13 @@ export function UserPreferencesForm({
     <Card className="p-6 sm:p-7">
       <form action={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Interface density">
+          <Field label={t("interfaceDensity")}>
             <select name="interfaceDensity" defaultValue={preferences.interfaceDensity} className="ui-input">
-              <option value="comfortable">Comfortable</option>
-              <option value="compact">Compact</option>
+              <option value="comfortable">{t("comfortable")}</option>
+              <option value="compact">{t("compact")}</option>
             </select>
           </Field>
-          <Field label="Default report range">
+          <Field label={t("defaultReportRange")}>
             <select
               name="defaultReportDays"
               defaultValue={String(preferences.defaultReportDays)}
@@ -67,7 +70,7 @@ export function UserPreferencesForm({
             >
               {[7, 14, 30, 60, 90].map((value) => (
                 <option key={value} value={value}>
-                  Last {value} days
+                  {t("lastDays", { count: value })}
                 </option>
               ))}
             </select>
@@ -76,7 +79,7 @@ export function UserPreferencesForm({
 
         <div className="mt-6 flex justify-end border-t border-black/[0.06] pt-5">
           <Button type="submit" variant="secondary" disabled={loading}>
-            {loading ? "Saving..." : "Save my preferences"}
+            {loading ? tc("saving") : t("save")}
           </Button>
         </div>
       </form>

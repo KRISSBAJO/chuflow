@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
-import { Badge, Button, CardHeader, EmptyState, Field, formatStatus } from "@/components/ui/ui";
+import { Badge, Button, CardHeader, EmptyState, Field } from "@/components/ui/ui";
+import { useStatusLabel } from "@/i18n/labels";
 import type { CommunicationTemplateItem } from "@/lib/types";
 
 export function CommunicationTemplateManagementCard({
@@ -14,6 +16,21 @@ export function CommunicationTemplateManagementCard({
   templates: CommunicationTemplateItem[];
   canManage: boolean;
 }) {
+  const t = useTranslations("admin.communicationTemplates");
+  const tcm = useTranslations("admin.communications");
+  const tc = useTranslations("common");
+  const ts = useTranslations("statuses");
+  const statusLabel = useStatusLabel();
+  const formatChannel = (channel?: string) => {
+    switch (channel) {
+      case "email":
+      case "sms":
+      case "phone_call":
+        return tcm(`channels.${channel}`);
+      default:
+        return statusLabel(channel);
+    }
+  };
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>(templates[0]?._id ?? "new");
   const [loading, setLoading] = useState(false);
@@ -51,15 +68,15 @@ export function CommunicationTemplateManagementCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to save template");
+        throw new Error(result.message || t("saveError"));
       }
 
-      toast.success(isNew ? "Template created" : "Template updated");
+      toast.success(isNew ? t("createdTitle") : t("updatedTitle"));
       router.refresh();
     } catch (error) {
-      toast.error("Template save failed", {
+      toast.error(t("saveFailedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to save template",
+          error instanceof Error ? error.message : t("saveError"),
       });
     } finally {
       setLoading(false);
@@ -70,13 +87,13 @@ export function CommunicationTemplateManagementCard({
   return (
     <div>
       <CardHeader
-        label="Templates"
-        title="Shared message templates"
-        description="Keep welcome, reminder and care messages consistent across the ministry."
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
         action={
           canManage ? (
             <Button size="sm" variant="secondary" icon="plus" onClick={() => setSelectedId("new")}>
-              New template
+              {t("newTemplate")}
             </Button>
           ) : null
         }
@@ -84,8 +101,8 @@ export function CommunicationTemplateManagementCard({
 
       <div className="mt-6 space-y-2">
         {templates.length === 0 ? (
-          <EmptyState icon="message" title="No templates yet">
-            Shared templates will appear here once they are created.
+          <EmptyState icon="message" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         ) : null}
         {templates.map((template) => {
@@ -106,7 +123,7 @@ export function CommunicationTemplateManagementCard({
                 <span className="text-[14px] font-medium text-[#111111]">{template.name}</span>
                 <Badge>{formatChannel(template.channel)}</Badge>
                 <Badge tone={template.isActive ? "success" : "danger"} dot>
-                  {template.isActive ? "Active" : "Paused"}
+                  {template.isActive ? ts("active") : t("paused")}
                 </Badge>
               </div>
               <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.55] text-[#6b6b6b]">
@@ -120,9 +137,9 @@ export function CommunicationTemplateManagementCard({
       {canManage ? (
         <form action={handleSubmit} className="mt-6 space-y-4 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
           <p className="text-[13px] font-medium text-[#6b6b6b]">
-            {selectedTemplate ? `Editing ${selectedTemplate.name}` : "New template"}
+            {selectedTemplate ? t("editing", { name: selectedTemplate.name }) : t("newTemplate")}
           </p>
-          <Field label="Key" hint={selectedTemplate ? "Keys cannot be changed after creation." : undefined}>
+          <Field label={t("key")} hint={selectedTemplate ? t("keyHint") : undefined}>
             <input
               name="key"
               defaultValue={selectedTemplate?.key || ""}
@@ -130,7 +147,7 @@ export function CommunicationTemplateManagementCard({
               className="ui-input"
             />
           </Field>
-          <Field label="Name">
+          <Field label={t("name")}>
             <input
               name="name"
               defaultValue={selectedTemplate?.name || ""}
@@ -139,19 +156,19 @@ export function CommunicationTemplateManagementCard({
             />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Channel">
+            <Field label={t("channel")}>
               <select
                 name="channel"
                 defaultValue={selectedTemplate?.channel || "email"}
                 key={`${selectedId}-channel`}
                 className="ui-input"
               >
-                <option value="email">Email</option>
-                <option value="sms">SMS</option>
-                <option value="phone_call">Phone call</option>
+                <option value="email">{tcm("channels.email")}</option>
+                <option value="sms">{tcm("channels.sms")}</option>
+                <option value="phone_call">{tcm("channels.phone_call")}</option>
               </select>
             </Field>
-            <Field label="Sort order">
+            <Field label={t("sortOrder")}>
               <input
                 type="number"
                 min={0}
@@ -163,7 +180,7 @@ export function CommunicationTemplateManagementCard({
               />
             </Field>
           </div>
-          <Field label="Subject">
+          <Field label={t("subject")}>
             <input
               name="subject"
               defaultValue={selectedTemplate?.subject || ""}
@@ -171,7 +188,7 @@ export function CommunicationTemplateManagementCard({
               className="ui-input"
             />
           </Field>
-          <Field label="Message">
+          <Field label={t("message")}>
             <textarea
               name="message"
               defaultValue={selectedTemplate?.message || ""}
@@ -188,37 +205,24 @@ export function CommunicationTemplateManagementCard({
               key={`${selectedId}-active`}
               className="mt-0.5 h-4 w-4 accent-[#111111]"
             />
-            Template is active and available in outreach flows.
+            {t("activeHelp")}
           </label>
 
           <div className="flex justify-end">
             <Button type="submit" disabled={loading}>
               {loading
-                ? "Saving..."
+                ? tc("saving")
                 : selectedTemplate
-                  ? "Save template"
-                  : "Create template"}
+                  ? t("saveTemplate")
+                  : t("createTemplate")}
             </Button>
           </div>
         </form>
       ) : (
         <p className="mt-6 rounded-2xl bg-[#f6f5f1] px-4 py-3.5 text-[13px] leading-[1.6] text-[#6b6b6b]">
-          Templates are shared across the workspace. Only the overall oversight admin can edit them.
+          {t("readOnly")}
         </p>
       )}
     </div>
   );
-}
-
-function formatChannel(channel?: string) {
-  switch (channel) {
-    case "email":
-      return "Email";
-    case "sms":
-      return "SMS";
-    case "phone_call":
-      return "Phone call";
-    default:
-      return formatStatus(channel);
-  }
 }

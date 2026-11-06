@@ -86,5 +86,5 @@ export type Meeting = {
 };
 export const referenceId = (value: string | { _id: string }) =>
   typeof value === "string" ? value : value._id;
-export const meetingName = (person?: MeetingPerson) =>
-  person ? `${person.firstName} ${person.lastName}` : "User unavailable";
+export const meetingName = (person?: MeetingPerson, fallback = "User unavailable") =>
+  person ? `${person.firstName} ${person.lastName}` : fallback;

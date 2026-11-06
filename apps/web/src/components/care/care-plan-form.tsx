@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { apiPatch } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
 import { CarePicker } from "./care-picker";
@@ -13,6 +14,8 @@ export function CarePlanForm({
   branchId: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("people.care.plan");
+  const tsh = useTranslations("people.shared");
   const [enabled, setEnabled] = useState(plan.enabled);
   const [email, setEmail] = useState(plan.emailEnabled);
   const [coverage, setCoverage] = useState(plan.attendanceReliable);
@@ -87,7 +90,7 @@ export function CarePlanForm({
       setSaved(true);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save settings");
+      setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
     }
@@ -122,12 +125,10 @@ export function CarePlanForm({
       <Card className="p-6 space-y-5">
         <div>
           <h2 className="text-lg font-semibold">
-            1. Ownership and response times
+            {t("section1")}
           </h2>
           <p className="mt-1 text-sm text-[#6b6b6b]">
-            New registrations are enrolled only after this plan is enabled.
-            Existing care histories remain visible; older people can be enrolled
-            individually.
+            {t("section1Hint")}
           </p>
         </div>
         <label className="flex gap-2 font-medium">
@@ -136,15 +137,15 @@ export function CarePlanForm({
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
           />
-          Enable this branch’s care plan
+          {t("enablePlan")}
         </label>
         <Field
-          label="Care team"
-          hint="New cases go to an available worker with the lowest active caseload, within the capacity limit."
+          label={t("careTeam")}
+          hint={t("careTeamHint")}
         >
           <CarePicker branchId={branchId} selected={team} onChange={setTeam} />
         </Field>
-        <Field label="Branch escalation / backup leader">
+        <Field label={t("leader")}>
           <CarePicker
             branchId={branchId}
             selected={leader}
@@ -154,27 +155,22 @@ export function CarePlanForm({
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-3">
-          {numeric(
-            "firstContactHours",
-            "First contact due within (hours)",
-            1,
-            168,
-          )}
-          {numeric("retryHours", "Retry after no answer (hours)", 1, 336)}
-          {numeric("maxAttempts", "Attempts before leadership review", 1, 10)}
-          {numeric("escalationHours", "Escalate after overdue (hours)", 1, 336)}
-          {numeric("capacity", "Active cases per worker", 1, 500)}
+          {numeric("firstContactHours", t("firstContactHours"), 1, 168)}
+          {numeric("retryHours", t("retryHours"), 1, 336)}
+          {numeric("maxAttempts", t("maxAttempts"), 1, 10)}
+          {numeric("escalationHours", t("escalationHours"), 1, 336)}
+          {numeric("capacity", t("capacity"), 1, 500)}
         </div>
         {team.length > 0 && (
           <details>
             <summary className="cursor-pointer text-sm font-medium">
-              Team availability / leave cover
+              {t("availability")}
             </summary>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {team.map((p) => (
                 <Field
                   key={p._id}
-                  label={`${p.firstName} ${p.lastName} — unavailable until`}
+                  label={t("unavailableUntil", { name: `${p.firstName} ${p.lastName}` })}
                 >
                   <input
                     name={"away-" + p._id}
@@ -193,12 +189,12 @@ export function CarePlanForm({
             name="weeklyDigest"
             defaultChecked={plan.weeklyDigest}
           />
-          Send a Monday care briefing to the selected leader
+          {t("weeklyDigest")}
         </label>
       </Card>
       <Card className="p-6 space-y-5">
         <h2 className="text-lg font-semibold">
-          2. Optional messages to people
+          {t("section2")}
         </h2>
         <label className="flex gap-2 font-medium">
           <input
@@ -206,15 +202,13 @@ export function CarePlanForm({
             checked={email}
             onChange={(e) => setEmail(e.target.checked)}
           />
-          Enable automatic care emails
+          {t("enableEmails")}
         </label>
         <p className="text-sm text-[#6b6b6b]">
-          A person must have recorded email permission. Quiet hours, contact
-          limits, recorded responses and opt-outs are checked before sending.
-          Calls, SMS and WhatsApp remain staff actions.
+          {t("emailHint")}
         </p>
         <div className="grid gap-4 sm:grid-cols-4">
-          <Field label="Timezone">
+          <Field label={t("timezone")}>
             <input
               className="ui-input"
               name="timeZone"
@@ -222,26 +216,28 @@ export function CarePlanForm({
               defaultValue={plan.timeZone}
             />
           </Field>
-          {numeric("quietStart", "Quiet hours start (0–23)", 0, 23)}
-          {numeric("quietEnd", "Quiet hours end (0–23)", 0, 23)}
-          {numeric("maxAutomatedMessages", "Maximum automatic attempts", 1, 5)}
+          {numeric("quietStart", t("quietStart"), 0, 23)}
+          {numeric("quietEnd", t("quietEnd"), 0, 23)}
+          {numeric("maxAutomatedMessages", t("maxAutomated"), 1, 5)}
         </div>
         <details>
           <summary className="cursor-pointer text-sm font-medium">
-            English and Spanish message templates
+            {t("templates")}
           </summary>
           <div className="mt-4 space-y-4">
-            {[
-              ["subject", "English subject"],
-              ["message", "English message"],
-              ["subjectEs", "Spanish subject"],
-              ["messageEs", "Spanish message"],
-              ["retentionSubject", "Participation check-in subject"],
-              ["retentionMessage", "Participation check-in message"],
-              ["retentionSubjectEs", "Participation subject — Spanish"],
-              ["retentionMessageEs", "Participation message — Spanish"],
-            ].map(([key, label]) => (
-              <Field label={label} key={key}>
+            {(
+              [
+                "subject",
+                "message",
+                "subjectEs",
+                "messageEs",
+                "retentionSubject",
+                "retentionMessage",
+                "retentionSubjectEs",
+                "retentionMessageEs",
+              ] as const
+            ).map((key) => (
+              <Field label={t(key)} key={key}>
                 {key.toLowerCase().includes("subject") ? (
                   <input
                     className="ui-input"
@@ -263,16 +259,14 @@ export function CarePlanForm({
               </Field>
             ))}
             <p className="text-xs text-[#8a8780]">
-              Available placeholders: {"{{firstName}}"}, {"{{churchName}}"},{" "}
-              {"{{checkInUrl}}"}. Every care email also includes a stop-messages
-              link.
+              {t("placeholdersHint", { placeholders: "{{firstName}}, {{churchName}}, {{checkInUrl}}" })}
             </p>
           </div>
         </details>
       </Card>
       <Card className="p-6 space-y-5">
         <h2 className="text-lg font-semibold">
-          3. Participation and retention checks
+          {t("section3")}
         </h2>
         <label className="flex items-start gap-2">
           <input
@@ -281,13 +275,11 @@ export function CarePlanForm({
             onChange={(e) => setCoverage(e.target.checked)}
           />
           <span>
-            This branch consistently records individual member attendance
+            {t("attendanceReliable")}
           </span>
         </label>
         <p className="text-sm text-[#6b6b6b]">
-          Headcounts and missing records alone cannot establish an absence.
-          Signals explain the last recorded attendance and the available
-          baseline; staff confirm the situation personally.
+          {t("attendanceHint")}
         </p>
         <label className="flex items-start gap-2 text-sm">
           <input
@@ -295,11 +287,10 @@ export function CarePlanForm({
             name="retentionEmailEnabled"
             defaultChecked={plan.retentionEmailEnabled}
           />
-          Send a gentle check-in email for new participation signals, only when
-          personal permission and the main email setting are enabled
+          {t("retentionEmail")}
         </label>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Reliable recording began">
+          <Field label={t("coverageFrom")}>
             <input
               className="ui-input"
               name="coverageFrom"
@@ -308,38 +299,31 @@ export function CarePlanForm({
               defaultValue={plan.coverageFrom?.slice(0, 10)}
             />
           </Field>
-          {numeric("absenceDays", "Check after recording gap (days)", 7, 180)}
-          {numeric(
-            "minAttendanceRecords",
-            "Minimum baseline observations",
-            3,
-            30,
-          )}
+          {numeric("absenceDays", t("absenceDays"), 7, 180)}
+          {numeric("minAttendanceRecords", t("minAttendance"), 3, 30)}
         </div>
       </Card>
       <Card className="p-6 space-y-3">
-        <h2 className="font-semibold">Plan preview</h2>
+        <h2 className="font-semibold">{t("preview")}</h2>
         {plan.capabilities && !plan.capabilities.emailConfigured && (
           <p className="text-sm text-amber-800">
-            Email delivery is not configured on the server. Internal care tasks
-            can run, but external emails will remain unsent until the mail
-            provider is configured.
+            {t("emailNotConfigured")}
           </p>
         )}
         <p className="text-sm">
           {enabled
-            ? `${team.length} selected workers will receive eligible new care cases. Manual enrollment remains available for existing records.`
-            : "Automation will remain off. Existing records can still be managed manually."}
+            ? t("previewEnabled", { count: team.length })
+            : t("previewDisabled")}
         </p>
         <p className="text-sm">
           {email
-            ? "Emails require individual permission and are limited by the selected contact rules."
-            : "No automatic emails will be sent to guests or members."}
+            ? t("previewEmailOn")
+            : t("previewEmailOff")}
         </p>
         <p className="text-sm">
           {coverage
-            ? "Participation checks will use confirmed individual attendance coverage and the minimum observation threshold."
-            : "Absence signals are off because individual attendance coverage is not confirmed."}
+            ? t("previewCoverageOn")
+            : t("previewCoverageOff")}
         </p>
         {error && (
           <p role="alert" className="text-red-700">
@@ -348,11 +332,11 @@ export function CarePlanForm({
         )}
         {saved && (
           <p role="status" className="text-green-800">
-            Care plan saved.
+            {t("saved")}
           </p>
         )}
         <Button type="submit" disabled={busy}>
-          {busy ? "Saving…" : "Save care plan"}
+          {busy ? tsh("savingEllipsis") : t("save")}
         </Button>
       </Card>
     </form>

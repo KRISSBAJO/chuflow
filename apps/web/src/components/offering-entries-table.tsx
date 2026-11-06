@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button, EmptyState, Field } from "@/components/ui/ui";
+import { useAppFormat } from "@/i18n/labels";
 import { API_URL } from "@/lib/api";
 import type {
   FinanceAccountSummary,
@@ -15,19 +17,6 @@ import type {
 
 function getBranchId(value: ServiceTypeSummary["branchId"]) {
   return typeof value === "string" ? value : value?._id;
-}
-
-function formatMoney(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString();
 }
 
 export function OfferingEntriesTable({
@@ -41,6 +30,17 @@ export function OfferingEntriesTable({
   serviceTypes: ServiceTypeSummary[];
   accounts: FinanceAccountSummary[];
 }) {
+  const t = useTranslations("admin.offerings");
+  const tc = useTranslations("common");
+  const format = useFormatter();
+  const { dateTime: formatDate } = useAppFormat();
+  const formatMoney = (amount: number, currency = "USD") =>
+    format.number(amount, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -65,19 +65,19 @@ export function OfferingEntriesTable({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to update offering");
+        throw new Error(result.message || t("updateError"));
       }
 
-      toast.success("Offering updated", {
-        description: "The finance record was saved with the latest correction.",
+      toast.success(t("updatedTitle"), {
+        description: t("updatedDescription"),
       });
       startTransition(() => {
         router.refresh();
       });
     } catch (error) {
-      toast.error("Offering update failed", {
+      toast.error(t("updateFailedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to update offering",
+          error instanceof Error ? error.message : t("updateError"),
       });
     } finally {
       setLoadingId(entryId);
@@ -87,8 +87,8 @@ export function OfferingEntriesTable({
 
   if (entries.length === 0) {
     return (
-      <EmptyState icon="finance" title="No offerings">
-        No offering entries match the current scope or filters.
+      <EmptyState icon="finance" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
@@ -140,7 +140,7 @@ export function OfferingEntriesTable({
                   action={(formData) => updateEntry(entry._id, formData)}
                   className="grid gap-4 md:grid-cols-2"
                 >
-                  <Field label="Service date">
+                  <Field label={t("serviceDate")}>
                     <input
                       name={`serviceDate-${entry._id}`}
                       type="datetime-local"
@@ -148,7 +148,7 @@ export function OfferingEntriesTable({
                       className="ui-input"
                     />
                   </Field>
-                  <Field label="Service type">
+                  <Field label={t("serviceType")}>
                     <select
                       name={`serviceTypeId-${entry._id}`}
                       defaultValue={entry.serviceTypeId?._id || ""}
@@ -161,7 +161,7 @@ export function OfferingEntriesTable({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Offering type">
+                  <Field label={t("offeringType")}>
                     <select
                       name={`offeringTypeId-${entry._id}`}
                       defaultValue={entry.offeringTypeId?._id || ""}
@@ -174,13 +174,13 @@ export function OfferingEntriesTable({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Account">
+                  <Field label={t("account")}>
                     <select
                       name={`accountId-${entry._id}`}
                       defaultValue={entry.accountId?._id || ""}
                       className="ui-input"
                     >
-                      <option value="">Use default account</option>
+                      <option value="">{t("useDefaultAccount")}</option>
                       {accounts.map((account) => (
                         <option key={account._id} value={account._id}>
                           {account.name}
@@ -188,7 +188,7 @@ export function OfferingEntriesTable({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Amount">
+                  <Field label={t("amount")}>
                     <input
                       name={`amount-${entry._id}`}
                       type="number"
@@ -198,7 +198,7 @@ export function OfferingEntriesTable({
                       className="ui-input tabular-nums"
                     />
                   </Field>
-                  <Field label="Notes" className="md:col-span-2">
+                  <Field label={t("notes")} className="md:col-span-2">
                     <textarea
                       name={`notes-${entry._id}`}
                       defaultValue={entry.notes || ""}
@@ -208,7 +208,7 @@ export function OfferingEntriesTable({
                   <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
                     <p className="text-[13px] leading-[1.5] text-[#6b6b6b]">{entry.permissions.reason}</p>
                     <Button type="submit" disabled={loadingId === entry._id || pending}>
-                      {loadingId === entry._id ? "Saving..." : "Update offering"}
+                      {loadingId === entry._id ? tc("saving") : t("update")}
                     </Button>
                   </div>
                 </form>

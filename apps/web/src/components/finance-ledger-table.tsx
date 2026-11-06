@@ -1,14 +1,7 @@
-import { Badge, Card, CardHeader, EmptyState, formatStatus, Pagination, statusTone, TableWrap } from "@/components/ui/ui";
+import { useFormatter, useTranslations } from "next-intl";
+import { Badge, Card, CardHeader, EmptyState, Pagination, statusTone, TableWrap } from "@/components/ui/ui";
+import { useAppFormat, useStatusLabel } from "@/i18n/labels";
 import type { FinanceLedgerResponse } from "@/lib/types";
-
-function formatMoney(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 export function FinanceLedgerTable({
   ledger,
@@ -19,6 +12,21 @@ export function FinanceLedgerTable({
   previousHref: string;
   nextHref: string;
 }) {
+  const t = useTranslations("admin.ledger");
+  const format = useFormatter();
+  const { date } = useAppFormat();
+  const statusLabel = useStatusLabel();
+  const formatMoney = (amount: number, currency = "USD") =>
+    format.number(amount, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const directionLabel = (value: string) =>
+    value === "credit" || value === "debit" ? t(`direction.${value}`) : statusLabel(value);
+  const sourceLabel = (value: string) =>
+    value === "offering" || value === "expense" ? t(`source.${value}`) : statusLabel(value);
   const startItem =
     ledger.pagination.total === 0
       ? 0
@@ -31,13 +39,13 @@ export function FinanceLedgerTable({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="Ledger"
-        title="Credits, debits and balance"
-        description="Every approved offering and expense rolls into one branch-aware statement."
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
         action={
           <Badge>
             <span className="tabular-nums">
-              {startItem}–{endItem} of {ledger.pagination.total}
+              {t("range", { start: startItem, end: endItem, total: ledger.pagination.total })}
             </span>
           </Badge>
         }
@@ -56,8 +64,8 @@ export function FinanceLedgerTable({
                 {formatMoney(account.balance)}
               </p>
               <p className="mt-2 text-[12px] leading-[1.5] text-[#8a8780]">
-                <span className="tabular-nums text-emerald-700">{formatMoney(account.totalCredits)}</span> in ·{" "}
-                <span className="tabular-nums text-red-700">{formatMoney(account.totalDebits)}</span> out
+                <span className="tabular-nums text-emerald-700">{formatMoney(account.totalCredits)}</span> {t("in")} ·{" "}
+                <span className="tabular-nums text-red-700">{formatMoney(account.totalDebits)}</span> {t("out")}
               </p>
             </div>
           ))}
@@ -70,31 +78,31 @@ export function FinanceLedgerTable({
             <table className="ui-table min-w-[960px]">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Branch</th>
-                  <th>Account</th>
-                  <th>Direction</th>
-                  <th>Source</th>
-                  <th>Description</th>
-                  <th>Service</th>
-                  <th className="text-right">Amount</th>
-                  <th>Status</th>
+                  <th>{t("headers.date")}</th>
+                  <th>{t("headers.branch")}</th>
+                  <th>{t("headers.account")}</th>
+                  <th>{t("headers.direction")}</th>
+                  <th>{t("headers.source")}</th>
+                  <th>{t("headers.description")}</th>
+                  <th>{t("headers.service")}</th>
+                  <th className="text-right">{t("headers.amount")}</th>
+                  <th>{t("headers.status")}</th>
                 </tr>
               </thead>
               <tbody>
                 {ledger.items.map((entry) => (
                   <tr key={entry._id}>
                     <td className="whitespace-nowrap tabular-nums text-[#55534e]">
-                      {new Date(entry.entryDate).toLocaleDateString()}
+                      {date(entry.entryDate)}
                     </td>
-                    <td className="text-[#55534e]">{entry.branchId?.name || "Branch"}</td>
+                    <td className="text-[#55534e]">{entry.branchId?.name || t("branchFallback")}</td>
                     <td className="text-[#55534e]">{entry.accountLabel}</td>
                     <td>
                       <Badge tone={entry.direction === "credit" ? "success" : "danger"}>
-                        {formatStatus(entry.direction)}
+                        {directionLabel(entry.direction)}
                       </Badge>
                     </td>
-                    <td className="text-[#55534e]">{formatStatus(entry.sourceType)}</td>
+                    <td className="text-[#55534e]">{sourceLabel(entry.sourceType)}</td>
                     <td className="font-medium">{entry.description}</td>
                     <td className="text-[#6b6b6b]">{entry.serviceLabel || "—"}</td>
                     <td
@@ -107,7 +115,7 @@ export function FinanceLedgerTable({
                     </td>
                     <td>
                       <Badge tone={statusTone(entry.status)} dot>
-                        {formatStatus(entry.status)}
+                        {statusLabel(entry.status)}
                       </Badge>
                     </td>
                   </tr>
@@ -116,8 +124,8 @@ export function FinanceLedgerTable({
             </table>
           </TableWrap>
         ) : (
-          <EmptyState icon="finance" title="No ledger activity">
-            No ledger activity has been recorded in the selected scope yet.
+          <EmptyState icon="finance" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         )}
       </div>

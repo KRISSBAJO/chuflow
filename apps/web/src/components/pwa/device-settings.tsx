@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button } from "@/components/ui/ui";
@@ -9,16 +10,6 @@ import { IOSInstallSteps } from "./app-nudge";
 import { promptInstall, useInstallState } from "./install-store";
 
 type PushState = "loading" | "unsupported" | "server-off" | "needs-install" | "blocked" | "off" | "on";
-
-const PUSH_COPY: Record<PushState, string> = {
-  loading: "Checking this device...",
-  unsupported: "This browser can't show notifications. Try Chrome, Edge, Firefox or the installed app.",
-  "server-off": "Notifications aren't switched on for your workspace yet.",
-  "needs-install": "On iPhone and iPad, install ChuFlow to your home screen first, then turn alerts on from the app.",
-  blocked: "Notifications are blocked for ChuFlow. Allow them in your browser or phone settings, then come back.",
-  off: "New first-timers, follow-ups assigned to you, and reports waiting for your approval.",
-  on: "This device gets alerts for new first-timers, your follow-ups and reports waiting for approval.",
-};
 
 function Row({ icon, title, status, children }: { icon: "device" | "bell"; title: string; status: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -39,6 +30,7 @@ function Row({ icon, title, status, children }: { icon: "device" | "bell"; title
 
 /** Settings → This device: install state and push notifications for the phone or browser in hand. */
 export function DeviceSettings() {
+  const t = useTranslations("admin.pwa.device");
   const install = useInstallState();
   const [push, setPush] = useState<PushState>("loading");
   const [busy, setBusy] = useState(false);
@@ -71,15 +63,15 @@ export function DeviceSettings() {
       if (push === "on") {
         await disablePush();
         setPush("off");
-        toast.success("Alerts are off for this device.");
+        toast.success(t("alertsOff"));
       } else {
         await enablePush();
         setPush("on");
-        toast.success("Alerts are on. Send a test to see one.");
+        toast.success(t("alertsOnTest"));
       }
     } catch (error) {
       if (typeof Notification !== "undefined" && Notification.permission === "denied") setPush("blocked");
-      toast.error(error instanceof Error ? error.message : "Something went wrong.");
+      toast.error(error instanceof Error ? error.message : t("genericError"));
     } finally {
       setBusy(false);
     }
@@ -89,10 +81,10 @@ export function DeviceSettings() {
     setBusy(true);
     try {
       const { delivered } = await sendTestPush();
-      if (delivered > 0) toast.success("Test sent. It should arrive in a few seconds.");
-      else toast.error("No device received it. Turn alerts off and on again.");
+      if (delivered > 0) toast.success(t("testSent"));
+      else toast.error(t("testNotReceived"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't send a test.");
+      toast.error(error instanceof Error ? error.message : t("testError"));
     } finally {
       setBusy(false);
     }
@@ -104,56 +96,56 @@ export function DeviceSettings() {
     <div className="app-card divide-y divide-black/[0.06] rounded-2xl p-5 sm:p-6">
       <Row
         icon="device"
-        title="ChuFlow app"
-        status={install.installed ? <Badge tone="success" dot>Installed</Badge> : <Badge>Not installed</Badge>}
+        title={t("appTitle")}
+        status={install.installed ? <Badge tone="success" dot>{t("installed")}</Badge> : <Badge>{t("notInstalled")}</Badge>}
       >
         <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">
           {install.installed
-            ? "You're using the installed app. It opens full screen from your home screen or dock."
-            : "Install ChuFlow on this phone or computer for one-tap access, full-screen pages and alerts. No app store needed."}
+            ? t("installedBody")
+            : t("installBody")}
         </p>
         {!install.installed && install.canPrompt ? (
           <Button size="sm" className="mt-3" onClick={() => void promptInstall()}>
-            Install ChuFlow
+            {t("installButton")}
           </Button>
         ) : null}
         {!install.installed && install.manualIOS ? (
           <>
             <Button size="sm" variant="secondary" className="mt-3" onClick={() => setShowSteps((value) => !value)}>
-              {showSteps ? "Hide steps" : "How to install on iPhone"}
+              {showSteps ? t("hideSteps") : t("howToInstallIphone")}
             </Button>
             {showSteps ? <IOSInstallSteps className="mt-4" /> : null}
           </>
         ) : null}
         {!install.installed && !install.canPrompt && !install.manualIOS ? (
           <p className="mt-2 text-[13px] text-[#8a8780]">
-            Look for the install icon in your browser&apos;s address bar, or use &ldquo;Add to Home Screen&rdquo; from its menu.
+            {t("lookForInstallIcon")}
           </p>
         ) : null}
       </Row>
 
       <Row
         icon="bell"
-        title="Notifications"
+        title={t("notifications")}
         status={
           push === "on" ? (
-            <Badge tone="success" dot>On</Badge>
+            <Badge tone="success" dot>{t("on")}</Badge>
           ) : push === "blocked" ? (
-            <Badge tone="danger">Blocked</Badge>
+            <Badge tone="danger">{t("blocked")}</Badge>
           ) : push === "loading" ? null : (
-            <Badge>Off</Badge>
+            <Badge>{t("off")}</Badge>
           )
         }
       >
-        <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">{PUSH_COPY[push]}</p>
+        <p className="mt-1 text-[14px] leading-[1.6] text-[#6b6b6b]">{t(`pushCopy.${push}`)}</p>
         {canToggle ? (
           <div className="mt-3 flex flex-wrap gap-2">
             <Button size="sm" variant={push === "on" ? "secondary" : "primary"} onClick={() => void toggle()} disabled={busy}>
-              {push === "on" ? "Turn off on this device" : "Turn on alerts"}
+              {push === "on" ? t("turnOff") : t("turnOn")}
             </Button>
             {push === "on" ? (
               <Button size="sm" variant="ghost" onClick={() => void test()} disabled={busy}>
-                Send a test
+                {t("sendTest")}
               </Button>
             ) : null}
           </div>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
@@ -32,6 +33,8 @@ export function ExpenseEntryForm({
   serviceSchedules: ServiceScheduleSummary[];
   canChooseBranch: boolean;
 }) {
+  const t = useTranslations("admin.expenseForm");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState(
@@ -81,18 +84,17 @@ export function ExpenseEntryForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create expense");
+        throw new Error(result.message || t("createError"));
       }
 
-      toast.success("Expense recorded", {
-        description:
-          "The expense is now in the finance ledger and follows the approval rules for your role.",
+      toast.success(t("recordedTitle"), {
+        description: t("recordedDescription"),
       });
-      router.push(createdHref("/finance?tab=expenses", result, "Expense"));
+      router.push(createdHref("/finance?tab=expenses", result, t("entityName")));
       router.refresh();
     } catch (error) {
-      toast.error("Expense not recorded", {
-        description: error instanceof Error ? error.message : "Unable to create expense",
+      toast.error(t("notRecordedTitle"), {
+        description: error instanceof Error ? error.message : t("createError"),
       });
     } finally {
       setLoading(false);
@@ -102,14 +104,14 @@ export function ExpenseEntryForm({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="Record expense"
-        title="Submit a branch expense"
-        description="Branch leaders submit expenses for approval. Oversight roles can enter and approve directly."
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <form action={handleSubmit} className="mt-6 grid gap-4">
         {canChooseBranch ? (
-          <Field label="Branch" required>
+          <Field label={t("branch")} required>
             <select
               name="branchId"
               value={selectedBranchId}
@@ -117,7 +119,7 @@ export function ExpenseEntryForm({
               className="ui-input"
               required
             >
-              <option value="">Select branch</option>
+              <option value="">{tc("selectBranch")}</option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -130,11 +132,11 @@ export function ExpenseEntryForm({
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Expense date" required>
+          <Field label={t("expenseDate")} required>
             <input name="expenseDate" type="date" className="ui-input" required />
           </Field>
 
-          <Field label="Category" required>
+          <Field label={t("category")} required>
             <select
               name="expenseCategoryId"
               value={selectedCategoryId}
@@ -153,7 +155,7 @@ export function ExpenseEntryForm({
               className="ui-input"
               required
             >
-              <option value="">Select category</option>
+              <option value="">{t("selectCategory")}</option>
               {expenseCategories
                 .filter((item) => item.isActive)
                 .map((category) => (
@@ -164,7 +166,7 @@ export function ExpenseEntryForm({
             </select>
           </Field>
 
-          <Field label="Account or fund" required>
+          <Field label={t("accountOrFund")} required>
             <select
               name="accountId"
               value={selectedAccountId}
@@ -172,7 +174,7 @@ export function ExpenseEntryForm({
               className="ui-input"
               required
             >
-              <option value="">Select account</option>
+              <option value="">{t("selectAccount")}</option>
               {accounts
                 .filter((item) => item.isActive)
                 .map((account) => (
@@ -183,7 +185,7 @@ export function ExpenseEntryForm({
             </select>
           </Field>
 
-          <Field label="Amount" required>
+          <Field label={t("amount")} required>
             <input
               name="amount"
               type="number"
@@ -195,13 +197,13 @@ export function ExpenseEntryForm({
             />
           </Field>
 
-          <Field label="Currency">
+          <Field label={t("currency")}>
             <input name="currency" defaultValue="USD" className="ui-input" />
           </Field>
 
-          <Field label="Linked service">
+          <Field label={t("linkedService")}>
             <select name="serviceScheduleId" className="ui-input">
-              <option value="">No linked service</option>
+              <option value="">{t("noLinkedService")}</option>
               {filteredSchedules.map((schedule) => (
                 <option key={schedule._id} value={schedule._id}>
                   {schedule.name} · {schedule.dayOfWeek} · {schedule.startTime}
@@ -211,34 +213,34 @@ export function ExpenseEntryForm({
           </Field>
         </div>
 
-        <Field label="Payee or vendor">
-          <input name="payee" placeholder="Who received the payment?" className="ui-input" />
+        <Field label={t("payeeOrVendor")}>
+          <input name="payee" placeholder={t("payeePlaceholder")} className="ui-input" />
         </Field>
 
-        <Field label="Description" required>
+        <Field label={t("descriptionLabel")} required>
           <input
             name="description"
-            placeholder="Sound maintenance, diesel purchase, welfare support..."
+            placeholder={t("descriptionPlaceholder")}
             className="ui-input"
             required
           />
         </Field>
 
-        <Field label="Receipt link" hint="Optional link to a scanned receipt or cloud file.">
+        <Field label={t("receiptLink")} hint={t("receiptHint")}>
           <input name="receiptUrl" placeholder="https://" className="ui-input" />
         </Field>
 
-        <Field label="Notes">
+        <Field label={t("notes")}>
           <textarea
             name="notes"
-            placeholder="Optional note for approval or reconciliation"
+            placeholder={t("notesPlaceholder")}
             className="ui-input"
           />
         </Field>
 
         <div className="pt-1">
           <Button type="submit" disabled={loading}>
-            {loading ? "Recording..." : "Record expense"}
+            {loading ? t("recording") : t("record")}
           </Button>
         </div>
       </form>

@@ -1,7 +1,8 @@
 "use client";
 import { TemplateEditorCard } from "./template-editor-card";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/app/icons";
-import { Badge, EmptyState, formatStatus } from "@/components/ui/ui";
+import { Badge, EmptyState } from "@/components/ui/ui";
 import type { BranchSummary, IntakeTemplate } from "@/lib/types";
 
 export function TemplateManagementList({
@@ -19,12 +20,14 @@ export function TemplateManagementList({
   defaultOversightRegion?: string;
   defaultDistrict?: string;
 }) {
+  const t = useTranslations("admin.templates");
+  const ts = useTranslations("statuses");
   const branchNameById = new Map(branches.map((branch) => [branch._id, branch.name]));
 
   if (templates.length === 0) {
     return (
-      <EmptyState icon="templates" title="No templates yet">
-        Create your first intake template to get a public link and QR code.
+      <EmptyState icon="templates" title={t("emptyTitle")}>
+        {t("emptyBody")}
       </EmptyState>
     );
   }
@@ -36,7 +39,7 @@ export function TemplateManagementList({
         const isGlobalBase = !template.branchId && !template.isBranchOverride && !isDistrictVersion;
         const isReadOnly = currentUserRole !== "super_admin" && isGlobalBase;
         const branchLabel = template.branchId ? branchNameById.get(template.branchId) : undefined;
-        const scopeLabel = isGlobalBase ? "Global base" : isDistrictVersion ? "District version" : "Branch version";
+        const scopeLabel = isGlobalBase ? t("globalBase") : isDistrictVersion ? t("districtVersion") : t("branchVersion");
 
         return (
           <details
@@ -52,18 +55,18 @@ export function TemplateManagementList({
                     {isDistrictVersion ? ` · ${template.district}` : ""}
                   </p>
                   <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
-                    {formatStatus(template.kind)} · /intake/{template.slug}
+                    {t(`kindLabels.${template.kind}`)} · /intake/{template.slug}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Badge>{scopeLabel}</Badge>
                   {!isGlobalBase && branchLabel ? <Badge tone="info">{branchLabel}</Badge> : null}
                   {isDistrictVersion ? <Badge tone="info">{template.district}</Badge> : null}
-                  <Badge>{formatStatus(template.kind)}</Badge>
+                  <Badge>{t(`kindLabels.${template.kind}`)}</Badge>
                   <Badge tone={template.isActive ? "success" : "neutral"} dot>
-                    {template.isActive ? "Active" : "Inactive"}
+                    {template.isActive ? ts("active") : ts("inactive")}
                   </Badge>
-                  {template.isSeeded ? <Badge tone="flame">Seeded</Badge> : null}
+                  {template.isSeeded ? <Badge tone="flame">{t("seeded")}</Badge> : null}
                 </div>
               </div>
               <Icon

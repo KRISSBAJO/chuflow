@@ -3,6 +3,7 @@ import { FilterPanel } from "@/components/filter-panel";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/ui";
 import type { BranchSummary, DistrictOption, OversightRegionOption } from "@/lib/types";
 
@@ -66,6 +67,10 @@ export function FollowUpScopeFilterBar({
   branches,
 }: FollowUpScopeFilterBarProps) {
   const router = useRouter();
+  const t = useTranslations("people.followUp.filterBar");
+  const tc = useTranslations("common");
+  const ts = useTranslations("statuses");
+  const tsh = useTranslations("people.shared");
   const [isPending, startTransition] = useTransition();
   const [selectedRegion, setSelectedRegion] = useState(oversightRegion || "");
   const [selectedDistrict, setSelectedDistrict] = useState(district || "");
@@ -116,19 +121,19 @@ export function FollowUpScopeFilterBar({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-0.5">
         <p className="text-[13px] text-[#6b6b6b]">
-          Monitor broadly, then narrow to a branch before assigning a guest.
+          {t("intro")}
         </p>
         {isPending ? (
           <span className="flex items-center gap-2 text-[13px] text-[#8a8780]" role="status">
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#e4e3df] border-t-[#ea580c]" />
-            Updating
+            {tc("updating")}
           </span>
         ) : null}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.3fr)]">
         <label className="block">
-          <span className="sr-only">National area</span>
+          <span className="sr-only">{tc("nationalArea")}</span>
           <select
             value={selectedRegion}
             disabled={!canChooseRegion || isPending}
@@ -145,7 +150,7 @@ export function FollowUpScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All national areas</option>
+            <option value="">{tc("allNationalAreas")}</option>
             {oversightRegions.map((region) => (
               <option key={region._id} value={region.name}>
                 {region.name}
@@ -155,7 +160,7 @@ export function FollowUpScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">District</span>
+          <span className="sr-only">{tc("district")}</span>
           <select
             value={selectedDistrict}
             disabled={!canChooseDistrict || isPending}
@@ -170,7 +175,7 @@ export function FollowUpScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All districts</option>
+            <option value="">{tc("allDistricts")}</option>
             {filteredDistricts.map((item) => (
               <option key={item._id} value={item.name}>
                 {item.name}
@@ -180,7 +185,7 @@ export function FollowUpScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">Branch</span>
+          <span className="sr-only">{tc("branch")}</span>
           <select
             value={selectedBranchId}
             disabled={!canChooseBranch || isPending}
@@ -191,7 +196,7 @@ export function FollowUpScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All branches</option>
+            <option value="">{tc("allBranches")}</option>
             {filteredBranches.map((item) => (
               <option key={item._id} value={item._id}>
                 {item.name}
@@ -201,7 +206,7 @@ export function FollowUpScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">Stage</span>
+          <span className="sr-only">{tsh("stage")}</span>
           <select
             value={selectedStatus}
             disabled={isPending}
@@ -212,14 +217,14 @@ export function FollowUpScopeFilterBar({
             }}
             className="ui-input"
           >
-            <option value="">All stages</option>
-            <option value="new">New</option>
-            <option value="assigned">Assigned</option>
-            <option value="contacted">Contacted</option>
-            <option value="prayed_with">Prayed with</option>
-            <option value="invited_back">Invited back</option>
-            <option value="returned">Returned</option>
-            <option value="converted">Converted</option>
+            <option value="">{tsh("allStages")}</option>
+            <option value="new">{ts("new")}</option>
+            <option value="assigned">{ts("assigned")}</option>
+            <option value="contacted">{ts("contacted")}</option>
+            <option value="prayed_with">{ts("prayed_with")}</option>
+            <option value="invited_back">{ts("invited_back")}</option>
+            <option value="returned">{ts("returned")}</option>
+            <option value="converted">{ts("converted")}</option>
           </select>
         </label>
 
@@ -231,16 +236,16 @@ export function FollowUpScopeFilterBar({
           className="flex gap-2 sm:col-span-2 xl:col-span-1"
         >
           <label className="min-w-0 flex-1">
-            <span className="sr-only">Search</span>
+            <span className="sr-only">{tc("search")}</span>
             <input
               value={searchDraft}
               onChange={(event) => setSearchDraft(event.target.value)}
-              placeholder="Search guest or note"
+              placeholder={t("searchPlaceholder")}
               className="ui-input"
             />
           </label>
           <Button type="submit" variant="secondary" icon="search">
-            Go
+            {t("go")}
           </Button>
         </form>
       </div>

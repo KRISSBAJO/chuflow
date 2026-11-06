@@ -1,15 +1,18 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { API_URL } from "@/lib/api";
-import { formLanguage } from "@/lib/form-language";
 import {
   OutreachPublicView,
   type PublicOutreachInfo,
 } from "@/components/evangelism/public-view";
 
-export const metadata = {
-  title: "Connect with the church | ChuFlow",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata() {
+  const t = await getTranslations("people.evangelism.publicView");
+  return {
+    title: t("metaTitle"),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function PublicOutreachPage({
   params,
@@ -24,17 +27,11 @@ export default async function PublicOutreachPage({
     cache: "no-store",
   });
   if (response.status === 404) notFound();
-  if (!response.ok)
-    throw new Error(
-      "The connection form is temporarily unavailable. Please try again shortly.",
-    );
+  if (!response.ok) {
+    const t = await getTranslations("people.evangelism.publicView");
+    throw new Error(t("unavailable"));
+  }
   const info = (await response.json()) as PublicOutreachInfo;
   const { lang } = await searchParams;
-  return (
-    <OutreachPublicView
-      token={token}
-      info={info}
-      initialLanguage={formLanguage(lang)}
-    />
-  );
+  return <OutreachPublicView token={token} info={info} requestedLanguage={lang} />;
 }

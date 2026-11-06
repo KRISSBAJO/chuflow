@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { Icon } from "@/components/app/icons";
@@ -11,6 +12,7 @@ import { outreachName, type OutreachLink } from "@/lib/evangelism";
 
 export default async function OutreachLinksPage() {
   await requireServerRole("/evangelism");
+  const [t, tsh] = await Promise.all([getTranslations("people.evangelism.links"), getTranslations("people.shared")]);
   const links = await serverGet<OutreachLink[]>("/evangelism/links");
   const origin = (
     process.env.NEXT_PUBLIC_WEB_URL || "https://www.chuflow.com"
@@ -18,15 +20,15 @@ export default async function OutreachLinksPage() {
   return (
     <Shell>
       <Link href="/evangelism" className={buttonClass("secondary", "sm")}>
-        <Icon name="arrowLeft" /> Back to Evangelism
+        <Icon name="arrowLeft" /> {t("back")}
       </Link>
       <PageHeader
-        eyebrow="Evangelism"
-        title="Open the door to a conversation."
-        description="Share a personal or branch link, send it in a message, or let someone scan its QR code. No sign-in is needed to connect."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <Link href="/evangelism/links/new" className={buttonClass("primary")}>
-            + Create link
+            {t("create")}
           </Link>
         }
       />
@@ -37,19 +39,17 @@ export default async function OutreachLinksPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-xl font-semibold">{link.name}</h2>
                 <Badge tone={link.isActive ? "success" : "neutral"}>
-                  {link.isActive ? "Active" : "Paused"}
+                  {link.isActive ? t("active") : t("paused")}
                 </Badge>
               </div>
               <p className="text-sm text-[#6b6b6b]">
                 {link.branchId?.name} ·{" "}
                 {link.kind === "personal"
-                  ? `Personal link · ${outreachName(link.ownerId)}`
-                  : "Branch link · shared queue"}
+                  ? t("personalLink", { owner: outreachName(link.ownerId, tsh("unassigned")) })
+                  : t("branchLink")}
               </p>
               <p className="text-sm font-medium">
-                {link.contactCount}{" "}
-                {link.contactCount === 1 ? "person" : "people"} connected
-                through this link
+                {t("connected", { count: link.contactCount })}
               </p>
               {link.isActive ? (
                 <TemplateQrCard
@@ -59,18 +59,18 @@ export default async function OutreachLinksPage() {
                 />
               ) : (
                 <p className="rounded-xl bg-white p-4 text-sm">
-                  This link is paused. Existing contacts remain in your queue.
+                  {t("pausedNote")}
                 </p>
               )}
               <p className="text-sm text-[#6b6b6b]">
-                Church shown on form: {link.churchName || link.branchId?.name}
+                {t("churchShown", { name: link.churchName || link.branchId?.name || "" })}
               </p>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Link
                   href={`/evangelism/links/${link._id}/edit`}
                   className={buttonClass("secondary", "sm")}
                 >
-                  Edit link
+                  {t("edit")}
                 </Link>
                 <OutreachLinkToggle id={link._id} active={link.isActive} />
                 {link.isActive && (
@@ -80,7 +80,7 @@ export default async function OutreachLinksPage() {
                     rel="noopener noreferrer"
                     className="text-sm underline"
                   >
-                    Preview form
+                    {t("preview")}
                   </Link>
                 )}
               </div>
@@ -89,14 +89,13 @@ export default async function OutreachLinksPage() {
         </section>
       ) : (
         <Card className="p-8">
-          <EmptyState icon="share" title="Create your first outreach link">
-            Personal links assign new people to you. Branch links let the team
-            share responsibility for follow-up.
+          <EmptyState icon="share" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         </Card>
       )}
       {links.length === 200 && (
-        <p className="text-sm text-[#6b6b6b]">Showing the latest 200 links.</p>
+        <p className="text-sm text-[#6b6b6b]">{t("showingLatest")}</p>
       )}
     </Shell>
   );

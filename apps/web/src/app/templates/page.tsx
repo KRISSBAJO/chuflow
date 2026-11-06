@@ -7,6 +7,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { Shell } from "@/components/shell";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { TemplateManagementList } from "@/components/template-management-list";
 import { Badge, buttonClass, Card, CardHeader } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
@@ -20,6 +21,9 @@ export default async function TemplatesPage({
 }) {
   const params = await searchParams;
   const user = await requireServerRole("/templates");
+  const t = await getTranslations("admin.templates");
+  const tc = await getTranslations("common");
+  const ts = await getTranslations("statuses");
 
   const [templates, branches] = await Promise.all([
     serverGet<IntakeTemplate[]>("/intake-templates"),
@@ -57,28 +61,30 @@ export default async function TemplatesPage({
   const directoryFilters = [
     {
       key: "status",
-      label: "Status",
+      label: tc("status"),
       options: [
-        { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" },
+        { value: "active", label: ts("active") },
+        { value: "inactive", label: ts("inactive") },
       ],
     },
     {
       key: "kind",
-      label: "Form type",
-      options: [
-        "guest",
-        "member",
-        "attendance",
-        "weekly_report",
-        "maag_report",
-      ].map((value) => ({ value, label: value.replaceAll("_", " ") })),
+      label: t("filters.formType"),
+      options: (
+        [
+          "guest",
+          "member",
+          "attendance",
+          "weekly_report",
+          "maag_report",
+        ] as const
+      ).map((value) => ({ value, label: t(`kinds.${value}`) })),
     },
     {
       key: "branchId",
-      label: "Branch",
+      label: tc("branch"),
       options: [
-        { value: "global", label: "Shared / global" },
+        { value: "global", label: t("filters.sharedGlobal") },
         ...branches.map((branch) => ({
           value: branch._id,
           label: branch.name,
@@ -91,46 +97,46 @@ export default async function TemplatesPage({
       <PageHeader
         action={
           <Link href="/templates/new" className={buttonClass("primary")}>
-            Create template
+            {t("create")}
           </Link>
         }
-        eyebrow="Templates"
-        title="Intake templates and public links"
-        description="Manage first-timer, member, attendance and weekly report templates: wording, field structure, live public links and scannable QR codes."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Templates"
+          label={t("metrics.templates")}
           value={String(templates.length)}
-          delta="Total template definitions"
+          delta={t("metrics.templatesDelta")}
           tone="cool"
         />
         <MetricCard
-          label="Active public links"
+          label={t("metrics.activeLinks")}
           value={String(activeTemplates)}
-          delta="Currently live templates"
+          delta={t("metrics.activeLinksDelta")}
           tone="warm"
         />
         <MetricCard
-          label="Guest / member"
+          label={t("metrics.guestMember")}
           value={`${guestTemplates}/${memberTemplates}`}
-          delta="First-timer and member forms"
+          delta={t("metrics.guestMemberDelta")}
           tone="cool"
         />
         <MetricCard
-          label="Reports"
+          label={t("metrics.reports")}
           value={`${attendanceTemplates}/${weeklyReportTemplates}`}
-          delta="Attendance and weekly indices"
+          delta={t("metrics.reportsDelta")}
           tone="warm"
         />
       </section>
       <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <Card className="app-rise min-w-0 p-6 sm:p-7">
           <CardHeader
-            label="Library"
-            title="Template library"
-            description="Seeded templates are ready to use, and you can activate branch-specific variations whenever you need them."
-            action={<Badge tone="flame">QR and share ready</Badge>}
+            label={t("libraryLabel")}
+            title={t("libraryTitle")}
+            description={t("libraryDescription")}
+            action={<Badge tone="flame">{t("qrReady")}</Badge>}
           />
           <div className="mt-6">
             <DirectoryControls

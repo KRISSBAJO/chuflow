@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import { Button } from "@/components/ui/ui";
 import type { CarePerson } from "@/lib/care";
@@ -16,6 +17,7 @@ export function CarePicker({
   single?: boolean;
   leadersOnly?: boolean;
 }) {
+  const t = useTranslations("people.care.picker");
   const [q, setQ] = useState("");
   const [matches, setMatches] = useState<{
     query: string;
@@ -31,7 +33,7 @@ export function CarePicker({
           `${API_URL}/care/assignees?branchId=${encodeURIComponent(branchId)}&q=${encodeURIComponent(q.trim())}&leadersOnly=${leadersOnly}`,
           { credentials: "include", signal: controller.signal },
         );
-        if (!response.ok) throw new Error("Could not find care workers.");
+        if (!response.ok) throw new Error(t("errorFind"));
         const items = (await response.json()) as CarePerson[];
         if (!controller.signal.aborted) {
           setMatches({ query: q.trim(), items });
@@ -39,21 +41,21 @@ export function CarePicker({
         }
       } catch (e) {
         if (!controller.signal.aborted)
-          setError(e instanceof Error ? e.message : "Search failed.");
+          setError(e instanceof Error ? e.message : t("searchFailed"));
       }
     }, 250);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [branchId, q, leadersOnly]);
+  }, [branchId, q, leadersOnly, t]);
   return (
     <div className="space-y-2">
       <input
         className="ui-input"
         value={q}
-        aria-label="Find a care worker"
-        placeholder="Type a care worker’s name or email…"
+        aria-label={t("findWorker")}
+        placeholder={t("placeholder")}
         onChange={(e) => setQ(e.target.value)}
       />
       {error && (
@@ -65,7 +67,7 @@ export function CarePicker({
         <div className="rounded-xl bg-white p-2">
           {matches.items.length === 0 && (
             <p className="p-2 text-sm text-[#8a8780]">
-              No matching active care workers.
+              {t("noMatches")}
             </p>
           )}
           {matches.items.map((p) => (

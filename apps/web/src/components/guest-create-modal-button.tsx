@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { buttonClass } from "@/components/ui/ui";
 import type { BranchSummary, ServiceTypeSummary, UserSummary } from "@/lib/types";
 
@@ -10,5 +11,6 @@ export function GuestCreateModalButton(props: {
   label?: string;
   className?: string;
 }) {
-return <Link href={props.defaultBranchId ? `/guests/new?branchId=${encodeURIComponent(props.defaultBranchId)}` : "/guests/new"} className={props.className ?? buttonClass("primary")}>{props.label ?? "New guest"}</Link>;
+  const t = useTranslations("people.guests.header");
+  return <Link href={props.defaultBranchId ? `/guests/new?branchId=${encodeURIComponent(props.defaultBranchId)}` : "/guests/new"} className={props.className ?? buttonClass("primary")}>{props.label ?? t("newGuest")}</Link>;
 }

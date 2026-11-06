@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge, Button, Card, CardHeader, EmptyState, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
@@ -22,6 +23,8 @@ export function FinanceLockManagementCard({
   defaultBranchId?: string;
   canChooseBranch: boolean;
 }) {
+  const t = useTranslations("admin.locks");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -54,16 +57,16 @@ export function FinanceLockManagementCard({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to lock finance period");
+        throw new Error(result.message || t("lockError"));
       }
 
-      toast.success("Finance period locked", {
-        description: "Branch entries in that month are now protected from further editing.",
+      toast.success(t("lockedTitle"), {
+        description: t("lockedDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Finance lock failed", {
-        description: error instanceof Error ? error.message : "Unable to lock finance period",
+      toast.error(t("lockFailedTitle"), {
+        description: error instanceof Error ? error.message : t("lockError"),
       });
     } finally {
       setLoading(false);
@@ -80,17 +83,17 @@ export function FinanceLockManagementCard({
       });
 
       if (!response.ok) {
-        const result = await response.json().catch(() => ({ message: "Unable to remove finance lock" }));
-        throw new Error(result.message || "Unable to remove finance lock");
+        const result = await response.json().catch(() => ({ message: t("removeError") }));
+        throw new Error(result.message || t("removeError"));
       }
 
-      toast.success("Finance lock removed", {
-        description: "This branch period is now open again for allowed correction workflows.",
+      toast.success(t("removedTitle"), {
+        description: t("removedDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Finance unlock failed", {
-        description: error instanceof Error ? error.message : "Unable to remove finance lock",
+      toast.error(t("removeFailedTitle"), {
+        description: error instanceof Error ? error.message : t("removeError"),
       });
     } finally {
       setLoadingId(null);
@@ -100,19 +103,19 @@ export function FinanceLockManagementCard({
   return (
     <Card className="app-rise p-6 sm:p-7">
       <CardHeader
-        label="Period locks"
-        title="Month-end locks"
-        description="Lock a closed month so its entries can no longer be edited."
+        label={t("label")}
+        title={t("title")}
+        description={t("description")}
         action={
-          <Badge tone={visibleLocks.length ? "warning" : "neutral"}>{visibleLocks.length} locked</Badge>
+          <Badge tone={visibleLocks.length ? "warning" : "neutral"}>{t("lockedCount", { count: visibleLocks.length })}</Badge>
         }
       />
 
       <form action={createLock} className="mt-6 rounded-2xl bg-[#f6f5f1] p-4 sm:p-5">
-        <p className="text-[14px] font-semibold text-[#111111]">Lock a period</p>
+        <p className="text-[14px] font-semibold text-[#111111]">{t("lockTitle")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {canChooseBranch ? (
-            <Field label="Branch" required>
+            <Field label={t("branch")} required>
               <select
                 name="branchId"
                 value={selectedBranchId}
@@ -120,7 +123,7 @@ export function FinanceLockManagementCard({
                 className="ui-input"
                 required
               >
-                <option value="">Select branch</option>
+                <option value="">{tc("selectBranch")}</option>
                 {branches.map((branch) => (
                   <option key={branch._id} value={branch._id}>
                     {branch.name}
@@ -131,16 +134,16 @@ export function FinanceLockManagementCard({
           ) : (
             <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
           )}
-          <Field label="Month" required className={canChooseBranch ? "" : "sm:col-span-2"}>
+          <Field label={t("month")} required className={canChooseBranch ? "" : "sm:col-span-2"}>
             <input name="periodKey" type="month" className="ui-input" required />
           </Field>
-          <Field label="Reason" className="sm:col-span-2">
-            <textarea name="reason" placeholder="Optional reason for the lock" className="ui-input" />
+          <Field label={t("reason")} className="sm:col-span-2">
+            <textarea name="reason" placeholder={t("reasonPlaceholder")} className="ui-input" />
           </Field>
         </div>
         <div className="mt-4">
           <Button type="submit" disabled={loading}>
-            {loading ? "Locking..." : "Lock period"}
+            {loading ? t("locking") : t("lock")}
           </Button>
         </div>
       </form>
@@ -158,7 +161,7 @@ export function FinanceLockManagementCard({
                     <Badge tone="warning">{lock.periodKey}</Badge>
                   </div>
                   <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
-                    {lock.reason || "Locked period"}
+                    {lock.reason || t("lockedPeriod")}
                   </p>
                 </div>
                 <Button
@@ -168,14 +171,14 @@ export function FinanceLockManagementCard({
                   onClick={() => removeLock(lock._id)}
                   disabled={loadingId === lock._id}
                 >
-                  {loadingId === lock._id ? "Removing..." : "Remove lock"}
+                  {loadingId === lock._id ? t("removing") : t("remove")}
                 </Button>
               </li>
             ))}
           </ul>
         ) : (
-          <EmptyState icon="clock" title="No locked periods">
-            No finance periods are locked in the selected scope.
+          <EmptyState icon="clock" title={t("emptyTitle")}>
+            {t("emptyBody")}
           </EmptyState>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { Button, Card, Field } from "@/components/ui/ui";
@@ -12,6 +13,8 @@ export function AppSettingsForm({
 }: {
   app: SettingsOverview["app"];
 }) {
+  const t = useTranslations("admin.settings.app");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -34,17 +37,17 @@ export function AppSettingsForm({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unable to save application settings");
+        throw new Error(result.message || t("saveError"));
       }
 
-      toast.success("Application settings saved", {
-        description: "The global defaults are now live for the app.",
+      toast.success(t("savedTitle"), {
+        description: t("savedDescription"),
       });
       router.refresh();
     } catch (error) {
-      toast.error("Settings update failed", {
+      toast.error(t("saveFailedTitle"), {
         description:
-          error instanceof Error ? error.message : "Unable to save application settings",
+          error instanceof Error ? error.message : t("saveError"),
       });
     } finally {
       setLoading(false);
@@ -55,17 +58,17 @@ export function AppSettingsForm({
     <Card className="p-6 sm:p-7">
       <form action={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Organisation name">
+          <Field label={t("organisationName")}>
             <input name="organizationName" defaultValue={app.organizationName} className="ui-input" />
           </Field>
-          <Field label="Tagline">
+          <Field label={t("tagline")}>
             <input name="organizationTagline" defaultValue={app.organizationTagline} className="ui-input" />
           </Field>
-          <Field label="Default report range" hint="Used when a report or dashboard opens without a date range.">
+          <Field label={t("defaultReportRange")} hint={t("defaultReportRangeHint")}>
             <select name="defaultReportDays" defaultValue={String(app.defaultReportDays)} className="ui-input">
               {[7, 14, 30, 60, 90].map((value) => (
                 <option key={value} value={value}>
-                  Last {value} days
+                  {t("lastDays", { count: value })}
                 </option>
               ))}
             </select>
@@ -80,16 +83,16 @@ export function AppSettingsForm({
             className="mt-0.5 h-4 w-4 accent-[#111111]"
           />
           <span>
-            <span className="block text-[14px] font-medium text-[#111111]">Public Connect</span>
+            <span className="block text-[14px] font-medium text-[#111111]">{t("publicConnect")}</span>
             <span className="mt-0.5 block text-[13px] leading-[1.55] text-[#6b6b6b]">
-              Guests can register themselves and open forms from QR codes.
+              {t("publicConnectHelp")}
             </span>
           </span>
         </label>
 
         <div className="mt-6 flex justify-end border-t border-black/[0.06] pt-5">
           <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : "Save admin settings"}
+            {loading ? tc("saving") : t("save")}
           </Button>
         </div>
       </form>

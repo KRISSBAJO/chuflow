@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { Avatar, Badge, ButtonLink, formatStatus, statusTone, type BadgeTone } from "@/components/ui/ui";
+import { useTranslations } from "next-intl";
+import { Avatar, Badge, ButtonLink, statusTone, type BadgeTone } from "@/components/ui/ui";
+import { useStatusLabel } from "@/i18n/labels";
 import type { BranchOverview, UserSummary } from "@/lib/types";
 
 export function TeamPills({
@@ -34,43 +36,23 @@ export function TeamPills({
 function getPastoralCoverage(
   residentPastors: UserSummary[],
   associatePastors: UserSummary[],
-): { label: string; tone: BadgeTone; message: string } {
+): { label: "covered" | "bothVacant" | "residentVacant" | "associateVacant"; tone: BadgeTone } {
   const hasResidentPastor = residentPastors.length > 0;
   const hasAssociatePastor = associatePastors.length > 0;
 
   if (hasResidentPastor && hasAssociatePastor) {
-    return {
-      label: "Pastoral team covered",
-      tone: "success",
-      message:
-        "Resident pastor and associate pastor are both assigned to this branch.",
-    };
+    return { label: "covered", tone: "success" };
   }
 
   if (!hasResidentPastor && !hasAssociatePastor) {
-    return {
-      label: "Both pastor roles vacant",
-      tone: "danger",
-      message:
-        "This branch still needs both a resident pastor and an associate pastor.",
-    };
+    return { label: "bothVacant", tone: "danger" };
   }
 
   if (!hasResidentPastor) {
-    return {
-      label: "Resident pastor vacant",
-      tone: "warning",
-      message:
-        "Resident pastor is still unassigned. Associate pastor coverage is present.",
-    };
+    return { label: "residentVacant", tone: "warning" };
   }
 
-  return {
-    label: "Associate pastor vacant",
-    tone: "warning",
-    message:
-      "Associate pastor is still unassigned. Resident pastor coverage is present.",
-  };
+  return { label: "associateVacant", tone: "warning" };
 }
 
 function TeamGroup({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
@@ -89,31 +71,32 @@ export function PastoralLeadershipCard({
   residentPastors: UserSummary[];
   associatePastors: UserSummary[];
 }) {
+  const t = useTranslations("org.structureCards");
   const coverage = getPastoralCoverage(residentPastors, associatePastors);
 
   return (
     <div className="rounded-2xl border border-black/[0.06] p-5 xl:col-span-2">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-[15px] font-semibold text-[#111111]">Pastoral leadership</p>
-          <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">{coverage.message}</p>
+          <p className="text-[15px] font-semibold text-[#111111]">{t("pastoralLeadership")}</p>
+          <p className="mt-1 text-[13px] leading-[1.6] text-[#6b6b6b]">{t(`${coverage.label}Message`)}</p>
         </div>
         <Badge tone={coverage.tone} dot className="w-fit">
-          {coverage.label}
+          {t(coverage.label)}
         </Badge>
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <TeamGroup label="Resident pastor">
+        <TeamGroup label={t("residentPastor")}>
           <TeamPills
             users={residentPastors}
-            emptyLabel="No resident pastor assigned yet."
+            emptyLabel={t("noResidentPastor")}
           />
         </TeamGroup>
-        <TeamGroup label="Associate pastor">
+        <TeamGroup label={t("associatePastor")}>
           <TeamPills
             users={associatePastors}
-            emptyLabel="No associate pastor assigned yet."
+            emptyLabel={t("noAssociatePastor")}
           />
         </TeamGroup>
       </div>
@@ -122,6 +105,8 @@ export function PastoralLeadershipCard({
 }
 
 export function BranchCard({ branch }: { branch: BranchOverview }) {
+  const t = useTranslations("org.structureCards");
+  const statusLabel = useStatusLabel();
   return (
     <article className="rounded-2xl border border-black/[0.06] p-5 transition-colors hover:border-black/[0.12]">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -129,7 +114,7 @@ export function BranchCard({ branch }: { branch: BranchOverview }) {
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="lp-heading text-[18px]">{branch.name}</h4>
             <Badge tone={statusTone(branch.status)} dot>
-              {formatStatus(branch.status)}
+              {statusLabel(branch.status)}
             </Badge>
           </div>
           <p className="mt-1 text-[14px] text-[#55534e]">
@@ -139,39 +124,39 @@ export function BranchCard({ branch }: { branch: BranchOverview }) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge tone="flame">
-            <span className="tabular-nums">{branch.metrics.guestCount}</span> guests
+            {t.rich("guestsBadge", { count: branch.metrics.guestCount, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
           </Badge>
           <Badge>
-            <span className="tabular-nums">{branch.metrics.memberCount}</span> members
+            {t.rich("membersBadge", { count: branch.metrics.memberCount, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
           </Badge>
           <Badge>
-            <span className="tabular-nums">{branch.metrics.activeUserCount}</span> active staff
+            {t.rich("activeStaffBadge", { count: branch.metrics.activeUserCount, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
           </Badge>
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        <TeamGroup label="Branch admins">
-          <TeamPills users={branch.admins} emptyLabel="No branch admin assigned yet." />
+        <TeamGroup label={t("branchAdmins")}>
+          <TeamPills users={branch.admins} emptyLabel={t("noBranchAdmin")} />
         </TeamGroup>
         <PastoralLeadershipCard
           residentPastors={branch.residentPastors}
           associatePastors={branch.associatePastors}
         />
-        <TeamGroup label="Follow-up team">
-          <TeamPills users={branch.followUpTeam} emptyLabel="No follow-up team assigned." />
+        <TeamGroup label={t("followUpTeam")}>
+          <TeamPills users={branch.followUpTeam} emptyLabel={t("noFollowUpTeam")} />
         </TeamGroup>
-        <TeamGroup label="Ushers">
-          <TeamPills users={branch.ushers} emptyLabel="No usher team assigned." />
+        <TeamGroup label={t("ushers")}>
+          <TeamPills users={branch.ushers} emptyLabel={t("noUsherTeam")} />
         </TeamGroup>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
         <ButtonLink href="/branches" variant="secondary" size="sm" icon="branches">
-          Open branches
+          {t("openBranches")}
         </ButtonLink>
         <ButtonLink href={`/users?branchId=${branch._id}`} size="sm" icon="users">
-          Open branch staff
+          {t("openBranchStaff")}
         </ButtonLink>
       </div>
     </article>

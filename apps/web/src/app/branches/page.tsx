@@ -4,6 +4,7 @@ import {
 } from "@/components/directory-controls";
 import { browseDirectory, type DirectoryParams } from "@/lib/directory";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { BranchManagementList } from "@/components/branch-management-list";
 import { MetricCard } from "@/components/metric-card";
 import { Shell } from "@/components/shell";
@@ -33,6 +34,9 @@ export default async function BranchesPage({
 }) {
   const params = await searchParams;
   const user = await requireServerRole("/branches");
+  const t = await getTranslations("org.branches");
+  const tCommon = await getTranslations("common");
+  const tStatuses = await getTranslations("statuses");
   const canManageBranches = canManageBranchStructure(user.role);
   const branchScopedCreateRoles = [
     "branch_admin",
@@ -87,12 +91,12 @@ export default async function BranchesPage({
 
   const scopeLabel =
     user.role === "super_admin"
-      ? "Global oversight"
+      ? t("globalOversight")
       : isNationalRole(user.role)
-        ? user.oversightRegion || "National scope"
+        ? user.oversightRegion || t("nationalScope")
         : isDistrictRole(user.role)
-          ? user.district || "District scope"
-          : "Current branch";
+          ? user.district || t("districtScope")
+          : t("currentBranch");
 
   const directory = browseDirectory(
     branches,
@@ -115,15 +119,15 @@ export default async function BranchesPage({
   const directoryFilters = [
     {
       key: "status",
-      label: "Status",
+      label: tCommon("status"),
       options: [
-        { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" },
+        { value: "active", label: tStatuses("active") },
+        { value: "inactive", label: tStatuses("inactive") },
       ],
     },
     {
       key: "district",
-      label: "District",
+      label: tCommon("district"),
       options: Array.from(new Set(branches.map((branch) => branch.district)))
         .filter(Boolean)
         .map((value) => ({ value, label: value })),
@@ -132,55 +136,55 @@ export default async function BranchesPage({
   return (
     <Shell>
       <PageHeader
-        eyebrow="Branches"
-        title="Branch oversight and operating health"
-        description="Keep branch structure, staffing and operating load visible in one place so leadership can grow ministry without losing clarity."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           canManageBranches ? (
             <Link href="/branches/new" className={buttonClass("primary", "md")}>
               <Icon name="plus" className="h-4 w-4" />
-              Create branch
+              {t("createBranch")}
             </Link>
           ) : (
-            <a href="/users" className={buttonClass("secondary", "md")}>
+            <Link href="/users" className={buttonClass("secondary", "md")}>
               <Icon name="users" className="h-4 w-4" />
-              Open team roster
-            </a>
+              {t("openTeamRoster")}
+            </Link>
           )
         }
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Branches"
+          label={t("branches")}
           value={String(totalBranches)}
-          delta="Visible in the current scope"
+          delta={t("branchesCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Active branches"
+          label={t("activeBranches")}
           value={String(activeBranches)}
-          delta={`${Math.max(totalBranches - activeBranches, 0)} not active`}
+          delta={t("notActive", { count: Math.max(totalBranches - activeBranches, 0) })}
           tone="warm"
         />
         <MetricCard
-          label="Branch admins"
+          label={t("branchAdmins")}
           value={String(branchAdmins)}
-          delta="Leadership across branches"
+          delta={t("branchAdminsCaption")}
           tone="cool"
         />
         <MetricCard
-          label="Follow-up and ushers"
+          label={t("followUpAndUshers")}
           value={String(activeOperators)}
-          delta="Operational team members"
+          delta={t("operators")}
           tone="warm"
         />
       </section>
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
         <Card className="app-rise self-start p-6 sm:p-7">
           <CardHeader
-            label="Branch directory"
-            title="All branches in scope"
-            description="Live staffing, guest load and member load for every branch you oversee."
+            label={t("directoryLabel")}
+            title={t("directoryTitle")}
+            description={t("directoryDescription")}
             action={<Badge tone="neutral">{scopeLabel}</Badge>}
           />
           <DirectoryControls
@@ -199,9 +203,8 @@ export default async function BranchesPage({
                 />
               </>
             ) : (
-              <EmptyState icon="branches" title="No branches yet">
-                No branches match these filters. Use Reset to show all branches
-                in your scope.
+              <EmptyState icon="branches" title={t("emptyTitle")}>
+                {t("emptyBody")}
               </EmptyState>
             )}
           </div>
@@ -212,7 +215,7 @@ export default async function BranchesPage({
               href="/branches/staff/new"
               className={buttonClass("secondary")}
             >
-              Add branch leadership and support
+              {t("addLeadership")}
             </Link>
           ) : null}
 
@@ -220,13 +223,9 @@ export default async function BranchesPage({
             className="app-rise p-6 sm:p-7"
             style={{ animationDelay: "180ms" }}
           >
-            <CardHeader label="Branch operations" title="Good habits" />
+            <CardHeader label={t("operationsLabel")} title={t("goodHabits")} />
             <ul className="mt-5 space-y-2.5">
-              {[
-                "Keep branch admin and follow-up staffing current so assignment options stay trustworthy.",
-                "Open a branch to jump straight into its staff and scoped user management.",
-                "Review guest and member load together so care coverage grows with attendance, not after it.",
-              ].map((tip) => (
+              {[t("tip1"), t("tip2"), t("tip3")].map((tip) => (
                 <li
                   key={tip}
                   className="flex gap-3 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]"

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
@@ -26,6 +27,8 @@ export function GuestCreateForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("people.guests.create");
+  const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
   const branchMap = new Map(branches.map((branch) => [branch._id, branch.name]));
   const [selectedBranchId, setSelectedBranchId] = useState(
@@ -77,18 +80,18 @@ export function GuestCreateForm({
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Unable to create guest");
+        throw new Error(result.message || t("errorCreate"));
       }
 
-      toast.success("Guest saved", {
-        description: "The guest record is now in the registry and ready for follow-up.",
+      toast.success(t("savedTitle"), {
+        description: t("savedDescription"),
       });
       onSuccess?.();
-      router.push(createdHref(`/guests/${result._id}`, result, "Guest"));
+      router.push(createdHref(`/guests/${result._id}`, result, t("entityName")));
       router.refresh();
     } catch (error) {
-      toast.error("Guest not saved", {
-        description: error instanceof Error ? error.message : "Unable to create guest",
+      toast.error(t("notSavedTitle"), {
+        description: error instanceof Error ? error.message : t("errorCreate"),
       });
     } finally {
       setLoading(false);
@@ -99,7 +102,7 @@ export function GuestCreateForm({
     <form action={handleSubmit}>
       <div className="grid gap-4 md:grid-cols-2">
         {branches.length > 1 ? (
-          <Field label="Branch" required>
+          <Field label={tc("branch")} required>
             <select
               name="branchId"
               value={selectedBranchId}
@@ -107,7 +110,7 @@ export function GuestCreateForm({
               className="ui-input"
               required
             >
-              <option value="">Select branch</option>
+              <option value="">{tc("selectBranch")}</option>
               {branches.map((branch) => (
                 <option key={branch._id} value={branch._id}>
                   {branch.name}
@@ -116,17 +119,17 @@ export function GuestCreateForm({
             </select>
           </Field>
         ) : selectedBranch ? (
-          <Field label="Branch">
+          <Field label={tc("branch")}>
             <input type="hidden" name="branchId" value={selectedBranch._id} />
             <input value={selectedBranch.name} readOnly disabled className="ui-input" />
           </Field>
         ) : (
-          <Field label="Branch">
+          <Field label={tc("branch")}>
             <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
-            <input value="Current branch scope" readOnly disabled className="ui-input" />
+            <input value={t("currentBranchScope")} readOnly disabled className="ui-input" />
           </Field>
         )}
-        <Field label="Service type" required>
+        <Field label={t("serviceType")} required>
           {filteredServiceTypes.length > 0 ? (
             <select
               name="serviceType"
@@ -134,7 +137,7 @@ export function GuestCreateForm({
               className="ui-input"
               required
             >
-              <option value="">Select service type</option>
+              <option value="">{t("selectServiceType")}</option>
               {filteredServiceTypes.map((serviceType) => (
                 <option key={serviceType._id} value={serviceType.name}>
                   {serviceType.name}
@@ -144,51 +147,51 @@ export function GuestCreateForm({
           ) : (
             <input
               name="serviceType"
-              placeholder="Service type"
+              placeholder={t("serviceType")}
               defaultValue="Sunday service"
               className="ui-input"
               required
             />
           )}
         </Field>
-        <Field label="First name" required>
-          <input name="firstName" placeholder="First name" className="ui-input" required />
+        <Field label={tc("firstName")} required>
+          <input name="firstName" placeholder={tc("firstName")} className="ui-input" required />
         </Field>
-        <Field label="Last name" required>
-          <input name="lastName" placeholder="Last name" className="ui-input" required />
+        <Field label={tc("lastName")} required>
+          <input name="lastName" placeholder={tc("lastName")} className="ui-input" required />
         </Field>
-        <Field label="Phone number" required>
-          <input name="phone" placeholder="Phone number" className="ui-input" required />
+        <Field label={t("phoneNumber")} required>
+          <input name="phone" placeholder={t("phoneNumber")} className="ui-input" required />
         </Field>
-        <Field label="Email">
+        <Field label={tc("email")}>
           <input name="email" placeholder="name@example.com" type="email" className="ui-input" />
         </Field>
-        <Field label="Invited by">
-          <input name="invitedBy" placeholder="Who invited them?" className="ui-input" />
+        <Field label={t("invitedBy")}>
+          <input name="invitedBy" placeholder={t("invitedByPlaceholder")} className="ui-input" />
         </Field>
-        <Field label="How they heard about us">
-          <input name="heardAboutChurch" placeholder="Friend, social media, walk-in…" className="ui-input" />
+        <Field label={t("heardAbout")}>
+          <input name="heardAboutChurch" placeholder={t("heardAboutPlaceholder")} className="ui-input" />
         </Field>
         {filteredAssignableUsers.length > 0 ? (
-          <Field label="Follow-up owner" className="md:col-span-2">
+          <Field label={t("followUpOwner")} className="md:col-span-2">
             <select name="assignedFollowUpUserId" className="ui-input">
-              <option value="">Leave unassigned</option>
+              <option value="">{t("leaveUnassigned")}</option>
               {filteredAssignableUsers.map((user) => (
                 <option key={user._id} value={user._id}>
                   {user.firstName} {user.lastName}
-                  {user.branchId ? ` · ${branchMap.get(user.branchId) || "Assigned branch"}` : ""}
+                  {user.branchId ? ` · ${branchMap.get(user.branchId) || t("assignedBranch")}` : ""}
                 </option>
               ))}
             </select>
           </Field>
         ) : null}
-        <Field label="Prayer request" className="md:col-span-2">
-          <textarea name="prayerRequest" placeholder="Anything they would like prayer for" className="ui-input" />
+        <Field label={t("prayerRequest")} className="md:col-span-2">
+          <textarea name="prayerRequest" placeholder={t("prayerRequestPlaceholder")} className="ui-input" />
         </Field>
       </div>
       <div className="mt-6 flex justify-end">
         <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save guest"}
+          {loading ? tc("saving") : t("saveGuest")}
         </Button>
       </div>
     </form>

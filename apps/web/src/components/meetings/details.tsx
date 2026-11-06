@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { apiGet, apiPost, apiPatch, API_URL } from "@/lib/api";
 import { Button, Card, CardHeader, buttonClass } from "@/components/ui/ui";
 import {
@@ -14,13 +15,8 @@ import {
 const subscribeToTimeZone = () => () => {};
 const clientTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const serverTimeZone = () => "UTC";
-function formatTime(value: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone,
-  }).format(new Date(value));
-}
+type MeetingStatusKey = Parameters<ReturnType<typeof useTranslations<"services.meetings.statuses">>>[0];
+type MinutesStatusKey = Parameters<ReturnType<typeof useTranslations<"services.meetings.minutesStatuses">>>[0];
 function AttendanceList({
   meeting,
   busy,
@@ -33,6 +29,8 @@ function AttendanceList({
     presentMemberIds: string[];
   }) => void;
 }) {
+  const t = useTranslations("services.meetings.details.attendance");
+  const tMeetings = useTranslations("services.meetings");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [presentUsers, setPresentUsers] = useState(
@@ -44,13 +42,16 @@ function AttendanceList({
   const rows = [
     ...meeting.attendeeUserIds.map((id) => ({
       id,
-      kind: "Staff",
-      name: meetingName(meeting.attendeeUsers.find((p) => p._id === id)),
+      kind: "Staff" as const,
+      name: meetingName(
+        meeting.attendeeUsers.find((p) => p._id === id),
+        tMeetings("userUnavailable"),
+      ),
     })),
     ...meeting.attendeeMembers.map((p) => ({
       id: p._id,
-      kind: "Member",
-      name: meetingName(p),
+      kind: "Member" as const,
+      name: meetingName(p, tMeetings("userUnavailable")),
     })),
   ];
   const filtered = rows.filter((row) =>
@@ -64,8 +65,8 @@ function AttendanceList({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <input
           className="ui-input max-w-sm"
-          aria-label="Search meeting attendees"
-          placeholder="Search attendees…"
+          aria-label={t("searchAria")}
+          placeholder={t("searchPlaceholder")}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -73,27 +74,34 @@ function AttendanceList({
           }}
         />
         <p className="text-sm text-[#6b6b6b]">
-          {presentUsers.size + presentMembers.size} of {rows.length} records
-          present
+          {t("presentCount", {
+            present: presentUsers.size + presentMembers.size,
+            total: rows.length,
+          })}
         </p>
       </div>
       <div className="overflow-x-auto">
         <table className="ui-table w-full">
           <thead>
             <tr>
-              <th>Attendee</th>
-              <th>Type</th>
-              <th>Present</th>
+              <th>{t("attendee")}</th>
+              <th>{t("type")}</th>
+              <th>{t("present")}</th>
             </tr>
           </thead>
           <tbody>
             {visible.map((row) => (
               <tr key={`${row.kind}-${row.id}`}>
                 <td>{row.name}</td>
-                <td className="text-[#8a8780]">{row.kind}</td>
+                <td className="text-[#8a8780]">
+                  {row.kind === "Staff" ? t("staff") : t("member")}
+                </td>
                 <td>
                   <input
-                    aria-label={`Mark ${row.name} (${row.kind}) present`}
+                    aria-label={t("markPresentAria", {
+                      name: row.name,
+                      kind: row.kind === "Staff" ? t("staff") : t("member"),
+                    })}
                     type="checkbox"
                     disabled={!meeting.canManage || busy}
                     checked={(row.kind === "Staff"
@@ -119,12 +127,12 @@ function AttendanceList({
           </tbody>
         </table>
         {!visible.length && (
-          <p className="py-6 text-sm text-[#8a8780]">No matching attendees.</p>
+          <p className="py-6 text-sm text-[#8a8780]">{t("noMatching")}</p>
         )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-[#8a8780]">
-          Page {currentPage} of {totalPages} · {filtered.length} records
+          {t("pageInfo", { page: currentPage, total: totalPages, count: filtered.length })}
         </p>
         <div className="flex gap-2">
           <Button
@@ -133,7 +141,7 @@ function AttendanceList({
             disabled={currentPage <= 1}
             onClick={() => setPage(currentPage - 1)}
           >
-            Previous
+            {t("previous")}
           </Button>
           <Button
             size="sm"
@@ -141,7 +149,7 @@ function AttendanceList({
             disabled={currentPage >= totalPages}
             onClick={() => setPage(currentPage + 1)}
           >
-            Next
+            {t("next")}
           </Button>
           {meeting.canManage && (
             <Button
@@ -154,15 +162,12 @@ function AttendanceList({
                 })
               }
             >
-              Save attendance
+              {t("save")}
             </Button>
           )}
         </div>
       </div>
-      <p className="text-xs text-[#8a8780]">
-        Staff and member records are listed separately. Meeting attendance does
-        not affect church service attendance.
-      </p>
+      <p className="text-xs text-[#8a8780]">{t("note")}</p>
     </div>
   );
 }
@@ -178,7 +183,21 @@ export function MeetingDetails({
     clientTimeZone,
     serverTimeZone,
   );
-  const stamp = (value: string) => formatTime(value, timeZone);
+  const t = useTranslations("services.meetings.details");
+  const tMeetings = useTranslations("services.meetings");
+  const tStatus = useTranslations("services.meetings.statuses");
+  const tMinutes = useTranslations("services.meetings.minutesStatuses");
+  const format = useFormatter();
+  const stamp = (value: string) =>
+    format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short", timeZone });
+  const statusLabel = (value: string) =>
+    tStatus.has(value as MeetingStatusKey)
+      ? tStatus(value as MeetingStatusKey)
+      : value.charAt(0).toUpperCase() + value.slice(1);
+  const minutesLabel = (value: string) =>
+    tMinutes.has(value as MinutesStatusKey)
+      ? tMinutes(value as MinutesStatusKey)
+      : value.replaceAll("_", " ");
   const [tab, setTab] = useState<"overview" | "people" | "minutes" | "actions">(
     "overview",
   );
@@ -189,7 +208,8 @@ export function MeetingDetails({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const people = [...meeting.attendeeUsers, ...options.users];
-  const person = (id: string) => meetingName(people.find((p) => p._id === id));
+  const person = (id: string) =>
+    meetingName(people.find((p) => p._id === id), tMeetings("userUnavailable"));
   async function save(operation: string, data: Record<string, unknown> = {}) {
     if (busy) return;
     setBusy(true);
@@ -202,10 +222,10 @@ export function MeetingDetails({
         ...data,
       });
       setMeeting(updated);
-      setNotice("Saved successfully.");
+      setNotice(t("saved"));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save.");
+      setError(e instanceof Error ? e.message : t("saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -223,13 +243,9 @@ export function MeetingDetails({
         : await apiGet<Meeting>(`/meetings/${meeting._id}`);
       setMeeting(updated);
       if (retry)
-        setNotice(
-          "Failed invitations queued for retry. Already-sent invitations will not be resent.",
-        );
+        setNotice(t("retryQueued"));
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not refresh invitations",
-      );
+      setError(e instanceof Error ? e.message : t("refreshFailed"));
     } finally {
       setBusy(false);
     }
@@ -253,15 +269,15 @@ export function MeetingDetails({
         throw new Error(
           Array.isArray(body.message)
             ? body.message.join(", ")
-            : body.message || "Upload failed",
+            : body.message || t("uploadFailed"),
         );
       }
       setMeeting(await response.json());
       form.reset();
-      setNotice("Document uploaded.");
+      setNotice(t("uploaded"));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed.");
+      setError(e instanceof Error ? e.message : t("uploadError"));
     } finally {
       setBusy(false);
     }
@@ -282,13 +298,13 @@ export function MeetingDetails({
       );
       if (!response.ok) {
         const body = await response.json();
-        throw new Error(body.message || "Could not remove document");
+        throw new Error(body.message || t("removeFailed"));
       }
       setMeeting(await response.json());
-      setNotice("Document removed.");
+      setNotice(t("removed"));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not remove document");
+      setError(e instanceof Error ? e.message : t("removeFailed"));
     } finally {
       setBusy(false);
     }
@@ -369,7 +385,7 @@ export function MeetingDetails({
             variant="secondary"
             onClick={() => window.location.reload()}
           >
-            Reload latest
+            {t("reloadLatest")}
           </Button>
         </div>
       )}
@@ -388,10 +404,7 @@ export function MeetingDetails({
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${meeting.status === "completed" ? "bg-emerald-50 text-emerald-700" : meeting.status === "cancelled" ? "bg-red-50 text-red-700" : "bg-orange-50 text-orange-700"}`}
               >
-                {meeting.status === "ongoing"
-                  ? "In progress"
-                  : meeting.status.charAt(0).toUpperCase() +
-                    meeting.status.slice(1)}
+                {statusLabel(meeting.status)}
               </span>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -406,7 +419,7 @@ export function MeetingDetails({
                 rel="noopener noreferrer"
                 className={buttonClass()}
               >
-                Join meeting ↗
+                {t("join")}
               </a>
             )}
             {meeting.canManage && meeting.status === "scheduled" && (
@@ -414,7 +427,7 @@ export function MeetingDetails({
                 disabled={busy}
                 onClick={() => void save("details", { status: "ongoing" })}
               >
-                Start meeting
+                {t("start")}
               </Button>
             )}
             {meeting.canManage && meeting.status === "ongoing" && (
@@ -422,7 +435,7 @@ export function MeetingDetails({
                 disabled={busy}
                 onClick={() => void save("details", { status: "completed" })}
               >
-                Complete meeting
+                {t("complete")}
               </Button>
             )}
             {meeting.canManage && (
@@ -430,12 +443,12 @@ export function MeetingDetails({
                 href={`/meetings/${meeting._id}/edit`}
                 className={buttonClass("secondary", "sm")}
               >
-                Edit
+                {t("edit")}
               </Link>
             )}
             <details className="relative">
               <summary className="cursor-pointer list-none rounded-lg border border-black/10 px-3 py-2 text-sm">
-                More ▾
+                {t("more")}
               </summary>
               <div className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-black/10 bg-white p-2 shadow-lg">
                 <Button
@@ -444,7 +457,7 @@ export function MeetingDetails({
                   className="w-full justify-start"
                   onClick={downloadCalendar}
                 >
-                  Add to calendar
+                  {t("addToCalendar")}
                 </Button>
                 {meeting.canManage && meeting.status !== "scheduled" && (
                   <Button
@@ -456,7 +469,7 @@ export function MeetingDetails({
                       void save("details", { status: "scheduled" })
                     }
                   >
-                    Reopen as scheduled
+                    {t("reopenScheduled")}
                   </Button>
                 )}
                 {meeting.canManage && meeting.status !== "cancelled" && (
@@ -469,7 +482,7 @@ export function MeetingDetails({
                       void save("details", { status: "cancelled" })
                     }
                   >
-                    Cancel meeting
+                    {t("cancel")}
                   </Button>
                 )}
               </div>
@@ -479,20 +492,20 @@ export function MeetingDetails({
         <div className="mt-6 grid gap-5 border-t border-black/5 pt-5 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>
             <p className="mb-1 text-xs text-[#8a8780]">
-              When · {timeZone.replaceAll("_", " ")}
+              {t("when", { timeZone: timeZone.replaceAll("_", " ") })}
             </p>
             <p className="text-sm font-medium">{stamp(meeting.startsAt)}</p>
-            <p className="text-sm text-[#6b6b6b]">to {stamp(meeting.endsAt)}</p>
+            <p className="text-sm text-[#6b6b6b]">{t("to", { time: stamp(meeting.endsAt) })}</p>
           </div>
           <div>
-            <p className="mb-1 text-xs text-[#8a8780]">Where</p>
+            <p className="mb-1 text-xs text-[#8a8780]">{t("where")}</p>
             <p className="text-sm font-medium">
               {meeting.location ||
-                (meeting.joinUrl ? "Online" : "To be confirmed")}
+                (meeting.joinUrl ? t("online") : t("toBeConfirmed"))}
             </p>
           </div>
           <div>
-            <p className="mb-1 text-xs text-[#8a8780]">Organiser</p>
+            <p className="mb-1 text-xs text-[#8a8780]">{t("organiser")}</p>
             <p className="text-sm font-medium">
               {person(meeting.organizerUserId)}
             </p>
@@ -500,7 +513,7 @@ export function MeetingDetails({
         </div>
       </section>
       <nav
-        aria-label="Meeting sections"
+        aria-label={t("sectionsAria")}
         className="flex gap-1 overflow-x-auto border-b border-black/10"
       >
         {(["overview", "people", "minutes", "actions"] as const).map(
@@ -512,7 +525,7 @@ export function MeetingDetails({
               onClick={() => setTab(value)}
               className={`shrink-0 border-b-2 px-4 py-3 text-sm transition-colors ${tab === value ? "border-[#ed7b19] font-semibold text-[#b94f0a]" : "border-transparent text-[#6b6b6b] hover:text-[#111]"}`}
             >
-              {value.charAt(0).toUpperCase() + value.slice(1)}
+              {t(`tabs.${value}`)}
               {value === "people"
                 ? ` (${meeting.attendeeMemberIds.length + meeting.attendeeUserIds.length})`
                 : value === "actions"
@@ -525,34 +538,36 @@ export function MeetingDetails({
       <div hidden={tab !== "overview"} className="space-y-5">
         <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-6">
-            <h2 className="text-base font-semibold">Agenda</h2>
+            <h2 className="text-base font-semibold">{t("agenda")}</h2>
             <p
               className={`mt-3 whitespace-pre-wrap text-sm leading-7 ${meeting.agenda ? "text-[#3f3d39]" : "text-[#8a8780]"}`}
             >
-              {meeting.agenda || "The organiser hasn’t added an agenda yet."}
+              {meeting.agenda || t("noAgenda")}
             </p>
           </section>
           <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-6">
-            <h2 className="text-base font-semibold">At a glance</h2>
+            <h2 className="text-base font-semibold">{t("atAGlance")}</h2>
             <dl className="mt-3 divide-y divide-black/5 text-sm">
               <div className="flex justify-between gap-4 py-3">
-                <dt className="text-[#6b6b6b]">Attendance</dt>
+                <dt className="text-[#6b6b6b]">{t("attendanceLabel")}</dt>
                 <dd>
-                  {meeting.presentMemberIds.length +
-                    meeting.presentUserIds.length}{" "}
-                  marked present
+                  {t("markedPresent", {
+                    count:
+                      meeting.presentMemberIds.length +
+                      meeting.presentUserIds.length,
+                  })}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 py-3">
-                <dt className="text-[#6b6b6b]">Minutes</dt>
+                <dt className="text-[#6b6b6b]">{t("minutesLabel")}</dt>
                 <dd className={meeting.minutesOverdue ? "text-red-700" : ""}>
                   {meeting.minutesOverdue
-                    ? "Overdue"
-                    : meeting.minutesStatus.replaceAll("_", " ")}
+                    ? tMinutes("overdue")
+                    : minutesLabel(meeting.minutesStatus)}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 py-3">
-                <dt className="text-[#6b6b6b]">Open actions</dt>
+                <dt className="text-[#6b6b6b]">{t("openActions")}</dt>
                 <dd>
                   {meeting.actions.filter((a) => a.status === "open").length}
                 </dd>
@@ -563,27 +578,27 @@ export function MeetingDetails({
         {meeting.canManage && meeting.invitationSummary && (
           <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-6">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">Invitations</h2>
+              <h2 className="text-base font-semibold">{t("invitations")}</h2>
               <Button
                 size="sm"
                 variant="ghost"
                 disabled={busy}
                 onClick={() => void refreshInvitations()}
               >
-                Refresh
+                {t("refresh")}
               </Button>
             </div>
             {meeting.invitationSummary.requested ? (
               <>
                 <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
                   {[
-                    ["Email addresses", meeting.invitationSummary.uniqueEmails],
+                    [t("emailAddresses"), meeting.invitationSummary.uniqueEmails],
                     [
-                      "Sent to provider",
+                      t("sentToProvider"),
                       meeting.invitationSummary.counts.sent || 0,
                     ],
                     [
-                      "Pending",
+                      t("pending"),
                       (meeting.invitationSummary.counts.queued || 0) +
                         (meeting.invitationSummary.counts.sending || 0),
                     ],
@@ -597,45 +612,38 @@ export function MeetingDetails({
                   ))}
                 </div>
                 {!meeting.invitationSummary.prepared && (
-                  <p className="mt-4 text-xs text-[#8a8780]">
-                    Preparing invitations…
-                  </p>
+                  <p className="mt-4 text-xs text-[#8a8780]">{t("preparing")}</p>
                 )}
                 {meeting.invitationSummary.missingEmail > 0 && (
                   <p className="mt-4 text-sm text-amber-800">
-                    {meeting.invitationSummary.missingEmail} records have no
-                    valid email.
+                    {t("noValidEmail", { count: meeting.invitationSummary.missingEmail })}
                   </p>
                 )}
                 {((meeting.invitationSummary.counts.failed || 0) > 0 ||
                   (meeting.invitationSummary.counts.uncertain || 0) > 0) && (
                   <details className="mt-4 text-sm">
                     <summary className="cursor-pointer text-amber-800">
-                      Some invitations need attention
+                      {t("needAttention")}
                     </summary>
                     <div className="mt-3 space-y-3">
                       {(meeting.invitationSummary.counts.failed || 0) > 0 && (
                         <>
                           <p>
-                            {meeting.invitationSummary.counts.failed} emails
-                            could not be sent. Check email configuration before
-                            retrying.
+                            {t("failedEmails", { count: meeting.invitationSummary.counts.failed })}
                           </p>
                           <Button
                             size="sm"
                             disabled={busy}
                             onClick={() => void refreshInvitations(true)}
                           >
-                            Retry unsent
+                            {t("retryUnsent")}
                           </Button>
                         </>
                       )}
                       {(meeting.invitationSummary.counts.uncertain || 0) >
                         0 && (
                         <p>
-                          {meeting.invitationSummary.counts.uncertain} attempts
-                          are unconfirmed. Check the mail provider before
-                          resending.
+                          {t("uncertain", { count: meeting.invitationSummary.counts.uncertain })}
                         </p>
                       )}
                     </div>
@@ -643,9 +651,7 @@ export function MeetingDetails({
                 )}
               </>
             ) : (
-              <p className="mt-3 text-sm text-[#8a8780]">
-                Email invitations are off.
-              </p>
+              <p className="mt-3 text-sm text-[#8a8780]">{t("invitationsOff")}</p>
             )}
           </section>
         )}
@@ -653,8 +659,8 @@ export function MeetingDetails({
       <div hidden={tab !== "people"}>
         <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
-            title="Meeting attendance"
-            description="Search attendees and mark who was present."
+            title={t("peopleTitle")}
+            description={t("peopleDescription")}
           />
           <AttendanceList
             key={JSON.stringify([
@@ -670,20 +676,23 @@ export function MeetingDetails({
       <div hidden={tab !== "minutes"} className="space-y-5">
         <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
-            title="Minutes and documents"
-            description={`${meeting.minutesRequired ? "Minutes required" : "Minutes optional"} · Due ${stamp(meeting.minutesDueAt)}`}
+            title={t("minutesTitle")}
+            description={t("minutesDue", {
+              requirement: meeting.minutesRequired ? t("minutesRequired") : t("minutesOptional"),
+              date: stamp(meeting.minutesDueAt),
+            })}
           />
           <p
             className={
               meeting.minutesOverdue ? "font-medium text-red-700" : "text-sm"
             }
           >
-            {meeting.minutesOverdue ? "Overdue · " : ""}Status:{" "}
-            {meeting.minutesStatus.replaceAll("_", " ")}
+            {meeting.minutesOverdue ? t("overduePrefix") : ""}
+            {t("status", { status: minutesLabel(meeting.minutesStatus) })}
           </p>
           {meeting.reviewComment && (
             <p className="rounded-xl bg-white p-3">
-              Reviewer: {meeting.reviewComment}
+              {t("reviewer", { comment: meeting.reviewComment })}
             </p>
           )}
           <form
@@ -693,18 +702,18 @@ export function MeetingDetails({
             className="space-y-4"
           >
             <label className="block space-y-2">
-              <span>Minutes / decisions</span>
+              <span>{t("bodyLabel")}</span>
               <textarea
                 name="body"
                 className="ui-input min-h-56"
                 maxLength={50000}
                 defaultValue={meeting.minutesBody}
                 readOnly={!editableMinutes}
-                placeholder="Opening, matters discussed, decisions, next steps…"
+                placeholder={t("bodyPlaceholder")}
               />
             </label>
             <label className="block space-y-2">
-              <span>Minutes links (one URL per line, up to 10)</span>
+              <span>{t("linksLabel")}</span>
               <textarea
                 name="links"
                 className="ui-input min-h-24"
@@ -715,7 +724,7 @@ export function MeetingDetails({
             </label>
             {editableMinutes && (
               <Button type="submit" disabled={busy}>
-                Save minutes draft
+                {t("saveDraft")}
               </Button>
             )}
           </form>
@@ -727,7 +736,7 @@ export function MeetingDetails({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open attached minutes link {i + 1} ↗
+              {t("openLink", { n: i + 1 })}
             </a>
           ))}
           <div className="space-y-2">
@@ -738,7 +747,7 @@ export function MeetingDetails({
                   className="block underline"
                   href={`${API_URL}/meetings/${meeting._id}/files/${file._id}`}
                 >
-                  {file.name} · {Math.ceil(file.size / 1024)} KB ↓
+                  {t("fileSize", { name: file.name, size: Math.ceil(file.size / 1024) })}
                 </a>
                 {editableMinutes && (
                   <Button
@@ -747,7 +756,7 @@ export function MeetingDetails({
                     disabled={busy}
                     onClick={() => void removeFile(file._id)}
                   >
-                    Remove
+                    {t("remove")}
                   </Button>
                 )}
               </div>
@@ -759,27 +768,21 @@ export function MeetingDetails({
               className="flex flex-wrap items-center gap-3"
             >
               <input
-                aria-label="Attach minutes document"
+                aria-label={t("attachAria")}
                 name="file"
                 type="file"
                 required
                 accept=".pdf,.docx,.txt"
               />
               <Button type="submit" variant="secondary" disabled={busy}>
-                Upload document
+                {t("upload")}
               </Button>
-              <p className="w-full text-sm text-[#6b6b6b]">
-                PDF, DOCX or TXT · up to 5 MB each · 10 documents per meeting.
-                Uploads are private to authorised meeting users.
-              </p>
+              <p className="w-full text-sm text-[#6b6b6b]">{t("uploadHint")}</p>
             </form>
           )}
           {editableMinutes && (
             <div className="space-y-2">
-              <p className="text-sm">
-                Submission saves your current minutes text and links, then locks
-                them until a reviewer returns them.
-              </p>
+              <p className="text-sm">{t("submitNote")}</p>
               <Button
                 disabled={busy || meeting.status === "cancelled"}
                 onClick={() => {
@@ -795,7 +798,7 @@ export function MeetingDetails({
                   });
                 }}
               >
-                Submit minutes for review
+                {t("submit")}
               </Button>
             </div>
           )}
@@ -811,7 +814,7 @@ export function MeetingDetails({
               }}
             >
               <label className="block">
-                Review notes
+                {t("reviewNotes")}
                 <textarea
                   name="comment"
                   className="ui-input"
@@ -820,7 +823,7 @@ export function MeetingDetails({
               </label>
               <div className="flex gap-2">
                 <Button type="submit" value="approve" disabled={busy}>
-                  Approve minutes
+                  {t("approve")}
                 </Button>
                 <Button
                   type="submit"
@@ -828,7 +831,7 @@ export function MeetingDetails({
                   variant="secondary"
                   disabled={busy}
                 >
-                  Request changes
+                  {t("requestChanges")}
                 </Button>
               </div>
             </form>
@@ -836,17 +839,21 @@ export function MeetingDetails({
         </Card>
         <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
-            title="Minutes revision history"
-            description="The latest 30 saved minutes revisions and review decisions are retained."
+            title={t("historyTitle")}
+            description={t("historyDescription")}
           />
           {[...meeting.minutesHistory].reverse().map((h) => (
             <details key={h.revision} className="rounded-xl bg-white p-4">
               <summary>
-                Revision {h.revision} · {h.status.replaceAll("_", " ")} ·{" "}
-                {stamp(h.at)} · {person(h.by)}
+                {t("revision", {
+                  revision: h.revision,
+                  status: minutesLabel(h.status),
+                  date: stamp(h.at),
+                  by: person(h.by),
+                })}
               </summary>
               <p className="mt-3 whitespace-pre-wrap">
-                {h.body || "Minutes supplied as links or documents."}
+                {h.body || t("linksOnly")}
               </p>
               {h.links.map((url, i) => (
                 <a
@@ -856,7 +863,7 @@ export function MeetingDetails({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Minutes link {i + 1}
+                  {t("historyLink", { n: i + 1 })}
                 </a>
               ))}
               {h.comment && <p>{h.comment}</p>}
@@ -867,10 +874,10 @@ export function MeetingDetails({
       <div hidden={tab !== "actions"}>
         <Card className="p-5 sm:p-6 space-y-4">
           <CardHeader
-            title="Actions and follow-through"
-            description="Assign an owner and deadline to each next step."
+            title={t("actionsTitle")}
+            description={t("actionsDescription")}
           />
-          {meeting.actions.length === 0 && <p>No actions yet.</p>}
+          {meeting.actions.length === 0 && <p>{t("noActions")}</p>}
           {meeting.actions.map((a) => (
             <div
               key={a.id}
@@ -882,11 +889,11 @@ export function MeetingDetails({
                 </p>
                 <p className="text-sm text-[#6b6b6b]">
                   {person(a.ownerUserId)}
-                  {a.dueAt ? ` · Due ${stamp(a.dueAt)}` : ""}
+                  {a.dueAt ? t("actionDue", { date: stamp(a.dueAt) }) : ""}
                   {a.status === "open" &&
                   a.dueAt &&
                   new Date(a.dueAt) < new Date()
-                    ? " · Overdue"
+                    ? t("actionOverdue")
                     : ""}
                 </p>
               </div>
@@ -894,7 +901,7 @@ export function MeetingDetails({
                 <div className="flex flex-wrap gap-2">
                   <select
                     className="ui-input"
-                    aria-label={`Reassign ${a.title}`}
+                    aria-label={t("reassignAria", { title: a.title })}
                     value={a.ownerUserId}
                     disabled={busy}
                     onChange={(e) =>
@@ -928,7 +935,7 @@ export function MeetingDetails({
                       })
                     }
                   >
-                    Remove action
+                    {t("removeAction")}
                   </Button>
                 </div>
               )}
@@ -950,7 +957,7 @@ export function MeetingDetails({
                     })
                   }
                 >
-                  {a.status === "done" ? "Reopen" : "Mark done"}
+                  {a.status === "done" ? t("reopen") : t("markDone")}
                 </Button>
               )}
             </div>
@@ -964,15 +971,15 @@ export function MeetingDetails({
               <input
                 className="ui-input sm:col-span-2"
                 name="title"
-                placeholder="Action / next step"
-                aria-label="Action title"
+                placeholder={t("actionPlaceholder")}
+                aria-label={t("actionTitleAria")}
                 required
                 maxLength={500}
               />
               <select
                 className="ui-input"
                 name="owner"
-                aria-label="Action owner"
+                aria-label={t("actionOwnerAria")}
                 required
               >
                 {[
@@ -989,14 +996,14 @@ export function MeetingDetails({
               <input
                 className="ui-input"
                 name="due"
-                aria-label="Action due date"
+                aria-label={t("actionDueAria")}
                 type="datetime-local"
               />
               <Button
                 type="submit"
                 disabled={busy || meeting.actions.length >= 100}
               >
-                Add action
+                {t("addAction")}
               </Button>
             </form>
           )}
