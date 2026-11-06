@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { buttonClass, Pagination } from "@/components/ui/ui";
@@ -11,22 +12,23 @@ export function DirectoryControls({
   path,
   params,
   filters = [],
-  placeholder = "Search records",
+  placeholder,
 }: {
   path: string;
   params: DirectoryParams;
   filters?: DirectoryFilter[];
   placeholder?: string;
 }) {
+  const t = useTranslations("common");
   return (
     <FilterPanel><form action={path} className="my-5 flex flex-wrap items-end gap-3">
       <label className="min-w-48 flex-1 text-xs text-[#6b6b6b]">
-        Search
+        {t("search")}
         <input
           name="search"
           className="ui-input mt-1"
           defaultValue={params.search}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("searchRecords")}
           maxLength={100}
         />
       </label>
@@ -41,7 +43,7 @@ export function DirectoryControls({
             className="ui-input mt-1"
             defaultValue={params[filter.key] || ""}
           >
-            <option value="">All</option>
+            <option value="">{t("all")}</option>
             {filter.options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -51,20 +53,20 @@ export function DirectoryControls({
         </label>
       ))}
       <label className="text-xs text-[#6b6b6b]">
-        Sort
+        {t("sort")}
         <select
           name="sort"
           className="ui-input mt-1"
           defaultValue={params.sort || "newest"}
         >
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="name_asc">Name A–Z</option>
-          <option value="name_desc">Name Z–A</option>
+          <option value="newest">{t("newestFirst")}</option>
+          <option value="oldest">{t("oldestFirst")}</option>
+          <option value="name_asc">{t("nameAsc")}</option>
+          <option value="name_desc">{t("nameDesc")}</option>
         </select>
       </label>
       <label className="text-xs text-[#6b6b6b]">
-        Per page
+        {t("perPage")}
         <select
           name="pageSize"
           className="ui-input mt-1"
@@ -78,10 +80,10 @@ export function DirectoryControls({
         </select>
       </label>
       <button type="submit" className={buttonClass("primary")}>
-        Apply
+        {t("apply")}
       </button>
       <Link href={path} className={buttonClass("secondary")}>
-        Reset
+        {t("reset")}
       </Link>
     </form></FilterPanel>
   );
@@ -102,11 +104,11 @@ export function DirectoryPagination({
   total: number;
   totalPages: number;
 }) {
+  const t = useTranslations("common");
   return (
     <div className="mt-5 border-t border-black/[0.06] pt-4">
       <p className="mb-3 text-sm text-[#8a8780]">
-        Showing {total ? (page - 1) * pageSize + 1 : 0}–
-        {Math.min(page * pageSize, total)} of {total} records
+        {t("showingRecords", { from: total ? (page - 1) * pageSize + 1 : 0, to: Math.min(page * pageSize, total), total })}
       </p>
       <Pagination
         page={page}

@@ -1,0 +1,25 @@
+{
+  "status": {
+    "notFound": {
+      "label": "Erreur 404",
+      "title": "Nous n'avons pas trouvé cette page.",
+      "body": "Le lien est peut-être mal saisi ou obsolète, ou il appartient à une branche, un district ou un formulaire qui a été renommé."
+    },
+    "unauthorized": {
+      "label": "Accès restreint",
+      "title": "Cette zone ne fait pas partie de votre rôle.",
+      "body": "Vous êtes connecté, mais cette page dépasse les permissions attribuées à votre compte. Demandez à un administrateur si vous avez besoin d'y accéder.",
+      "openWorkspace": "Ouvrir mon espace",
+      "switchAccount": "Changer de compte"
+    },
+    "connect": {
+      "label": "Nous rejoindre",
+      "pausedTitle": "L'inscription des invités est en pause.",
+      "pausedBody": "{organization} n'accepte pas d'inscriptions d'invités en ligne pour le moment. Veuillez vous adresser à un membre de l'équipe d'accueil.",
+      "offlineTitle": "Nous revenons tout de suite.",
+      "offlineBody": "L'inscription des invités est temporairement indisponible. Veuillez réessayer dans quelques minutes.",
+      "emptyTitle": "L'inscription des invités n'est pas encore ouverte.",
+      "emptyBody": "Il n'y a pas de formulaire d'invité actif pour le moment. Si vous gérez cette église, activez un modèle d'accueil des invités dans ChuFlow."
+    }
+  }
+}

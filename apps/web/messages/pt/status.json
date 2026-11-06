@@ -1,0 +1,25 @@
+{
+  "status": {
+    "notFound": {
+      "label": "Erro 404",
+      "title": "Não encontrámos essa página.",
+      "body": "A ligação pode estar mal escrita ou desatualizada, ou pertencer a uma filial, distrito ou formulário que mudou de nome."
+    },
+    "unauthorized": {
+      "label": "Acesso restrito",
+      "title": "Esta área não faz parte do seu papel.",
+      "body": "Tem sessão iniciada, mas esta página está fora das permissões atribuídas à sua conta. Peça acesso a um administrador se precisar.",
+      "openWorkspace": "Abrir o meu espaço",
+      "switchAccount": "Mudar de conta"
+    },
+    "connect": {
+      "label": "Ligue-se",
+      "pausedTitle": "O registo de visitantes está em pausa.",
+      "pausedBody": "{organization} não está a aceitar registos de visitantes online neste momento. Fale com alguém da equipa de boas-vindas.",
+      "offlineTitle": "Voltamos já.",
+      "offlineBody": "O registo de visitantes está temporariamente indisponível. Tente novamente dentro de alguns minutos.",
+      "emptyTitle": "O registo de visitantes ainda não está aberto.",
+      "emptyBody": "Não há um formulário de visitantes ativo neste momento. Se gere esta igreja, ative um modelo de registo de visitantes no ChuFlow."
+    }
+  }
+}

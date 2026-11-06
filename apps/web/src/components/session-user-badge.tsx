@@ -1,15 +1,19 @@
 "use client";
 
-import { formatRoleLabel, getUserScopeLabel } from "@/lib/permissions";
+import { useTranslations } from "next-intl";
+import { useRoleLabel, useScopeLabel } from "@/i18n/labels";
 import { useSession } from "./session-context";
 
 export function SessionUserBadge({ compact = false }: { compact?: boolean }) {
   const { user, expired, ready } = useSession();
+  const t = useTranslations("common");
+  const roleLabel = useRoleLabel();
+  const scopeLabelOf = useScopeLabel();
 
   if (expired) {
     return (
       <div className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-        Session expired
+        {t("sessionExpired")}
       </div>
     );
   }
@@ -17,13 +21,13 @@ export function SessionUserBadge({ compact = false }: { compact?: boolean }) {
   if (!ready || !user) {
     return (
       <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-500">
-        Loading session...
+        {t("loadingSession")}
       </div>
     );
   }
 
   const initials = `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
-  const scopeLabel = getUserScopeLabel(user);
+  const scopeLabel = scopeLabelOf(user);
 
   if (compact) {
     return (
@@ -36,7 +40,7 @@ export function SessionUserBadge({ compact = false }: { compact?: boolean }) {
             {user.firstName} {user.lastName}
           </p>
           <p className="truncate text-[10px] uppercase leading-4 text-slate-400">
-            {formatRoleLabel(user.role)}
+            {roleLabel(user.role)}
           </p>
         </div>
       </div>
@@ -53,7 +57,7 @@ export function SessionUserBadge({ compact = false }: { compact?: boolean }) {
           {user.firstName} {user.lastName}
         </p>
         <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-          {formatRoleLabel(user.role)}
+          {roleLabel(user.role)}
         </p>
         {scopeLabel ? <p className="text-[11px] text-slate-400">{scopeLabel}</p> : null}
       </div>

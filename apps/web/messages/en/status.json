@@ -1,0 +1,25 @@
+{
+  "status": {
+    "notFound": {
+      "label": "Error 404",
+      "title": "We couldn't find that page.",
+      "body": "The link may be mistyped or out of date, or it may belong to a branch, district or form that has been renamed."
+    },
+    "unauthorized": {
+      "label": "Access restricted",
+      "title": "This area isn't part of your role.",
+      "body": "You're signed in, but this page is outside the permissions assigned to your account. Ask an administrator if you need access.",
+      "openWorkspace": "Open my workspace",
+      "switchAccount": "Switch account"
+    },
+    "connect": {
+      "label": "Connect",
+      "pausedTitle": "Guest registration is paused.",
+      "pausedBody": "{organization} isn't accepting guest registrations online right now. Please speak to a member of the welcome team.",
+      "offlineTitle": "We'll be right back.",
+      "offlineBody": "Guest registration is temporarily unavailable. Please try again in a few minutes.",
+      "emptyTitle": "Guest registration isn't open yet.",
+      "emptyBody": "There is no active guest form at the moment. If you manage this church, activate a guest intake template in ChuFlow."
+    }
+  }
+}

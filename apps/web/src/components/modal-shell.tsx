@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 
 export function ModalShell({
   open,
@@ -21,6 +22,7 @@ export function ModalShell({
   maxWidthClass?: string;
 }) {
   const [mounted, setMounted] = useState(false);
+  const t = useTranslations("common");
 
   useEffect(() => {
     queueMicrotask(() => setMounted(true));
@@ -66,7 +68,7 @@ export function ModalShell({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t("close")}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#6b6b6b] transition-colors hover:bg-[#f6f5f1] hover:text-[#111111]"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5" aria-hidden>

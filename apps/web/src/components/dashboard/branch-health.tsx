@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useAppFormat } from "@/i18n/labels";
 import { Icon } from "@/components/app/icons";
 import type { DashboardGrowthBranch } from "@/lib/types";
-
-const numberFormatter = new Intl.NumberFormat("en-US");
 
 type Tab = "leaders" | "attention";
 
@@ -18,6 +18,8 @@ export function BranchHealth({
   attention: DashboardGrowthBranch[];
   hrefFor: Record<string, string>;
 }) {
+  const t = useTranslations("dashboard.health");
+  const { number: formatNumber } = useAppFormat();
   const [tab, setTab] = useState<Tab>("leaders");
   const items = tab === "leaders" ? leaders : attention;
   const maxScore = Math.max(1, ...items.map((item) => item.growthScore));
@@ -26,16 +28,16 @@ export function BranchHealth({
     <section className="app-card flex h-full flex-col p-6 sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[13px] font-medium text-[#6b6b6b]">Branch health</p>
+          <p className="text-[13px] font-medium text-[#6b6b6b]">{t("label")}</p>
           <h2 className="lp-heading mt-1 text-[22px]">
-            {tab === "leaders" ? "Where the church is growing" : "Branches that need support"}
+            {tab === "leaders" ? t("growing") : t("support")}
           </h2>
         </div>
-        <div role="tablist" aria-label="Branch health view" className="flex rounded-xl bg-[#f6f5f1] p-1">
+        <div role="tablist" aria-label={t("view")} className="flex rounded-xl bg-[#f6f5f1] p-1">
           {(
             [
-              ["leaders", "Growth leaders"],
-              ["attention", "Needs attention"],
+              ["leaders", t("leaders")],
+              ["attention", t("attention")],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -55,11 +57,11 @@ export function BranchHealth({
       {items.length ? (
         <div key={tab} className="app-rise mt-6">
           <div className="hidden grid-cols-[minmax(0,1.6fr)_repeat(3,64px)_minmax(0,1.1fr)_28px] gap-4 border-b border-black/[0.06] pb-2.5 text-[12px] font-medium text-[#8a8780] md:grid">
-            <span>Branch</span>
-            <span className="text-right">Guests</span>
-            <span className="text-right">Members</span>
-            <span className="text-right">Converts</span>
-            <span>Growth score</span>
+            <span>{t("branch")}</span>
+            <span className="text-right">{t("guests")}</span>
+            <span className="text-right">{t("members")}</span>
+            <span className="text-right">{t("converts")}</span>
+            <span>{t("score")}</span>
             <span />
           </div>
           <ul className="divide-y divide-black/[0.05]">
@@ -80,10 +82,10 @@ export function BranchHealth({
                       </span>
                     </span>
                   </span>
-                  <span className="hidden text-right text-[14px] tabular-nums text-[var(--lp-ink)] md:block">{numberFormatter.format(item.guestsCaptured)}</span>
-                  <span className="hidden text-right text-[14px] tabular-nums text-[var(--lp-ink)] md:block">{numberFormatter.format(item.membersAdded)}</span>
-                  <span className="hidden text-right text-[14px] tabular-nums text-[var(--lp-ink)] md:block">{numberFormatter.format(item.newConverts)}</span>
-                  <span className="col-span-2 flex items-center gap-3 md:col-span-1" title={`Growth score ${item.growthScore}`}>
+                  <span className="hidden text-right text-[14px] tabular-nums text-[var(--lp-ink)] md:block">{formatNumber(item.guestsCaptured)}</span>
+                  <span className="hidden text-right text-[14px] tabular-nums text-[var(--lp-ink)] md:block">{formatNumber(item.membersAdded)}</span>
+                  <span className="hidden text-right text-[14px] tabular-nums text-[var(--lp-ink)] md:block">{formatNumber(item.newConverts)}</span>
+                  <span className="col-span-2 flex items-center gap-3 md:col-span-1" title={t("scoreValue", { score: item.growthScore })}>
                     <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#f1f0ec]">
                       <span
                         className="app-bar block h-full rounded-full bg-[#ea580c]"
@@ -91,7 +93,7 @@ export function BranchHealth({
                       />
                     </span>
                     <span className="w-10 text-right text-[13px] font-semibold tabular-nums text-[var(--lp-ink)]">
-                      {numberFormatter.format(item.growthScore)}
+                      {formatNumber(item.growthScore)}
                     </span>
                   </span>
                   <span className="hidden justify-end text-[#a3a09a] transition-colors group-hover:text-[var(--lp-ink)] md:flex">
@@ -105,8 +107,8 @@ export function BranchHealth({
       ) : (
         <p className="mt-6 rounded-2xl bg-[#f6f5f1] px-5 py-8 text-center text-[14px] text-[#6b6b6b]">
           {tab === "leaders"
-            ? "No growth activity has been recorded in this range yet."
-            : "No branches in this scope are showing low activity."}
+            ? t("noGrowth")
+            : t("noLow")}
         </p>
       )}
     </section>

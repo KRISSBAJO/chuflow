@@ -1,0 +1,83 @@
+{
+  "dashboard": {
+    "myChurch": "My church",
+    "hierarchyOverview": "District, zone & area overview",
+    "welcomeBack": "Welcome back, {name}.",
+    "headline": {
+      "allNetwork": "Here's your whole network at a glance.",
+      "area": "Here's {label} at a glance.",
+      "branch": "Here's how {label} is doing."
+    },
+    "allNetwork": "All network",
+    "detailedReports": "Detailed reports",
+    "tiles": {
+      "guests": "Guests",
+      "guestsCaption": "Guest records in {scope}",
+      "members": "Members",
+      "membersCaption": "Current membership in this scope",
+      "attendance": "Attendance",
+      "attendanceCaption": "Recorded over the last {days} days",
+      "waiting": "Waiting for follow-up",
+      "waitingCaption": "New or assigned, not yet contacted"
+    },
+    "watchlist": {
+      "label": "Watchlist",
+      "title": "Needs your attention",
+      "noRecentAttendance": "No recent attendance",
+      "last": "Last {when}",
+      "neverReported": "Never reported",
+      "allReported": "Every branch has reported recently.",
+      "backlog": "Follow-up backlog",
+      "pending": "{count} pending",
+      "noBacklog": "No follow-up backlog is building up."
+    },
+    "pipeline": {
+      "label": "Follow-up pipeline",
+      "title": "{count, plural, one {# person} other {# people}} in care",
+      "open": "Open follow-up",
+      "chartLabel": "Share of people at each follow-up stage",
+      "empty": "Nobody is in the follow-up pipeline in this scope right now."
+    },
+    "attendance": {
+      "label": "Attendance by service",
+      "title": "Who came to church",
+      "open": "Attendance",
+      "summary": "{firstTimers} first timers · {converts} converts · {reports} reports",
+      "empty": "No attendance has been recorded in this range yet."
+    },
+    "recentGuests": {
+      "label": "Guests",
+      "title": "Recently welcomed",
+      "empty": "No guests have been captured in this scope recently."
+    },
+    "newestMembers": {
+      "label": "Members",
+      "title": "Newest members",
+      "empty": "No new members have been added in this scope yet."
+    },
+    "zoom": {
+      "title": "Zoom in for live activity",
+      "body": "Choose a district or branch above to see recent guests, newest members, the follow-up pipeline and attendance by service. They stay hidden at network level so this view stays fast as the church grows."
+    },
+    "health": {
+      "label": "Branch health",
+      "growing": "Where the church is growing",
+      "support": "Branches that need support",
+      "view": "Branch health view",
+      "leaders": "Growth leaders",
+      "attention": "Needs attention",
+      "branch": "Branch",
+      "guests": "Guests",
+      "members": "Members",
+      "converts": "Converts",
+      "score": "Growth score",
+      "scoreValue": "Growth score {score}",
+      "noGrowth": "No growth activity has been recorded in this range yet.",
+      "noLow": "No branches in this scope are showing low activity."
+    },
+    "filters": {
+      "dateRange": "Date range",
+      "daysShort": "{count}d"
+    }
+  }
+}

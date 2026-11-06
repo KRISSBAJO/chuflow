@@ -1,0 +1,141 @@
+{
+  "nav": {
+    "howItFlows": "How it flows",
+    "features": "Features",
+    "structure": "Structure",
+    "getStarted": "Get started",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "hero": {
+    "badgeNew": "New",
+    "badgeText": "Weekly and MAAG reports are here",
+    "title": "Every member, every ministry, in one <accent>flow.</accent>",
+    "subtitle": "ChuFlow is the church management platform for guests, follow-up, members, attendance and finance, built for branches, districts and national teams.",
+    "signInToChurch": "Sign in to your church",
+    "tiles": {
+      "sanctuary": "Sanctuary",
+      "community": "Community",
+      "worship": "Worship",
+      "fellowship": "Fellowship",
+      "family": "Family"
+    }
+  },
+  "statement": {
+    "text": "We help churches <p1></p1> welcome every guest, <p2></p2> care for every member and <p3></p3> steward every offering, <muted>from one branch to a whole nation.</muted>",
+    "alt1": "Church members laughing together",
+    "alt2": "Women reading the Bible together",
+    "alt3": "A man reading his Bible"
+  },
+  "flow": {
+    "label": "How it flows",
+    "title": "From first visit to faithful service.",
+    "subtitle": "One continuous journey for every person, so your teams always know what happens next.",
+    "step": "Step {number}",
+    "steps": {
+      "welcome": {
+        "title": "Welcome",
+        "body": "Guests register at the welcome desk or with a QR code in under a minute.",
+        "tag": "Guest intake"
+      },
+      "followUp": {
+        "title": "Follow up",
+        "body": "A care worker is assigned with a clear next step, so nobody slips through.",
+        "tag": "Care workflow"
+      },
+      "belong": {
+        "title": "Belong",
+        "body": "When they are ready, guests become members and keep their full history.",
+        "tag": "Membership"
+      },
+      "grow": {
+        "title": "Grow",
+        "body": "Attendance, service units and reports show every life moving forward.",
+        "tag": "Ministry"
+      }
+    }
+  },
+  "features": {
+    "label": "Features",
+    "title": "Everything your church runs on.",
+    "subtitle": "Six ministry workflows that used to live in notebooks, spreadsheets and group chats, now in one place.",
+    "guests": {
+      "label": "Guests & follow-up",
+      "title": "Guest care that never drops a name.",
+      "point1": "QR code and welcome-desk intake",
+      "point2": "Automatic care assignment",
+      "point3": "Calls, visits and prayer requests logged",
+      "photoAlt": "Church members dressed for Sunday service"
+    },
+    "attendance": {
+      "label": "Attendance",
+      "title": "Every service, counted clearly.",
+      "caption": "Adults, children, first timers and converts, by service."
+    },
+    "members": {
+      "label": "Members",
+      "title": "One record for every person.",
+      "body": "Profiles, branches, service units and history, kept in one shared place instead of scattered sheets."
+    },
+    "finance": {
+      "label": "Finance",
+      "title": "Stewardship you can account for.",
+      "offerings": "Offerings",
+      "recorded": "Recorded",
+      "expenses": "Expenses",
+      "approved": "Approved",
+      "period": "Period",
+      "locked": "Locked"
+    },
+    "reports": {
+      "label": "Reports",
+      "title": "Reports that roll up on their own.",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "maag": "MAAG",
+      "spiritualIndices": "Spiritual indices",
+      "branchToNational": "Branch to national"
+    }
+  },
+  "structure": {
+    "label": "Built for church structure",
+    "title": "The right view for every level.",
+    "body": "Access follows your church's structure. Each person sees what their role needs, and every action is kept on an audit trail.",
+    "levels": {
+      "national": {
+        "name": "National",
+        "body": "See the whole network at once: reports, approvals, settings and the health of every district.",
+        "role1": "National admin",
+        "role2": "National pastor"
+      },
+      "district": {
+        "name": "District",
+        "body": "Coordinate a region, compare branches and step in where a branch needs support.",
+        "role1": "District admin",
+        "role2": "District pastor"
+      },
+      "branch": {
+        "name": "Branch",
+        "body": "Run the day-to-day: guests, members, services, offerings and the teams that serve.",
+        "role1": "Branch admin",
+        "role2": "Resident pastor",
+        "role3": "Associate pastor"
+      },
+      "units": {
+        "name": "Units",
+        "body": "Give follow-up workers and ushers focused tools for exactly the work they do.",
+        "role1": "Follow-up",
+        "role2": "Usher"
+      }
+    }
+  },
+  "cta": {
+    "title": "Ready when your church is.",
+    "body": "Request a workspace for your team, or sign in if your church already uses ChuFlow."
+  },
+  "footer": {
+    "connect": "Connect with us",
+    "requestWorkspace": "Request workspace",
+    "tagline": "Church life, in flow."
+  }
+}

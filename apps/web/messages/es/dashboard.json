@@ -1,0 +1,83 @@
+{
+  "dashboard": {
+    "myChurch": "Mi iglesia",
+    "hierarchyOverview": "Vista de distrito, zona y área",
+    "welcomeBack": "Bienvenido de nuevo, {name}.",
+    "headline": {
+      "allNetwork": "Aquí tienes toda tu red de un vistazo.",
+      "area": "Aquí tienes {label} de un vistazo.",
+      "branch": "Así va {label}."
+    },
+    "allNetwork": "Toda la red",
+    "detailedReports": "Informes detallados",
+    "tiles": {
+      "guests": "Invitados",
+      "guestsCaption": "Fichas de invitados en {scope}",
+      "members": "Miembros",
+      "membersCaption": "Membresía actual en este ámbito",
+      "attendance": "Asistencia",
+      "attendanceCaption": "Registrada en los últimos {days} días",
+      "waiting": "Esperando seguimiento",
+      "waitingCaption": "Nuevos o asignados, aún sin contactar"
+    },
+    "watchlist": {
+      "label": "En observación",
+      "title": "Requiere tu atención",
+      "noRecentAttendance": "Sin asistencia reciente",
+      "last": "Último {when}",
+      "neverReported": "Nunca ha informado",
+      "allReported": "Todas las sedes han informado recientemente.",
+      "backlog": "Seguimientos atrasados",
+      "pending": "{count} pendientes",
+      "noBacklog": "No se está acumulando ningún retraso de seguimiento."
+    },
+    "pipeline": {
+      "label": "Proceso de seguimiento",
+      "title": "{count, plural, one {# persona} other {# personas}} en cuidado",
+      "open": "Abrir seguimiento",
+      "chartLabel": "Proporción de personas en cada etapa del seguimiento",
+      "empty": "Nadie está en el proceso de seguimiento en este ámbito ahora mismo."
+    },
+    "attendance": {
+      "label": "Asistencia por servicio",
+      "title": "Quién vino a la iglesia",
+      "open": "Asistencia",
+      "summary": "{firstTimers} nuevos · {converts} convertidos · {reports} informes",
+      "empty": "Aún no se ha registrado asistencia en este rango."
+    },
+    "recentGuests": {
+      "label": "Invitados",
+      "title": "Recién recibidos",
+      "empty": "No se han registrado invitados en este ámbito recientemente."
+    },
+    "newestMembers": {
+      "label": "Miembros",
+      "title": "Miembros más recientes",
+      "empty": "Aún no se han añadido miembros nuevos en este ámbito."
+    },
+    "zoom": {
+      "title": "Acércate para ver la actividad en vivo",
+      "body": "Elige un distrito o una sede arriba para ver los invitados recientes, los miembros más nuevos, el proceso de seguimiento y la asistencia por servicio. Se ocultan a nivel de red para que esta vista siga siendo rápida a medida que la iglesia crece."
+    },
+    "health": {
+      "label": "Salud de las sedes",
+      "growing": "Dónde está creciendo la iglesia",
+      "support": "Sedes que necesitan apoyo",
+      "view": "Vista de salud de las sedes",
+      "leaders": "Líderes de crecimiento",
+      "attention": "Requiere atención",
+      "branch": "Sede",
+      "guests": "Invitados",
+      "members": "Miembros",
+      "converts": "Convertidos",
+      "score": "Puntuación de crecimiento",
+      "scoreValue": "Puntuación de crecimiento {score}",
+      "noGrowth": "Aún no se ha registrado actividad de crecimiento en este rango.",
+      "noLow": "Ninguna sede de este ámbito muestra baja actividad."
+    },
+    "filters": {
+      "dateRange": "Rango de fechas",
+      "daysShort": "{count} d"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "shell": {
+    "groups": {
+      "overview": "Resumen",
+      "people": "Personas",
+      "services": "Servicios",
+      "stewardship": "Mayordomía",
+      "organization": "Organización",
+      "insights": "Análisis"
+    },
+    "nav": {
+      "dashboard": "Panel",
+      "home": "Inicio",
+      "approvals": "Aprobaciones",
+      "communications": "Comunicaciones",
+      "evangelism": "Evangelismo",
+      "guests": "Invitados",
+      "followUp": "Seguimiento",
+      "members": "Miembros",
+      "serviceUnits": "Unidades de servicio",
+      "meetings": "Reuniones",
+      "attendance": "Asistencia",
+      "weeklyReports": "Informes semanales",
+      "maagReports": "Informes MAAG",
+      "finance": "Finanzas",
+      "branches": "Sedes",
+      "structure": "Estructura",
+      "users": "Usuarios",
+      "templates": "Plantillas",
+      "reports": "Informes",
+      "settings": "Ajustes",
+      "more": "Más"
+    },
+    "quick": {
+      "new": "Nuevo",
+      "scheduleMeeting": "Programar reunión",
+      "scheduleMeetingHint": "Planificar una reunión y sus acciones de seguimiento",
+      "addOutreach": "Añadir contacto de evangelismo",
+      "addOutreachHint": "Dar seguimiento a una conversación de evangelismo",
+      "registerGuest": "Registrar un invitado",
+      "registerGuestHint": "Registrar a alguien que viene por primera vez",
+      "recordAttendance": "Registrar asistencia",
+      "recordAttendanceHint": "Anotar el conteo de un servicio",
+      "logFollowUp": "Registrar seguimiento",
+      "logFollowUpHint": "Asignar el cuidado de alguien",
+      "addMember": "Añadir un miembro",
+      "addMemberHint": "Crear una ficha de miembro"
+    },
+    "header": {
+      "searchPlaceholder": "Buscar personas, sedes, usuarios...",
+      "search": "Buscar",
+      "openMenu": "Abrir menú",
+      "closeMenu": "Cerrar menú",
+      "expandSidebar": "Expandir barra lateral",
+      "collapseSidebar": "Contraer barra lateral",
+      "quickNavigation": "Navegación rápida",
+      "mainNavigation": "Principal",
+      "alerts": "Alertas",
+      "alertsLabel": "Alertas, {count} activas",
+      "branchesInScope": "{count, plural, one {# sede} other {# sedes}} en el ámbito",
+      "allCaughtUp": "Estás al día.",
+      "firstTimersInRange": "{count} nuevos en tu rango de informe",
+      "urgent": "Urgente",
+      "needsAttention": "Requiere atención",
+      "forReview": "Para revisar"
+    }
+  }
+}

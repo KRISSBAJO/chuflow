@@ -2,92 +2,100 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Wordmark } from "@/components/brand/wordmark";
+import { LanguagePicker } from "@/components/i18n/language-picker";
+import { useRoleLabel, useScopeLabel } from "@/i18n/labels";
+import type shellMessages from "../../../messages/en/shell.json";
 import { LogoutButton } from "@/components/logout-button";
 import { AppNudge } from "@/components/pwa/app-nudge";
 import type { SessionUser } from "@/lib/auth";
-import { canAccessRoute, formatRoleLabel, getUserScopeLabel } from "@/lib/permissions";
+import { canAccessRoute } from "@/lib/permissions";
 import type { AlertsSummary } from "@/lib/types";
 import { Icon, type IconName } from "./icons";
 
 type BadgeKey = "approvals" | "followUp" | "firstTimers";
 
-type NavItem = { href: string; label: string; icon: IconName; badge?: BadgeKey };
+type NavKey = keyof typeof shellMessages.shell.nav;
+type GroupKey = keyof typeof shellMessages.shell.groups;
+type QuickKey = "scheduleMeeting" | "addOutreach" | "registerGuest" | "recordAttendance" | "logFollowUp" | "addMember";
 
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+type NavItem = { href: string; label: NavKey; icon: IconName; badge?: BadgeKey };
+
+const NAV_GROUPS: { label: GroupKey; items: NavItem[] }[] = [
   {
-    label: "Overview",
+    label: "overview",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: "home" },
-      { href: "/approvals", label: "Approvals", icon: "approvals", badge: "approvals" },
-      { href: "/communications", label: "Communications", icon: "message" },
+      { href: "/dashboard", label: "dashboard", icon: "home" },
+      { href: "/approvals", label: "approvals", icon: "approvals", badge: "approvals" },
+      { href: "/communications", label: "communications", icon: "message" },
     ],
   },
   {
-    label: "People",
+    label: "people",
     items: [
-      { href: "/evangelism", label: "Evangelism", icon: "share" },
-      { href: "/guests", label: "Guests", icon: "guests", badge: "firstTimers" },
-      { href: "/care", label: "Follow-up", icon: "care", badge: "followUp" },
-      { href: "/members", label: "Members", icon: "members" },
-      { href: "/service-units", label: "Service units", icon: "units" },
+      { href: "/evangelism", label: "evangelism", icon: "share" },
+      { href: "/guests", label: "guests", icon: "guests", badge: "firstTimers" },
+      { href: "/care", label: "followUp", icon: "care", badge: "followUp" },
+      { href: "/members", label: "members", icon: "members" },
+      { href: "/service-units", label: "serviceUnits", icon: "units" },
     ],
   },
   {
-    label: "Services",
+    label: "services",
     items: [
-      { href: "/meetings", label: "Meetings", icon: "attendance" },
-      { href: "/attendance", label: "Attendance", icon: "attendance" },
-      { href: "/weekly-reports", label: "Weekly reports", icon: "weekly" },
-      { href: "/maag-reports", label: "MAAG reports", icon: "maag" },
+      { href: "/meetings", label: "meetings", icon: "attendance" },
+      { href: "/attendance", label: "attendance", icon: "attendance" },
+      { href: "/weekly-reports", label: "weeklyReports", icon: "weekly" },
+      { href: "/maag-reports", label: "maagReports", icon: "maag" },
     ],
   },
   {
-    label: "Stewardship",
-    items: [{ href: "/finance", label: "Finance", icon: "finance" }],
+    label: "stewardship",
+    items: [{ href: "/finance", label: "finance", icon: "finance" }],
   },
   {
-    label: "Organization",
+    label: "organization",
     items: [
-      { href: "/branches", label: "Branches", icon: "branches" },
-      { href: "/hierarchy", label: "Structure", icon: "structure" },
-      { href: "/users", label: "Users", icon: "users" },
-      { href: "/templates", label: "Templates", icon: "templates" },
+      { href: "/branches", label: "branches", icon: "branches" },
+      { href: "/hierarchy", label: "structure", icon: "structure" },
+      { href: "/users", label: "users", icon: "users" },
+      { href: "/templates", label: "templates", icon: "templates" },
     ],
   },
   {
-    label: "Insights",
-    items: [{ href: "/reports", label: "Reports", icon: "reports" }],
+    label: "insights",
+    items: [{ href: "/reports", label: "reports", icon: "reports" }],
   },
 ];
 
-const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: "settings" };
+const SETTINGS_ITEM: NavItem = { href: "/settings", label: "settings", icon: "settings" };
 
-const QUICK_ACTIONS: { href: string; label: string; hint: string; icon: IconName }[] = [
-  { href: "/meetings/new", label: "Schedule meeting", hint: "Plan a meeting and follow up actions", icon: "attendance" },
-  { href: "/evangelism/new", label: "Add outreach contact", hint: "Follow up an outreach conversation", icon: "share" },
-  { href: "/guests/new", label: "Register a guest", hint: "Capture a first-timer", icon: "guests" },
-  { href: "/attendance", label: "Record attendance", hint: "Log a service count", icon: "attendance" },
-  { href: "/follow-up/new", label: "Log follow-up", hint: "Assign care to someone", icon: "care" },
-  { href: "/members/new", label: "Add a member", hint: "Create a member record", icon: "members" },
+const QUICK_ACTIONS: { href: string; key: QuickKey; icon: IconName }[] = [
+  { href: "/meetings/new", key: "scheduleMeeting", icon: "attendance" },
+  { href: "/evangelism/new", key: "addOutreach", icon: "share" },
+  { href: "/guests/new", key: "registerGuest", icon: "guests" },
+  { href: "/attendance", key: "recordAttendance", icon: "attendance" },
+  { href: "/follow-up/new", key: "logFollowUp", icon: "care" },
+  { href: "/members/new", key: "addMember", icon: "members" },
 ];
 
 /** Phone tab bar: the first four of these the user can open, then "More" for the full menu. */
 const TAB_CANDIDATES: NavItem[] = [
-  { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/guests", label: "Guests", icon: "guests" },
-  { href: "/care", label: "Follow-up", icon: "care", badge: "followUp" },
-  { href: "/attendance", label: "Attendance", icon: "attendance" },
-  { href: "/approvals", label: "Approvals", icon: "approvals", badge: "approvals" },
-  { href: "/members", label: "Members", icon: "members" },
-  { href: "/reports", label: "Reports", icon: "reports" },
+  { href: "/dashboard", label: "home", icon: "home" },
+  { href: "/guests", label: "guests", icon: "guests" },
+  { href: "/care", label: "followUp", icon: "care", badge: "followUp" },
+  { href: "/attendance", label: "attendance", icon: "attendance" },
+  { href: "/approvals", label: "approvals", icon: "approvals", badge: "approvals" },
+  { href: "/members", label: "members", icon: "members" },
+  { href: "/reports", label: "reports", icon: "reports" },
 ];
 
-const ALERT_TONES: Record<AlertsSummary["items"][number]["tone"], { dot: string; label: string }> = {
-  critical: { dot: "bg-red-500", label: "Urgent" },
-  warm: { dot: "bg-amber-500", label: "Needs attention" },
-  cool: { dot: "bg-sky-500", label: "For review" },
+const ALERT_TONES: Record<AlertsSummary["items"][number]["tone"], { dot: string; label: "urgent" | "needsAttention" | "forReview" }> = {
+  critical: { dot: "bg-red-500", label: "urgent" },
+  warm: { dot: "bg-amber-500", label: "needsAttention" },
+  cool: { dot: "bg-sky-500", label: "forReview" },
 };
 
 export type AppFrameProps = {
@@ -146,6 +154,7 @@ function TabBar({
   menuOpen: boolean;
   onMore: () => void;
 }) {
+  const t = useTranslations("shell");
   const tabs = TAB_CANDIDATES.filter((item) => canAccessRoute(user?.role, item.href)).slice(0, 4);
   const tabClass = (active: boolean) =>
     `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${active ? "text-[var(--lp-ink)]" : "text-[#8a8780] active:text-[var(--lp-ink)]"}`;
@@ -153,7 +162,7 @@ function TabBar({
 
   return (
     <nav
-      aria-label="Quick navigation"
+      aria-label={t("header.quickNavigation")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.06] bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
     >
       <div className="mx-auto flex h-16 max-w-md items-stretch px-2">
@@ -171,14 +180,14 @@ function TabBar({
                   </span>
                 ) : null}
               </span>
-              <span className="max-w-full truncate">{item.label}</span>
+              <span className="max-w-full truncate">{t(`nav.${item.label}`)}</span>
             </Link>
           );
         })}
         <button type="button" onClick={onMore} aria-expanded={menuOpen} className={tabClass(menuOpen || !anyTabActive)}>
           {!menuOpen && !anyTabActive ? <span className="lp-flame-bg absolute top-0 h-[3px] w-8 rounded-b-full" /> : null}
           <Icon name="menu" className="h-[22px] w-[22px]" />
-          <span>More</span>
+          <span>{t("nav.more")}</span>
         </button>
       </div>
     </nav>
@@ -202,12 +211,15 @@ function Sidebar({
   onNavigate?: () => void;
   onCollapse?: () => void;
 }) {
+  const t = useTranslations("shell");
+  const roleLabel = useRoleLabel();
+  const scopeLabelOf = useScopeLabel();
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => canAccessRoute(user?.role, item.href)),
   })).filter((group) => group.items.length > 0);
   const showSettings = canAccessRoute(user?.role, SETTINGS_ITEM.href);
-  const scopeLabel = user ? getUserScopeLabel(user) : null;
+  const scopeLabel = user ? scopeLabelOf(user) : null;
 
   const renderItem = (item: NavItem) => {
     const active = isActive(pathname, item.href);
@@ -217,7 +229,7 @@ function Sidebar({
         key={item.href}
         href={item.href}
         onClick={onNavigate}
-        title={compact ? item.label : undefined}
+        title={compact ? t(`nav.${item.label}`) : undefined}
         aria-current={active ? "page" : undefined}
         className={[
           "app-nav-item group relative flex items-center gap-3 rounded-xl text-[14px] font-medium transition-colors",
@@ -226,13 +238,13 @@ function Sidebar({
         ].join(" ")}
       >
         <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
-        {compact ? null : <span className="truncate">{item.label}</span>}
+        {compact ? null : <span className="truncate">{t(`nav.${item.label}`)}</span>}
         {count > 0 ? (
           compact ? (
             <span className={`absolute right-2 top-2 h-2 w-2 rounded-full ${item.badge === "firstTimers" ? "bg-[#b5b2ab]" : "lp-flame-bg"}`} />
           ) : (
             <span
-              title={item.badge === "firstTimers" ? `${count} first-timers in your report range` : undefined}
+              title={item.badge === "firstTimers" ? t("header.firstTimersInRange", { count }) : undefined}
               className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${active ? "bg-white/15 text-white" : item.badge === "firstTimers" ? "bg-black/[0.06] text-[#55534e]" : "lp-flame-bg text-white"}`}
             >
               {count > 99 ? "99+" : count}
@@ -247,7 +259,7 @@ function Sidebar({
     <div className="flex h-full flex-col">
       <div className={`flex min-h-16 shrink-0 items-center py-3 ${compact ? "justify-center" : "justify-between gap-2 px-5"}`}>
         {compact ? (
-          <Link href="/" aria-label="Home" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--lp-ink)] text-[17px] font-semibold tracking-[-0.04em] text-white">
+          <Link href="/" aria-label={t("nav.home")} className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--lp-ink)] text-[17px] font-semibold tracking-[-0.04em] text-white">
             C
           </Link>
         ) : (
@@ -268,7 +280,7 @@ function Sidebar({
           <button
             type="button"
             onClick={onCollapse}
-            aria-label="Collapse sidebar"
+            aria-label={t("header.collapseSidebar")}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8a8780] transition-colors hover:bg-[#f2f1ed] hover:text-[var(--lp-ink)]"
           >
             <Icon name="sidebar" className="h-[17px] w-[17px]" />
@@ -276,13 +288,13 @@ function Sidebar({
         ) : null}
       </div>
 
-      <nav className="app-scroll flex-1 overflow-y-auto px-3 pb-4" aria-label="Main">
+      <nav className="app-scroll flex-1 overflow-y-auto px-3 pb-4" aria-label={t("header.mainNavigation")}>
         {groups.map((group) => (
           <div key={group.label} className="mt-4 first:mt-1">
             {compact ? (
               <div className="mx-auto mb-2 h-px w-6 bg-black/[0.06]" />
             ) : (
-              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#a3a09a]">{group.label}</p>
+              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#a3a09a]">{t(`groups.${group.label}`)}</p>
             )}
             <div className="space-y-0.5">{group.items.map(renderItem)}</div>
           </div>
@@ -302,7 +314,7 @@ function Sidebar({
                   {user.firstName} {user.lastName}
                 </span>
                 <span className="block truncate text-[12px] text-[#8a8780]">
-                  {formatRoleLabel(user.role)}
+                  {roleLabel(user.role)}
                   {scopeLabel ? ` · ${scopeLabel}` : ""}
                 </span>
               </span>
@@ -325,6 +337,7 @@ export function AppFrame({
   onExpandedChange,
   children,
 }: AppFrameProps) {
+  const t = useTranslations("shell");
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -390,7 +403,7 @@ export function AppFrame({
         <div className="fixed inset-0 z-50 xl:hidden">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t("header.closeMenu")}
             onClick={() => setMobileOpen(false)}
             className="app-fade absolute inset-0 bg-black/30 backdrop-blur-[2px]"
           />
@@ -415,7 +428,7 @@ export function AppFrame({
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              aria-label="Open menu"
+              aria-label={t("header.openMenu")}
               className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--lp-ink)] hover:bg-black/[0.04] md:flex xl:hidden"
             >
               <Icon name="menu" className="h-5 w-5" />
@@ -424,7 +437,7 @@ export function AppFrame({
               <button
                 type="button"
                 onClick={() => onExpandedChange(true)}
-                aria-label="Expand sidebar"
+                aria-label={t("header.expandSidebar")}
                 aria-controls="app-sidebar"
                 className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6b6b6b] hover:bg-black/[0.04] hover:text-[var(--lp-ink)] xl:flex"
               >
@@ -438,8 +451,8 @@ export function AppFrame({
                 ref={searchRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search people, branches, users..."
-                aria-label="Search"
+                placeholder={t("header.searchPlaceholder")}
+                aria-label={t("header.search")}
                 className="h-10 w-full rounded-xl border border-black/[0.07] bg-white pl-10 pr-14 text-[14px] text-[var(--lp-ink)] outline-none transition placeholder:text-[#a3a09a] focus:border-[var(--lp-ink)] focus:shadow-[0_0_0_4px_rgba(245,158,11,0.16)]"
               />
               <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-black/[0.08] bg-[#f6f5f1] px-1.5 py-0.5 text-[11px] font-medium text-[#8a8780] sm:block">
@@ -458,7 +471,7 @@ export function AppFrame({
                     className="lp-pill-dark flex h-10 items-center gap-1.5 rounded-xl px-3 text-[14px] font-medium sm:px-4"
                   >
                     <Icon name="plus" className="h-4 w-4" strokeWidth={2.2} />
-                    <span className="hidden sm:inline">New</span>
+                    <span className="hidden sm:inline">{t("quick.new")}</span>
                   </button>
                   {createOpen ? (
                     <div role="menu" className="app-pop absolute right-0 top-12 w-72 rounded-2xl border border-black/[0.06] bg-white p-2 shadow-[0_24px_60px_-20px_rgba(17,17,17,0.35)]">
@@ -474,8 +487,8 @@ export function AppFrame({
                             <Icon name={action.icon} />
                           </span>
                           <span>
-                            <span className="block text-[14px] font-medium text-[var(--lp-ink)]">{action.label}</span>
-                            <span className="block text-[12px] text-[#8a8780]">{action.hint}</span>
+                            <span className="block text-[14px] font-medium text-[var(--lp-ink)]">{t(`quick.${action.key}`)}</span>
+                            <span className="block text-[12px] text-[#8a8780]">{t(`quick.${action.key}Hint`)}</span>
                           </span>
                         </Link>
                       ))}
@@ -489,7 +502,7 @@ export function AppFrame({
                   type="button"
                   onClick={() => setAlertsOpen((value) => !value)}
                   aria-expanded={alertsOpen}
-                  aria-label={`Alerts, ${headerStats.activeAlerts} active`}
+                  aria-label={t("header.alertsLabel", { count: headerStats.activeAlerts })}
                   className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-black/[0.07] bg-white text-[var(--lp-ink)] transition-colors hover:bg-[#f6f5f1]"
                 >
                   <Icon name="bell" />
@@ -502,10 +515,8 @@ export function AppFrame({
                 {alertsOpen ? (
                   <div className="app-pop absolute right-0 top-12 w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-black/[0.06] bg-white shadow-[0_24px_60px_-20px_rgba(17,17,17,0.35)]">
                     <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3">
-                      <p className="text-[14px] font-semibold text-[var(--lp-ink)]">Alerts</p>
-                      <p className="text-[12px] text-[#8a8780]">
-                        {branchCount} branch{branchCount === 1 ? "" : "es"} in scope
-                      </p>
+                      <p className="text-[14px] font-semibold text-[var(--lp-ink)]">{t("header.alerts")}</p>
+                      <p className="text-[12px] text-[#8a8780]">{t("header.branchesInScope", { count: branchCount })}</p>
                     </div>
                     {alertItems.length ? (
                       <ul className="p-2">
@@ -522,7 +533,7 @@ export function AppFrame({
                                   {item.count} {item.label.toLowerCase()}
                                 </span>
                                 <span className="block text-[12px] leading-[1.5] text-[#8a8780]">
-                                  {ALERT_TONES[item.tone].label} · {item.description}
+                                  {t(`header.${ALERT_TONES[item.tone].label}`)} · {item.description}
                                 </span>
                               </span>
                             </Link>
@@ -530,11 +541,13 @@ export function AppFrame({
                         ))}
                       </ul>
                     ) : (
-                      <p className="px-4 py-8 text-center text-[14px] text-[#8a8780]">You&apos;re all caught up.</p>
+                      <p className="px-4 py-8 text-center text-[14px] text-[#8a8780]">{t("header.allCaughtUp")}</p>
                     )}
                   </div>
                 ) : null}
               </div>
+
+              <LanguagePicker className="hidden sm:block" />
 
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[13px] font-semibold text-[var(--lp-ink)] shadow-[0_1px_2px_rgba(0,0,0,0.08)] xl:hidden">
                 {initialsOf(user)}

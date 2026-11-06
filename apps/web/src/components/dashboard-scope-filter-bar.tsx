@@ -1,6 +1,7 @@
 "use client";
 import { FilterPanel } from "@/components/filter-panel";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { BranchSummary, DistrictOption, OversightRegionOption } from "@/lib/types";
@@ -55,6 +56,8 @@ export function DashboardScopeFilterBar({
   districts,
   branches,
 }: DashboardScopeFilterBarProps) {
+  const t = useTranslations("common");
+  const td = useTranslations("dashboard.filters");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedDays, setSelectedDays] = useState(String(days));
@@ -107,7 +110,7 @@ export function DashboardScopeFilterBar({
     <FilterPanel><section className="app-rise flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-white p-3 lg:flex-row lg:items-center" style={{ animationDelay: "60ms" }}>
       <div className="grid flex-1 gap-2 sm:grid-cols-3">
         <label className="block">
-          <span className="sr-only">National area</span>
+          <span className="sr-only">{t("nationalArea")}</span>
           <select
             value={selectedRegion}
             disabled={!canChooseRegion || isPending}
@@ -121,7 +124,7 @@ export function DashboardScopeFilterBar({
             className={selectClass}
             style={chevron}
           >
-            <option value="">All national areas</option>
+            <option value="">{t("allNationalAreas")}</option>
             {oversightRegions.map((region) => (
               <option key={region._id} value={region.name}>
                 {region.name}
@@ -131,7 +134,7 @@ export function DashboardScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">District</span>
+          <span className="sr-only">{t("district")}</span>
           <select
             value={selectedDistrict}
             disabled={!canChooseDistrict || isPending}
@@ -144,7 +147,7 @@ export function DashboardScopeFilterBar({
             className={selectClass}
             style={chevron}
           >
-            <option value="">All districts</option>
+            <option value="">{t("allDistricts")}</option>
             {filteredDistricts.map((item) => (
               <option key={item._id} value={item.name}>
                 {item.name}
@@ -154,7 +157,7 @@ export function DashboardScopeFilterBar({
         </label>
 
         <label className="block">
-          <span className="sr-only">Branch</span>
+          <span className="sr-only">{t("branch")}</span>
           <select
             value={selectedBranchId}
             disabled={!canChooseBranch || isPending}
@@ -166,7 +169,7 @@ export function DashboardScopeFilterBar({
             className={selectClass}
             style={chevron}
           >
-            <option value="">All branches</option>
+            <option value="">{t("allBranches")}</option>
             {filteredBranches.map((item) => (
               <option key={item._id} value={item._id}>
                 {item.name}
@@ -177,7 +180,7 @@ export function DashboardScopeFilterBar({
       </div>
 
       <div className="flex items-center gap-2">
-        <div role="radiogroup" aria-label="Date range" className="flex flex-1 rounded-xl bg-[#f6f5f1] p-1 lg:flex-none">
+        <div role="radiogroup" aria-label={td("dateRange")} className="flex flex-1 rounded-xl bg-[#f6f5f1] p-1 lg:flex-none">
           {[7, 14, 30, 60, 90].map((value) => {
             const active = selectedDays === String(value);
             return (
@@ -193,7 +196,7 @@ export function DashboardScopeFilterBar({
                 }}
                 className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] font-medium tabular-nums transition-all lg:flex-none ${active ? "bg-white text-[var(--lp-ink)] shadow-[0_1px_3px_rgba(17,17,17,0.1)]" : "text-[#6b6b6b] hover:text-[var(--lp-ink)]"}`}
               >
-                {value}d
+                {td("daysShort", { count: value })}
               </button>
             );
           })}
@@ -201,7 +204,7 @@ export function DashboardScopeFilterBar({
         {isPending ? (
           <span className="flex h-8 items-center gap-2 px-2 text-[13px] text-[#8a8780]" role="status">
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#e4e3df] border-t-[#ea580c]" />
-            Updating
+            {t("updating")}
           </span>
         ) : hasScopeFilter && canChooseBranch ? (
           <button
@@ -214,7 +217,7 @@ export function DashboardScopeFilterBar({
             }}
             className="h-8 rounded-lg px-2.5 text-[13px] font-medium text-[#6b6b6b] transition-colors hover:bg-[#f6f5f1] hover:text-[var(--lp-ink)]"
           >
-            Reset
+            {t("reset")}
           </button>
         ) : null}
       </div>

@@ -1,0 +1,83 @@
+{
+  "dashboard": {
+    "myChurch": "Mon église",
+    "hierarchyOverview": "Vue district, zone et secteur",
+    "welcomeBack": "Bon retour, {name}.",
+    "headline": {
+      "allNetwork": "Voici tout votre réseau en un coup d'œil.",
+      "area": "Voici {label} en un coup d'œil.",
+      "branch": "Voici comment va {label}."
+    },
+    "allNetwork": "Tout le réseau",
+    "detailedReports": "Rapports détaillés",
+    "tiles": {
+      "guests": "Invités",
+      "guestsCaption": "Fiches d'invités dans {scope}",
+      "members": "Membres",
+      "membersCaption": "Effectif actuel dans ce périmètre",
+      "attendance": "Présence",
+      "attendanceCaption": "Enregistrée sur les {days} derniers jours",
+      "waiting": "En attente de suivi",
+      "waitingCaption": "Nouveaux ou attribués, pas encore contactés"
+    },
+    "watchlist": {
+      "label": "À surveiller",
+      "title": "Requiert votre attention",
+      "noRecentAttendance": "Pas de présence récente",
+      "last": "Dernier {when}",
+      "neverReported": "Jamais rapporté",
+      "allReported": "Toutes les branches ont rapporté récemment.",
+      "backlog": "Suivis en retard",
+      "pending": "{count} en attente",
+      "noBacklog": "Aucun retard de suivi ne s'accumule."
+    },
+    "pipeline": {
+      "label": "Parcours de suivi",
+      "title": "{count, plural, one {# personne} other {# personnes}} en accompagnement",
+      "open": "Ouvrir le suivi",
+      "chartLabel": "Part des personnes à chaque étape du suivi",
+      "empty": "Personne n'est dans le parcours de suivi de ce périmètre pour le moment."
+    },
+    "attendance": {
+      "label": "Présence par culte",
+      "title": "Qui est venu à l'église",
+      "open": "Présence",
+      "summary": "{firstTimers} nouveaux venus · {converts} convertis · {reports} rapports",
+      "empty": "Aucune présence n'a encore été enregistrée sur cette période."
+    },
+    "recentGuests": {
+      "label": "Invités",
+      "title": "Récemment accueillis",
+      "empty": "Aucun invité n'a été enregistré récemment dans ce périmètre."
+    },
+    "newestMembers": {
+      "label": "Membres",
+      "title": "Nouveaux membres",
+      "empty": "Aucun nouveau membre n'a encore été ajouté dans ce périmètre."
+    },
+    "zoom": {
+      "title": "Zoomez pour voir l'activité en direct",
+      "body": "Choisissez un district ou une branche ci-dessus pour voir les invités récents, les nouveaux membres, le parcours de suivi et la présence par culte. Ils restent masqués au niveau du réseau pour que cette vue reste rapide à mesure que l'église grandit."
+    },
+    "health": {
+      "label": "Santé des branches",
+      "growing": "Là où l'église grandit",
+      "support": "Branches qui ont besoin de soutien",
+      "view": "Vue de la santé des branches",
+      "leaders": "Moteurs de croissance",
+      "attention": "À traiter",
+      "branch": "Branche",
+      "guests": "Invités",
+      "members": "Membres",
+      "converts": "Convertis",
+      "score": "Score de croissance",
+      "scoreValue": "Score de croissance {score}",
+      "noGrowth": "Aucune activité de croissance n'a encore été enregistrée sur cette période.",
+      "noLow": "Aucune branche de ce périmètre ne montre une activité faible."
+    },
+    "filters": {
+      "dateRange": "Période",
+      "daysShort": "{count} j"
+    }
+  }
+}

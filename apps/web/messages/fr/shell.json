@@ -1,0 +1,68 @@
+{
+  "shell": {
+    "groups": {
+      "overview": "Vue d'ensemble",
+      "people": "Personnes",
+      "services": "Cultes",
+      "stewardship": "Gestion",
+      "organization": "Organisation",
+      "insights": "Analyses"
+    },
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "home": "Accueil",
+      "approvals": "Approbations",
+      "communications": "Communications",
+      "evangelism": "Évangélisation",
+      "guests": "Invités",
+      "followUp": "Suivi",
+      "members": "Membres",
+      "serviceUnits": "Unités de service",
+      "meetings": "Réunions",
+      "attendance": "Présence",
+      "weeklyReports": "Rapports hebdomadaires",
+      "maagReports": "Rapports MAAG",
+      "finance": "Finances",
+      "branches": "Branches",
+      "structure": "Structure",
+      "users": "Utilisateurs",
+      "templates": "Modèles",
+      "reports": "Rapports",
+      "settings": "Paramètres",
+      "more": "Plus"
+    },
+    "quick": {
+      "new": "Nouveau",
+      "scheduleMeeting": "Planifier une réunion",
+      "scheduleMeetingHint": "Préparer une réunion et ses actions de suivi",
+      "addOutreach": "Ajouter un contact d'évangélisation",
+      "addOutreachHint": "Assurer le suivi d'une conversation",
+      "registerGuest": "Inscrire un invité",
+      "registerGuestHint": "Enregistrer un nouveau venu",
+      "recordAttendance": "Enregistrer la présence",
+      "recordAttendanceHint": "Saisir le comptage d'un culte",
+      "logFollowUp": "Consigner un suivi",
+      "logFollowUpHint": "Confier quelqu'un à un responsable",
+      "addMember": "Ajouter un membre",
+      "addMemberHint": "Créer une fiche de membre"
+    },
+    "header": {
+      "searchPlaceholder": "Rechercher des personnes, branches, utilisateurs...",
+      "search": "Rechercher",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu",
+      "expandSidebar": "Déplier la barre latérale",
+      "collapseSidebar": "Replier la barre latérale",
+      "quickNavigation": "Navigation rapide",
+      "mainNavigation": "Principal",
+      "alerts": "Alertes",
+      "alertsLabel": "Alertes, {count} actives",
+      "branchesInScope": "{count, plural, one {# branche} other {# branches}} dans le périmètre",
+      "allCaughtUp": "Vous êtes à jour.",
+      "firstTimersInRange": "{count} nouveaux venus sur votre période de rapport",
+      "urgent": "Urgent",
+      "needsAttention": "À traiter",
+      "forReview": "À vérifier"
+    }
+  }
+}

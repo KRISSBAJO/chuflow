@@ -1,6 +1,7 @@
 import { DashboardScopeFilterBar } from "@/components/dashboard-scope-filter-bar";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { buttonClass } from "@/components/ui/ui";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { Shell } from "@/components/shell";
@@ -75,9 +76,20 @@ export default async function DashboardPage({
     serverGet<DistrictOption[]>("/districts").catch(() => []),
   ]);
 
+  const t = await getTranslations("dashboard");
+
   return (
     <Shell>
-      {user.hasOversight && <div className="flex flex-wrap gap-3 text-sm"><Link href={`/dashboard?branchId=${user.branchId}`} className={buttonClass("secondary", "sm")}>My church</Link><Link href="/hierarchy" className={buttonClass("secondary", "sm")}>District, zone & area overview</Link></div>}
+      {user.hasOversight && (
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link href={`/dashboard?branchId=${user.branchId}`} className={buttonClass("secondary", "sm")}>
+            {t("myChurch")}
+          </Link>
+          <Link href="/hierarchy" className={buttonClass("secondary", "sm")}>
+            {t("hierarchyOverview")}
+          </Link>
+        </div>
+      )}
       <DashboardView
         dashboard={dashboard}
         user={user}

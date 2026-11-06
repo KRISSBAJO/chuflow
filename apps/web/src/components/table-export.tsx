@@ -3,50 +3,52 @@ import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/ui";
 import { useSession } from "@/components/session-context";
+import { useTranslations } from "next-intl";
 
-const TABLES: Record<string, [string, string][]> = {
-  "/hierarchy": [["hierarchy", "Oversight structure"], ["hierarchy-churches", "Church placement"]],
- "/care": [["care","Care records"]],
-  "/meetings": [["meetings", "Meetings"]],
-  "/members": [["members", "Members"]],
-  "/guests": [["guests", "Guests"]],
-  "/users": [["users", "Users"]],
-  "/branches": [["branches", "Branches"]],
-  "/service-units": [["service-units", "Service units"]],
-  "/templates": [["templates", "Templates"]],
-  "/follow-up": [["follow-up", "Follow-up"]],
-  "/evangelism": [["evangelism", "Evangelism contacts"]],
-  "/evangelism/links": [["evangelism-links", "Shareable links"]],
-  "/communications": [["communications", "Communications"]],
-  "/weekly-reports": [["weekly-reports", "Weekly reports"]],
-  "/maag-reports": [["maag-reports", "MAAG reports"]],
-  "/reports": [["reports", "Reports"]],
+const TABLES: Record<string, string[]> = {
+  "/hierarchy": ["hierarchy", "hierarchy-churches"],
+  "/care": ["care"],
+  "/meetings": ["meetings"],
+  "/members": ["members"],
+  "/guests": ["guests"],
+  "/users": ["users"],
+  "/branches": ["branches"],
+  "/service-units": ["service-units"],
+  "/templates": ["templates"],
+  "/follow-up": ["follow-up"],
+  "/evangelism": ["evangelism"],
+  "/evangelism/links": ["evangelism-links"],
+  "/communications": ["communications"],
+  "/weekly-reports": ["weekly-reports"],
+  "/maag-reports": ["maag-reports"],
+  "/reports": ["reports"],
   "/finance": [
-    ["ledger", "Ledger"],
-    ["offerings", "Offerings"],
-    ["expenses", "Expenses"],
-    ["finance-accounts", "Accounts"],
-    ["offering-types", "Offering types"],
-    ["expense-categories", "Expense categories"],
+    "ledger",
+    "offerings",
+    "expenses",
+    "finance-accounts",
+    "offering-types",
+    "expense-categories",
   ],
   "/approvals": [
-    ["attendance-approvals", "Attendance approvals"],
-    ["expense-approvals", "Expense approvals"],
-    ["workspace-requests", "Workspace requests"],
-    ["audit-logs", "Audit logs"],
+    "attendance-approvals",
+    "expense-approvals",
+    "workspace-requests",
+    "audit-logs",
   ],
 };
 
 export function ExportTableButtons({
   resource,
   rows,
-  label = "Download table",
+  label,
 }: {
   resource: string;
   rows?: unknown[];
   label?: string;
 }) {
   const query = useSearchParams();
+  const t = useTranslations("common");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function download(format: "xlsx" | "csv") {
@@ -67,7 +69,7 @@ export function ExportTableButtons({
       );
       if (!response.ok) {
         const body = (await response.json()) as { message?: string };
-        throw new Error(body.message || "Download failed. Please try again.");
+        throw new Error(body.message || t("downloadFailed"));
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -79,7 +81,7 @@ export function ExportTableButtons({
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Download failed.");
+      setError(e instanceof Error ? e.message : t("downloadFailed"));
     } finally {
       setBusy(false);
     }
@@ -87,14 +89,14 @@ export function ExportTableButtons({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-sm text-[#6b6b6b]">{label}</span>
+        <span className="mr-1 text-sm text-[#6b6b6b]">{label ?? t("downloadTable")}</span>
         <Button
           variant="secondary"
           size="sm"
           disabled={busy}
           onClick={() => download("xlsx")}
         >
-          {busy ? "Preparing…" : "Excel (.xlsx)"}
+          {busy ? t("preparing") : t("excelFile")}
         </Button>
         <Button
           variant="secondary"
@@ -102,7 +104,7 @@ export function ExportTableButtons({
           disabled={busy}
           onClick={() => download("csv")}
         >
-          CSV / Google Sheets
+          {t("csvSheets")}
         </Button>
       </div>
       {error && (
@@ -118,8 +120,10 @@ export function TableExportToolbar() {
   const path = usePathname();
   const params = useSearchParams();
   const { user } = useSession();
+  const t = useTranslations("common");
+  const tt = useTranslations("exportTables");
   const tables = (TABLES[path] || []).filter(
-    ([id]) => id !== "workspace-requests" || user?.role === "super_admin",
+    (id) => id !== "workspace-requests" || user?.role === "super_admin",
   );
   const [selected, setSelected] = useState("");
   if (!tables.length) return null;
@@ -133,34 +137,33 @@ export function TableExportToolbar() {
     governance: "audit-logs",
   };
   const defaultResource =
-    tables.find(([id]) => id === tabMap[params.get("tab") || ""])?.[0] ||
-    tables[0][0];
-  const resource = tables.some(([id]) => id === selected)
+    tables.find((id) => id === tabMap[params.get("tab") || ""]) ||
+    tables[0];
+  const resource = tables.some((id) => id === selected)
     ? selected
     : defaultResource;
   return (
     <section
-      aria-label="Table downloads"
+      aria-label={t("tableDownloads")}
       className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/[0.06] bg-white p-4"
     >
       <div>
-        <p className="text-sm font-medium">Export your table</p>
+        <p className="text-sm font-medium">{t("exportYourTable")}</p>
         <p className="mt-1 text-xs text-[#8a8780]">
-          All matching records across pages. Import either file into Google
-          Sheets using File → Import → Upload.
+          {t("exportHint")}
         </p>
       </div>
       {tables.length > 1 && (
         <label className="text-xs text-[#6b6b6b]">
-          Table
+          {t("table")}
           <select
             className="ui-input mt-1"
             value={resource}
             onChange={(event) => setSelected(event.target.value)}
           >
-            {tables.map(([id, title]) => (
+            {tables.map((id) => (
               <option key={id} value={id}>
-                {title}
+                {tt(id as Parameters<typeof tt>[0])}
               </option>
             ))}
           </select>

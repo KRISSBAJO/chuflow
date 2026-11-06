@@ -1,0 +1,25 @@
+{
+  "status": {
+    "notFound": {
+      "label": "Error 404",
+      "title": "No encontramos esa página.",
+      "body": "El enlace puede estar mal escrito o desactualizado, o pertenecer a una sede, distrito o formulario que cambió de nombre."
+    },
+    "unauthorized": {
+      "label": "Acceso restringido",
+      "title": "Esta área no forma parte de tu rol.",
+      "body": "Has iniciado sesión, pero esta página está fuera de los permisos asignados a tu cuenta. Pide acceso a un administrador si lo necesitas.",
+      "openWorkspace": "Abrir mi espacio",
+      "switchAccount": "Cambiar de cuenta"
+    },
+    "connect": {
+      "label": "Conéctate",
+      "pausedTitle": "El registro de invitados está en pausa.",
+      "pausedBody": "{organization} no está aceptando registros de invitados en línea por ahora. Habla con alguien del equipo de bienvenida.",
+      "offlineTitle": "Volvemos enseguida.",
+      "offlineBody": "El registro de invitados no está disponible temporalmente. Inténtalo de nuevo en unos minutos.",
+      "emptyTitle": "El registro de invitados aún no está abierto.",
+      "emptyBody": "No hay un formulario de invitados activo en este momento. Si administras esta iglesia, activa una plantilla de registro de invitados en ChuFlow."
+    }
+  }
+}

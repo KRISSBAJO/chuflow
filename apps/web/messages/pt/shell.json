@@ -1,0 +1,68 @@
+{
+  "shell": {
+    "groups": {
+      "overview": "Visão geral",
+      "people": "Pessoas",
+      "services": "Cultos",
+      "stewardship": "Mordomia",
+      "organization": "Organização",
+      "insights": "Análises"
+    },
+    "nav": {
+      "dashboard": "Painel",
+      "home": "Início",
+      "approvals": "Aprovações",
+      "communications": "Comunicações",
+      "evangelism": "Evangelismo",
+      "guests": "Visitantes",
+      "followUp": "Acompanhamento",
+      "members": "Membros",
+      "serviceUnits": "Unidades de serviço",
+      "meetings": "Reuniões",
+      "attendance": "Presença",
+      "weeklyReports": "Relatórios semanais",
+      "maagReports": "Relatórios MAAG",
+      "finance": "Finanças",
+      "branches": "Filiais",
+      "structure": "Estrutura",
+      "users": "Utilizadores",
+      "templates": "Modelos",
+      "reports": "Relatórios",
+      "settings": "Definições",
+      "more": "Mais"
+    },
+    "quick": {
+      "new": "Novo",
+      "scheduleMeeting": "Agendar reunião",
+      "scheduleMeetingHint": "Planear uma reunião e as ações de acompanhamento",
+      "addOutreach": "Adicionar contacto de evangelismo",
+      "addOutreachHint": "Acompanhar uma conversa de evangelismo",
+      "registerGuest": "Registar um visitante",
+      "registerGuestHint": "Registar alguém que vem pela primeira vez",
+      "recordAttendance": "Registar presença",
+      "recordAttendanceHint": "Anotar a contagem de um culto",
+      "logFollowUp": "Registar acompanhamento",
+      "logFollowUpHint": "Atribuir o cuidado de alguém",
+      "addMember": "Adicionar um membro",
+      "addMemberHint": "Criar uma ficha de membro"
+    },
+    "header": {
+      "searchPlaceholder": "Pesquisar pessoas, filiais, utilizadores...",
+      "search": "Pesquisar",
+      "openMenu": "Abrir menu",
+      "closeMenu": "Fechar menu",
+      "expandSidebar": "Expandir barra lateral",
+      "collapseSidebar": "Recolher barra lateral",
+      "quickNavigation": "Navegação rápida",
+      "mainNavigation": "Principal",
+      "alerts": "Alertas",
+      "alertsLabel": "Alertas, {count} ativos",
+      "branchesInScope": "{count, plural, one {# filial} other {# filiais}} no âmbito",
+      "allCaughtUp": "Está tudo em dia.",
+      "firstTimersInRange": "{count} visitantes novos no seu período de relatório",
+      "urgent": "Urgente",
+      "needsAttention": "Precisa de atenção",
+      "forReview": "Para rever"
+    }
+  }
+}

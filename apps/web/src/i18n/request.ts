@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { isLocale, LOCALE_COOKIE, matchAcceptLanguage } from "./config";
+import { loadMessages } from "./messages";
 
 /*
  * Language is chosen per request, not per URL: the cookie set by the language picker wins,
@@ -13,6 +14,6 @@ export default getRequestConfig(async () => {
 
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
+    messages: await loadMessages(locale),
   };
 });

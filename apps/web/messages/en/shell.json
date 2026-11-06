@@ -1,0 +1,68 @@
+{
+  "shell": {
+    "groups": {
+      "overview": "Overview",
+      "people": "People",
+      "services": "Services",
+      "stewardship": "Stewardship",
+      "organization": "Organization",
+      "insights": "Insights"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "home": "Home",
+      "approvals": "Approvals",
+      "communications": "Communications",
+      "evangelism": "Evangelism",
+      "guests": "Guests",
+      "followUp": "Follow-up",
+      "members": "Members",
+      "serviceUnits": "Service units",
+      "meetings": "Meetings",
+      "attendance": "Attendance",
+      "weeklyReports": "Weekly reports",
+      "maagReports": "MAAG reports",
+      "finance": "Finance",
+      "branches": "Branches",
+      "structure": "Structure",
+      "users": "Users",
+      "templates": "Templates",
+      "reports": "Reports",
+      "settings": "Settings",
+      "more": "More"
+    },
+    "quick": {
+      "new": "New",
+      "scheduleMeeting": "Schedule meeting",
+      "scheduleMeetingHint": "Plan a meeting and follow up actions",
+      "addOutreach": "Add outreach contact",
+      "addOutreachHint": "Follow up an outreach conversation",
+      "registerGuest": "Register a guest",
+      "registerGuestHint": "Capture a first-timer",
+      "recordAttendance": "Record attendance",
+      "recordAttendanceHint": "Log a service count",
+      "logFollowUp": "Log follow-up",
+      "logFollowUpHint": "Assign care to someone",
+      "addMember": "Add a member",
+      "addMemberHint": "Create a member record"
+    },
+    "header": {
+      "searchPlaceholder": "Search people, branches, users...",
+      "search": "Search",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "expandSidebar": "Expand sidebar",
+      "collapseSidebar": "Collapse sidebar",
+      "quickNavigation": "Quick navigation",
+      "mainNavigation": "Main",
+      "alerts": "Alerts",
+      "alertsLabel": "Alerts, {count} active",
+      "branchesInScope": "{count, plural, one {# branch} other {# branches}} in scope",
+      "allCaughtUp": "You're all caught up.",
+      "firstTimersInRange": "{count} first-timers in your report range",
+      "urgent": "Urgent",
+      "needsAttention": "Needs attention",
+      "forReview": "For review"
+    }
+  }
+}

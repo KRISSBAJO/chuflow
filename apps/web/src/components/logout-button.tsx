@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
 import { forgetDeviceOnServer } from "@/lib/pwa";
 
 export function LogoutButton({ compact = false, icon = false }: { compact?: boolean; icon?: boolean }) {
+  const t = useTranslations("common");
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
@@ -28,8 +30,8 @@ export function LogoutButton({ compact = false, icon = false }: { compact?: bool
         type="button"
         onClick={handleLogout}
         disabled={loading}
-        aria-label="Sign out"
-        title="Sign out"
+        aria-label={t("signOut")}
+        title={t("signOut")}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#8a8780] transition-colors hover:bg-white hover:text-[var(--lp-ink)] disabled:opacity-50"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="h-[18px] w-[18px]" aria-hidden>
@@ -50,7 +52,7 @@ export function LogoutButton({ compact = false, icon = false }: { compact?: bool
           : "rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
       }
     >
-      {loading ? "Signing out..." : "Logout"}
+      {loading ? t("signingOut") : t("signOut")}
     </button>
   );
 }

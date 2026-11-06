@@ -1,15 +1,14 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useAppFormat, useRoleLabel, useStatusLabel } from "@/i18n/labels";
 import { Icon, type IconName } from "@/components/app/icons";
 import type { SessionUser } from "@/lib/auth";
-import { canAccessRoute, formatRoleLabel } from "@/lib/permissions";
+import { canAccessRoute } from "@/lib/permissions";
 import type { DashboardBranchAlert, DashboardOverview } from "@/lib/types";
 import { BranchHealth } from "./branch-health";
 
 type Operational = NonNullable<DashboardOverview["operational"]>;
-
-const numberFormatter = new Intl.NumberFormat("en-US");
-const relativeFormatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
 /** Follow-up stages in workflow order. */
 const STAGE_ORDER = ["new", "assigned", "contacted", "prayed_with", "invited_back", "returned", "converted"];
@@ -24,25 +23,6 @@ export function buildDashboardHref(filters: { days?: number | string; oversightR
   if (filters.branchId) query.set("branchId", filters.branchId);
   const queryString = query.toString();
   return queryString ? `/dashboard?${queryString}` : "/dashboard";
-}
-
-function formatCount(value: number) {
-  return numberFormatter.format(value);
-}
-
-function formatLabel(value: string) {
-  const text = value.replace(/_/g, " ").toLowerCase();
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function relativeDate(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const days = Math.round((date.getTime() - Date.now()) / 86_400_000);
-  if (Math.abs(days) < 1) return "today";
-  if (Math.abs(days) < 30) return relativeFormatter.format(days, "day");
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function initials(...parts: (string | undefined)[]) {
@@ -103,6 +83,7 @@ function StatTile({
   highlight?: boolean;
   delay: number;
 }) {
+  const { number: formatCount } = useAppFormat();
   const body = (
     <>
       <div className="flex items-center gap-2.5">
@@ -155,6 +136,7 @@ function WatchRow({ item, href, detail }: { item: DashboardBranchAlert; href: st
 
 /** Shows the first few rows and tucks the rest behind a native "Show N more" toggle. */
 function WatchItems<T>({ items, render }: { items: T[]; render: (item: T) => ReactNode }) {
+  const t = useTranslations("common");
   const visible = items.slice(0, 4);
   const hidden = items.slice(4);
   return (
@@ -163,8 +145,8 @@ function WatchItems<T>({ items, render }: { items: T[]; render: (item: T) => Rea
       {hidden.length ? (
         <details className="group">
           <summary className="mx-2 mt-1 flex cursor-pointer list-none items-center gap-1.5 rounded-lg py-1.5 text-[13px] font-medium text-[#55534e] hover:text-[var(--lp-ink)] [&::-webkit-details-marker]:hidden">
-            <span className="group-open:hidden">Show {hidden.length} more</span>
-            <span className="hidden group-open:inline">Show less</span>
+            <span className="group-open:hidden">{t("showMore", { count: hidden.length })}</span>
+            <span className="hidden group-open:inline">{t("showLess")}</span>
             <Icon name="chevronDown" className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
           </summary>
           <ul>{hidden.map(render)}</ul>
@@ -175,6 +157,8 @@ function WatchItems<T>({ items, render }: { items: T[]; render: (item: T) => Rea
 }
 
 function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
+  const t = useTranslations("dashboard.watchlist");
+  const { number: formatCount, relative: relativeDate } = useAppFormat();
   const days = dashboard.scope.days;
   const missing = dashboard.executive.branchesWithoutRecentAttendance;
   const backlog = dashboard.executive.highFollowUpBacklog;
@@ -182,13 +166,13 @@ function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
 
   return (
     <section className="app-card flex flex-col p-6 sm:p-7">
-      <CardHeader label="Watchlist" title="Needs your attention" />
+      <CardHeader label={t("label")} title={t("title")} />
 
       <div className="mt-6">
         <div className="flex items-center justify-between px-2">
           <p className="flex items-center gap-2 text-[13px] font-semibold text-[var(--lp-ink)]">
             <Icon name="clock" className="h-4 w-4 text-[#ea580c]" />
-            No recent attendance
+            {t("noRecentAttendance")}
           </p>
           <span className="rounded-full bg-[#f6f5f1] px-2.5 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--lp-ink)]">
             {missing.length}
@@ -204,14 +188,14 @@ function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
                 href={buildDashboardHref({ days, branchId: item._id })}
                 detail={
                   <span className="shrink-0 text-[12px] text-[#8a8780]">
-                    {relativeDate(item.lastSubmittedAt) ? `Last ${relativeDate(item.lastSubmittedAt)}` : "Never reported"}
+                    {relativeDate(item.lastSubmittedAt) ? t("last", { when: relativeDate(item.lastSubmittedAt) ?? "" }) : t("neverReported")}
                   </span>
                 }
               />
             )}
           />
         ) : (
-          <p className="mt-2 px-2 text-[13px] text-[#8a8780]">Every branch has reported recently.</p>
+          <p className="mt-2 px-2 text-[13px] text-[#8a8780]">{t("allReported")}</p>
         )}
       </div>
 
@@ -219,7 +203,7 @@ function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
         <div className="flex items-center justify-between px-2">
           <p className="flex items-center gap-2 text-[13px] font-semibold text-[var(--lp-ink)]">
             <Icon name="care" className="h-4 w-4 text-[#ea580c]" />
-            Follow-up backlog
+            {t("backlog")}
           </p>
           <span className="rounded-full bg-[#f6f5f1] px-2.5 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--lp-ink)]">
             {backlog.length}
@@ -234,7 +218,7 @@ function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
                 item={item}
                 href={buildDashboardHref({ days, branchId: item._id })}
                 detail={
-                  <span className="flex shrink-0 items-center gap-2" title={`${item.pendingFollowUp ?? 0} pending`}>
+                  <span className="flex shrink-0 items-center gap-2" title={t("pending", { count: item.pendingFollowUp ?? 0 })}>
                     <span className="h-1.5 w-14 overflow-hidden rounded-full bg-[#f1f0ec]">
                       <span
                         className="app-bar block h-full rounded-full bg-[#ea580c]"
@@ -250,7 +234,7 @@ function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
             )}
           />
         ) : (
-          <p className="mt-2 px-2 text-[13px] text-[#8a8780]">No follow-up backlog is building up.</p>
+          <p className="mt-2 px-2 text-[13px] text-[#8a8780]">{t("noBacklog")}</p>
         )}
       </div>
     </section>
@@ -258,6 +242,9 @@ function Watchlist({ dashboard }: { dashboard: DashboardOverview }) {
 }
 
 function FollowUpPipeline({ pipeline, href }: { pipeline: Operational["followUpPipeline"]; href?: string }) {
+  const t = useTranslations("dashboard.pipeline");
+  const { number: formatCount } = useAppFormat();
+  const formatLabel = useStatusLabel();
   const stages = [...pipeline].sort((left, right) => {
     const a = STAGE_ORDER.indexOf(left.status);
     const b = STAGE_ORDER.indexOf(right.status);
@@ -269,14 +256,14 @@ function FollowUpPipeline({ pipeline, href }: { pipeline: Operational["followUpP
   return (
     <section className="app-card flex flex-col p-6 sm:p-7">
       <CardHeader
-        label="Follow-up pipeline"
-        title={`${formatCount(total)} ${total === 1 ? "person" : "people"} in care`}
-        action={href ? <CardLink href={href}>Open follow-up</CardLink> : null}
+        label={t("label")}
+        title={t("title", { count: total })}
+        action={href ? <CardLink href={href}>{t("open")}</CardLink> : null}
       />
 
       {total > 0 ? (
         <>
-          <div className="mt-7 flex h-4 w-full gap-[2px] overflow-hidden rounded-full" role="img" aria-label="Share of people at each follow-up stage">
+          <div className="mt-7 flex h-4 w-full gap-[2px] overflow-hidden rounded-full" role="img" aria-label={t("chartLabel")}>
             {stages
               .filter((stage) => stage.total > 0)
               .map((stage, index) => (
@@ -303,7 +290,7 @@ function FollowUpPipeline({ pipeline, href }: { pipeline: Operational["followUpP
         </>
       ) : (
         <div className="mt-6">
-          <Empty icon="care">Nobody is in the follow-up pipeline in this scope right now.</Empty>
+          <Empty icon="care">{t("empty")}</Empty>
         </div>
       )}
     </section>
@@ -311,12 +298,15 @@ function FollowUpPipeline({ pipeline, href }: { pipeline: Operational["followUpP
 }
 
 function AttendanceByService({ mix, href }: { mix: Operational["attendanceMix"]; href?: string }) {
+  const t = useTranslations("dashboard.attendance");
+  const { number: formatCount } = useAppFormat();
+  const formatLabel = useStatusLabel();
   const services = [...mix].sort((left, right) => right.totalPeople - left.totalPeople);
   const max = Math.max(1, ...services.map((service) => service.totalPeople));
 
   return (
     <section className="app-card flex flex-col p-6 sm:p-7">
-      <CardHeader label="Attendance by service" title="Who came to church" action={href ? <CardLink href={href}>Attendance</CardLink> : null} />
+      <CardHeader label={t("label")} title={t("title")} action={href ? <CardLink href={href}>{t("open")}</CardLink> : null} />
       {services.length ? (
         <ul className="mt-6 space-y-5">
           {services.map((service, index) => (
@@ -332,15 +322,18 @@ function AttendanceByService({ mix, href }: { mix: Operational["attendanceMix"];
                 />
               </span>
               <p className="mt-1.5 text-[12px] text-[#8a8780]">
-                {formatCount(service.firstTimers)} first timers · {formatCount(service.newConverts)} converts ·{" "}
-                {formatCount(service.summarySubmissions)} reports
+                {t("summary", {
+                  firstTimers: formatCount(service.firstTimers),
+                  converts: formatCount(service.newConverts),
+                  reports: formatCount(service.summarySubmissions),
+                })}
               </p>
             </li>
           ))}
         </ul>
       ) : (
         <div className="mt-6">
-          <Empty icon="attendance">No attendance has been recorded in this range yet.</Empty>
+          <Empty icon="attendance">{t("empty")}</Empty>
         </div>
       )}
     </section>
@@ -362,9 +355,10 @@ function PeopleList({
   emptyText: string;
   people: { id: string; name: string; initials: string; branch: string; status: string; date: string | null; link?: string }[];
 }) {
+  const t = useTranslations("common");
   return (
     <section className="app-card flex flex-col p-6 sm:p-7">
-      <CardHeader label={label} title={title} action={href ? <CardLink href={href}>View all</CardLink> : null} />
+      <CardHeader label={label} title={title} action={href ? <CardLink href={href}>{t("viewAll")}</CardLink> : null} />
       {people.length ? (
         <ul className="mt-5 divide-y divide-black/[0.05]">
           {people.slice(0, 8).map((person) => {
@@ -407,13 +401,6 @@ function PeopleList({
   );
 }
 
-function scopeHeadline(scope: DashboardOverview["scope"]) {
-  if (scope.kind === "all_network") return "Here's your whole network at a glance.";
-  if (scope.kind === "national") return `Here's ${scope.label} at a glance.`;
-  if (scope.kind === "district") return `Here's ${scope.label} at a glance.`;
-  return `Here's how ${scope.label} is doing.`;
-}
-
 export function DashboardView({
   dashboard,
   user,
@@ -425,8 +412,20 @@ export function DashboardView({
   filterBar: ReactNode;
   showAllNetworkLink: boolean;
 }) {
+  const t = useTranslations("dashboard");
+  const tc = useTranslations("common");
+  const roleLabel = useRoleLabel();
+  const formatLabel = useStatusLabel();
+  const { relative: relativeDate } = useAppFormat();
   const { scope, metrics } = dashboard;
   const can = (href: string) => canAccessRoute(user.role, href);
+  const scopeLabel = scope.kind === "all_network" ? t("allNetwork") : scope.label;
+  const headline =
+    scope.kind === "all_network"
+      ? t("headline.allNetwork")
+      : scope.kind === "branch"
+        ? t("headline.branch", { label: scope.label })
+        : t("headline.area", { label: scope.label });
   const growthHrefs = Object.fromEntries(
     [...dashboard.executive.topGrowthBranches, ...dashboard.executive.bottomGrowthBranches].map((item) => [
       item._id,
@@ -439,10 +438,10 @@ export function DashboardView({
       <div className="app-rise flex flex-col gap-5 pt-1 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="lp-label">
-            {formatRoleLabel(user.role)} · {scope.label}
+            {roleLabel(user.role)} · {scopeLabel}
           </p>
-          <h1 className="lp-heading mt-3 text-[2rem] leading-[1.08] sm:text-[2.6rem]">Welcome back, {user.firstName}.</h1>
-          <p className="mt-2 text-[16px] text-[#6b6b6b]">{scopeHeadline(scope)}</p>
+          <h1 className="lp-heading mt-3 text-[2rem] leading-[1.08] sm:text-[2.6rem]">{t("welcomeBack", { name: user.firstName })}</h1>
+          <p className="mt-2 text-[16px] text-[#6b6b6b]">{headline}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {showAllNetworkLink && scope.kind !== "all_network" ? (
@@ -450,12 +449,12 @@ export function DashboardView({
               href={buildDashboardHref({ days: scope.days })}
               className="inline-flex h-10 items-center rounded-xl border border-black/[0.07] bg-white px-4 text-[14px] font-medium text-[var(--lp-ink)] transition-colors hover:bg-[#f6f5f1]"
             >
-              All network
+              {t("allNetwork")}
             </Link>
           ) : null}
           {can("/reports") ? (
             <Link href="/reports" className="lp-pill-dark inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[14px] font-medium">
-              Detailed reports
+              {t("detailedReports")}
               <Icon name="arrowRight" className="h-4 w-4" />
             </Link>
           ) : null}
@@ -466,33 +465,33 @@ export function DashboardView({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
-          label="Guests"
+          label={t("tiles.guests")}
           value={metrics.totalGuests}
-          caption={`Guest records in ${scope.label}`}
+          caption={t("tiles.guestsCaption", { scope: scopeLabel })}
           icon="guests"
           href={can("/guests") ? "/guests" : undefined}
           delay={0}
         />
         <StatTile
-          label="Members"
+          label={t("tiles.members")}
           value={metrics.totalMembers}
-          caption="Current membership in this scope"
+          caption={t("tiles.membersCaption")}
           icon="members"
           href={can("/members") ? "/members" : undefined}
           delay={60}
         />
         <StatTile
-          label="Attendance"
+          label={t("tiles.attendance")}
           value={metrics.totalAttendance}
-          caption={`Recorded over the last ${scope.days} days`}
+          caption={t("tiles.attendanceCaption", { days: scope.days })}
           icon="attendance"
           href={can("/attendance") ? "/attendance" : undefined}
           delay={120}
         />
         <StatTile
-          label="Waiting for follow-up"
+          label={t("tiles.waiting")}
           value={metrics.pendingFollowUp}
-          caption="New or assigned, not yet contacted"
+          caption={t("tiles.waitingCaption")}
           icon="care"
           href={can("/follow-up") ? "/follow-up" : undefined}
           highlight={metrics.pendingFollowUp > 0}
@@ -524,32 +523,32 @@ export function DashboardView({
 
           <section className="grid gap-4 lg:grid-cols-2">
             <PeopleList
-              label="Guests"
-              title="Recently welcomed"
+              label={t("recentGuests.label")}
+              title={t("recentGuests.title")}
               href={can("/guests") ? "/guests" : undefined}
               emptyIcon="guests"
-              emptyText="No guests have been captured in this scope recently."
+              emptyText={t("recentGuests.empty")}
               people={dashboard.operational.recentGuests.map((guest) => ({
                 id: guest._id,
                 name: `${guest.firstName} ${guest.lastName}`,
                 initials: initials(guest.firstName, guest.lastName),
-                branch: guest.branchId?.name ?? "Branch",
+                branch: guest.branchId?.name ?? tc("branch"),
                 status: formatLabel(guest.visitStatus),
                 date: relativeDate(guest.createdAt),
                 link: can("/guests") ? `/guests/${guest._id}` : undefined,
               }))}
             />
             <PeopleList
-              label="Members"
-              title="Newest members"
+              label={t("newestMembers.label")}
+              title={t("newestMembers.title")}
               href={can("/members") ? "/members" : undefined}
               emptyIcon="members"
-              emptyText="No new members have been added in this scope yet."
+              emptyText={t("newestMembers.empty")}
               people={dashboard.operational.newestMembers.map((member) => ({
                 id: member._id,
                 name: [member.title, member.firstName, member.lastName].filter(Boolean).join(" "),
                 initials: initials(member.firstName, member.lastName),
-                branch: member.branchId?.name ?? "Branch",
+                branch: member.branchId?.name ?? tc("branch"),
                 status: formatLabel(member.membershipStatus),
                 date: relativeDate(member.createdAt),
                 link: can("/members") ? `/members/${member._id}` : undefined,
@@ -564,11 +563,8 @@ export function DashboardView({
               <Icon name="pin" />
             </span>
             <div>
-              <h2 className="lp-heading text-[20px]">Zoom in for live activity</h2>
-              <p className="mt-1.5 max-w-xl text-[14px] leading-[1.6] text-[#6b6b6b]">
-                Choose a district or branch above to see recent guests, newest members, the follow-up pipeline and
-                attendance by service. They stay hidden at network level so this view stays fast as the church grows.
-              </p>
+              <h2 className="lp-heading text-[20px]">{t("zoom.title")}</h2>
+              <p className="mt-1.5 max-w-xl text-[14px] leading-[1.6] text-[#6b6b6b]">{t("zoom.body")}</p>
             </div>
           </div>
         </section>

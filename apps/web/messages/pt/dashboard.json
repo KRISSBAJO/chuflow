@@ -1,0 +1,83 @@
+{
+  "dashboard": {
+    "myChurch": "A minha igreja",
+    "hierarchyOverview": "Vista de distrito, zona e área",
+    "welcomeBack": "Bem-vindo de volta, {name}.",
+    "headline": {
+      "allNetwork": "Aqui está toda a sua rede num relance.",
+      "area": "Aqui está {label} num relance.",
+      "branch": "Veja como está {label}."
+    },
+    "allNetwork": "Toda a rede",
+    "detailedReports": "Relatórios detalhados",
+    "tiles": {
+      "guests": "Visitantes",
+      "guestsCaption": "Fichas de visitantes em {scope}",
+      "members": "Membros",
+      "membersCaption": "Membros atuais neste âmbito",
+      "attendance": "Presença",
+      "attendanceCaption": "Registada nos últimos {days} dias",
+      "waiting": "À espera de acompanhamento",
+      "waitingCaption": "Novos ou atribuídos, ainda não contactados"
+    },
+    "watchlist": {
+      "label": "Em observação",
+      "title": "Precisa da sua atenção",
+      "noRecentAttendance": "Sem presença recente",
+      "last": "Último {when}",
+      "neverReported": "Nunca reportou",
+      "allReported": "Todas as filiais reportaram recentemente.",
+      "backlog": "Acompanhamentos em atraso",
+      "pending": "{count} pendentes",
+      "noBacklog": "Não há atrasos de acompanhamento a acumular-se."
+    },
+    "pipeline": {
+      "label": "Percurso de acompanhamento",
+      "title": "{count, plural, one {# pessoa} other {# pessoas}} em cuidado",
+      "open": "Abrir acompanhamento",
+      "chartLabel": "Proporção de pessoas em cada etapa do acompanhamento",
+      "empty": "Ninguém está no percurso de acompanhamento neste âmbito neste momento."
+    },
+    "attendance": {
+      "label": "Presença por culto",
+      "title": "Quem veio à igreja",
+      "open": "Presença",
+      "summary": "{firstTimers} novos · {converts} convertidos · {reports} relatórios",
+      "empty": "Ainda não foi registada presença neste período."
+    },
+    "recentGuests": {
+      "label": "Visitantes",
+      "title": "Recém-acolhidos",
+      "empty": "Não foram registados visitantes neste âmbito recentemente."
+    },
+    "newestMembers": {
+      "label": "Membros",
+      "title": "Membros mais recentes",
+      "empty": "Ainda não foram adicionados novos membros neste âmbito."
+    },
+    "zoom": {
+      "title": "Aproxime-se para ver a atividade em direto",
+      "body": "Escolha um distrito ou uma filial acima para ver os visitantes recentes, os membros mais novos, o percurso de acompanhamento e a presença por culto. Ficam ocultos ao nível da rede para que esta vista se mantenha rápida à medida que a igreja cresce."
+    },
+    "health": {
+      "label": "Saúde das filiais",
+      "growing": "Onde a igreja está a crescer",
+      "support": "Filiais que precisam de apoio",
+      "view": "Vista da saúde das filiais",
+      "leaders": "Líderes de crescimento",
+      "attention": "Precisa de atenção",
+      "branch": "Filial",
+      "guests": "Visitantes",
+      "members": "Membros",
+      "converts": "Convertidos",
+      "score": "Pontuação de crescimento",
+      "scoreValue": "Pontuação de crescimento {score}",
+      "noGrowth": "Ainda não foi registada atividade de crescimento neste período.",
+      "noLow": "Nenhuma filial deste âmbito mostra atividade baixa."
+    },
+    "filters": {
+      "dateRange": "Período",
+      "daysShort": "{count} d"
+    }
+  }
+}

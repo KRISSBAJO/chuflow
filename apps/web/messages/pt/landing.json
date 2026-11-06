@@ -1,0 +1,141 @@
+{
+  "nav": {
+    "howItFlows": "Como funciona",
+    "features": "Funcionalidades",
+    "structure": "Estrutura",
+    "getStarted": "Começar",
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu"
+  },
+  "hero": {
+    "badgeNew": "Novo",
+    "badgeText": "Os relatórios semanais e MAAG chegaram",
+    "title": "Cada membro, cada ministério, num só <accent>fluxo.</accent>",
+    "subtitle": "O ChuFlow é a plataforma de gestão de igrejas para visitantes, acompanhamento, membros, presença e finanças, criada para filiais, distritos e equipas nacionais.",
+    "signInToChurch": "Entrar na sua igreja",
+    "tiles": {
+      "sanctuary": "Santuário",
+      "community": "Comunidade",
+      "worship": "Adoração",
+      "fellowship": "Comunhão",
+      "family": "Família"
+    }
+  },
+  "statement": {
+    "text": "Ajudamos as igrejas a <p1></p1> receber cada visitante, <p2></p2> cuidar de cada membro e <p3></p3> administrar cada oferta, <muted>de uma filial a toda uma nação.</muted>",
+    "alt1": "Membros da igreja a rir juntos",
+    "alt2": "Mulheres a ler a Bíblia juntas",
+    "alt3": "Um homem a ler a sua Bíblia"
+  },
+  "flow": {
+    "label": "Como funciona",
+    "title": "Da primeira visita ao serviço fiel.",
+    "subtitle": "Um percurso contínuo para cada pessoa, para que as suas equipas saibam sempre qual é o próximo passo.",
+    "step": "Passo {number}",
+    "steps": {
+      "welcome": {
+        "title": "Acolher",
+        "body": "Os visitantes registam-se na mesa de boas-vindas ou com um código QR em menos de um minuto.",
+        "tag": "Registo de visitantes"
+      },
+      "followUp": {
+        "title": "Acompanhar",
+        "body": "Um responsável pelo cuidado é designado com um próximo passo claro, para que ninguém fique esquecido.",
+        "tag": "Fluxo de cuidado"
+      },
+      "belong": {
+        "title": "Pertencer",
+        "body": "Quando estão prontos, os visitantes tornam-se membros e mantêm todo o seu historial.",
+        "tag": "Membros"
+      },
+      "grow": {
+        "title": "Crescer",
+        "body": "Presença, unidades de serviço e relatórios mostram cada vida a avançar.",
+        "tag": "Ministério"
+      }
+    }
+  },
+  "features": {
+    "label": "Funcionalidades",
+    "title": "Tudo o que faz a sua igreja funcionar.",
+    "subtitle": "Seis fluxos de ministério que viviam em cadernos, folhas de cálculo e grupos de conversa, agora num só lugar.",
+    "guests": {
+      "label": "Visitantes e acompanhamento",
+      "title": "Um cuidado de visitantes que nunca esquece um nome.",
+      "point1": "Registo por código QR e na mesa de boas-vindas",
+      "point2": "Atribuição automática de cuidado",
+      "point3": "Chamadas, visitas e pedidos de oração registados",
+      "photoAlt": "Membros da igreja vestidos para o culto de domingo"
+    },
+    "attendance": {
+      "label": "Presença",
+      "title": "Cada culto, contado com clareza.",
+      "caption": "Adultos, crianças, visitantes novos e convertidos, por culto."
+    },
+    "members": {
+      "label": "Membros",
+      "title": "Um só registo para cada pessoa.",
+      "body": "Perfis, filiais, unidades de serviço e historial, guardados num lugar partilhado em vez de folhas dispersas."
+    },
+    "finance": {
+      "label": "Finanças",
+      "title": "Uma mordomia pela qual pode responder.",
+      "offerings": "Ofertas",
+      "recorded": "Registadas",
+      "expenses": "Despesas",
+      "approved": "Aprovadas",
+      "period": "Período",
+      "locked": "Fechado"
+    },
+    "reports": {
+      "label": "Relatórios",
+      "title": "Relatórios que se consolidam sozinhos.",
+      "weekly": "Semanal",
+      "monthly": "Mensal",
+      "maag": "MAAG",
+      "spiritualIndices": "Índices espirituais",
+      "branchToNational": "Da filial ao nacional"
+    }
+  },
+  "structure": {
+    "label": "Feito para a estrutura da igreja",
+    "title": "A vista certa para cada nível.",
+    "body": "O acesso segue a estrutura da sua igreja. Cada pessoa vê o que o seu papel precisa, e cada ação fica num registo de auditoria.",
+    "levels": {
+      "national": {
+        "name": "Nacional",
+        "body": "Veja toda a rede de uma vez: relatórios, aprovações, definições e a saúde de cada distrito.",
+        "role1": "Administrador nacional",
+        "role2": "Pastor nacional"
+      },
+      "district": {
+        "name": "Distrito",
+        "body": "Coordene uma região, compare filiais e intervenha onde uma filial precisa de apoio.",
+        "role1": "Administrador de distrito",
+        "role2": "Pastor de distrito"
+      },
+      "branch": {
+        "name": "Filial",
+        "body": "Gira o dia a dia: visitantes, membros, cultos, ofertas e as equipas que servem.",
+        "role1": "Administrador de filial",
+        "role2": "Pastor residente",
+        "role3": "Pastor associado"
+      },
+      "units": {
+        "name": "Unidades",
+        "body": "Dê aos responsáveis pelo acompanhamento e aos recepcionistas ferramentas focadas exatamente no trabalho que fazem.",
+        "role1": "Acompanhamento",
+        "role2": "Recepcionista"
+      }
+    }
+  },
+  "cta": {
+    "title": "Pronto quando a sua igreja estiver.",
+    "body": "Solicite um espaço para a sua equipa, ou entre se a sua igreja já usa o ChuFlow."
+  },
+  "footer": {
+    "connect": "Ligue-se a nós",
+    "requestWorkspace": "Solicitar espaço",
+    "tagline": "A vida da igreja, em fluxo."
+  }
+}

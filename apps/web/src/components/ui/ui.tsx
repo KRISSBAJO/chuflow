@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from "react";
 import { Icon, type IconName } from "@/components/app/icons";
 
@@ -267,6 +268,7 @@ export function TabLinks({ items, className }: { items: { href: string; label: s
 }
 
 export function Pagination({ page, totalPages, prevHref, nextHref }: { page: number; totalPages: number; prevHref: string; nextHref: string }) {
+  const t = useTranslations("common");
   if (totalPages <= 1) return null;
   const atStart = page <= 1;
   const atEnd = page >= totalPages;
@@ -275,16 +277,13 @@ export function Pagination({ page, totalPages, prevHref, nextHref }: { page: num
 
   return (
     <div className="flex items-center justify-between gap-3 pt-2">
-      <p className="text-[13px] text-[#8a8780]">
-        Page <span className="font-medium tabular-nums text-[#111111]">{page}</span> of{" "}
-        <span className="tabular-nums">{totalPages}</span>
-      </p>
+      <p className="text-[13px] tabular-nums text-[#8a8780]">{t("pageOf", { page, total: totalPages })}</p>
       <div className="flex gap-2">
         <Link href={prevHref} aria-disabled={atStart} tabIndex={atStart ? -1 : undefined} className={pageButton(atStart)}>
-          Previous
+          {t("previous")}
         </Link>
         <Link href={nextHref} aria-disabled={atEnd} tabIndex={atEnd ? -1 : undefined} className={pageButton(atEnd)}>
-          Next
+          {t("next")}
         </Link>
       </div>
     </div>
