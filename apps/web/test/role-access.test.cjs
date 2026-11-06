@@ -575,6 +575,10 @@ for (const [status, destination] of [
           },
         },
         "./api": { API_URL: "https://example.test" },
+        "./server-read": {
+          serverRead: async () => ({ ok: false, status }),
+          unavailableHref: async () => "/service-unavailable",
+        },
       },
       { fetch: async () => ({ ok: false, status }) },
     );

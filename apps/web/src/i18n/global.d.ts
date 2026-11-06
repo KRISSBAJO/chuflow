@@ -1,4 +1,5 @@
 import type imports from "../../messages/en/imports.json";
+import type recording from "../../messages/en/recording.json";
 import type workspace from "../../messages/en/workspace.json";
 import type admin from "../../messages/en/admin.json";
 import type auth from "../../messages/en/auth.json";
@@ -26,6 +27,6 @@ declare module "next-intl" {
       typeof org &
       typeof services &
       typeof admin &
-      typeof workspace & typeof imports;
+      typeof workspace & typeof imports & typeof recording;
   }
 }

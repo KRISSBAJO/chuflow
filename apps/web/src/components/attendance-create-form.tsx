@@ -68,14 +68,18 @@ export function AttendanceCreateForm({
   record,
   onSuccess,
   returnHref,
+  submitPath,
+  lockBranch = false,
 }: {
-  branches: BranchSummary[];
+  branches: Pick<BranchSummary, "_id" | "name">[];
   serviceTypes: ServiceTypeSummary[];
   serviceSchedules: ServiceScheduleSummary[];
   defaultBranchId?: string;
   record?: AttendanceItem;
   onSuccess?: () => void;
   returnHref?: string;
+  submitPath?: string;
+  lockBranch?: boolean;
 }) {
   const router = useRouter();
   const t = useTranslations("services.attendance.form");
@@ -133,7 +137,7 @@ export function AttendanceCreateForm({
 
     try {
       const response = await fetch(
-        `${API_URL}/attendance${record ? `/${record._id}` : ""}`,
+        `${API_URL}${submitPath ?? `/attendance${record ? `/${record._id}` : ""}`}`,
         {
           method: record ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -196,7 +200,7 @@ export function AttendanceCreateForm({
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
-        {branches.length > 0 ? (
+        {branches.length > 0 && !lockBranch ? (
           <Field label={t("branch")} required>
             <select
               name="branchId"
@@ -223,7 +227,7 @@ export function AttendanceCreateForm({
               value={initialBranchId ?? ""}
             />
             <input
-              value={t("currentBranchScope")}
+              value={defaultBranchName || t("currentBranchScope")}
               readOnly
               disabled
               className="ui-input"

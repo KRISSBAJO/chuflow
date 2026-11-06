@@ -14,6 +14,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { AttendanceService } from './attendance.service';
+import { AccessScopeService } from '../access-scope/access-scope.service';
 import {
   CreateAttendanceDto,
   UpdateAttendanceDto,
@@ -24,21 +25,18 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('attendance')
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(
+    private readonly attendanceService: AttendanceService,
+    private readonly scope: AccessScopeService,
+  ) {}
 
-  @Roles(
-    'super_admin',
-    'national_admin',
-    'national_pastor',
-    'district_admin',
-    'district_pastor',
-    'branch_admin',
-    'resident_pastor',
-    'associate_pastor',
-    'usher',
-  )
+  @Roles('branch_admin', 'resident_pastor', 'associate_pastor', 'usher')
   @Post()
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreateAttendanceDto) {
+  async create(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateAttendanceDto,
+  ) {
+    await this.scope.localReportingBranch(user, dto.branchId);
     return this.attendanceService.create(dto, user);
   }
 

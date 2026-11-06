@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChurchRecordingLinks } from "@/components/church-recording-links";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Icon } from "@/components/app/icons";
 import { ExpenseCategoryManagementCard } from "@/components/expense-category-management-card";
@@ -369,6 +370,7 @@ export default async function FinancePage({
         }
       />
 
+      <ChurchRecordingLinks branches={branches} defaultBranchId={selectedBranchId} kind="finance" />
       {savedOffering && (
         <Card className="p-6">
           <CardHeader
