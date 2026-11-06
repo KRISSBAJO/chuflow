@@ -522,7 +522,7 @@ code {
 }
 /* Session loader: the wordmark's flame stroke draws on a loop while a short bar glides. */
 .app-loader {
-  animation: app-fade 0.4s ease both;
+  isolation: isolate;
 }
 .app-loader .lp-logo-swoosh path {
   animation: app-loader-swoosh 1.8s cubic-bezier(0.6, 0, 0.3, 1) infinite;
@@ -865,4 +865,8 @@ select.lp-input {
 [data-sonner-toaster] [data-sonner-toast].chuflow-toast :is(button, a):focus-visible { outline: 2px solid #c45b0f; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   [data-sonner-toaster] [data-sonner-toast].chuflow-toast { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loader, .app-loader-bar, .app-loader .lp-logo-swoosh path { animation: none; }
 }

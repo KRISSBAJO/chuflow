@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { WorkspaceLoader } from "@/components/brand/workspace-loader";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { loginErrorKey } from "@/lib/auth-errors";
@@ -22,6 +24,7 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ notice, returnTo }: LoginFormProps) {
+  const router = useRouter();
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
@@ -62,11 +65,8 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
         ? roleHomeHref(result.user.role)
         : "/dashboard";
       setIsSuccess(true);
-      setMessage(t("login.success"));
-      toast.success(t("login.success"), { id: "login-feedback" });
-      window.setTimeout(() => {
-        window.location.href = safeReturnTo(returnTo, homeHref);
-      }, 600);
+      toast.dismiss("login-feedback");
+      router.replace(safeReturnTo(returnTo, homeHref));
     } catch (error) {
       const key =
         error instanceof Error && error.name === "AbortError"
@@ -82,6 +82,8 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
       setLoading(false);
     }
   }
+
+  if (isSuccess) return <WorkspaceLoader />;
 
   return (
     <div>
@@ -145,7 +147,7 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
 
       {message ? (
         <div id="login-feedback" className="mt-5">
-          <Alert tone={isSuccess ? "success" : "error"}>{message}</Alert>
+          <Alert tone="error">{message}</Alert>
         </div>
       ) : null}
 
