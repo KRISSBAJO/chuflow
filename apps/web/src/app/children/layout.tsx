@@ -59,6 +59,9 @@ export default async function Layout({
             {user.role !== "children_worker" && (
               <Link href="/children/sessions/new">Open a session</Link>
             )}
+            {user.role !== "children_worker" && (
+              <Link href="/children/registrations">Parent registration</Link>
+            )}
             <Link href="/children/account">My account</Link>
           </nav>
           {children}

@@ -99,6 +99,9 @@ export class ChildrenService {
       );
     return branch;
   }
+  registrationAccess(u: AuthUser, branchId: string) {
+    return this.access(u, branchId, true);
+  }
   async options(u: AuthUser) {
     if (!this.manager(u) && u.role !== 'children_worker')
       return { branches: [], canManage: false };

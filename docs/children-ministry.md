@@ -53,3 +53,9 @@ Automated tests cover roles, scope, age/capacity checks, opaque credentials, dup
 Project asset: `apps/web/public/children/welcome.png` (original copied into the repository; no external image dependency). Generated with the built-in image generation tool using this final prompt:
 
 > Use case: illustration-story. Create an original premium children's book illustration as a wide landscape welcome-banner asset for a church children's check-in workspace. Diverse happy young children with a friendly adult volunteer arriving at a bright welcoming classroom, books and playful building blocks, a small warm sun and soft curved rainbow shapes. Sophisticated hand-painted paper texture, rounded organic shapes, expressive simple faces, warm cream background, ChuFlow-inspired warm orange with teal, pale sky blue and butter yellow accents. Calm, joyful, reassuring, inclusive. Clean composition with generous breathing room, polished professional product illustration, no text, no typography, no logos, no interface mockup. Suitable to crop as a banner, characters kept centrally composed.
+
+## Parent self-registration
+
+Supervisors can open Children > Parent registration to copy a church-specific public link and QR code, replace the link, or disable it. Parents submit family/adult details followed by children, pickup permissions, care notes and consent without an account. Public submissions do not create active families, issue cards or check children in.
+
+The supervisor queue supports approval after guardian verification and duplicate review, rejection with a reason, or marking an existing family as handled without overwriting its records. Approval creates linked family and child records; membership is optional. Interrupted approvals retain stable record identifiers and can be resumed after ten minutes. The initial parent form is in English.

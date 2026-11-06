@@ -1,3 +1,14 @@
+import {
+  ChildrenRegistrationLink,
+  ChildrenRegistrationLinkSchema,
+  ChildrenRegistration,
+  ChildrenRegistrationSchema,
+} from './registration.schema';
+import { ChildrenRegistrationService } from './registration.service';
+import {
+  ChildrenRegistrationController,
+  ParentRegistrationController,
+} from './registration.controller';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
@@ -28,9 +39,19 @@ import {
       { name: ChildProfile.name, schema: ChildProfileSchema },
       { name: ChildSession.name, schema: ChildSessionSchema },
       { name: ChildKiosk.name, schema: ChildKioskSchema },
+      {
+        name: ChildrenRegistrationLink.name,
+        schema: ChildrenRegistrationLinkSchema,
+      },
+      { name: ChildrenRegistration.name, schema: ChildrenRegistrationSchema },
     ]),
   ],
-  controllers: [ChildrenController, ChildrenKioskController],
-  providers: [ChildrenService],
+  controllers: [
+    ChildrenController,
+    ChildrenKioskController,
+    ChildrenRegistrationController,
+    ParentRegistrationController,
+  ],
+  providers: [ChildrenService, ChildrenRegistrationService],
 })
 export class ChildrenModule {}
