@@ -5,6 +5,8 @@ export type MemberDocument = HydratedDocument<Member>;
 
 @Schema({ timestamps: true })
 export class Member {
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ImportBatch' }) importBatchId?: Types.ObjectId;
+  @Prop() importedAt?: Date;
   @Prop({ enum: ['adult', 'child'], default: 'adult' }) recordType!: string;
   @Prop({
     type: [{ type: SchemaTypes.ObjectId, ref: 'ServiceUnit' }],

@@ -1,3 +1,4 @@
+import { ImportLink } from "@/components/import-link";
 import { WorkspaceTabs } from "@/components/workspace-tabs";
 import { MemberRoster } from "@/components/member-roster";
 import { ExportMenu } from "@/components/export-menu";
@@ -107,10 +108,10 @@ export default async function MembersPage({
         title={t("title")}
         description={t("description")}
         action={
-          <Link href="/members/new" className={buttonClass("primary", "md")}>
+          <><ImportLink kind="members" /><Link href="/members/new" className={buttonClass("primary", "md")}>
             <Icon name="plus" className="h-4 w-4" />
             {t("addMember")}
-          </Link>
+          </Link></>
         }
       />
       <section className="grid gap-4 md:grid-cols-3">

@@ -5,6 +5,8 @@ export type GuestDocument = HydratedDocument<Guest>;
 
 @Schema({ timestamps: true })
 export class Guest {
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ImportBatch' }) importBatchId?: Types.ObjectId;
+  @Prop() importedAt?: Date;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch', required: true })
   branchId!: Types.ObjectId;
 

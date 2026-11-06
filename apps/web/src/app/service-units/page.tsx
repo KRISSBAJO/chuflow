@@ -1,3 +1,4 @@
+import { ImportLink } from "@/components/import-link";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
@@ -99,6 +100,7 @@ export default async function ServiceUnitsPage({
         description={t("description")}
         action={
           <div className="flex flex-wrap gap-2">
+            <ImportLink kind="service_units" />
             <Link href="/meetings/groups" className={buttonClass("secondary")}>
               {t("meetingRequirements")}
             </Link>

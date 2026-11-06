@@ -335,6 +335,7 @@ export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightReg
 }
 
 export const routePermissions: Record<string, AppRole[]> = {
+  "/imports": [...LEADERSHIP_ROLES],
   "/children": [...LEADERSHIP_ROLES, "children_worker", "children_supervisor"],
   "/hierarchy": [...LEADERSHIP_ROLES],
   "/care/settings": [...LEADERSHIP_ROLES],

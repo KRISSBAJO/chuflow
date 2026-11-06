@@ -1,4 +1,5 @@
 "use client";
+import { ImportLink } from "@/components/import-link";
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -60,7 +61,8 @@ export function GuestPageHeader({
           {t("description")}
         </p>
       </div>
-      <div className="shrink-0">
+      <div className="flex shrink-0 flex-wrap gap-2">
+        <ImportLink kind="guests" />
         <Button icon="plus" onClick={() => router.push("/guests/new")}>
           {t("newGuest")}
         </Button>

@@ -389,3 +389,53 @@ describe('Recoverable care enrollment', () => {
     );
   });
 });
+
+describe('Imported care sources', () => {
+  it('does not treat migrated people as newly registered for automatic enrollment', async () => {
+    const f = fixture();
+    const cases = {
+      findOneAndUpdate: jest.fn(
+        (
+          _filter: unknown,
+          _update: { $setOnInsert: { sourceCreatedAt: unknown } },
+          _options: unknown,
+        ) => q(null),
+      ),
+    };
+    const worker = new CareWorker(
+      ...([
+        { ...f.care, cases },
+        f.state,
+        {},
+        {},
+        {},
+        f.communications,
+        f.mail,
+        f.push,
+      ] as unknown as ConstructorParameters<typeof CareWorker>),
+    );
+    const ensure = (source: Record<string, unknown>) =>
+      (
+        worker as unknown as {
+          ensure: (
+            source: Record<string, unknown>,
+            type: string,
+          ) => Promise<unknown>;
+        }
+      ).ensure(source, 'guest');
+    const createdAt = new Date();
+    await ensure({
+      _id: guestId,
+      branchId: branch,
+      importBatchId: id(),
+      createdAt,
+    });
+    expect(
+      cases.findOneAndUpdate.mock.calls[0]?.[1].$setOnInsert.sourceCreatedAt,
+    ).toBeNull();
+    await ensure({ _id: guestId, branchId: branch, createdAt });
+    expect(
+      cases.findOneAndUpdate.mock.calls[1]?.[1].$setOnInsert.sourceCreatedAt,
+    ).toEqual(createdAt);
+  });
+});

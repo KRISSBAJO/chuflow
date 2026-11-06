@@ -17,6 +17,7 @@ export const MESSAGE_PARTS = [
   "services",
   "admin",
   "workspace",
+  "imports",
 ] as const;
 
 export type MessagePart = (typeof MESSAGE_PARTS)[number];

@@ -2,8 +2,16 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { loginErrorKey } from "@/lib/auth-errors";
 import { useState } from "react";
-import { Alert, AuthHeading, Field, PasswordInput, SubmitButton } from "@/components/auth/auth-ui";
+import {
+  Alert,
+  AuthHeading,
+  Field,
+  PasswordInput,
+  SubmitButton,
+} from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 import { roleHomeHref } from "@/lib/permissions";
 
@@ -18,47 +26,57 @@ export function LoginForm({ notice }: LoginFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  function toFriendlyAuthMessage(error: unknown) {
-    if (error instanceof TypeError) {
-      return t("apiUnavailable");
-    }
-    if (error instanceof Error && error.message.toLowerCase().includes("fetch failed")) {
-      return t("apiUnavailable");
-    }
-    return error instanceof Error ? error.message : t("login.failed");
-  }
-
   async function handleSubmit(formData: FormData) {
+    if (loading || isSuccess) return;
     setLoading(true);
     setMessage(null);
     setIsSuccess(false);
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          email: formData.get("email"),
+          email: String(formData.get("email") || "")
+            .trim()
+            .toLowerCase(),
           password: formData.get("password"),
         }),
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || t("login.failed"));
+        const friendly = t(`login.${loginErrorKey(response.status)}`);
+        setMessage(friendly);
+        toast.error(friendly, { id: "login-feedback" });
+        return;
       }
 
       const result = (await response.json()) as { user?: { role?: string } };
-      const homeHref = result.user?.role ? roleHomeHref(result.user.role) : "/dashboard";
+      const homeHref = result.user?.role
+        ? roleHomeHref(result.user.role)
+        : "/dashboard";
       setIsSuccess(true);
       setMessage(t("login.success"));
+      toast.success(t("login.success"), { id: "login-feedback" });
       window.setTimeout(() => {
         window.location.href = homeHref;
       }, 600);
     } catch (error) {
-      setMessage(toFriendlyAuthMessage(error));
+      const key =
+        error instanceof Error && error.name === "AbortError"
+          ? "timeout"
+          : error instanceof TypeError
+            ? "connection"
+            : "failed";
+      const friendly = t(`login.${key}`);
+      setMessage(friendly);
+      toast.error(friendly, { id: "login-feedback" });
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -73,38 +91,68 @@ export function LoginForm({ notice }: LoginFormProps) {
         </div>
       ) : null}
 
-      <form action={handleSubmit} className="space-y-5">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit(new FormData(event.currentTarget));
+        }}
+        className="space-y-5"
+      >
         <Field label={tc("email")}>
-          <input name="email" type="email" placeholder={tc("emailPlaceholder")} autoComplete="email" className="lp-input" required />
+          <input
+            name="email"
+            type="email"
+            placeholder={tc("emailPlaceholder")}
+            autoComplete="email"
+            aria-describedby={message ? "login-feedback" : undefined}
+            className="lp-input"
+            required
+          />
         </Field>
 
         <Field
           label={t("password")}
           aside={
-            <Link href="/forgot-password" className="text-[13px] font-medium text-[var(--lp-muted)] transition-colors hover:text-[var(--lp-ink)]">
+            <Link
+              href="/forgot-password"
+              className="text-[13px] font-medium text-[var(--lp-muted)] transition-colors hover:text-[var(--lp-ink)]"
+            >
               {t("login.forgotPassword")}
             </Link>
           }
         >
-          <PasswordInput name="password" placeholder={t("login.passwordPlaceholder")} autoComplete="current-password" required />
+          <PasswordInput
+            name="password"
+            placeholder={t("login.passwordPlaceholder")}
+            autoComplete="current-password"
+            aria-describedby={message ? "login-feedback" : undefined}
+            required
+          />
         </Field>
 
         <div className="pt-2">
-          <SubmitButton loading={loading} disabled={isSuccess} loadingLabel={t("login.signingIn")}>
+          <SubmitButton
+            loading={loading}
+            disabled={isSuccess}
+            loadingLabel={t("login.signingIn")}
+          >
             {tc("signIn")}
           </SubmitButton>
         </div>
       </form>
 
       {message ? (
-        <div className="mt-5">
+        <div id="login-feedback" className="mt-5">
           <Alert tone={isSuccess ? "success" : "error"}>{message}</Alert>
         </div>
       ) : null}
 
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
         {t("newToChuFlow")}{" "}
-        <Link href="/request-workspace" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
+        <Link
+          href="/request-workspace"
+          className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline"
+        >
           {tc("requestWorkspace")}
         </Link>
       </p>

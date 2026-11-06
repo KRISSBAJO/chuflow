@@ -797,3 +797,67 @@ select.lp-input {
   .lp-reveal { opacity: 1; transform: none; }
   .lp-ribbon { stroke-dashoffset: 0 !important; }
 }
+
+/* One restrained notification treatment across the public site and workspaces. */
+[data-sonner-toaster].chuflow-toaster {
+  --width: 392px;
+  --font-family: var(--font-body), sans-serif;
+}
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast {
+  padding: 18px 42px 18px 18px;
+  gap: 13px;
+  border: 1px solid #e7e5e0;
+  border-inline-start: 3px solid #ee7818;
+  border-radius: 14px;
+  background: #fff;
+  color: #20201e;
+  box-shadow: 0 8px 32px #22221e14, 0 2px 6px #22221e08;
+  font-family: var(--font-body), sans-serif;
+  align-items: flex-start;
+}
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-title {
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+}
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-description {
+  margin-top: 4px;
+  color: #696960;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-icon {
+  margin: 2px 0 0;
+  color: #6d6c62;
+}
+[data-sonner-toaster] .chuflow-toast[data-type="success"] .chuflow-toast-icon { color: #427664; }
+[data-sonner-toaster] .chuflow-toast[data-type="error"] .chuflow-toast-icon { color: #aa4940; }
+[data-sonner-toaster] .chuflow-toast[data-type="warning"] .chuflow-toast-icon { color: #976c31; }
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-close {
+  top: 12px;
+  inset-inline-end: 10px;
+  left: auto;
+  right: 10px;
+  transform: none;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #87877f;
+}
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-close:hover { background: #f3f2ef; color: #252521; }
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-action {
+  background: #20201e;
+  color: white;
+  border-radius: 7px;
+  font-weight: 600;
+}
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast .chuflow-toast-cancel { background: #f3f2ef; color: #44443e; border-radius: 7px; }
+[data-sonner-toaster] [data-sonner-toast].chuflow-toast :is(button, a):focus-visible { outline: 2px solid #c45b0f; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster] [data-sonner-toast].chuflow-toast { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+}

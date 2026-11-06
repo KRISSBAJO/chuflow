@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Manrope } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
-import { Toaster } from "sonner";
+import { AppToaster } from "@/components/app-toaster";
 import { landingFont } from "@/components/landing/landing-font";
 import { PwaRoot } from "@/components/pwa/pwa-root";
 import "./globals.css";
@@ -51,8 +51,8 @@ export default async function RootLayout({
         <NextIntlClientProvider>
           {children}
           <PwaRoot />
+          <AppToaster />
         </NextIntlClientProvider>
-        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

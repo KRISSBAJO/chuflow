@@ -316,7 +316,7 @@ export class CareWorker implements OnModuleInit, OnModuleDestroy {
           : type === 'member'
             ? 'member_connection'
             : 'outreach_connection',
-      sourceCreatedAt: source.createdAt || null,
+      sourceCreatedAt: source.importBatchId ? null : source.createdAt || null,
       emailAllowed:
         type === 'outreach' &&
         source.consentToContact === true &&
