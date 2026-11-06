@@ -1,3 +1,4 @@
+import { translate } from '@/i18n/provider';
 import { API_URL } from './config';
 
 /*
@@ -17,7 +18,7 @@ export class ApiError extends Error {
 /** Thrown when the phone can't reach the API at all (no signal, server down). */
 export class NetworkError extends Error {
   constructor() {
-    super("Can't reach ChuFlow. Check your connection and try again.");
+    super(translate('common.state.networkError'));
   }
 }
 
@@ -78,8 +79,8 @@ export const api = {
   delete: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body),
 };
 
-export function errorMessage(error: unknown, fallback = 'Something went wrong.') {
-  return error instanceof Error && error.message ? error.message : fallback;
+export function errorMessage(error: unknown, fallback?: string) {
+  return error instanceof Error && error.message ? error.message : (fallback ?? translate('common.state.somethingWrong'));
 }
 
 export function query(params: Record<string, string | number | undefined | null | false>) {

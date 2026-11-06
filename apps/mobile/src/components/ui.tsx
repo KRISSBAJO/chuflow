@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
+import { useT } from '@/i18n/provider';
 import { initials as personInitials, type Tone } from '@/lib/format';
 import { Icon, type IconName } from './icon';
 
@@ -421,12 +422,13 @@ export function EmptyState({ icon = 'sparkle', title, body, action }: { icon?: I
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const t = useT('common');
   return (
     <EmptyState
       icon="cloudOff"
-      title="Couldn't load this"
+      title={t('state.loadError')}
       body={message}
-      action={onRetry ? <Button label="Try again" variant="secondary" size="sm" icon="refresh" onPress={onRetry} /> : undefined}
+      action={onRetry ? <Button label={t('actions.retry')} variant="secondary" size="sm" icon="refresh" onPress={onRetry} /> : undefined}
     />
   );
 }

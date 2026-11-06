@@ -3,9 +3,16 @@ import { StyleSheet, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '@/components/icon';
 import { colors, fonts } from '@/constants/theme';
+import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
+
+/*
+ * The tab bar follows the website's phone tabs: Home, Guests, Follow-up, Attendance, More, each
+ * shown only to roles that can use it. Children's ministry staff get Home (their Kids board),
+ * Kids and More instead.
+ */
 
 function tabIcon(name: IconName) {
   function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
@@ -26,7 +33,9 @@ function badge(count?: number) {
 export default function TabsLayout() {
   const { user } = useSession();
   const { summary } = useAlerts();
+  const t = useT('common.tabs');
   const role = user?.role;
+  const kidsOnly = can.kidsOnly(role);
   const insets = useSafeAreaInsets();
   const bottom = Math.max(insets.bottom, 8);
 
@@ -44,12 +53,12 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.page },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('home') }} />
-      <Tabs.Screen name="guests" options={{ title: 'Guests', tabBarIcon: tabIcon('guests') }} />
+      <Tabs.Screen name="index" options={{ title: t('home'), tabBarIcon: tabIcon('home') }} />
+      <Tabs.Screen name="guests" options={{ title: t('guests'), tabBarIcon: tabIcon('guests'), href: can.guests(role) ? undefined : null }} />
       <Tabs.Screen
         name="follow-up"
         options={{
-          title: 'Follow-up',
+          title: t('followUp'),
           tabBarIcon: tabIcon('care'),
           tabBarBadge: badge(summary?.quickStats.pendingFollowUp),
           href: can.followUp(role) ? undefined : null,
@@ -57,11 +66,12 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="attendance"
-        options={{ title: 'Attendance', tabBarIcon: tabIcon('attendance'), href: can.attendance(role) ? undefined : null }}
+        options={{ title: t('attendance'), tabBarIcon: tabIcon('attendance'), href: can.attendance(role) ? undefined : null }}
       />
+      <Tabs.Screen name="kids" options={{ title: t('kids'), tabBarIcon: tabIcon('smile'), href: kidsOnly ? undefined : null }} />
       <Tabs.Screen
         name="more"
-        options={{ title: 'More', tabBarIcon: tabIcon('more'), tabBarBadge: badge(summary?.quickStats.pendingApprovals) }}
+        options={{ title: t('more'), tabBarIcon: tabIcon('more'), tabBarBadge: badge(summary?.quickStats.pendingApprovals) }}
       />
     </Tabs>
   );

@@ -51,7 +51,8 @@
         {
           "faceIDPermission": "ChuFlow uses Face ID to unlock the app when App lock is on."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

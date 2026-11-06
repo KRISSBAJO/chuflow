@@ -4,13 +4,20 @@ import { Platform, Pressable, Text } from 'react-native';
 import { AppLockGate } from '@/components/app-lock';
 import { toast } from '@/components/toast';
 import { colors, fonts } from '@/constants/theme';
+import { useT } from '@/i18n/provider';
 import { AlertsProvider } from '@/lib/alerts';
 import { disablePush, enablePush } from '@/lib/notifications';
 import { useOutboxSync } from '@/lib/offline-queue';
 import { onBeforeSignOut, useSession } from '@/lib/session';
 import { useAlertTaps } from '@/lib/use-alert-taps';
 
-function CancelButton() {
+/*
+ * Every signed-in screen sits in this stack. Screens set their own translated title with
+ * `<Stack.Screen options={{ title }} />`; modal screens are listed here so they slide up.
+ */
+
+export function CancelButton() {
+  const t = useT('common.actions');
   return (
     <Pressable
       accessibilityRole="button"
@@ -18,13 +25,16 @@ function CancelButton() {
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       style={{ paddingHorizontal: Platform.OS === 'web' ? 16 : 0 }}
     >
-      <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.muted }}>Cancel</Text>
+      <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.muted }}>{t('cancel')}</Text>
     </Pressable>
   );
 }
 
+const MODALS = ['guest/new', 'care/[id]', 'members/new', 'finance/offerings/new', 'finance/expenses/new', 'meetings/new', 'kids/scan', 'search'];
+
 export default function SignedInLayout() {
   const { user } = useSession();
+  const t = useT('common');
 
   // Re-link this phone's alerts to whoever is signed in; unlink on sign-out.
   useEffect(() => {
@@ -35,9 +45,12 @@ export default function SignedInLayout() {
   useAlertTaps();
 
   useOutboxSync(
-    useCallback((count: number) => {
-      toast.success(`${count} saved attendance ${count === 1 ? 'count was' : 'counts were'} sent`);
-    }, []),
+    useCallback(
+      (count: number) => {
+        toast.success(t('outboxSent', { count }));
+      },
+      [t],
+    ),
   );
 
   return (
@@ -49,14 +62,15 @@ export default function SignedInLayout() {
             headerStyle: { backgroundColor: colors.page },
             headerTintColor: colors.ink,
             headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 16, color: colors.ink },
+            headerBackButtonDisplayMode: 'minimal',
             contentStyle: { backgroundColor: colors.page },
+            title: '',
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="guest/new" options={{ title: 'New guest', presentation: 'modal', headerLeft: () => <CancelButton /> }} />
-          <Stack.Screen name="guest/[id]" options={{ title: '' }} />
-          <Stack.Screen name="care/[id]" options={{ title: 'Follow-up', presentation: 'modal', headerLeft: () => <CancelButton /> }} />
-          <Stack.Screen name="approvals" options={{ title: 'Approvals' }} />
+          {MODALS.map((name) => (
+            <Stack.Screen key={name} name={name} options={{ presentation: 'modal', headerLeft: () => <CancelButton /> }} />
+          ))}
         </Stack>
       </AlertsProvider>
     </AppLockGate>

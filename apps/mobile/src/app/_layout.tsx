@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ToastHost } from '@/components/toast';
 import { colors } from '@/constants/theme';
+import { I18nProvider, useI18n } from '@/i18n/provider';
 import { SessionProvider, useSession } from '@/lib/session';
 
 void SplashScreen.preventAutoHideAsync();
@@ -24,17 +25,20 @@ export default function RootLayout() {
   });
 
   return (
-    <SessionProvider>
-      <RootNavigator fontsReady={fontsLoaded || !!fontError} />
-      <ToastHost />
-      <StatusBar style="dark" />
-    </SessionProvider>
+    <I18nProvider>
+      <SessionProvider>
+        <RootNavigator fontsReady={fontsLoaded || !!fontError} />
+        <ToastHost />
+        <StatusBar style="dark" />
+      </SessionProvider>
+    </I18nProvider>
   );
 }
 
 function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   const { ready, user } = useSession();
-  const loaded = ready && fontsReady;
+  const { ready: languageReady } = useI18n();
+  const loaded = ready && fontsReady && languageReady;
 
   useEffect(() => {
     if (loaded) void SplashScreen.hideAsync();
