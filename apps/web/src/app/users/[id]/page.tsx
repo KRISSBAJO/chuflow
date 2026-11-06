@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
 import { WorkspaceTabs } from "@/components/workspace-tabs";
+import { UserWelcomeEmail } from "@/components/user-welcome-email";
 import { UserAccountEditor } from "@/components/user-account-editor";
 import { AuditLogFeed } from "@/components/audit-log-feed";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
-import { formatRoleLabel } from "@/lib/permissions";
+import { formatRoleLabel, getManageableUserRoleOptions } from "@/lib/permissions";
 import { safeReturnTo } from "@/lib/workspace-navigation";
 import type {
   AuditLogListResponse,
@@ -225,6 +226,7 @@ export default async function UserDetailPage({
                       })
                     : t("never")}
                 </p>
+                {getManageableUserRoleOptions(viewer.role).includes(user.role as never) && user._id !== (viewer.id || viewer._id) && <UserWelcomeEmail user={user} />}
               </Card>
             ),
           },
