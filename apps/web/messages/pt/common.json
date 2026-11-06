@@ -104,7 +104,9 @@
     "tableDownloads": "Transferências de tabelas",
     "exportYourTable": "Exporte a sua tabela",
     "exportHint": "Todos os registos correspondentes em todas as páginas. Importe qualquer um dos ficheiros no Google Sheets em Ficheiro → Importar → Carregar.",
-    "table": "Tabela"
+    "table": "Tabela",
+    "downloadReady": "Download pronto",
+    "copyFailed": "Não foi possível copiar o link. Copie-o manualmente."
   },
   "roles": {
     "super_admin": "Administrador da supervisão geral",

@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,12 +23,11 @@ export function DistrictEditorCard({
   const t = useTranslations("org.districtEditor");
   const tCommon = useTranslations("common");
   const tStatuses = useTranslations("statuses");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setSaving(true);
-    setStatus(null);
 
     try {
       const response = await fetch(`${API_URL}/districts/${district._id}`, {
@@ -47,10 +47,10 @@ export function DistrictEditorCard({
         throw new Error(result.message || t("updateError"));
       }
 
-      setStatus(t("updated"));
+      toast.success(t("updated"));
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("updateError"));
+      toast.error(error instanceof Error ? error.message : t("updateError"));
     } finally {
       setSaving(false);
     }
@@ -132,12 +132,6 @@ export function DistrictEditorCard({
           {t("readOnly")}
         </p>
       )}
-
-      {status ? (
-        <p role="status" className="mt-4 text-[14px] text-[#55534e]">
-          {status}
-        </p>
-      ) : null}
     </Card>
   );
 }

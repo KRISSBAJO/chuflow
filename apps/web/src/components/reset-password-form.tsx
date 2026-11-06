@@ -1,19 +1,33 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { Alert, AuthHeading, Field, PasswordInput, Spinner, SubmitButton } from "@/components/auth/auth-ui";
+import {
+  Alert,
+  AuthHeading,
+  Field,
+  PasswordInput,
+  Spinner,
+  SubmitButton,
+} from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 
 function formatExpiry(value: unknown, locale: string) {
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
+  return date.toLocaleString(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 export function ResetPasswordForm() {
+  const actionToast = useActionToast();
+
   const t = useTranslations("auth.reset");
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -98,7 +112,10 @@ export function ResetPasswordForm() {
 
       setSucceeded(true);
       setStatus(null);
+
+      actionToast.success(t("doneTitle"));
     } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("failed"));
       setStatus(error instanceof Error ? error.message : t("failed"));
     } finally {
       setLoading(false);
@@ -109,7 +126,10 @@ export function ResetPasswordForm() {
     return (
       <div>
         <AuthHeading title={t("doneTitle")} body={t("doneBody")} />
-        <Link href="/login" className="lp-pill-dark inline-flex h-12 w-full items-center justify-center rounded-full text-[15px] font-medium">
+        <Link
+          href="/login"
+          className="lp-pill-dark inline-flex h-12 w-full items-center justify-center rounded-full text-[15px] font-medium"
+        >
           {t("goToSignIn")}
         </Link>
       </div>
@@ -127,19 +147,35 @@ export function ResetPasswordForm() {
         </div>
       ) : valid ? (
         <div className="mb-6">
-          <Alert tone="success">{expiresAt ? t("verifiedExpires", { expiresAt }) : t("verified")}</Alert>
+          <Alert tone="success">
+            {expiresAt ? t("verifiedExpires", { expiresAt }) : t("verified")}
+          </Alert>
         </div>
       ) : null}
 
       <form action={handleSubmit} className="space-y-5">
         <Field label={t("newPassword")}>
-          <PasswordInput name="newPassword" placeholder={t("newPassword")} autoComplete="new-password" required />
+          <PasswordInput
+            name="newPassword"
+            placeholder={t("newPassword")}
+            autoComplete="new-password"
+            required
+          />
         </Field>
         <Field label={t("confirmPassword")}>
-          <PasswordInput name="confirmPassword" placeholder={t("repeatPlaceholder")} autoComplete="new-password" required />
+          <PasswordInput
+            name="confirmPassword"
+            placeholder={t("repeatPlaceholder")}
+            autoComplete="new-password"
+            required
+          />
         </Field>
         <div className="pt-2">
-          <SubmitButton loading={loading} disabled={!token || !valid || checking} loadingLabel={t("saving")}>
+          <SubmitButton
+            loading={loading}
+            disabled={!token || !valid || checking}
+            loadingLabel={t("saving")}
+          >
             {t("submit")}
           </SubmitButton>
         </div>
@@ -153,7 +189,10 @@ export function ResetPasswordForm() {
 
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
         {t("linkExpired")}{" "}
-        <Link href="/forgot-password" className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline">
+        <Link
+          href="/forgot-password"
+          className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline"
+        >
           {t("requestNew")}
         </Link>
       </p>

@@ -102,6 +102,7 @@ export function ImportWizard({
       setHeader(0);
       setMapping(matchImportColumns(result.sheets[0].rows[0].cells, kind));
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("readError"));
       setError(e instanceof Error ? e.message : t("readError"));
     } finally {
       setBusy(false);
@@ -181,6 +182,7 @@ export function ImportWizard({
       setFilter("");
       toast.success(t("reviewRows"), { id: "import-feedback" });
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("readError"));
       setError(e instanceof Error ? e.message : t("readError"));
     } finally {
       setBusy(false);
@@ -566,6 +568,9 @@ export function ImportWizard({
                         ),
                       );
                     } catch (e) {
+                      toast.error(
+                        e instanceof Error ? e.message : t("readError"),
+                      );
                       setError(e instanceof Error ? e.message : t("readError"));
                     } finally {
                       setBusy(false);

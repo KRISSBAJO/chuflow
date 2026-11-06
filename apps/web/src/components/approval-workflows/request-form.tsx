@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -75,6 +76,7 @@ export function ApprovalRequestForm({
         router.refresh();
       }
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("submitError"));
       setError(e instanceof Error ? e.message : t("submitError"));
       setBusy(false);
     }
@@ -114,7 +116,10 @@ export function ApprovalRequestForm({
             <option value="">{t("chooseRoute")}</option>
             {policies.map((p) => (
               <option key={p._id} value={p._id}>
-                {t("routeOption", { name: p.name, level: tr(`level.${p.finalLevel}`) })}
+                {t("routeOption", {
+                  name: p.name,
+                  level: tr(`level.${p.finalLevel}`),
+                })}
               </option>
             ))}
           </select>
@@ -126,12 +131,17 @@ export function ApprovalRequestForm({
         )}
         {policy && (
           <p className="rounded-xl bg-orange-50 p-3 text-sm">
-            {t("policySummary", { category: policy.category, level: tr(`level.${policy.finalLevel}`) })}
+            {t("policySummary", {
+              category: policy.category,
+              level: tr(`level.${policy.finalLevel}`),
+            })}
             {policy.thresholdAmount !== undefined
               ? t("thresholdNote", {
                   currency: policy.currency,
                   amount: policy.thresholdAmount,
-                  level: policy.aboveThresholdLevel ? tr(`level.${policy.aboveThresholdLevel}`) : "",
+                  level: policy.aboveThresholdLevel
+                    ? tr(`level.${policy.aboveThresholdLevel}`)
+                    : "",
                 })
               : ""}
             {t("reviewTarget", { days: policy.reviewDays })}
@@ -158,7 +168,9 @@ export function ApprovalRequestForm({
           />
         </Field>
         <Field
-          label={t("amount", { currency: policy?.currency || t("routeCurrency") })}
+          label={t("amount", {
+            currency: policy?.currency || t("routeCurrency"),
+          })}
           required={policy?.thresholdAmount !== undefined}
         >
           <input
@@ -172,10 +184,7 @@ export function ApprovalRequestForm({
             required={policy?.thresholdAmount !== undefined}
           />
         </Field>
-        <Field
-          label={t("documentLinks")}
-          hint={t("documentLinksHint")}
-        >
+        <Field label={t("documentLinks")} hint={t("documentLinksHint")}>
           <textarea
             name="documentLinks"
             className="ui-input min-h-24"
@@ -217,11 +226,7 @@ export function ApprovalRequestForm({
             {t("previewRoute")}
           </Button>
           <Button type="submit" value="submit" disabled={busy || !policy}>
-            {busy
-              ? t("working")
-              : request
-                ? t("resubmit")
-                : t("submit")}
+            {busy ? t("working") : request ? t("resubmit") : t("submit")}
           </Button>
         </div>
       </form>

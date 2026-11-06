@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +13,8 @@ import { OUTREACH_INTERESTS, OUTREACH_METHODS } from "@/lib/evangelism";
 const API_ERROR_KEYS = {
   "Enter a valid phone number, including country code": "phoneInvalid",
   "Permission to follow up is required": "consentRequired",
-  "An email address is required when email is the preferred contact method": "emailRequired",
+  "An email address is required when email is the preferred contact method":
+    "emailRequired",
 } as const;
 import type { BranchSummary } from "@/lib/types";
 import { Button, Card, Field } from "@/components/ui/ui";
@@ -31,6 +34,8 @@ export function OutreachContactForm({
   buttonColor?: string;
   buttonTextColor?: string;
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("people.evangelism.contactForm");
   const tLabels = useTranslations("people.evangelism.labels");
@@ -112,7 +117,10 @@ export function OutreachContactForm({
         router.push(`/evangelism/${result.id}`);
         router.refresh();
       }
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorSave"));
       setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
@@ -121,9 +129,7 @@ export function OutreachContactForm({
   if (done)
     return (
       <Card className="p-8" role="status">
-        <h2 className="text-2xl font-semibold">
-          {t("thanks")}
-        </h2>
+        <h2 className="text-2xl font-semibold">{t("thanks")}</h2>
         <p className="mt-3 text-[#6b6b6b]">
           {t("received", { name: branchName || t("theChurchTeam") })}
         </p>
@@ -169,9 +175,7 @@ export function OutreachContactForm({
           tabIndex={-1}
           className="text-xl font-semibold outline-none"
         >
-          {step === 1
-            ? t("tellUs")
-            : t("howSupport")}
+          {step === 1 ? t("tellUs") : t("howSupport")}
         </h2>
         <p className="text-xs text-[#8a8780]">
           {t("stepOf", { step, total: 2 })}
@@ -213,11 +217,7 @@ export function OutreachContactForm({
                 maxLength={80}
               />
             </Field>
-            <Field
-              label={t("phoneLabel")}
-              required
-              hint={t("phoneHint")}
-            >
+            <Field label={t("phoneLabel")} required hint={t("phoneHint")}>
               <input
                 name="phone"
                 type="tel"
@@ -274,10 +274,7 @@ export function OutreachContactForm({
                 ))}
               </select>
             </Field>
-            <Field
-              label={t("bestTime")}
-              hint={t("bestTimeHint")}
-            >
+            <Field label={t("bestTime")} hint={t("bestTimeHint")}>
               <input
                 name="preferredContactTime"
                 className="ui-input"
@@ -286,10 +283,7 @@ export function OutreachContactForm({
               />
             </Field>
           </div>
-          <Field
-            label={t("prayFor")}
-            hint={t("prayHint")}
-          >
+          <Field label={t("prayFor")} hint={t("prayHint")}>
             <textarea
               name="prayerRequest"
               rows={3}
@@ -314,7 +308,11 @@ export function OutreachContactForm({
         </fieldset>
         {error && (
           <p role="alert" className="text-sm text-red-700">
-            {error in API_ERROR_KEYS ? t(`apiErrors.${API_ERROR_KEYS[error as keyof typeof API_ERROR_KEYS]}`) : error}
+            {error in API_ERROR_KEYS
+              ? t(
+                  `apiErrors.${API_ERROR_KEYS[error as keyof typeof API_ERROR_KEYS]}`,
+                )
+              : error}
           </p>
         )}
         <div className="flex items-center justify-between gap-3">

@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import { useState, type FormEvent } from "react";
 import { useFlowText } from "./flow-copy";
 import type { FamilySelection } from "@/lib/children";
@@ -42,6 +43,7 @@ export function ChildrenSelection({
         })),
       });
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : text.failed);
       setError(e instanceof Error ? e.message : text.failed);
     } finally {
       setBusy(false);

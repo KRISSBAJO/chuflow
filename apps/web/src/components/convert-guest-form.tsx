@@ -1,4 +1,6 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
+import { toast } from "sonner";
 import { GuestConversionPicker } from "@/components/guest-conversion-picker";
 
 import { useRouter } from "next/navigation";
@@ -12,12 +14,11 @@ import type { GuestListItem } from "@/lib/types";
 export function ConvertGuestForm({}: { guests: GuestListItem[] }) {
   const router = useRouter();
   const t = useTranslations("people.guests.convert");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     try {
       const guestId = formData.get("guestId");
@@ -32,13 +33,13 @@ export function ConvertGuestForm({}: { guests: GuestListItem[] }) {
         throw new Error(result.message || t("errorConvert"));
       }
 
-      setStatus(t("converted"));
+      toast.success(t("converted"), { id: savedToastId(result) });
       router.push(
         createdHref(`/members/${result._id}`, result, t("entityName")),
       );
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("errorConvert"));
+      toast.error(error instanceof Error ? error.message : t("errorConvert"));
     } finally {
       setLoading(false);
     }
@@ -50,9 +51,6 @@ export function ConvertGuestForm({}: { guests: GuestListItem[] }) {
         <GuestConversionPicker />
       </Field>
       <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-        {status ? (
-          <p className="text-[13px] text-[#55534e] sm:mr-auto">{status}</p>
-        ) : null}
         <Button type="submit" variant="flame" disabled={loading}>
           {loading ? t("converting") : t("convertGuest")}
         </Button>

@@ -1,4 +1,6 @@
 "use client";
+import { useActionToast } from "@/lib/action-feedback";
+import { toast } from "sonner";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
@@ -78,10 +80,7 @@ let tickTimer: ReturnType<typeof setInterval> | undefined;
 function subscribeTick(listener: () => void) {
   tickListeners.add(listener);
   if (!tickTimer)
-    tickTimer = setInterval(
-      () => tickListeners.forEach((fn) => fn()),
-      30000,
-    );
+    tickTimer = setInterval(() => tickListeners.forEach((fn) => fn()), 30000);
   return () => {
     tickListeners.delete(listener);
     if (!tickListeners.size && tickTimer) {
@@ -99,7 +98,10 @@ function useMinuteNow() {
 
 function durationLabel(t: Translate, checkedInAt: string, now: number | null) {
   if (now === null) return "";
-  const minutes = Math.max(0, Math.floor((now - Date.parse(checkedInAt)) / 60000));
+  const minutes = Math.max(
+    0,
+    Math.floor((now - Date.parse(checkedInAt)) / 60000),
+  );
   if (minutes < 1) return t("rooms.justArrived");
   if (minutes < 60) return t("rooms.inForMinutes", { minutes });
   return t("rooms.inForHours", {
@@ -266,6 +268,7 @@ function ReasonForm({
 /* ------------------------------------------------------------------------ */
 
 export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
+  const actionToast = useActionToast();
   const t = useTranslations("childrenDesk");
   const format = useFormatter();
   const router = useRouter();
@@ -284,6 +287,10 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
   });
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  function notifyNotice(message: string) {
+    setNotice(message);
+    if (message) toast.success(message);
+  }
   const [busy, setBusy] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -320,7 +327,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const data = await apiGet<ChildSession>(`/children/sessions/${initial._id}`);
+      const data = await apiGet<ChildSession>(
+        `/children/sessions/${initial._id}`,
+      );
       setSession(data);
       setUpdatedAt(new Date());
     } finally {
@@ -368,6 +377,7 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
         await fn();
         await refresh();
       } catch (e) {
+        toast.error(e instanceof Error ? e.message : t("common.unknownError"));
         setError(e instanceof Error ? e.message : t("common.unknownError"));
       } finally {
         setBusy(false);
@@ -434,9 +444,16 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
   const roomName = (roomId: string) =>
     s.rooms.find((r) => r.id === roomId)?.name || "";
   const roomTone = (roomId: string) =>
-    ROOM_TONES[Math.max(0, s.rooms.findIndex((r) => r.id === roomId)) % ROOM_TONES.length];
+    ROOM_TONES[
+      Math.max(
+        0,
+        s.rooms.findIndex((r) => r.id === roomId),
+      ) % ROOM_TONES.length
+    ];
   const phase = phaseOf(s, present.length, now);
-  const roomsWithSpace = s.rooms.filter((r) => presentIn(r.id) < r.capacity).length;
+  const roomsWithSpace = s.rooms.filter(
+    (r) => presentIn(r.id) < r.capacity,
+  ).length;
   const chosen = present.filter((v) => selected.includes(v.id));
   const adults =
     chosen[0]?.authorizedPickup.filter((g) =>
@@ -502,7 +519,7 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
       setGuardian("");
       setIdentity(false);
       setReason("");
-      setNotice(t("pickup.success", { count, name: adultName }));
+      notifyNotice(t("pickup.success", { count, name: adultName }));
     });
   }
   async function supervise(job: Pending, note: string) {
@@ -524,7 +541,7 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
       if (job.action === "reissue") setReissued(r as ReceiptData);
       if (job.action === "close") setKiosks([]);
       setPending(null);
-      setNotice(
+      notifyNotice(
         job.action === "close"
           ? t("supervisor.close.done")
           : t("supervisor.reason.recorded"),
@@ -541,13 +558,14 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
       );
       setKiosks((rows) => [{ ...k, label }, ...rows]);
       setKioskLabel("");
+      actionToast.success();
     });
   }
   async function revokeKiosks() {
     await act(async () => {
       await apiPost(`/children/sessions/${s._id}/kiosks/revoke`, {});
       setKiosks([]);
-      setNotice(t("supervisor.kiosk.revoked"));
+      notifyNotice(t("supervisor.kiosk.revoked"));
     });
   }
   function exportRoster() {
@@ -572,8 +590,7 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
       ]),
     ];
     const csv =
-      "﻿" +
-      rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+      "﻿" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
     const url = URL.createObjectURL(
       new Blob([csv], { type: "text/csv;charset=utf-8" }),
     );
@@ -582,6 +599,7 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
     a.download = `${s.name.replace(/[^\w-]+/g, "-") || "children"}-attendance.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    actionToast.download();
   }
   function kioskUrl(token: string) {
     const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -786,7 +804,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
             </form>
             <section className="children-panel">
               <p className="children-kicker">{t("checkin.searchKicker")}</p>
-              <h2 className="mt-2 text-lg font-bold">{t("checkin.searchTitle")}</h2>
+              <h2 className="mt-2 text-lg font-bold">
+                {t("checkin.searchTitle")}
+              </h2>
               <p className="children-muted mt-1">{t("checkin.searchIntro")}</p>
               <input
                 className="children-input mt-4"
@@ -803,7 +823,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
               {search.trim().length >= 2 && (
                 <div className="mt-3" aria-live="polite">
                   {searching ? (
-                    <p className="children-muted p-3">{t("checkin.searching")}</p>
+                    <p className="children-muted p-3">
+                      {t("checkin.searching")}
+                    </p>
                   ) : results.length ? (
                     results.map((family) => (
                       <button
@@ -814,7 +836,10 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                         onClick={() => void openFamily(family._id)}
                       >
                         <span className="flex min-w-0 items-center gap-3">
-                          <span className="kids-avatar green" aria-hidden="true">
+                          <span
+                            className="kids-avatar green"
+                            aria-hidden="true"
+                          >
                             {family.name.trim().slice(0, 1).toUpperCase()}
                           </span>
                           <span className="truncate font-semibold">
@@ -860,6 +885,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                   body,
                 );
                 setReceipt(r);
+                toast.success(
+                  t("checkin.success", { count: r.children.length }),
+                );
                 setSelection(null);
                 setError("");
                 await refresh();
@@ -886,7 +914,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {s.rooms.map((r) => {
               const count = presentIn(r.id);
-              const pct = r.capacity ? Math.round((count / r.capacity) * 100) : 0;
+              const pct = r.capacity
+                ? Math.round((count / r.capacity) * 100)
+                : 0;
               const meter = pct >= 100 ? "full" : pct >= 80 ? "warm" : "";
               const active = roomFilter === r.id;
               return (
@@ -905,7 +935,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="text-xl font-bold">{r.name}</h2>
                     {pct >= 100 ? (
-                      <span className="children-badge rose">{t("rooms.full")}</span>
+                      <span className="children-badge rose">
+                        {t("rooms.full")}
+                      </span>
                     ) : (
                       <span className="children-badge">
                         {t("rooms.spacesLeft", { count: r.capacity - count })}
@@ -919,7 +951,11 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                     })}
                     <span className="text-xs">
                       {" "}
-                      · {t("rooms.monthsHint", { min: r.minMonths, max: r.maxMonths })}
+                      ·{" "}
+                      {t("rooms.monthsHint", {
+                        min: r.minMonths,
+                        max: r.maxMonths,
+                      })}
                     </span>
                   </p>
                   <p className="mt-4 text-4xl font-bold tabular-nums">
@@ -989,7 +1025,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                       <div className="min-w-0 flex-1">
                         <h3 className="text-lg font-bold">{v.childName}</h3>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                          <span className={`children-badge ${roomTone(v.roomId)}`}>
+                          <span
+                            className={`children-badge ${roomTone(v.roomId)}`}
+                          >
                             {roomName(v.roomId)}
                           </span>
                           <span className="children-muted">
@@ -1012,7 +1050,8 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                         {v.careNotes && (
                           <details className="w-full">
                             <summary className="children-badge rose cursor-pointer">
-                              <span aria-hidden="true">♥</span> {t("rooms.careAlert")}
+                              <span aria-hidden="true">♥</span>{" "}
+                              {t("rooms.careAlert")}
                             </summary>
                             <p className="mt-2 whitespace-pre-wrap rounded-xl bg-[#fff1ec] p-3 text-sm">
                               <strong className="block text-xs uppercase tracking-wide text-[#8f3a2b]">
@@ -1025,7 +1064,8 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                         {v.pickupNotes && (
                           <details className="w-full">
                             <summary className="children-badge amber cursor-pointer">
-                              <span aria-hidden="true">✎</span> {t("rooms.pickupNotes")}
+                              <span aria-hidden="true">✎</span>{" "}
+                              {t("rooms.pickupNotes")}
                             </summary>
                             <p className="mt-2 whitespace-pre-wrap rounded-xl bg-[#fff7e6] p-3 text-sm">
                               {v.pickupNotes}
@@ -1037,13 +1077,22 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                     {s.canManage && s.status === "open" && (
                       <div className="mt-3 flex flex-wrap gap-3">
                         <select
-                          aria-label={t("rooms.transfer", { name: v.childName })}
+                          aria-label={t("rooms.transfer", {
+                            name: v.childName,
+                          })}
                           className="children-input max-w-xs"
                           value=""
                           disabled={busy}
                           onChange={(e) => {
-                            const room = s.rooms.find((r) => r.id === e.target.value);
-                            if (room) setPending({ action: "transfer", visit: v, room });
+                            const room = s.rooms.find(
+                              (r) => r.id === e.target.value,
+                            );
+                            if (room)
+                              setPending({
+                                action: "transfer",
+                                visit: v,
+                                room,
+                              });
                           }}
                         >
                           <option value="">{t("rooms.transferHint")}</option>
@@ -1059,7 +1108,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                           className="children-button secondary"
                           type="button"
                           disabled={busy}
-                          onClick={() => setPending({ action: "reissue", visit: v })}
+                          onClick={() =>
+                            setPending({ action: "reissue", visit: v })
+                          }
                         >
                           {t("rooms.reissue")}
                         </button>
@@ -1168,7 +1219,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                 placeholder={t("pickup.placeholder")}
                 required={!exception}
               />
-              <p className="children-muted mt-2">{t.rich("pickup.hint", { kbd })}</p>
+              <p className="children-muted mt-2">
+                {t.rich("pickup.hint", { kbd })}
+              </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   className="children-button lg"
@@ -1204,9 +1257,13 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                 </label>
                 {exception && (
                   <div className="kids-fade-in mt-4 space-y-3">
-                    <p className="children-muted">{t("pickup.exceptionIntro")}</p>
+                    <p className="children-muted">
+                      {t("pickup.exceptionIntro")}
+                    </p>
                     <label className="block">
-                      <span className="children-label">{t("pickup.chooseChild")}</span>
+                      <span className="children-label">
+                        {t("pickup.chooseChild")}
+                      </span>
                       <select
                         className="children-input"
                         value={selected[0] || ""}
@@ -1216,7 +1273,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                           setIdentity(false);
                         }}
                       >
-                        <option value="">{t("pickup.choosePlaceholder")}</option>
+                        <option value="">
+                          {t("pickup.choosePlaceholder")}
+                        </option>
                         {present.map((v) => (
                           <option key={v.id} value={v.id}>
                             {v.childName} · {roomName(v.roomId)}
@@ -1225,7 +1284,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                       </select>
                     </label>
                     <label className="block">
-                      <span className="children-label">{t("pickup.reasonLabel")}</span>
+                      <span className="children-label">
+                        {t("pickup.reasonLabel")}
+                      </span>
                       <textarea
                         className="children-input min-h-24"
                         placeholder={t("pickup.reasonPlaceholder")}
@@ -1253,7 +1314,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
               aria-busy={busy}
             >
               <div>
-                <h2 className="text-2xl font-bold">{t("pickup.matchedTitle")}</h2>
+                <h2 className="text-2xl font-bold">
+                  {t("pickup.matchedTitle")}
+                </h2>
                 <p className="children-muted mt-1">
                   {t("pickup.matchedIntro", { count: chosen.length })}
                 </p>
@@ -1264,11 +1327,16 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                     key={v.id}
                     className="flex items-center gap-4 rounded-2xl bg-[#f6f7ee] p-4"
                   >
-                    <ChildrenPortrait url={v.photoUrl} name={v.childName} size="lg" />
+                    <ChildrenPortrait
+                      url={v.photoUrl}
+                      name={v.childName}
+                      size="lg"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-lg font-bold">{v.childName}</p>
                       <p className="children-muted">
-                        {roomName(v.roomId)} · {durationLabel(t, v.checkedInAt, now)}
+                        {roomName(v.roomId)} ·{" "}
+                        {durationLabel(t, v.checkedInAt, now)}
                       </p>
                       {v.pickupNotes && (
                         <p className="mt-2 rounded-xl bg-[#fff7e6] p-2 text-sm font-semibold text-[#6e4511]">
@@ -1370,9 +1438,12 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
               {/* Kiosk links */}
               <section className="children-panel">
                 <h3 className="text-lg font-bold">
-                  <span aria-hidden="true">📱</span> {t("supervisor.kiosk.title")}
+                  <span aria-hidden="true">📱</span>{" "}
+                  {t("supervisor.kiosk.title")}
                 </h3>
-                <p className="children-muted mt-1">{t("supervisor.kiosk.intro")}</p>
+                <p className="children-muted mt-1">
+                  {t("supervisor.kiosk.intro")}
+                </p>
                 <form
                   onSubmit={createKiosk}
                   className="mt-4 flex flex-wrap items-end gap-3"
@@ -1412,7 +1483,11 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                         key={k.token}
                         className="kids-fade-in flex flex-wrap items-center gap-5 rounded-2xl bg-[#f3f5e9] p-4"
                       >
-                        <ChildrenQr code={kioskUrl(k.token)} size={120} alt={k.label} />
+                        <ChildrenQr
+                          code={kioskUrl(k.token)}
+                          size={120}
+                          alt={k.label}
+                        />
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold">{k.label}</p>
                           <p className="text-xs text-[#8a9589]">
@@ -1431,7 +1506,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                           </a>
                           <p className="children-muted mt-1">
                             {t.rich("supervisor.kiosk.expires", {
-                              time: () => <ChildrenLocalTime value={k.expiresAt} />,
+                              time: () => (
+                                <ChildrenLocalTime value={k.expiresAt} />
+                              ),
                             })}
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -1446,11 +1523,16 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                             <button
                               type="button"
                               className="children-button secondary"
-                              onClick={() =>
-                                void navigator.clipboard
-                                  ?.writeText(kioskUrl(k.token))
-                                  .then(() => setNotice(t("supervisor.kiosk.copied")))
-                              }
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(
+                                    kioskUrl(k.token),
+                                  );
+                                  notifyNotice(t("supervisor.kiosk.copied"));
+                                } catch {
+                                  actionToast.copyFailed();
+                                }
+                              }}
                             >
                               {t("supervisor.kiosk.copy")}
                             </button>
@@ -1460,16 +1542,21 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                     ))}
                   </ul>
                 ) : (
-                  <p className="children-muted mt-4">{t("supervisor.kiosk.empty")}</p>
+                  <p className="children-muted mt-4">
+                    {t("supervisor.kiosk.empty")}
+                  </p>
                 )}
               </section>
 
               {/* Export */}
               <section className="children-panel">
                 <h3 className="text-lg font-bold">
-                  <span aria-hidden="true">⬇</span> {t("supervisor.export.title")}
+                  <span aria-hidden="true">⬇</span>{" "}
+                  {t("supervisor.export.title")}
                 </h3>
-                <p className="children-muted mt-1">{t("supervisor.export.intro")}</p>
+                <p className="children-muted mt-1">
+                  {t("supervisor.export.intro")}
+                </p>
                 <button
                   type="button"
                   className="children-button secondary mt-4"
@@ -1482,9 +1569,12 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
               {/* Close */}
               <section className="children-panel">
                 <h3 className="text-lg font-bold">
-                  <span aria-hidden="true">🔒</span> {t("supervisor.close.title")}
+                  <span aria-hidden="true">🔒</span>{" "}
+                  {t("supervisor.close.title")}
                 </h3>
-                <p className="children-muted mt-1">{t("supervisor.close.intro")}</p>
+                <p className="children-muted mt-1">
+                  {t("supervisor.close.intro")}
+                </p>
                 {s.status !== "open" ? (
                   <p className="children-badge neutral mt-4">
                     {t("supervisor.close.alreadyClosed")}
@@ -1520,32 +1610,50 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
             <div className="space-y-5">
               {/* Session details */}
               <section className="children-panel">
-                <h3 className="text-lg font-bold">{t("supervisor.info.title")}</h3>
+                <h3 className="text-lg font-bold">
+                  {t("supervisor.info.title")}
+                </h3>
                 <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-                  <dt className="children-muted">{t("supervisor.info.starts")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.starts")}
+                  </dt>
                   <dd>
                     <ChildrenLocalTime value={s.startsAt} />
                   </dd>
-                  <dt className="children-muted">{t("supervisor.info.ends")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.ends")}
+                  </dt>
                   <dd>
                     <ChildrenLocalTime value={s.endsAt} />
                   </dd>
-                  <dt className="children-muted">{t("supervisor.info.status")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.status")}
+                  </dt>
                   <dd>{t(`header.phase.${phase}`)}</dd>
-                  <dt className="children-muted">{t("supervisor.info.rooms")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.rooms")}
+                  </dt>
                   <dd>{s.rooms.length}</dd>
-                  <dt className="children-muted">{t("supervisor.info.capacity")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.capacity")}
+                  </dt>
                   <dd>{s.rooms.reduce((sum, r) => sum + r.capacity, 0)}</dd>
-                  <dt className="children-muted">{t("supervisor.info.revision")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.revision")}
+                  </dt>
                   <dd>{s.revision}</dd>
-                  <dt className="children-muted">{t("supervisor.info.events")}</dt>
+                  <dt className="children-muted">
+                    {t("supervisor.info.events")}
+                  </dt>
                   <dd>{s.events.length}</dd>
                 </dl>
               </section>
 
               {/* Timeline */}
               <section className="children-panel">
-                <h3 className="text-lg font-bold">{t("supervisor.timeline.title")}</h3>
+                <h3 className="text-lg font-bold">
+                  {t("supervisor.timeline.title")}
+                </h3>
                 {s.events.length ? (
                   <ol className="kids-timeline mt-4 max-h-[36rem] overflow-auto pr-2">
                     {s.events
@@ -1574,7 +1682,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                               ) : null}
                             </div>
                             {e.note && (
-                              <p className="mt-1 whitespace-pre-wrap">{e.note}</p>
+                              <p className="mt-1 whitespace-pre-wrap">
+                                {e.note}
+                              </p>
                             )}
                             <p className="children-muted mt-1 text-xs">
                               <ChildrenLocalTime value={e.at} format="time" /> ·{" "}
@@ -1589,7 +1699,9 @@ export function ChildrenSessionConsole({ initial }: { initial: ChildSession }) {
                       })}
                   </ol>
                 ) : (
-                  <p className="children-muted mt-3">{t("supervisor.timeline.empty")}</p>
+                  <p className="children-muted mt-3">
+                    {t("supervisor.timeline.empty")}
+                  </p>
                 )}
               </section>
             </div>

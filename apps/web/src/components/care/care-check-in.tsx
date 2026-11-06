@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import { useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { apiPost } from "@/lib/api";
@@ -6,7 +8,14 @@ import { Wordmark } from "@/components/brand/wordmark";
 import { LanguagePicker } from "@/components/i18n/language-picker";
 import { Button, Field } from "@/components/ui/ui";
 
-const RESPONSES = ["well", "away", "request_call", "prayer", "moved", "other"] as const;
+const RESPONSES = [
+  "well",
+  "away",
+  "request_call",
+  "prayer",
+  "moved",
+  "other",
+] as const;
 export function CareCheckIn({
   token,
   info,
@@ -14,6 +23,8 @@ export function CareCheckIn({
   token: string;
   info: { churchName: string; kind: string };
 }) {
+  const actionToast = useActionToast();
+
   const t = useTranslations("people.care.checkIn");
   const tsh = useTranslations("people.shared");
   const locale = useLocale();
@@ -43,10 +54,11 @@ export function CareCheckIn({
           : {}),
       });
       setDone(true);
+
+      actionToast.success();
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : t("errorSave"),
-      );
+      toast.error(e instanceof Error ? e.message : t("errorSave"));
+      setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
     }
@@ -124,7 +136,11 @@ export function CareCheckIn({
               </p>
             )}
             <Button type="submit" variant="flame" disabled={busy}>
-              {busy ? tsh("savingEllipsis") : stop ? t("confirmAndStop") : t("send")}
+              {busy
+                ? tsh("savingEllipsis")
+                : stop
+                  ? t("confirmAndStop")
+                  : t("send")}
             </Button>
           </form>
         )}

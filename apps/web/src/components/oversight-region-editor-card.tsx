@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,23 +19,25 @@ export function OversightRegionEditorCard({
   const t = useTranslations("org.regionEditor");
   const tCommon = useTranslations("common");
   const tStatuses = useTranslations("statuses");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setSaving(true);
-    setStatus(null);
 
     try {
-      const response = await fetch(`${API_URL}/oversight-regions/${region._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          name: formData.get("name"),
-          isActive: formData.get("isActive") === "active",
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/oversight-regions/${region._id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            name: formData.get("name"),
+            isActive: formData.get("isActive") === "active",
+          }),
+        },
+      );
 
       const result = await response.json();
 
@@ -42,12 +45,10 @@ export function OversightRegionEditorCard({
         throw new Error(result.message || t("updateError"));
       }
 
-      setStatus(t("updated"));
+      toast.success(t("updated"));
       router.refresh();
     } catch (error) {
-      setStatus(
-        error instanceof Error ? error.message : t("updateError"),
-      );
+      toast.error(error instanceof Error ? error.message : t("updateError"));
     } finally {
       setSaving(false);
     }
@@ -101,12 +102,6 @@ export function OversightRegionEditorCard({
           {t("readOnly")}
         </p>
       )}
-
-      {status ? (
-        <p role="status" className="mt-4 text-[14px] text-[#55534e]">
-          {status}
-        </p>
-      ) : null}
     </Card>
   );
 }

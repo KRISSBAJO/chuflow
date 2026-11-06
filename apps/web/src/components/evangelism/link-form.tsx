@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -64,6 +66,7 @@ export function OutreachLinkForm({
       );
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorCreate"));
       setError(e instanceof Error ? e.message : t("errorCreate"));
     } finally {
       setBusy(false);
@@ -89,11 +92,7 @@ export function OutreachLinkForm({
             ))}
           </select>
         </Field>
-        <Field
-          label={t("churchName")}
-          required
-          hint={t("churchNameHint")}
-        >
+        <Field label={t("churchName")} required hint={t("churchNameHint")}>
           <input
             name="churchName"
             className="ui-input"
@@ -104,11 +103,7 @@ export function OutreachLinkForm({
             placeholder={t("churchNamePlaceholder")}
           />
         </Field>
-        <Field
-          label={t("linkName")}
-          required
-          hint={t("linkNameHint")}
-        >
+        <Field label={t("linkName")} required hint={t("linkNameHint")}>
           <input
             name="name"
             defaultValue={link?.name}
@@ -125,22 +120,14 @@ export function OutreachLinkForm({
             defaultValue={link?.kind || "personal"}
             disabled={!!link}
           >
-            <option value="personal">
-              {t("personal")}
-            </option>
-            <option value="branch">
-              {t("branchKind")}
-            </option>
+            <option value="personal">{t("personal")}</option>
+            <option value="branch">{t("branchKind")}</option>
           </select>
         </Field>
 
         <fieldset className="space-y-4 rounded-xl border border-black/[0.06] p-4">
-          <legend className="px-2 text-sm font-medium">
-            {t("colors")}
-          </legend>
-          <p className="text-xs text-[#8a8780]">
-            {t("colorsHint")}
-          </p>
+          <legend className="px-2 text-sm font-medium">{t("colors")}</legend>
+          <p className="text-xs text-[#8a8780]">{t("colorsHint")}</p>
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"
@@ -218,9 +205,7 @@ export function OutreachLinkForm({
               onChange={(event) => setButtonTextColor(event.target.value)}
             />
           </label>
-          <p className="text-xs text-[#8a8780]">
-            {t("textHint")}
-          </p>
+          <p className="text-xs text-[#8a8780]">{t("textHint")}</p>
           <div
             className="rounded-xl p-4"
             style={{
@@ -252,25 +237,15 @@ export function OutreachLinkForm({
             {t("restoreColors")}
           </Button>
         </fieldset>
-        {link && (
-          <p className="text-sm text-[#6b6b6b]">
-            {t("savingNote")}
-          </p>
-        )}
-        <p className="text-sm text-[#6b6b6b]">
-          {t("anyoneNote")}
-        </p>
+        {link && <p className="text-sm text-[#6b6b6b]">{t("savingNote")}</p>}
+        <p className="text-sm text-[#6b6b6b]">{t("anyoneNote")}</p>
         {error && (
           <p role="alert" className="text-sm text-red-700">
             {error}
           </p>
         )}
         <Button type="submit" disabled={busy || !branches.length}>
-          {busy
-            ? tsh("savingEllipsis")
-            : link
-              ? t("saveChanges")
-              : t("create")}
+          {busy ? tsh("savingEllipsis") : link ? t("saveChanges") : t("create")}
         </Button>
       </form>
     </Card>
@@ -284,6 +259,8 @@ export function OutreachLinkToggle({
   id: string;
   active: boolean;
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("people.evangelism.linkForm");
   const tsh = useTranslations("people.shared");
@@ -295,7 +272,10 @@ export function OutreachLinkToggle({
     try {
       await apiPatch(`/evangelism/links/${id}`, { isActive: !active });
       router.refresh();
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorChange"));
       setError(e instanceof Error ? e.message : t("errorChange"));
     } finally {
       setBusy(false);

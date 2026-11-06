@@ -1,4 +1,6 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
+import { toast } from "sonner";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,16 +56,22 @@ export function UserCreateForm({
   const tCommon = useTranslations("common");
   const roleLabel = useRoleLabel();
   const READ_ONLY_HINT = t("readOnlyHint");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const creatorIsBranchScoped = isBranchScopedRole(currentUserRole);
-  const defaultBranchName = branches.find((branch) => branch._id === defaultBranchId)?.name;
+  const defaultBranchName = branches.find(
+    (branch) => branch._id === defaultBranchId,
+  )?.name;
   const manageableRoles = getManageableUserRoleOptions(currentUserRole);
   const roleOptions = allowedRoles
     ? manageableRoles.filter((role) => allowedRoles.includes(role))
     : manageableRoles;
   const [selectedRole, setSelectedRole] = useState<string>(
-    roleOptions.includes("usher") ? "usher" : roleOptions.includes("follow_up") ? "follow_up" : "",
+    roleOptions.includes("usher")
+      ? "usher"
+      : roleOptions.includes("follow_up")
+        ? "follow_up"
+        : "",
   );
   const [selectedOversightRegion, setSelectedOversightRegion] = useState(
     defaultOversightRegion || oversightRegions[0]?.name || "",
@@ -78,7 +86,9 @@ export function UserCreateForm({
       ? selectedOversightRegion
       : defaultOversightRegion;
 
-    return districts.filter((district) => district.oversightRegion === activeRegion);
+    return districts.filter(
+      (district) => district.oversightRegion === activeRegion,
+    );
   }, [
     currentUserRole,
     defaultDistrict,
@@ -89,7 +99,6 @@ export function UserCreateForm({
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     try {
       const branchId = creatorIsBranchScoped
@@ -117,11 +126,17 @@ export function UserCreateForm({
         throw new Error(result.message || t("createError"));
       }
 
-      setStatus(t("created"));
-      router.push(createdHref(`/users?search=${encodeURIComponent(String(formData.get("email") || ""))}`, result, t("entityName")));
+      toast.success(t("created"), { id: savedToastId(result) });
+      router.push(
+        createdHref(
+          `/users?search=${encodeURIComponent(String(formData.get("email") || ""))}`,
+          result,
+          t("entityName"),
+        ),
+      );
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("createError"));
+      toast.error(error instanceof Error ? error.message : t("createError"));
     } finally {
       setLoading(false);
     }
@@ -146,18 +161,33 @@ export function UserCreateForm({
 
   const regionReadOnly = (
     <>
-      <input type="hidden" name="oversightRegion" value={defaultOversightRegion ?? ""} />
-      <input value={defaultOversightRegion || t("currentOversightRegion")} readOnly className={READ_ONLY_INPUT} />
+      <input
+        type="hidden"
+        name="oversightRegion"
+        value={defaultOversightRegion ?? ""}
+      />
+      <input
+        value={defaultOversightRegion || t("currentOversightRegion")}
+        readOnly
+        className={READ_ONLY_INPUT}
+      />
     </>
   );
 
   return (
-    <form action={handleSubmit} className={showHeader ? "rounded-2xl bg-white p-5 sm:p-6" : undefined}>
+    <form
+      action={handleSubmit}
+      className={showHeader ? "rounded-2xl bg-white p-5 sm:p-6" : undefined}
+    >
       {showHeader ? (
         <div className="mb-5">
-          <h3 className="lp-heading text-[18px] leading-tight">{title ?? t("title")}</h3>
+          <h3 className="lp-heading text-[18px] leading-tight">
+            {title ?? t("title")}
+          </h3>
           {description ? (
-            <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">{description}</p>
+            <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">
+              {description}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -170,16 +200,42 @@ export function UserCreateForm({
         <>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label={tCommon("firstName")} required>
-              <input name="firstName" placeholder={tCommon("firstName")} className="ui-input" required />
+              <input
+                name="firstName"
+                placeholder={tCommon("firstName")}
+                className="ui-input"
+                required
+              />
             </Field>
             <Field label={tCommon("lastName")} required>
-              <input name="lastName" placeholder={tCommon("lastName")} className="ui-input" required />
+              <input
+                name="lastName"
+                placeholder={tCommon("lastName")}
+                className="ui-input"
+                required
+              />
             </Field>
             <Field label={tCommon("email")} required className="md:col-span-2">
-              <input name="email" type="email" placeholder={t("emailPlaceholder")} className="ui-input" required />
+              <input
+                name="email"
+                type="email"
+                placeholder={t("emailPlaceholder")}
+                className="ui-input"
+                required
+              />
             </Field>
-            <Field label={t("tempPassword")} required hint={t("tempPasswordHint")}>
-              <input name="password" type="password" placeholder={t("tempPassword")} className="ui-input" required />
+            <Field
+              label={t("tempPassword")}
+              required
+              hint={t("tempPasswordHint")}
+            >
+              <input
+                name="password"
+                type="password"
+                placeholder={t("tempPassword")}
+                className="ui-input"
+                required
+              />
             </Field>
             <Field label={t("role")} required hint={t("roleHint")}>
               <select
@@ -189,7 +245,9 @@ export function UserCreateForm({
                 className="ui-input"
                 required
               >
-                <option value="" disabled>{t("chooseRole")}</option>
+                <option value="" disabled>
+                  {t("chooseRole")}
+                </option>
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
                     {roleLabel(role)}
@@ -206,11 +264,19 @@ export function UserCreateForm({
 
             {isNationalRole(selectedRole) ? (
               isGlobalRole(currentUserRole) ? (
-                <Field label={tCommon("nationalArea")} required className="md:col-span-2">
+                <Field
+                  label={tCommon("nationalArea")}
+                  required
+                  className="md:col-span-2"
+                >
                   {regionSelect}
                 </Field>
               ) : (
-                <Field label={tCommon("nationalArea")} hint={READ_ONLY_HINT} className="md:col-span-2">
+                <Field
+                  label={tCommon("nationalArea")}
+                  hint={READ_ONLY_HINT}
+                  className="md:col-span-2"
+                >
                   {regionReadOnly}
                 </Field>
               )
@@ -236,7 +302,9 @@ export function UserCreateForm({
                     disabled={availableDistricts.length === 0}
                   >
                     <option value="">
-                      {availableDistricts.length === 0 ? t("createDistrictFirst") : t("selectDistrict")}
+                      {availableDistricts.length === 0
+                        ? t("createDistrictFirst")
+                        : t("selectDistrict")}
                     </option>
                     {availableDistricts.map((district) => (
                       <option key={district._id} value={district.name}>
@@ -250,13 +318,34 @@ export function UserCreateForm({
 
             {isBranchScopedRole(selectedRole) ? (
               creatorIsBranchScoped ? (
-                <Field label={tCommon("branch")} hint={READ_ONLY_HINT} className="md:col-span-2">
-                  <input type="hidden" name="branchId" value={defaultBranchId ?? ""} />
-                  <input value={defaultBranchName || t("currentBranchScope")} readOnly className={READ_ONLY_INPUT} />
+                <Field
+                  label={tCommon("branch")}
+                  hint={READ_ONLY_HINT}
+                  className="md:col-span-2"
+                >
+                  <input
+                    type="hidden"
+                    name="branchId"
+                    value={defaultBranchId ?? ""}
+                  />
+                  <input
+                    value={defaultBranchName || t("currentBranchScope")}
+                    readOnly
+                    className={READ_ONLY_INPUT}
+                  />
                 </Field>
               ) : (
-                <Field label={tCommon("branch")} required className="md:col-span-2">
-                  <select name="branchId" defaultValue="" className="ui-input" required>
+                <Field
+                  label={tCommon("branch")}
+                  required
+                  className="md:col-span-2"
+                >
+                  <select
+                    name="branchId"
+                    defaultValue=""
+                    className="ui-input"
+                    required
+                  >
                     <option value="">{tCommon("selectBranch")}</option>
                     {branches.map((branch) => (
                       <option key={branch._id} value={branch._id}>
@@ -272,7 +361,10 @@ export function UserCreateForm({
           <p className="mt-4 text-[13px] text-[#8a8780]">
             {t.rich("managedFrom", {
               link: (chunks) => (
-                <a href="/structure" className="font-medium text-[#111111] underline underline-offset-2 hover:text-[#ea580c]">
+                <a
+                  href="/structure"
+                  className="font-medium text-[#111111] underline underline-offset-2 hover:text-[#ea580c]"
+                >
                   {chunks}
                 </a>
               ),
@@ -281,21 +373,20 @@ export function UserCreateForm({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-5">
             <label className="flex items-center gap-2.5 text-[14px] text-[#55534e]">
-              <input name="isActive" type="checkbox" defaultChecked className="h-4 w-4" />
+              <input
+                name="isActive"
+                type="checkbox"
+                defaultChecked
+                className="h-4 w-4"
+              />
               {t("activeImmediately")}
             </label>
             <Button type="submit" disabled={loading}>
-              {loading ? tCommon("saving") : submitLabel ?? t("submit")}
+              {loading ? tCommon("saving") : (submitLabel ?? t("submit"))}
             </Button>
           </div>
         </>
       )}
-
-      {status ? (
-        <p role="status" className="mt-4 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] text-[#55534e]">
-          {status}
-        </p>
-      ) : null}
     </form>
   );
 }

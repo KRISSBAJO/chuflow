@@ -1,22 +1,33 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { Alert, AuthHeading, Field, SubmitButton } from "@/components/auth/auth-ui";
+import {
+  Alert,
+  AuthHeading,
+  Field,
+  SubmitButton,
+} from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 import { useGeo } from "@/hooks/use-geo";
 
 function SectionTitle({ step, title }: { step: number; title: string }) {
   return (
     <p className="mb-5 flex items-center gap-3 text-[15px] font-medium text-[var(--lp-ink)]">
-      <span className="lp-flame-bg flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-semibold text-white">{step}</span>
+      <span className="lp-flame-bg flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-semibold text-white">
+        {step}
+      </span>
       {title}
     </p>
   );
 }
 
 export function WorkspaceRequestForm() {
+  const actionToast = useActionToast();
+
   const t = useTranslations("auth.request");
   const tc = useTranslations("common");
   const { country, states } = useGeo();
@@ -57,10 +68,11 @@ export function WorkspaceRequestForm() {
 
       setIsSuccess(true);
       setMessage(t("received"));
+
+      actionToast.success(t("received"));
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : t("failed"),
-      );
+      toast.error(error instanceof Error ? error.message : t("failed"));
+      setMessage(error instanceof Error ? error.message : t("failed"));
     } finally {
       setLoading(false);
     }
@@ -70,13 +82,30 @@ export function WorkspaceRequestForm() {
     return (
       <div className="lp-rise text-center">
         <div className="lp-flame-bg mx-auto flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_20px_40px_-15px_rgba(234,88,12,0.6)]">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-7 w-7">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            className="h-7 w-7"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.5 12.75l6 6 9-13.5"
+            />
           </svg>
         </div>
-        <h1 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">{t("receivedTitle")}</h1>
-        <p className="mx-auto mt-3 max-w-[380px] text-[16px] leading-[1.6] text-[var(--lp-muted)]">{message}</p>
-        <Link href="/login" className="lp-pill-dark mt-9 inline-flex h-12 items-center justify-center rounded-full px-7 text-[15px] font-medium">
+        <h1 className="lp-heading mt-8 text-[2.25rem] leading-[1.05]">
+          {t("receivedTitle")}
+        </h1>
+        <p className="mx-auto mt-3 max-w-[380px] text-[16px] leading-[1.6] text-[var(--lp-muted)]">
+          {message}
+        </p>
+        <Link
+          href="/login"
+          className="lp-pill-dark mt-9 inline-flex h-12 items-center justify-center rounded-full px-7 text-[15px] font-medium"
+        >
           {t("backToSignIn")}
         </Link>
       </div>
@@ -85,21 +114,27 @@ export function WorkspaceRequestForm() {
 
   return (
     <div>
-      <AuthHeading
-        title={t("title")}
-        body={t("body")}
-      />
+      <AuthHeading title={t("title")} body={t("body")} />
 
       <form action={handleSubmit}>
         <SectionTitle step={1} title={t("yourChurch")} />
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Field label={t("organizationName")}>
-              <input name="organizationName" placeholder={t("organizationPlaceholder")} className="lp-input" required />
+              <input
+                name="organizationName"
+                placeholder={t("organizationPlaceholder")}
+                className="lp-input"
+                required
+              />
             </Field>
           </div>
           <Field label={t("city")}>
-            <input name="city" placeholder={t("cityPlaceholder")} className="lp-input" />
+            <input
+              name="city"
+              placeholder={t("cityPlaceholder")}
+              className="lp-input"
+            />
           </Field>
           <Field label={t("state")}>
             <select name="state" defaultValue="" className="lp-input">
@@ -114,7 +149,13 @@ export function WorkspaceRequestForm() {
           </Field>
           <div className="sm:col-span-2">
             <Field label={t("branchCount")} hint={t("branchCountHint")}>
-              <input name="branchCount" type="number" min="1" placeholder={t("branchCountPlaceholder")} className="lp-input" />
+              <input
+                name="branchCount"
+                type="number"
+                min="1"
+                placeholder={t("branchCountPlaceholder")}
+                className="lp-input"
+              />
             </Field>
           </div>
         </div>
@@ -125,18 +166,41 @@ export function WorkspaceRequestForm() {
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Field label={t("fullName")}>
-              <input name="contactName" placeholder={t("fullNamePlaceholder")} autoComplete="name" className="lp-input" required />
+              <input
+                name="contactName"
+                placeholder={t("fullNamePlaceholder")}
+                autoComplete="name"
+                className="lp-input"
+                required
+              />
             </Field>
           </div>
           <Field label={tc("email")}>
-            <input name="email" type="email" placeholder={t("emailPlaceholder")} autoComplete="email" className="lp-input" required />
+            <input
+              name="email"
+              type="email"
+              placeholder={t("emailPlaceholder")}
+              autoComplete="email"
+              className="lp-input"
+              required
+            />
           </Field>
           <Field label={t("phone")}>
-            <input name="phone" type="tel" placeholder="+234 800 000 0000" autoComplete="tel" className="lp-input" />
+            <input
+              name="phone"
+              type="tel"
+              placeholder="+234 800 000 0000"
+              autoComplete="tel"
+              className="lp-input"
+            />
           </Field>
           <div className="sm:col-span-2">
             <Field label={t("notes")}>
-              <textarea name="notes" placeholder={t("notesPlaceholder")} className="lp-input" />
+              <textarea
+                name="notes"
+                placeholder={t("notesPlaceholder")}
+                className="lp-input"
+              />
             </Field>
           </div>
         </div>

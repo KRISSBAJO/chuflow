@@ -104,7 +104,9 @@
     "tableDownloads": "Descargas de tablas",
     "exportYourTable": "Exporta tu tabla",
     "exportHint": "Todos los registros coincidentes de todas las páginas. Importa cualquiera de los archivos en Google Sheets con Archivo → Importar → Subir.",
-    "table": "Tabla"
+    "table": "Tabla",
+    "downloadReady": "Descarga lista",
+    "copyFailed": "No se pudo copiar el enlace. Cópielo manualmente."
   },
   "roles": {
     "super_admin": "Administrador de supervisión general",

@@ -1,12 +1,23 @@
 "use client";
+import { toast } from "sonner";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import { Icon } from "@/components/app/icons";
-import { PastoralLeadershipCard, TeamPills } from "@/components/structure-cards";
-import { Button, buttonClass, Card, CardHeader, Field, Stat } from "@/components/ui/ui";
+import {
+  PastoralLeadershipCard,
+  TeamPills,
+} from "@/components/structure-cards";
+import {
+  Button,
+  buttonClass,
+  Card,
+  CardHeader,
+  Field,
+  Stat,
+} from "@/components/ui/ui";
 import { ShareLinkCard } from "@/components/share-link-card";
 import {
   canManageBranchStructure,
@@ -24,7 +35,9 @@ function withBranchQuery(url: string, branchId: string) {
   const parsed = new URL(url, "https://www.chuflow.com");
   parsed.searchParams.set("branchId", branchId);
 
-  return url.startsWith("http") ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
+  return url.startsWith("http")
+    ? parsed.toString()
+    : `${parsed.pathname}${parsed.search}`;
 }
 
 export function BranchDetailPanel({
@@ -48,49 +61,72 @@ export function BranchDetailPanel({
   const t = useTranslations("org.branchPanel");
   const tCommon = useTranslations("common");
   const canEdit = canManageBranchStructure(currentUserRole);
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState(
     defaultOversightRegion || branch.oversightRegion,
   );
-  const attendanceTemplate = templates.find(
-    (template) =>
-      template.kind === "attendance" &&
-      template.isActive &&
-      template.branchId === branch._id,
-  ) || templates.find((template) => template.kind === "attendance" && template.isActive);
+  const attendanceTemplate =
+    templates.find(
+      (template) =>
+        template.kind === "attendance" &&
+        template.isActive &&
+        template.branchId === branch._id,
+    ) ||
+    templates.find(
+      (template) => template.kind === "attendance" && template.isActive,
+    );
   const attendanceShareUrl = attendanceTemplate
-    ? withBranchQuery(attendanceTemplate.shareUrl || `/intake/${attendanceTemplate.slug}`, branch._id)
+    ? withBranchQuery(
+        attendanceTemplate.shareUrl || `/intake/${attendanceTemplate.slug}`,
+        branch._id,
+      )
     : null;
-  const weeklyReportTemplate = templates.find(
-    (template) =>
-      template.kind === "weekly_report" &&
-      template.isActive &&
-      template.branchId === branch._id,
-  ) || templates.find(
-    (template) =>
-      template.kind === "weekly_report" &&
-      template.isActive &&
-      template.oversightRegion === branch.oversightRegion &&
-      template.district === branch.district,
-  ) || templates.find((template) => template.kind === "weekly_report" && template.isActive);
+  const weeklyReportTemplate =
+    templates.find(
+      (template) =>
+        template.kind === "weekly_report" &&
+        template.isActive &&
+        template.branchId === branch._id,
+    ) ||
+    templates.find(
+      (template) =>
+        template.kind === "weekly_report" &&
+        template.isActive &&
+        template.oversightRegion === branch.oversightRegion &&
+        template.district === branch.district,
+    ) ||
+    templates.find(
+      (template) => template.kind === "weekly_report" && template.isActive,
+    );
   const weeklyReportShareUrl = weeklyReportTemplate
-    ? withBranchQuery(weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`, branch._id)
+    ? withBranchQuery(
+        weeklyReportTemplate.shareUrl || `/intake/${weeklyReportTemplate.slug}`,
+        branch._id,
+      )
     : null;
-  const maagReportTemplate = templates.find(
-    (template) =>
-      template.kind === "maag_report" &&
-      template.isActive &&
-      template.branchId === branch._id,
-  ) || templates.find(
-    (template) =>
-      template.kind === "maag_report" &&
-      template.isActive &&
-      template.oversightRegion === branch.oversightRegion &&
-      template.district === branch.district,
-  ) || templates.find((template) => template.kind === "maag_report" && template.isActive);
+  const maagReportTemplate =
+    templates.find(
+      (template) =>
+        template.kind === "maag_report" &&
+        template.isActive &&
+        template.branchId === branch._id,
+    ) ||
+    templates.find(
+      (template) =>
+        template.kind === "maag_report" &&
+        template.isActive &&
+        template.oversightRegion === branch.oversightRegion &&
+        template.district === branch.district,
+    ) ||
+    templates.find(
+      (template) => template.kind === "maag_report" && template.isActive,
+    );
   const maagReportShareUrl = maagReportTemplate
-    ? withBranchQuery(maagReportTemplate.shareUrl || `/intake/${maagReportTemplate.slug}`, branch._id)
+    ? withBranchQuery(
+        maagReportTemplate.shareUrl || `/intake/${maagReportTemplate.slug}`,
+        branch._id,
+      )
     : null;
 
   const availableDistricts = useMemo(() => {
@@ -114,7 +150,6 @@ export function BranchDetailPanel({
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     try {
       const response = await fetch(`${API_URL}/branches/${branch._id}`, {
@@ -140,10 +175,10 @@ export function BranchDetailPanel({
         throw new Error(result.message || t("updateError"));
       }
 
-      setStatus(t("updated"));
+      toast.success(t("updated"));
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("updateError"));
+      toast.error(error instanceof Error ? error.message : t("updateError"));
     } finally {
       setLoading(false);
     }
@@ -159,34 +194,58 @@ export function BranchDetailPanel({
               [t("guests"), branch.metrics.guestCount],
               [t("members"), branch.metrics.memberCount],
               [t("branchAdmins"), branch.metrics.branchAdminCount],
-              [t("supportTeam"), branch.metrics.followUpCount + branch.metrics.usherCount],
+              [
+                t("supportTeam"),
+                branch.metrics.followUpCount + branch.metrics.usherCount,
+              ],
             ].map(([label, value]) => (
               <Stat key={label} label={String(label)} value={value} />
             ))}
           </div>
         </Card>
 
-        <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+        <Card
+          className="app-rise p-6 sm:p-7"
+          style={{ animationDelay: "60ms" }}
+        >
           <CardHeader
             label={t("leadershipLabel")}
             title={t("teamTitle")}
             description={t("teamDescription")}
           />
           <div className="mt-5 space-y-4">
-            <TeamBlock title={t("branchAdmins")} users={branch.admins} empty={t("noAdmin")} />
+            <TeamBlock
+              title={t("branchAdmins")}
+              users={branch.admins}
+              empty={t("noAdmin")}
+            />
             <PastoralLeadershipCard
               residentPastors={branch.residentPastors}
               associatePastors={branch.associatePastors}
             />
-            <TeamBlock title={t("followUpTeam")} users={branch.followUpTeam} empty={t("noFollowUp")} />
-            <TeamBlock title={t("usherTeam")} users={branch.ushers} empty={t("noUsher")} />
+            <TeamBlock
+              title={t("followUpTeam")}
+              users={branch.followUpTeam}
+              empty={t("noFollowUp")}
+            />
+            <TeamBlock
+              title={t("usherTeam")}
+              users={branch.ushers}
+              empty={t("noUsher")}
+            />
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <a href={`/users?branchId=${branch._id}`} className={buttonClass("primary", "md")}>
+            <a
+              href={`/users?branchId=${branch._id}`}
+              className={buttonClass("primary", "md")}
+            >
               <Icon name="users" className="h-4 w-4" />
               {t("openStaff")}
             </a>
-            <a href={`/guests?branchId=${branch._id}`} className={buttonClass("secondary", "md")}>
+            <a
+              href={`/guests?branchId=${branch._id}`}
+              className={buttonClass("secondary", "md")}
+            >
               <Icon name="guests" className="h-4 w-4" />
               {t("openGuests")}
             </a>
@@ -194,7 +253,10 @@ export function BranchDetailPanel({
         </Card>
 
         {attendanceShareUrl || weeklyReportShareUrl || maagReportShareUrl ? (
-          <Card className="app-rise p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
+          <Card
+            className="app-rise p-6 sm:p-7"
+            style={{ animationDelay: "120ms" }}
+          >
             <CardHeader
               label={t("shareLabel")}
               title={t("shareTitle")}
@@ -227,7 +289,10 @@ export function BranchDetailPanel({
         ) : null}
       </div>
 
-      <Card className="app-rise self-start p-6 sm:p-7" style={{ animationDelay: "60ms" }}>
+      <Card
+        className="app-rise self-start p-6 sm:p-7"
+        style={{ animationDelay: "60ms" }}
+      >
         <CardHeader
           label={t("profileLabel")}
           title={t("profileTitle")}
@@ -235,12 +300,23 @@ export function BranchDetailPanel({
         />
 
         {canEdit ? (
-          <form action={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
+          <form
+            action={handleSubmit}
+            className="mt-6 grid gap-4 md:grid-cols-2"
+          >
             <Field label={t("branchName")}>
-              <input name="name" defaultValue={branch.name} className="ui-input" />
+              <input
+                name="name"
+                defaultValue={branch.name}
+                className="ui-input"
+              />
             </Field>
             <Field label={tCommon("status")}>
-              <input name="status" defaultValue={branch.status} className="ui-input" />
+              <input
+                name="status"
+                defaultValue={branch.status}
+                className="ui-input"
+              />
             </Field>
 
             {isGlobalRole(currentUserRole) ? (
@@ -260,15 +336,31 @@ export function BranchDetailPanel({
               </Field>
             ) : (
               <Field label={tCommon("nationalArea")}>
-                <input type="hidden" name="oversightRegion" value={defaultOversightRegion ?? branch.oversightRegion} />
-                <input value={defaultOversightRegion || branch.oversightRegion} readOnly className={READ_ONLY_INPUT} />
+                <input
+                  type="hidden"
+                  name="oversightRegion"
+                  value={defaultOversightRegion ?? branch.oversightRegion}
+                />
+                <input
+                  value={defaultOversightRegion || branch.oversightRegion}
+                  readOnly
+                  className={READ_ONLY_INPUT}
+                />
               </Field>
             )}
 
             {isDistrictRole(currentUserRole) ? (
               <Field label={tCommon("district")}>
-                <input type="hidden" name="district" value={defaultDistrict ?? branch.district} />
-                <input value={defaultDistrict || branch.district} readOnly className={READ_ONLY_INPUT} />
+                <input
+                  type="hidden"
+                  name="district"
+                  value={defaultDistrict ?? branch.district}
+                />
+                <input
+                  value={defaultDistrict || branch.district}
+                  readOnly
+                  className={READ_ONLY_INPUT}
+                />
               </Field>
             ) : (
               <Field label={tCommon("district")}>
@@ -278,7 +370,9 @@ export function BranchDetailPanel({
                   disabled={availableDistricts.length === 0}
                   className="ui-input"
                 >
-                  {availableDistricts.length === 0 ? <option value="">{t("createDistrictFirst")}</option> : null}
+                  {availableDistricts.length === 0 ? (
+                    <option value="">{t("createDistrictFirst")}</option>
+                  ) : null}
                   {availableDistricts.map((district) => (
                     <option key={district._id} value={district.name}>
                       {district.name}
@@ -289,27 +383,54 @@ export function BranchDetailPanel({
             )}
 
             <Field label={t("city")}>
-              <input name="city" defaultValue={branch.city} className="ui-input" />
+              <input
+                name="city"
+                defaultValue={branch.city}
+                className="ui-input"
+              />
             </Field>
             <Field label={t("state")}>
-              <input name="state" defaultValue={branch.state} className="ui-input" />
+              <input
+                name="state"
+                defaultValue={branch.state}
+                className="ui-input"
+              />
             </Field>
             <Field label={t("country")}>
-              <input name="country" defaultValue={branch.country} className="ui-input" />
+              <input
+                name="country"
+                defaultValue={branch.country}
+                className="ui-input"
+              />
             </Field>
             <Field label={t("serviceTimes")}>
-              <input name="serviceTimes" defaultValue={branch.serviceTimes} className="ui-input" />
+              <input
+                name="serviceTimes"
+                defaultValue={branch.serviceTimes}
+                className="ui-input"
+              />
             </Field>
             <Field label={t("contactInfo")} className="md:col-span-2">
-              <input name="contactInfo" defaultValue={branch.contactInfo} className="ui-input" />
+              <input
+                name="contactInfo"
+                defaultValue={branch.contactInfo}
+                className="ui-input"
+              />
             </Field>
             <Field label={t("address")} className="md:col-span-2">
-              <input name="address" defaultValue={branch.address} className="ui-input" />
+              <input
+                name="address"
+                defaultValue={branch.address}
+                className="ui-input"
+              />
             </Field>
             <p className="text-[13px] leading-[1.6] text-[#8a8780] md:col-span-2">
               {t.rich("managedFrom", {
                 link: (chunks) => (
-                  <a href="/structure" className="font-medium text-[#111111] underline underline-offset-2">
+                  <a
+                    href="/structure"
+                    className="font-medium text-[#111111] underline underline-offset-2"
+                  >
                     {chunks}
                   </a>
                 ),
@@ -318,16 +439,15 @@ export function BranchDetailPanel({
             <div className="md:col-span-2">
               <Button
                 type="submit"
-                disabled={loading || (!isDistrictRole(currentUserRole) && availableDistricts.length === 0)}
+                disabled={
+                  loading ||
+                  (!isDistrictRole(currentUserRole) &&
+                    availableDistricts.length === 0)
+                }
               >
                 {loading ? tCommon("saving") : t("update")}
               </Button>
             </div>
-            {status ? (
-              <p role="status" className="text-[14px] text-[#55534e] md:col-span-2">
-                {status}
-              </p>
-            ) : null}
           </form>
         ) : (
           <p className="mt-6 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] leading-[1.6] text-[#55534e]">

@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -12,6 +14,8 @@ export function ApprovalDecisionForm({
   request: ApprovalRequest;
   isAuthor: boolean;
 }) {
+  const actionToast = useActionToast();
+
   const t = useTranslations("admin.decisionForm");
   const tr = useTranslations("admin.approvalRequests");
   const router = useRouter();
@@ -35,7 +39,10 @@ export function ApprovalDecisionForm({
       });
       router.refresh();
       setBusy(false);
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("saveError"));
       setError(e instanceof Error ? e.message : t("saveError"));
       setBusy(false);
     }
@@ -72,9 +79,7 @@ export function ApprovalDecisionForm({
                 <option value="reject">{t("rejectRequest")}</option>
                 <option value="return">{t("returnCorrections")}</option>
                 {final && r.finalLevel !== "national" && (
-                  <option value="escalate">
-                    {t("escalate")}
-                  </option>
+                  <option value="escalate">{t("escalate")}</option>
                 )}
               </>
             )}

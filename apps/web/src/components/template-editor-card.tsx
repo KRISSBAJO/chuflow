@@ -1,4 +1,5 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -378,7 +379,7 @@ export function TemplateEditorCard({
     ? toEditableTemplate(template)
     : defaultTemplate("guest", defaultBranchId);
   const [draft, setDraft] = useState<IntakeTemplate>(baseTemplate);
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [overrideLoading, setOverrideLoading] = useState(false);
   const [districtOverrideLoading, setDistrictOverrideLoading] = useState(false);
@@ -475,7 +476,6 @@ export function TemplateEditorCard({
 
   async function handleSubmit() {
     setLoading(true);
-    setStatus(null);
 
     try {
       const payload = {
@@ -519,15 +519,16 @@ export function TemplateEditorCard({
       }
 
       const message = template?._id ? t("updated") : t("created");
-      setStatus(message);
-      toast.success(message);
+
+      toast.success(message, { id: savedToastId(result) });
       if (!template?._id)
-        router.push(createdHref("/templates?sort=newest", result, t("entityName")));
+        router.push(
+          createdHref("/templates?sort=newest", result, t("entityName")),
+        );
       router.refresh();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t("saveError");
-      setStatus(message);
+      const message = error instanceof Error ? error.message : t("saveError");
+
       toast.error(t("saveFailedTitle"), {
         description: message,
       });
@@ -542,7 +543,6 @@ export function TemplateEditorCard({
     }
 
     setOverrideLoading(true);
-    setStatus(null);
 
     try {
       const response = await fetch(
@@ -562,15 +562,13 @@ export function TemplateEditorCard({
       }
 
       const message = t("branchVersionCreated");
-      setStatus(message);
+
       toast.success(message);
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : t("branchVersionError");
-      setStatus(message);
+        error instanceof Error ? error.message : t("branchVersionError");
+
       toast.error(t("branchVersionFailedTitle"), {
         description: message,
       });
@@ -585,7 +583,6 @@ export function TemplateEditorCard({
     }
 
     setDistrictOverrideLoading(true);
-    setStatus(null);
 
     try {
       const response = await fetch(
@@ -608,15 +605,13 @@ export function TemplateEditorCard({
       }
 
       const message = t("districtVersionCreated");
-      setStatus(message);
+
       toast.success(message);
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : t("districtVersionError");
-      setStatus(message);
+        error instanceof Error ? error.message : t("districtVersionError");
+
       toast.error(t("districtVersionFailedTitle"), {
         description: message,
       });
@@ -657,8 +652,13 @@ export function TemplateEditorCard({
                 {isGlobalBaseTemplate
                   ? t("scope.globalBaseHelp")
                   : isDistrictVersion
-                    ? t("scope.districtHelp", { district: template?.district || t("scope.selectedDistrict") })
-                    : t("scope.branchHelp", { branch: branchLabel || t("scope.selectedBranch") })}
+                    ? t("scope.districtHelp", {
+                        district:
+                          template?.district || t("scope.selectedDistrict"),
+                      })
+                    : t("scope.branchHelp", {
+                        branch: branchLabel || t("scope.selectedBranch"),
+                      })}
               </p>
             </div>
             {isDistrictVersion && template?.district ? (
@@ -670,15 +670,15 @@ export function TemplateEditorCard({
           </div>
           {canCreateBranchVersion ? (
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-white px-4 py-3 text-[14px] text-[#55534e] md:flex-row md:items-center md:justify-between">
-              <p>
-                {t("scope.startBranchVersion")}
-              </p>
+              <p>{t("scope.startBranchVersion")}</p>
               <Button
                 size="sm"
                 onClick={handleCreateBranchVersion}
                 disabled={overrideLoading}
               >
-                {overrideLoading ? t("scope.creating") : t("scope.createBranchVersion")}
+                {overrideLoading
+                  ? t("scope.creating")
+                  : t("scope.createBranchVersion")}
               </Button>
             </div>
           ) : null}
@@ -702,7 +702,9 @@ export function TemplateEditorCard({
       ) : null}
 
       <section className="rounded-2xl border border-black/[0.06] p-4 sm:p-5">
-        <p className="text-[14px] font-medium text-[#111111]">{t("basics.title")}</p>
+        <p className="text-[14px] font-medium text-[#111111]">
+          {t("basics.title")}
+        </p>
         <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
           {t("basics.description")}
         </p>
@@ -737,8 +739,12 @@ export function TemplateEditorCard({
               <option value="guest">{t("basics.kinds.guest")}</option>
               <option value="member">{t("basics.kinds.member")}</option>
               <option value="attendance">{t("basics.kinds.attendance")}</option>
-              <option value="weekly_report">{t("basics.kinds.weekly_report")}</option>
-              <option value="maag_report">{t("basics.kinds.maag_report")}</option>
+              <option value="weekly_report">
+                {t("basics.kinds.weekly_report")}
+              </option>
+              <option value="maag_report">
+                {t("basics.kinds.maag_report")}
+              </option>
             </select>
           </Field>
           <Field label={t("basics.branch")}>
@@ -914,7 +920,9 @@ export function TemplateEditorCard({
               ).map((key) => (
                 <Field
                   key={key}
-                  label={t("wording.spanishField", { field: key.replace(/([A-Z])/g, " $1") })}
+                  label={t("wording.spanishField", {
+                    field: key.replace(/([A-Z])/g, " $1"),
+                  })}
                 >
                   <textarea
                     className="ui-input"
@@ -1036,7 +1044,9 @@ export function TemplateEditorCard({
                 formTextColor(draft.theme?.headerColor || "#ffffff"),
             }}
           >
-            {t("theme.headerPreview", { name: draft.name || t("theme.yourChurchForm") })}
+            {t("theme.headerPreview", {
+              name: draft.name || t("theme.yourChurchForm"),
+            })}
           </div>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-3">
@@ -1295,21 +1305,12 @@ export function TemplateEditorCard({
       {!readonly ? (
         <div className="flex flex-wrap items-center gap-3">
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading
-              ? t("saving")
-              : template?._id
-                ? t("update")
-                : t("create")}
+            {loading ? t("saving") : template?._id ? t("update") : t("create")}
           </Button>
-          {status ? (
-            <p className="text-[13px] text-[#6b6b6b]">{status}</p>
-          ) : null}
         </div>
       ) : (
         <p className="rounded-2xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">
-          {canCreateBranchVersion
-            ? t("lockedCreateBranch")
-            : t("locked")}
+          {canCreateBranchVersion ? t("lockedCreateBranch") : t("locked")}
         </p>
       )}
     </div>

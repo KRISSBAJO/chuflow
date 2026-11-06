@@ -1,11 +1,18 @@
 "use client";
+import { toast } from "sonner";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/app/icons";
-import { Badge, Button, Card, CardHeader, EmptyState } from "@/components/ui/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  EmptyState,
+} from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import { isGlobalRole } from "@/lib/permissions";
 import type { DistrictOption, OversightRegionOption } from "@/lib/types";
@@ -25,7 +32,7 @@ export function HierarchyCatalogPanel({
   const t = useTranslations("org.hierarchyCatalog");
   const tCommon = useTranslations("common");
   const [loading, setLoading] = useState<"region" | "district" | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+
   const [selectedRegion, setSelectedRegion] = useState(
     defaultOversightRegion || oversightRegions[0]?.name || "",
   );
@@ -44,7 +51,6 @@ export function HierarchyCatalogPanel({
 
   async function handleCreateRegion(formData: FormData) {
     setLoading("region");
-    setStatus(null);
 
     try {
       const response = await fetch(`${API_URL}/oversight-regions`, {
@@ -62,13 +68,11 @@ export function HierarchyCatalogPanel({
         throw new Error(result.message || t("createRegionError"));
       }
 
-      setStatus(t("regionCreated"));
+      toast.success(t("regionCreated"));
       router.refresh();
     } catch (error) {
-      setStatus(
-        error instanceof Error
-          ? error.message
-          : t("createRegionError"),
+      toast.error(
+        error instanceof Error ? error.message : t("createRegionError"),
       );
     } finally {
       setLoading(null);
@@ -77,7 +81,6 @@ export function HierarchyCatalogPanel({
 
   async function handleCreateDistrict(formData: FormData) {
     setLoading("district");
-    setStatus(null);
 
     try {
       const response = await fetch(`${API_URL}/districts`, {
@@ -97,10 +100,10 @@ export function HierarchyCatalogPanel({
         throw new Error(result.message || t("createDistrictError"));
       }
 
-      setStatus(t("districtCreated"));
+      toast.success(t("districtCreated"));
       router.refresh();
     } catch (error) {
-      setStatus(
+      toast.error(
         error instanceof Error ? error.message : t("createDistrictError"),
       );
     } finally {
@@ -130,7 +133,10 @@ export function HierarchyCatalogPanel({
               </div>
             </div>
             <Badge tone="flame">
-              {t.rich("areasCount", { count: oversightRegions.length, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
+              {t.rich("areasCount", {
+                count: oversightRegions.length,
+                n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+              })}
             </Badge>
           </div>
 
@@ -162,12 +168,16 @@ export function HierarchyCatalogPanel({
                       className="group -mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-[#f6f5f1]"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[14px] font-medium text-[#111111]">{region.name}</span>
+                        <span className="block text-[14px] font-medium text-[#111111]">
+                          {region.name}
+                        </span>
                         <span className="block text-[13px] text-[#6b6b6b]">
                           {t.rich("regionSummary", {
                             districts: region.districtCount,
                             branches: region.branchCount,
-                            n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+                            n: (chunks) => (
+                              <span className="tabular-nums">{chunks}</span>
+                            ),
                           })}
                         </span>
                       </span>
@@ -201,7 +211,10 @@ export function HierarchyCatalogPanel({
               </div>
             </div>
             <Badge>
-              {t.rich("districtsCount", { count: districts.length, n: (chunks) => <span className="tabular-nums">{chunks}</span> })}
+              {t.rich("districtsCount", {
+                count: districts.length,
+                n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+              })}
             </Badge>
           </div>
 
@@ -247,7 +260,11 @@ export function HierarchyCatalogPanel({
                   className="ui-input flex-1"
                   required
                 />
-                <Button type="submit" icon="plus" disabled={loading === "district"}>
+                <Button
+                  type="submit"
+                  icon="plus"
+                  disabled={loading === "district"}
+                >
                   {loading === "district" ? t("creating") : tCommon("create")}
                 </Button>
               </div>
@@ -264,12 +281,16 @@ export function HierarchyCatalogPanel({
                       className="group -mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-[#f6f5f1]"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[14px] font-medium text-[#111111]">{district.name}</span>
+                        <span className="block text-[14px] font-medium text-[#111111]">
+                          {district.name}
+                        </span>
                         <span className="block text-[13px] text-[#6b6b6b]">
                           {t.rich("districtSummary", {
                             region: district.oversightRegion,
                             count: district.branchCount,
-                            n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+                            n: (chunks) => (
+                              <span className="tabular-nums">{chunks}</span>
+                            ),
                           })}
                         </span>
                       </span>
@@ -289,12 +310,6 @@ export function HierarchyCatalogPanel({
           </div>
         </div>
       </div>
-
-      {status ? (
-        <p role="status" className="mt-5 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] text-[#55534e]">
-          {status}
-        </p>
-      ) : null}
     </Card>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -14,14 +15,17 @@ export function ShareLinkCard({
   description?: string;
 }) {
   const t = useTranslations("people.shareLink");
+  const feedback = useTranslations("common");
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      toast.success(t("copied"));
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
+      toast.error(feedback("copyFailed"));
       setCopied(false);
     }
   }
@@ -32,7 +36,9 @@ export function ShareLinkCard({
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-[#111111]">{title}</p>
           {description ? (
-            <p className="mt-1 text-[13px] leading-[1.5] text-[#6b6b6b]">{description}</p>
+            <p className="mt-1 text-[13px] leading-[1.5] text-[#6b6b6b]">
+              {description}
+            </p>
           ) : null}
           <p className="mt-3 break-all rounded-xl bg-[#f6f5f1] px-3 py-2 font-mono text-[12px] text-[#55534e]">
             {url}
@@ -42,7 +48,12 @@ export function ShareLinkCard({
           <Button size="sm" variant="secondary" onClick={handleCopy}>
             {copied ? t("copied") : t("copyLink")}
           </Button>
-          <a href={url} target="_blank" rel="noreferrer" className={buttonClass("primary", "sm")}>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClass("primary", "sm")}
+          >
             {t("openForm")}
           </a>
         </div>

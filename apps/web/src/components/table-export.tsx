@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/ui";
@@ -49,6 +51,8 @@ export function ExportTableButtons({
   label?: string;
   filters?: Record<string, string>;
 }) {
+  const actionToast = useActionToast();
+
   const query = useSearchParams();
   const t = useTranslations("common");
   const [busy, setBusy] = useState(false);
@@ -84,7 +88,10 @@ export function ExportTableButtons({
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+
+      actionToast.success(t("downloadReady"));
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("downloadFailed"));
       setError(e instanceof Error ? e.message : t("downloadFailed"));
     } finally {
       setBusy(false);

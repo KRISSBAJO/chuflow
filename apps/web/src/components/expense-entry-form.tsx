@@ -1,4 +1,5 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,7 +55,10 @@ export function ExpenseEntryForm({
           return false;
         }
 
-        if (selectedBranchId && getScheduleBranchId(schedule.branchId) !== selectedBranchId) {
+        if (
+          selectedBranchId &&
+          getScheduleBranchId(schedule.branchId) !== selectedBranchId
+        ) {
           return false;
         }
 
@@ -72,7 +76,9 @@ export function ExpenseEntryForm({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          branchId: canChooseBranch ? formData.get("branchId") || undefined : defaultBranchId,
+          branchId: canChooseBranch
+            ? formData.get("branchId") || undefined
+            : defaultBranchId,
           expenseDate: formData.get("expenseDate"),
           accountId: formData.get("accountId"),
           expenseCategoryId: formData.get("expenseCategoryId"),
@@ -92,10 +98,14 @@ export function ExpenseEntryForm({
       }
 
       toast.success(t("recordedTitle"), {
+        id: savedToastId(result),
         description: t("recordedDescription"),
       });
       if (onSuccess) onSuccess();
-      else router.push(createdHref("/finance?tab=expenses", result, t("entityName")));
+      else
+        router.push(
+          createdHref("/finance?tab=expenses", result, t("entityName")),
+        );
       router.refresh();
     } catch (error) {
       toast.error(t("notRecordedTitle"), {
@@ -138,7 +148,12 @@ export function ExpenseEntryForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field label={t("expenseDate")} required>
-            <input name="expenseDate" type="date" className="ui-input" required />
+            <input
+              name="expenseDate"
+              type="date"
+              className="ui-input"
+              required
+            />
           </Field>
 
           <Field label={t("category")} required>
@@ -148,7 +163,9 @@ export function ExpenseEntryForm({
               onChange={(event) => {
                 const nextCategoryId = event.target.value;
                 setSelectedCategoryId(nextCategoryId);
-                const category = expenseCategories.find((item) => item._id === nextCategoryId);
+                const category = expenseCategories.find(
+                  (item) => item._id === nextCategoryId,
+                );
                 const matchingAccount = accounts.find(
                   (account) => account.key === category?.defaultAccountKey,
                 );
@@ -219,7 +236,11 @@ export function ExpenseEntryForm({
         </div>
 
         <Field label={t("payeeOrVendor")}>
-          <input name="payee" placeholder={t("payeePlaceholder")} className="ui-input" />
+          <input
+            name="payee"
+            placeholder={t("payeePlaceholder")}
+            className="ui-input"
+          />
         </Field>
 
         <Field label={t("descriptionLabel")} required>
@@ -232,7 +253,11 @@ export function ExpenseEntryForm({
         </Field>
 
         <Field label={t("receiptLink")} hint={t("receiptHint")}>
-          <input name="receiptUrl" placeholder="https://" className="ui-input" />
+          <input
+            name="receiptUrl"
+            placeholder="https://"
+            className="ui-input"
+          />
         </Field>
 
         <Field label={t("notes")}>

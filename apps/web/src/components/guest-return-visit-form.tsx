@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,12 +19,11 @@ export function GuestReturnVisitForm({
   const router = useRouter();
   const t = useTranslations("people.guests.returnVisit");
   const tc = useTranslations("common");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     try {
       const payload = {
@@ -88,10 +88,10 @@ export function GuestReturnVisitForm({
         });
       }
 
-      setStatus(t("recorded"));
+      toast.success(t("recorded"));
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("errorReturn"));
+      toast.error(error instanceof Error ? error.message : t("errorReturn"));
     } finally {
       setLoading(false);
     }
@@ -101,13 +101,26 @@ export function GuestReturnVisitForm({
     <form action={handleSubmit}>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label={t("serviceDateTime")} required>
-          <input name="serviceDate" type="datetime-local" required className="ui-input" />
+          <input
+            name="serviceDate"
+            type="datetime-local"
+            required
+            className="ui-input"
+          />
         </Field>
         <Field label={t("serviceType")}>
-          <input name="serviceType" defaultValue="Sunday service" className="ui-input" />
+          <input
+            name="serviceType"
+            defaultValue="Sunday service"
+            className="ui-input"
+          />
         </Field>
         <Field label={t("note")} className="md:col-span-2">
-          <textarea name="notes" placeholder={t("notePlaceholder")} className="ui-input" />
+          <textarea
+            name="notes"
+            placeholder={t("notePlaceholder")}
+            className="ui-input"
+          />
         </Field>
       </div>
       <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -115,7 +128,6 @@ export function GuestReturnVisitForm({
           {!branchId ? (
             <p className="text-[13px] text-red-700">{t("branchRequired")}</p>
           ) : null}
-          {status ? <p className="text-[13px] text-[#55534e]">{status}</p> : null}
         </div>
         <Button type="submit" disabled={loading || !branchId}>
           {loading ? tc("saving") : t("record")}

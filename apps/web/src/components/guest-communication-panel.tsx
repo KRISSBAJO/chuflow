@@ -1,4 +1,6 @@
 "use client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -16,11 +18,12 @@ export function GuestCommunicationPanel({
   recipient: string;
   communications: CommunicationItem[];
 }) {
+  const router = useRouter();
   const t = useTranslations("people.guests.communication");
   const tc = useTranslations("common");
   const tsh = useTranslations("people.shared");
   const { dateTime } = useAppFormat();
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<
     Array<{ id: string; label: string; subject: string; message: string }>
@@ -77,13 +80,13 @@ export function GuestCommunicationPanel({
   }, []);
 
   const activeTemplate = useMemo(
-    () => templates.find((template) => template.id === templateId) ?? templates[0],
+    () =>
+      templates.find((template) => template.id === templateId) ?? templates[0],
     [templateId, templates],
   );
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     try {
       const response = await fetch(`${API_URL}/communications/send`, {
@@ -104,16 +107,22 @@ export function GuestCommunicationPanel({
         throw new Error(result.message || t("errorSend"));
       }
 
-      setStatus(
+      toast[
+        result.status === "failed"
+          ? "error"
+          : result.status === "preview"
+            ? "info"
+            : "success"
+      ](
         result.status === "failed"
           ? t("loggedFailed")
           : result.status === "preview"
             ? t("savedPreview")
             : t("logged"),
       );
-      window.location.reload();
+      router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("errorSend"));
+      toast.error(error instanceof Error ? error.message : t("errorSend"));
     } finally {
       setLoading(false);
     }
@@ -122,7 +131,9 @@ export function GuestCommunicationPanel({
   return (
     <section className="surface rounded-[32px] p-6">
       <p className="eyebrow">{t("eyebrow")}</p>
-      <h2 className="mt-3 text-2xl font-semibold text-slate-950">{t("title")}</h2>
+      <h2 className="mt-3 text-2xl font-semibold text-slate-950">
+        {t("title")}
+      </h2>
 
       <form action={handleSubmit} className="mt-5 rounded-[28px] bg-white p-5">
         <div className="grid gap-3 md:grid-cols-2">
@@ -138,23 +149,32 @@ export function GuestCommunicationPanel({
               </option>
             ))}
           </select>
-          <select name="channel" defaultValue="email" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none">
+          <select
+            name="channel"
+            defaultValue="email"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
+          >
             <option value="email">{tc("email")}</option>
             <option value="sms">{t("sms")}</option>
             <option value="phone_call">{t("phoneCall")}</option>
           </select>
-          <input name="recipient" defaultValue={recipient} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none md:col-span-2" />
+          <input
+            name="recipient"
+            defaultValue={recipient}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none md:col-span-2"
+          />
           <textarea
             name="message"
-            defaultValue={
-              activeTemplate?.message ||
-              t("defaultMessage")
-            }
+            defaultValue={activeTemplate?.message || t("defaultMessage")}
             key={`${templateId}-message`}
             className="min-h-28 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none md:col-span-2"
           />
         </div>
-        <button type="submit" disabled={loading} className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+        >
           {loading ? tc("saving") : t("logCommunication")}
         </button>
       </form>
@@ -166,27 +186,35 @@ export function GuestCommunicationPanel({
           </div>
         ) : (
           communications.map((item) => (
-            <div key={item._id} className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+            <div
+              key={item._id}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-4"
+            >
               <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold text-slate-900">{item.templateName}</p>
+                <p className="font-semibold text-slate-900">
+                  {item.templateName}
+                </p>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                   {item.channel}
                 </span>
               </div>
               <p className="mt-2 text-sm text-slate-600">{item.message}</p>
               <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-400">
-                {item.createdAt ? dateTime(item.createdAt) : tsh("noTimestamp")} · {item.status}
-                {item.deliveryMode ? ` · ${item.deliveryMode.replace(/_/g, " ")}` : ""}
+                {item.createdAt ? dateTime(item.createdAt) : tsh("noTimestamp")}{" "}
+                · {item.status}
+                {item.deliveryMode
+                  ? ` · ${item.deliveryMode.replace(/_/g, " ")}`
+                  : ""}
               </p>
               {item.errorMessage ? (
-                <p className="mt-2 text-xs text-rose-600">{item.errorMessage}</p>
+                <p className="mt-2 text-xs text-rose-600">
+                  {item.errorMessage}
+                </p>
               ) : null}
             </div>
           ))
         )}
       </div>
-
-      {status ? <p className="mt-4 text-sm text-slate-600">{status}</p> : null}
     </section>
   );
 }

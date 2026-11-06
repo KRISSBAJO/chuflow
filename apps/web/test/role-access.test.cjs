@@ -27,6 +27,8 @@ function load(file, mocks = {}, globals = {}) {
       ...globals,
       require: (name) => {
         if (name in mocks) return mocks[name];
+        if (name === "sonner") return {toast:{success(){},error(){},info(){}}};
+        if (name === "@/lib/action-feedback") return load("apps/web/src/lib/action-feedback.ts");
         if (name === "./capabilities" || name === "@/lib/capabilities") return load("apps/web/src/lib/capabilities.ts");
         const t = (key) => key;
         t.has = () => false;

@@ -104,7 +104,9 @@
     "tableDownloads": "Téléchargements de tableaux",
     "exportYourTable": "Exporter votre tableau",
     "exportHint": "Toutes les fiches correspondantes, toutes pages confondues. Importez l'un des fichiers dans Google Sheets via Fichier → Importer → Importer.",
-    "table": "Tableau"
+    "table": "Tableau",
+    "downloadReady": "Téléchargement prêt",
+    "copyFailed": "Impossible de copier le lien. Copiez-le manuellement."
   },
   "roles": {
     "super_admin": "Administrateur de la supervision générale",

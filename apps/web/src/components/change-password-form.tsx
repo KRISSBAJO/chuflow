@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -7,19 +8,18 @@ import { Button, Card, Field } from "@/components/ui/ui";
 
 export function ChangePasswordForm() {
   const t = useTranslations("admin.settings.password");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     const currentPassword = String(formData.get("currentPassword") ?? "");
     const newPassword = String(formData.get("newPassword") ?? "");
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
     if (newPassword !== confirmPassword) {
-      setStatus(t("mismatch"));
+      toast.error(t("mismatch"));
       setLoading(false);
       return;
     }
@@ -36,9 +36,9 @@ export function ChangePasswordForm() {
         throw new Error(await response.text());
       }
 
-      setStatus(t("changed"));
+      toast.success(t("changed"));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("failed"));
+      toast.error(error instanceof Error ? error.message : t("failed"));
     } finally {
       setLoading(false);
     }
@@ -80,11 +80,6 @@ export function ChangePasswordForm() {
           </Field>
         </div>
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-black/[0.06] pt-5 sm:flex-row sm:items-center sm:justify-end">
-          {status ? (
-            <p role="status" className="text-[13px] text-[#6b6b6b] sm:mr-auto">
-              {status}
-            </p>
-          ) : null}
           <Button type="submit" disabled={loading}>
             {loading ? t("updating") : t("update")}
           </Button>

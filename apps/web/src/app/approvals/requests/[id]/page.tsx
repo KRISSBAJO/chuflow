@@ -1,3 +1,4 @@
+import { ActionNotice } from "@/components/action-notice";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { requireServerRole } from "@/lib/auth";
@@ -33,12 +34,7 @@ export default async function Page({
         {t("backToRequests")}
       </Link>
       {q.submitted && (
-        <p
-          role="status"
-          className="rounded-xl bg-green-50 p-3 text-sm text-green-800"
-        >
-          {t("submittedNotice")}
-        </p>
+        <ActionNotice param="submitted" message={t("submittedNotice")} />
       )}
       <Card className="border-t-4 border-t-orange-400 p-6">
         <p className="text-xs uppercase tracking-wide text-[#b95c18]">
@@ -46,7 +42,8 @@ export default async function Page({
         </p>
         <h1 className="mt-2 text-2xl font-semibold">{r.title}</h1>
         <p className="mt-2 text-sm text-[#6b6b6b]">
-          {r.branchName} · {r.policyName} · {t("endsAt", { level: t(`level.${r.finalLevel}`) })}
+          {r.branchName} · {r.policyName} ·{" "}
+          {t("endsAt", { level: t(`level.${r.finalLevel}`) })}
         </p>
         {r.amount !== undefined && (
           <p className="mt-3 font-semibold">
@@ -174,7 +171,9 @@ export default async function Page({
           </ol>
           {r.status === "pending" && (
             <p className="mt-4 text-sm text-[#6b6b6b]">
-              {t("reviewDue", { date: format.dateTime(new Date(r.dueAt), { timeZone: "UTC" }) })}
+              {t("reviewDue", {
+                date: format.dateTime(new Date(r.dueAt), { timeZone: "UTC" }),
+              })}
             </p>
           )}
         </Card>

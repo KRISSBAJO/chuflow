@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -15,6 +17,8 @@ type Match = {
 };
 
 export function OutreachGuestLink({ contactId }: { contactId: string }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("people.evangelism.guestLink");
   const [matches, setMatches] = useState<Match[] | null>(null);
@@ -31,9 +35,7 @@ export function OutreachGuestLink({ contactId }: { contactId: string }) {
         ),
       );
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : t("errorCheck"),
-      );
+      setError(e instanceof Error ? e.message : t("errorCheck"));
     } finally {
       setBusy(false);
     }
@@ -46,7 +48,10 @@ export function OutreachGuestLink({ contactId }: { contactId: string }) {
         guestId: selected,
       });
       router.refresh();
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorLink"));
       setError(e instanceof Error ? e.message : t("errorLink"));
     } finally {
       setBusy(false);
@@ -55,9 +60,7 @@ export function OutreachGuestLink({ contactId }: { contactId: string }) {
   return (
     <div className="mt-6 space-y-3 border-t pt-5">
       <h3 className="text-sm font-semibold">{t("title")}</h3>
-      <p className="text-sm text-[#6b6b6b]">
-        {t("description")}
-      </p>
+      <p className="text-sm text-[#6b6b6b]">{t("description")}</p>
       {matches === null ? (
         <Button variant="secondary" size="sm" disabled={busy} onClick={find}>
           {busy ? t("checking") : t("find")}

@@ -104,7 +104,9 @@
     "tableDownloads": "Table downloads",
     "exportYourTable": "Export your table",
     "exportHint": "All matching records across pages. Import either file into Google Sheets using File → Import → Upload.",
-    "table": "Table"
+    "table": "Table",
+    "downloadReady": "Download ready",
+    "copyFailed": "Could not copy the link. Please copy it manually."
   },
   "roles": {
     "super_admin": "Overall oversight admin",

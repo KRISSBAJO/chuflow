@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -15,8 +16,12 @@ import {
 const subscribeToTimeZone = () => () => {};
 const clientTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const serverTimeZone = () => "UTC";
-type MeetingStatusKey = Parameters<ReturnType<typeof useTranslations<"services.meetings.statuses">>>[0];
-type MinutesStatusKey = Parameters<ReturnType<typeof useTranslations<"services.meetings.minutesStatuses">>>[0];
+type MeetingStatusKey = Parameters<
+  ReturnType<typeof useTranslations<"services.meetings.statuses">>
+>[0];
+type MinutesStatusKey = Parameters<
+  ReturnType<typeof useTranslations<"services.meetings.minutesStatuses">>
+>[0];
 function AttendanceList({
   meeting,
   busy,
@@ -132,7 +137,11 @@ function AttendanceList({
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-[#8a8780]">
-          {t("pageInfo", { page: currentPage, total: totalPages, count: filtered.length })}
+          {t("pageInfo", {
+            page: currentPage,
+            total: totalPages,
+            count: filtered.length,
+          })}
         </p>
         <div className="flex gap-2">
           <Button
@@ -189,7 +198,11 @@ export function MeetingDetails({
   const tMinutes = useTranslations("services.meetings.minutesStatuses");
   const format = useFormatter();
   const stamp = (value: string) =>
-    format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short", timeZone });
+    format.dateTime(new Date(value), {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone,
+    });
   const statusLabel = (value: string) =>
     tStatus.has(value as MeetingStatusKey)
       ? tStatus(value as MeetingStatusKey)
@@ -206,15 +219,18 @@ export function MeetingDetails({
   const [meeting, setMeeting] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+
   const people = [...meeting.attendeeUsers, ...options.users];
   const person = (id: string) =>
-    meetingName(people.find((p) => p._id === id), tMeetings("userUnavailable"));
+    meetingName(
+      people.find((p) => p._id === id),
+      tMeetings("userUnavailable"),
+    );
   async function save(operation: string, data: Record<string, unknown> = {}) {
     if (busy) return;
     setBusy(true);
     setError("");
-    setNotice("");
+
     try {
       const updated = await apiPatch<Meeting>(`/meetings/${meeting._id}`, {
         operation,
@@ -222,9 +238,10 @@ export function MeetingDetails({
         ...data,
       });
       setMeeting(updated);
-      setNotice(t("saved"));
+      toast.success(t("saved"));
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("saveFailed"));
       setError(e instanceof Error ? e.message : t("saveFailed"));
     } finally {
       setBusy(false);
@@ -242,9 +259,9 @@ export function MeetingDetails({
           )
         : await apiGet<Meeting>(`/meetings/${meeting._id}`);
       setMeeting(updated);
-      if (retry)
-        setNotice(t("retryQueued"));
+      if (retry) toast.success(t("retryQueued"));
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("refreshFailed"));
       setError(e instanceof Error ? e.message : t("refreshFailed"));
     } finally {
       setBusy(false);
@@ -257,7 +274,7 @@ export function MeetingDetails({
     const data = new FormData(form);
     setBusy(true);
     setError("");
-    setNotice("");
+
     try {
       const response = await fetch(`${API_URL}/meetings/${meeting._id}/files`, {
         method: "POST",
@@ -274,9 +291,10 @@ export function MeetingDetails({
       }
       setMeeting(await response.json());
       form.reset();
-      setNotice(t("uploaded"));
+      toast.success(t("uploaded"));
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("uploadError"));
       setError(e instanceof Error ? e.message : t("uploadError"));
     } finally {
       setBusy(false);
@@ -301,9 +319,10 @@ export function MeetingDetails({
         throw new Error(body.message || t("removeFailed"));
       }
       setMeeting(await response.json());
-      setNotice(t("removed"));
+      toast.success(t("removed"));
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("removeFailed"));
       setError(e instanceof Error ? e.message : t("removeFailed"));
     } finally {
       setBusy(false);
@@ -389,11 +408,7 @@ export function MeetingDetails({
           </Button>
         </div>
       )}
-      {notice && (
-        <p role="status" className="rounded-xl bg-green-50 p-3 text-green-800">
-          {notice}
-        </p>
-      )}
+
       <section className="rounded-2xl border border-transparent bg-[#f4f3f0] p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="space-y-2">
@@ -495,7 +510,9 @@ export function MeetingDetails({
               {t("when", { timeZone: timeZone.replaceAll("_", " ") })}
             </p>
             <p className="text-sm font-medium">{stamp(meeting.startsAt)}</p>
-            <p className="text-sm text-[#6b6b6b]">{t("to", { time: stamp(meeting.endsAt) })}</p>
+            <p className="text-sm text-[#6b6b6b]">
+              {t("to", { time: stamp(meeting.endsAt) })}
+            </p>
           </div>
           <div>
             <p className="mb-1 text-xs text-[#8a8780]">{t("where")}</p>
@@ -592,7 +609,10 @@ export function MeetingDetails({
               <>
                 <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
                   {[
-                    [t("emailAddresses"), meeting.invitationSummary.uniqueEmails],
+                    [
+                      t("emailAddresses"),
+                      meeting.invitationSummary.uniqueEmails,
+                    ],
                     [
                       t("sentToProvider"),
                       meeting.invitationSummary.counts.sent || 0,
@@ -612,11 +632,15 @@ export function MeetingDetails({
                   ))}
                 </div>
                 {!meeting.invitationSummary.prepared && (
-                  <p className="mt-4 text-xs text-[#8a8780]">{t("preparing")}</p>
+                  <p className="mt-4 text-xs text-[#8a8780]">
+                    {t("preparing")}
+                  </p>
                 )}
                 {meeting.invitationSummary.missingEmail > 0 && (
                   <p className="mt-4 text-sm text-amber-800">
-                    {t("noValidEmail", { count: meeting.invitationSummary.missingEmail })}
+                    {t("noValidEmail", {
+                      count: meeting.invitationSummary.missingEmail,
+                    })}
                   </p>
                 )}
                 {((meeting.invitationSummary.counts.failed || 0) > 0 ||
@@ -629,7 +653,9 @@ export function MeetingDetails({
                       {(meeting.invitationSummary.counts.failed || 0) > 0 && (
                         <>
                           <p>
-                            {t("failedEmails", { count: meeting.invitationSummary.counts.failed })}
+                            {t("failedEmails", {
+                              count: meeting.invitationSummary.counts.failed,
+                            })}
                           </p>
                           <Button
                             size="sm"
@@ -643,7 +669,9 @@ export function MeetingDetails({
                       {(meeting.invitationSummary.counts.uncertain || 0) >
                         0 && (
                         <p>
-                          {t("uncertain", { count: meeting.invitationSummary.counts.uncertain })}
+                          {t("uncertain", {
+                            count: meeting.invitationSummary.counts.uncertain,
+                          })}
                         </p>
                       )}
                     </div>
@@ -651,7 +679,9 @@ export function MeetingDetails({
                 )}
               </>
             ) : (
-              <p className="mt-3 text-sm text-[#8a8780]">{t("invitationsOff")}</p>
+              <p className="mt-3 text-sm text-[#8a8780]">
+                {t("invitationsOff")}
+              </p>
             )}
           </section>
         )}
@@ -678,7 +708,9 @@ export function MeetingDetails({
           <CardHeader
             title={t("minutesTitle")}
             description={t("minutesDue", {
-              requirement: meeting.minutesRequired ? t("minutesRequired") : t("minutesOptional"),
+              requirement: meeting.minutesRequired
+                ? t("minutesRequired")
+                : t("minutesOptional"),
               date: stamp(meeting.minutesDueAt),
             })}
           />
@@ -747,7 +779,10 @@ export function MeetingDetails({
                   className="block underline"
                   href={`${API_URL}/meetings/${meeting._id}/files/${file._id}`}
                 >
-                  {t("fileSize", { name: file.name, size: Math.ceil(file.size / 1024) })}
+                  {t("fileSize", {
+                    name: file.name,
+                    size: Math.ceil(file.size / 1024),
+                  })}
                 </a>
                 {editableMinutes && (
                   <Button

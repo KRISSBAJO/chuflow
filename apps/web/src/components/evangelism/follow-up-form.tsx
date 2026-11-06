@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -19,13 +21,15 @@ export function OutreachFollowUpForm({
   contact: OutreachContact;
   users: UserSummary[];
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("people.evangelism.followUpForm");
   const tLabels = useTranslations("people.evangelism.labels");
   const tsh = useTranslations("people.shared");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+
   const [stage, setStage] = useState(contact.stage);
   const stopped = contact.stage === "do_not_contact";
   const closed = stage === "closed" || stage === "do_not_contact";
@@ -36,7 +40,7 @@ export function OutreachFollowUpForm({
     const data = new FormData(form);
     setBusy(true);
     setError("");
-    setSaved(false);
+
     const next = String(data.get("nextActionDate") || "");
     try {
       await apiPatch(`/evangelism/contacts/${contact._id}`, {
@@ -54,9 +58,12 @@ export function OutreachFollowUpForm({
         clearNextAction: !next || closed,
       });
       form.reset();
-      setSaved(true);
+
       router.refresh();
+
+      actionToast.success(t("saved"));
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorSave"));
       setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
@@ -107,7 +114,10 @@ export function OutreachFollowUpForm({
             ))}
           </select>
         </Field>
-        <Field label={stopped ? t("recordCategory") : t("contactMethod")} required>
+        <Field
+          label={stopped ? t("recordCategory") : t("contactMethod")}
+          required
+        >
           <select
             name="contactMethod"
             className="ui-input"
@@ -126,11 +136,7 @@ export function OutreachFollowUpForm({
         </Field>
         <Field
           label={t("nextAction")}
-          hint={
-            closed
-              ? t("hintClosed")
-              : t("hintOpen")
-          }
+          hint={closed ? t("hintClosed") : t("hintOpen")}
         >
           <input
             name="nextActionDate"
@@ -154,11 +160,7 @@ export function OutreachFollowUpForm({
             {error}
           </p>
         )}
-        {saved && (
-          <p role="status" className="text-sm text-green-700">
-            {t("saved")}
-          </p>
-        )}
+
         <Button type="submit" disabled={busy}>
           {busy ? tsh("savingEllipsis") : t("save")}
         </Button>

@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import Image from "next/image";
@@ -125,6 +127,8 @@ export function ChildrenCardButton({
   kind: "family" | "child";
   id: string;
 }) {
+  const actionToast = useActionToast();
+
   const t = useTranslations("childrenDesk.card");
   const [card, setCard] = useState<{ code: string; name: string } | null>(null),
     [busy, setBusy] = useState(false),
@@ -140,7 +144,10 @@ export function ChildrenCardButton({
           {},
         ),
       );
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("failed"));
       setError(e instanceof Error ? e.message : t("failed"));
     } finally {
       setBusy(false);

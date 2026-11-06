@@ -1,3 +1,4 @@
+import { ActionNotice } from "@/components/action-notice";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { serverGet } from "@/lib/server-api";
@@ -44,9 +45,7 @@ export default async function Page({
         {t("back.families")}
       </Link>
       {q.saved && (
-        <p role="status" className="kids-banner green">
-          ✓ {t("familyPage.saved")}
-        </p>
+        <ActionNotice param="saved" message={t("familyPage.saved")} />
       )}
 
       <section className="children-panel">
@@ -78,22 +77,32 @@ export default async function Page({
         <div className="kids-stats mt-6">
           <div className="kids-stat green">
             <span className="kids-stat-value">{f.guardians.length}</span>
-            <span className="kids-stat-label">{t("familyPage.statAdults")}</span>
+            <span className="kids-stat-label">
+              {t("familyPage.statAdults")}
+            </span>
           </div>
           <div className="kids-stat amber">
             <span className="kids-stat-value">{f.children.length}</span>
-            <span className="kids-stat-label">{t("familyPage.statChildren")}</span>
+            <span className="kids-stat-label">
+              {t("familyPage.statChildren")}
+            </span>
           </div>
           <div className="kids-stat blue">
             <span className="kids-stat-value">{pickupAdults.size}</span>
-            <span className="kids-stat-label">{t("familyPage.statPickup")}</span>
-            <span className="kids-stat-hint">{t("familyPage.statPickupHint")}</span>
+            <span className="kids-stat-label">
+              {t("familyPage.statPickup")}
+            </span>
+            <span className="kids-stat-hint">
+              {t("familyPage.statPickupHint")}
+            </span>
           </div>
           <div className="kids-stat plum">
             <span className="kids-stat-value">
               {f.children.filter((c) => c.isMember).length}
             </span>
-            <span className="kids-stat-label">{t("familyPage.statMembers")}</span>
+            <span className="kids-stat-label">
+              {t("familyPage.statMembers")}
+            </span>
           </div>
         </div>
       </section>
@@ -103,7 +112,10 @@ export default async function Page({
         {f.guardians.length ? (
           <div className="mt-5 children-grid">
             {f.guardians.map((g, i) => (
-              <div key={g.id} className="flex gap-3 rounded-xl bg-[#f5f7ef] p-4">
+              <div
+                key={g.id}
+                className="flex gap-3 rounded-xl bg-[#f5f7ef] p-4"
+              >
                 <span className={`kids-avatar ${tones[i % tones.length]}`}>
                   {initials(`${g.firstName} ${g.lastName}`)}
                 </span>
@@ -118,15 +130,22 @@ export default async function Page({
                     {g.email && (
                       <>
                         {" · "}
-                        <a className="underline break-all" href={`mailto:${g.email}`}>
+                        <a
+                          className="underline break-all"
+                          href={`mailto:${g.email}`}
+                        >
                           {g.email}
                         </a>
                       </>
                     )}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="children-badge neutral">{g.relationship}</span>
-                    <span className={`children-badge ${g.canCheckIn ? "" : "amber"}`}>
+                    <span className="children-badge neutral">
+                      {g.relationship}
+                    </span>
+                    <span
+                      className={`children-badge ${g.canCheckIn ? "" : "amber"}`}
+                    >
                       {g.canCheckIn
                         ? `✓ ${t("familyPage.mayCheckIn")}`
                         : t("familyPage.contactOnly")}
@@ -165,12 +184,17 @@ export default async function Page({
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-2xl font-bold">{t("familyPage.children")}</h2>
-          <Link className="children-button" href={`/children/families/${id}/new`}>
+          <Link
+            className="children-button"
+            href={`/children/families/${id}/new`}
+          >
             {t("familyPage.addChild")}
           </Link>
         </div>
         {f.children.map((c) => {
-          const pickup = f.guardians.filter((g) => c.pickupGuardianIds.includes(g.id));
+          const pickup = f.guardians.filter((g) =>
+            c.pickupGuardianIds.includes(g.id),
+          );
           return (
             <section key={c._id} className="children-panel children-room">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -189,21 +213,35 @@ export default async function Page({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className={`children-badge ${c.isMember ? "" : "blue"}`}>
-                    {c.isMember ? t("familyPage.childMember") : t("familyPage.visitor")}
+                  <span
+                    className={`children-badge ${c.isMember ? "" : "blue"}`}
+                  >
+                    {c.isMember
+                      ? t("familyPage.childMember")
+                      : t("familyPage.visitor")}
                   </span>
-                  <span className={`children-badge ${c.isActive ? "neutral" : "rose"}`}>
-                    {c.isActive ? t("familyPage.active") : t("familyPage.inactive")}
+                  <span
+                    className={`children-badge ${c.isActive ? "neutral" : "rose"}`}
+                  >
+                    {c.isActive
+                      ? t("familyPage.active")
+                      : t("familyPage.inactive")}
                   </span>
                   {c.careNotes && (
-                    <span className="children-badge rose">⚕ {t("familyPage.careAlert")}</span>
+                    <span className="children-badge rose">
+                      ⚕ {t("familyPage.careAlert")}
+                    </span>
                   )}
                   {c.photoConsent && (
-                    <span className="children-badge plum">📷 {t("familyPage.photoOk")}</span>
+                    <span className="children-badge plum">
+                      📷 {t("familyPage.photoOk")}
+                    </span>
                   )}
                 </div>
               </div>
-              <p className="children-label mt-5 !mb-2">{t("familyPage.pickup")}</p>
+              <p className="children-label mt-5 !mb-2">
+                {t("familyPage.pickup")}
+              </p>
               <div className="flex flex-wrap gap-2">
                 {pickup.length ? (
                   pickup.map((g) => (
@@ -213,7 +251,9 @@ export default async function Page({
                     </span>
                   ))
                 ) : (
-                  <span className="children-badge rose">{t("familyPage.noPickup")}</span>
+                  <span className="children-badge rose">
+                    {t("familyPage.noPickup")}
+                  </span>
                 )}
               </div>
               {c.careNotes && (
@@ -221,7 +261,9 @@ export default async function Page({
                   <summary className="cursor-pointer text-sm font-semibold">
                     ⚕ {t("familyPage.careNotes")}
                   </summary>
-                  <p className="children-muted mt-2 whitespace-pre-wrap">{c.careNotes}</p>
+                  <p className="children-muted mt-2 whitespace-pre-wrap">
+                    {c.careNotes}
+                  </p>
                 </details>
               )}
               {c.pickupNotes && (
@@ -249,7 +291,10 @@ export default async function Page({
             </span>
             <strong>{t("familyPage.noChildren")}</strong>
             <span>{t("familyPage.noChildrenHint")}</span>
-            <Link className="children-button mt-2" href={`/children/families/${id}/new`}>
+            <Link
+              className="children-button mt-2"
+              href={`/children/families/${id}/new`}
+            >
               {t("familyPage.addChild")}
             </Link>
           </div>

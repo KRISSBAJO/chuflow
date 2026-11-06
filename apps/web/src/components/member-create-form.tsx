@@ -1,4 +1,5 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -121,13 +122,15 @@ export function MemberCreateForm({
       }
 
       toast.success(t("createdTitle"), {
+        id: savedToastId(result),
         description: t("createdBody"),
       });
-      router.push(createdHref(`/members/${result._id}`, result, t("entityName")));
+      router.push(
+        createdHref(`/members/${result._id}`, result, t("entityName")),
+      );
       router.refresh();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t("createError");
+      const message = error instanceof Error ? error.message : t("createError");
       toast.error(t("createFailed"), {
         description: message,
       });
@@ -172,10 +175,7 @@ export function MemberCreateForm({
           </Field>
         )}
 
-        <Field
-          label={t("linkedGuest")}
-          hint={t("linkedGuestHint")}
-        >
+        <Field label={t("linkedGuest")} hint={t("linkedGuestHint")}>
           <select name="guestId" className="ui-input">
             <option value="">{t("noGuest")}</option>
             {scopedGuests.map((guest) => (
@@ -242,10 +242,7 @@ export function MemberCreateForm({
             ))}
           </select>
         </Field>
-        <Field
-          label={t("dateJoined")}
-          hint={t("dateJoinedHint")}
-        >
+        <Field label={t("dateJoined")} hint={t("dateJoinedHint")}>
           <input
             name="dateJoinedChurch"
             type="date"
@@ -271,49 +268,53 @@ export function MemberCreateForm({
       {MEMBER_COURSE_GROUPS.map((group) => {
         const course = labels.course(group);
         return (
-        <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
-          <h3 className="text-[15px] font-semibold text-[#111111]">
-            {course.title}
-          </h3>
-          <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
-            {course.helperText}
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label={course.question} className="sm:col-span-2">
-              <select
-                name={group.statusName}
-                defaultValue="no"
-                className="ui-input"
-              >
-                {YES_NO_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {labels.yesNo(option.value)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label={t("dateOrYear")}>
-              <input
-                name={group.dateName}
-                type="date"
-                max={getTodayDateString()}
-                className="ui-input"
-              />
-            </Field>
-            <Field label={t("location")}>
-              <input
-                name={group.locationName}
-                placeholder={t("locationPlaceholder", { course: course.title })}
-                className="ui-input"
-              />
-            </Field>
-          </div>
-        </section>
+          <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
+            <h3 className="text-[15px] font-semibold text-[#111111]">
+              {course.title}
+            </h3>
+            <p className="mt-0.5 text-[13px] text-[#6b6b6b]">
+              {course.helperText}
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label={course.question} className="sm:col-span-2">
+                <select
+                  name={group.statusName}
+                  defaultValue="no"
+                  className="ui-input"
+                >
+                  {YES_NO_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {labels.yesNo(option.value)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t("dateOrYear")}>
+                <input
+                  name={group.dateName}
+                  type="date"
+                  max={getTodayDateString()}
+                  className="ui-input"
+                />
+              </Field>
+              <Field label={t("location")}>
+                <input
+                  name={group.locationName}
+                  placeholder={t("locationPlaceholder", {
+                    course: course.title,
+                  })}
+                  className="ui-input"
+                />
+              </Field>
+            </div>
+          </section>
         );
       })}
 
       <section className="rounded-2xl bg-[#f6f5f1] p-5">
-        <h3 className="text-[15px] font-semibold text-[#111111]">{t("baptism")}</h3>
+        <h3 className="text-[15px] font-semibold text-[#111111]">
+          {t("baptism")}
+        </h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label={t("holyGhostBaptism")}>
             <select

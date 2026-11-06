@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -6,7 +8,12 @@ import { useFormatter, useTranslations } from "next-intl";
 import { apiGet, apiPost } from "@/lib/api";
 import { ChildrenLocalTime } from "./local-time";
 import { ChildrenQr } from "./receipt";
-import { ageInMonths, initials, parseDateOnly, splitMonths } from "./records-utils";
+import {
+  ageInMonths,
+  initials,
+  parseDateOnly,
+  splitMonths,
+} from "./records-utils";
 export type ParentSubmission = {
   _id: string;
   branchId: string;
@@ -38,6 +45,8 @@ export type ParentSubmission = {
 };
 
 export function ParentRegistrationLink({ branchId }: { branchId: string }) {
+  const actionToast = useActionToast();
+
   const t = useTranslations("childrenRecords");
   const [data, setData] = useState<{ token?: string; enabled: boolean } | null>(
       null,
@@ -71,7 +80,10 @@ export function ParentRegistrationLink({ branchId }: { branchId: string }) {
         ),
       );
       setCopied(false);
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("link.updateError"));
       setError(e instanceof Error ? e.message : t("link.updateError"));
     } finally {
       setBusy(false);
@@ -111,8 +123,14 @@ export function ParentRegistrationLink({ branchId }: { branchId: string }) {
                 onClick={() =>
                   void navigator.clipboard
                     .writeText(url)
-                    .then(() => setCopied(true))
-                    .catch(() => setError(t("link.copyError")))
+                    .then(() => {
+                      setCopied(true);
+                      toast.success(t("link.copied"));
+                    })
+                    .catch(() => {
+                      setError(t("link.copyError"));
+                      toast.error(t("link.copyError"));
+                    })
                 }
               >
                 {copied ? `✓ ${t("link.copied")}` : t("link.copy")}
@@ -129,7 +147,8 @@ export function ParentRegistrationLink({ branchId }: { branchId: string }) {
           </div>
         </div>
       ) : (
-        data && !data.enabled && (
+        data &&
+        !data.enabled && (
           <p className="kids-banner amber">{t("link.disabled")}</p>
         )
       )}
@@ -250,6 +269,8 @@ function ExistingFamilyPicker({
 }
 
 export function ParentRegistrationReview({ row }: { row: ParentSubmission }) {
+  const actionToast = useActionToast();
+
   const t = useTranslations("childrenRecords");
   const format = useFormatter();
   const router = useRouter();
@@ -288,7 +309,10 @@ export function ParentRegistrationReview({ row }: { row: ParentSubmission }) {
           : {}),
       });
       router.refresh();
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("review.saveError"));
       setError(e instanceof Error ? e.message : t("review.saveError"));
     } finally {
       setBusy(false);
@@ -385,10 +409,7 @@ export function ParentRegistrationReview({ row }: { row: ParentSubmission }) {
       <section className="children-panel">
         <h2 className="text-xl font-bold">{t("review.children")}</h2>
         {row.children.map((c, i) => (
-          <div
-            key={i}
-            className="mt-4 rounded-xl border border-[#e3e8d8] p-4"
-          >
+          <div key={i} className="mt-4 rounded-xl border border-[#e3e8d8] p-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="kids-avatar plum">
                 {initials(`${c.firstName} ${c.lastName}`)}
@@ -401,7 +422,9 @@ export function ParentRegistrationReview({ row }: { row: ParentSubmission }) {
                   {t("review.born", {
                     date: (() => {
                       const d = parseDateOnly(c.birthDate);
-                      return d ? format.dateTime(d, { dateStyle: "medium" }) : c.birthDate;
+                      return d
+                        ? format.dateTime(d, { dateStyle: "medium" })
+                        : c.birthDate;
                     })(),
                   })}{" "}
                   · {age(c.birthDate)}
@@ -467,13 +490,25 @@ export function ParentRegistrationReview({ row }: { row: ParentSubmission }) {
           </label>
           {action === "approve" && (
             <fieldset className="space-y-3 rounded-xl bg-[#f7f7f0] p-4">
-              <legend className="children-label">{t("review.checklist")}</legend>
+              <legend className="children-label">
+                {t("review.checklist")}
+              </legend>
               <label className="flex gap-3 text-sm">
-                <input type="checkbox" name="guardianVerified" required className="mt-1" />
+                <input
+                  type="checkbox"
+                  name="guardianVerified"
+                  required
+                  className="mt-1"
+                />
                 {t("review.guardianVerified")}
               </label>
               <label className="flex gap-3 text-sm">
-                <input type="checkbox" name="duplicatesChecked" required className="mt-1" />
+                <input
+                  type="checkbox"
+                  name="duplicatesChecked"
+                  required
+                  className="mt-1"
+                />
                 {t("review.duplicatesChecked")}
               </label>
               <label className="flex gap-3 text-sm">
@@ -488,7 +523,12 @@ export function ParentRegistrationReview({ row }: { row: ParentSubmission }) {
               </label>
               {row.possibleDuplicates.length > 0 && (
                 <label className="flex gap-3 text-sm text-amber-900">
-                  <input type="checkbox" name="allowDuplicate" required className="mt-1" />
+                  <input
+                    type="checkbox"
+                    name="allowDuplicate"
+                    required
+                    className="mt-1"
+                  />
                   {t("review.allowDuplicate")}
                 </label>
               )}

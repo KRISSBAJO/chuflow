@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -46,6 +47,7 @@ export function ApprovalPolicyForm({
       router.push("/approvals/routes?saved=1");
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("saveError"));
       setError(e instanceof Error ? e.message : t("saveError"));
       setBusy(false);
     }
@@ -107,9 +109,7 @@ export function ApprovalPolicyForm({
             ))}
           </select>
         </Field>
-        <p className="text-sm text-[#6b6b6b]">
-          {t("flowHelp")}
-        </p>
+        <p className="text-sm text-[#6b6b6b]">{t("flowHelp")}</p>
         <details className="rounded-xl border border-black/10 p-4">
           <summary className="cursor-pointer font-medium">
             {t("escalationSummary")}
@@ -173,9 +173,7 @@ export function ApprovalPolicyForm({
           />
           {t("activeRoute")}
         </label>
-        <p className="text-sm text-[#6b6b6b]">
-          {t("changesNote")}
-        </p>
+        <p className="text-sm text-[#6b6b6b]">{t("changesNote")}</p>
         {error && (
           <p role="alert" className="text-sm text-red-700">
             {error}

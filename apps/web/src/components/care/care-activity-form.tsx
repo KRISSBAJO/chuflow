@@ -61,6 +61,7 @@ export function CareActivityForm({ initial }: { initial: CareRecord }) {
       router.push(`/care/${c._id}?tab=timeline`);
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorSave"));
       setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);

@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -13,6 +15,8 @@ export function CarePlanForm({
   plan: CarePlan;
   branchId: string;
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("people.care.plan");
   const tsh = useTranslations("people.shared");
@@ -27,14 +31,14 @@ export function CarePlanForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+
   const [revision, setRevision] = useState(plan.revision);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     setError("");
-    setSaved(false);
+
     const d = new FormData(e.currentTarget);
     try {
       const fields: Record<string, unknown> = {
@@ -87,9 +91,12 @@ export function CarePlanForm({
         fields,
       );
       setRevision(result.revision);
-      setSaved(true);
+
       router.refresh();
+
+      actionToast.success(t("saved"));
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorSave"));
       setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
@@ -124,12 +131,8 @@ export function CarePlanForm({
     <form onSubmit={submit} className="space-y-5 max-w-5xl">
       <Card className="p-6 space-y-5">
         <div>
-          <h2 className="text-lg font-semibold">
-            {t("section1")}
-          </h2>
-          <p className="mt-1 text-sm text-[#6b6b6b]">
-            {t("section1Hint")}
-          </p>
+          <h2 className="text-lg font-semibold">{t("section1")}</h2>
+          <p className="mt-1 text-sm text-[#6b6b6b]">{t("section1Hint")}</p>
         </div>
         <label className="flex gap-2 font-medium">
           <input
@@ -139,10 +142,7 @@ export function CarePlanForm({
           />
           {t("enablePlan")}
         </label>
-        <Field
-          label={t("careTeam")}
-          hint={t("careTeamHint")}
-        >
+        <Field label={t("careTeam")} hint={t("careTeamHint")}>
           <CarePicker branchId={branchId} selected={team} onChange={setTeam} />
         </Field>
         <Field label={t("leader")}>
@@ -170,7 +170,9 @@ export function CarePlanForm({
               {team.map((p) => (
                 <Field
                   key={p._id}
-                  label={t("unavailableUntil", { name: `${p.firstName} ${p.lastName}` })}
+                  label={t("unavailableUntil", {
+                    name: `${p.firstName} ${p.lastName}`,
+                  })}
                 >
                   <input
                     name={"away-" + p._id}
@@ -193,9 +195,7 @@ export function CarePlanForm({
         </label>
       </Card>
       <Card className="p-6 space-y-5">
-        <h2 className="text-lg font-semibold">
-          {t("section2")}
-        </h2>
+        <h2 className="text-lg font-semibold">{t("section2")}</h2>
         <label className="flex gap-2 font-medium">
           <input
             type="checkbox"
@@ -204,9 +204,7 @@ export function CarePlanForm({
           />
           {t("enableEmails")}
         </label>
-        <p className="text-sm text-[#6b6b6b]">
-          {t("emailHint")}
-        </p>
+        <p className="text-sm text-[#6b6b6b]">{t("emailHint")}</p>
         <div className="grid gap-4 sm:grid-cols-4">
           <Field label={t("timezone")}>
             <input
@@ -259,28 +257,24 @@ export function CarePlanForm({
               </Field>
             ))}
             <p className="text-xs text-[#8a8780]">
-              {t("placeholdersHint", { placeholders: "{{firstName}}, {{churchName}}, {{checkInUrl}}" })}
+              {t("placeholdersHint", {
+                placeholders: "{{firstName}}, {{churchName}}, {{checkInUrl}}",
+              })}
             </p>
           </div>
         </details>
       </Card>
       <Card className="p-6 space-y-5">
-        <h2 className="text-lg font-semibold">
-          {t("section3")}
-        </h2>
+        <h2 className="text-lg font-semibold">{t("section3")}</h2>
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
             checked={coverage}
             onChange={(e) => setCoverage(e.target.checked)}
           />
-          <span>
-            {t("attendanceReliable")}
-          </span>
+          <span>{t("attendanceReliable")}</span>
         </label>
-        <p className="text-sm text-[#6b6b6b]">
-          {t("attendanceHint")}
-        </p>
+        <p className="text-sm text-[#6b6b6b]">{t("attendanceHint")}</p>
         <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
@@ -306,9 +300,7 @@ export function CarePlanForm({
       <Card className="p-6 space-y-3">
         <h2 className="font-semibold">{t("preview")}</h2>
         {plan.capabilities && !plan.capabilities.emailConfigured && (
-          <p className="text-sm text-amber-800">
-            {t("emailNotConfigured")}
-          </p>
+          <p className="text-sm text-amber-800">{t("emailNotConfigured")}</p>
         )}
         <p className="text-sm">
           {enabled
@@ -316,25 +308,17 @@ export function CarePlanForm({
             : t("previewDisabled")}
         </p>
         <p className="text-sm">
-          {email
-            ? t("previewEmailOn")
-            : t("previewEmailOff")}
+          {email ? t("previewEmailOn") : t("previewEmailOff")}
         </p>
         <p className="text-sm">
-          {coverage
-            ? t("previewCoverageOn")
-            : t("previewCoverageOff")}
+          {coverage ? t("previewCoverageOn") : t("previewCoverageOff")}
         </p>
         {error && (
           <p role="alert" className="text-red-700">
             {error}
           </p>
         )}
-        {saved && (
-          <p role="status" className="text-green-800">
-            {t("saved")}
-          </p>
-        )}
+
         <Button type="submit" disabled={busy}>
           {busy ? tsh("savingEllipsis") : t("save")}
         </Button>

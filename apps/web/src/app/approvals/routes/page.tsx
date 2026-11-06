@@ -1,3 +1,4 @@
+import { ActionNotice } from "@/components/action-notice";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -34,11 +35,7 @@ export default async function Page({
           </Link>
         }
       />
-      {q.saved && (
-        <p role="status" className="text-sm text-green-800">
-          {t("saved")}
-        </p>
-      )}
+      {q.saved && <ActionNotice param="saved" message={t("saved")} />}
       <div className="grid gap-4 md:grid-cols-2">
         {data.policies.map((p) => (
           <Link key={p._id} href={`/approvals/routes/${p._id}`}>
@@ -48,14 +45,20 @@ export default async function Page({
               </p>
               <h2 className="mt-2 text-lg font-semibold">{p.name} →</h2>
               <p className="mt-2 text-sm text-[#6b6b6b]">
-                {t("summary", { region: p.oversightRegion, level: tr(`level.${p.finalLevel}`), days: p.reviewDays })}
+                {t("summary", {
+                  region: p.oversightRegion,
+                  level: tr(`level.${p.finalLevel}`),
+                  days: p.reviewDays,
+                })}
               </p>
               {p.thresholdAmount !== undefined && (
                 <p className="mt-2 text-sm">
                   {t("aboveThreshold", {
                     currency: p.currency,
                     amount: p.thresholdAmount,
-                    level: p.aboveThresholdLevel ? tr(`level.${p.aboveThresholdLevel}`) : "",
+                    level: p.aboveThresholdLevel
+                      ? tr(`level.${p.aboveThresholdLevel}`)
+                      : "",
                   })}
                 </p>
               )}
@@ -64,9 +67,7 @@ export default async function Page({
         ))}
       </div>
       {!data.policies.length && (
-        <Card className="p-8 text-sm">
-          {t("none")}
-        </Card>
+        <Card className="p-8 text-sm">{t("none")}</Card>
       )}
     </Shell>
   );

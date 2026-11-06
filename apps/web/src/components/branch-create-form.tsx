@@ -1,4 +1,6 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
+import { toast } from "sonner";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,10 +8,7 @@ import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
-import {
-  isDistrictRole,
-  isGlobalRole,
-} from "@/lib/permissions";
+import { isDistrictRole, isGlobalRole } from "@/lib/permissions";
 import type { DistrictOption, OversightRegionOption } from "@/lib/types";
 import { useGeo } from "@/hooks/use-geo";
 
@@ -29,7 +28,7 @@ export function BranchCreateForm({
   const router = useRouter();
   const t = useTranslations("org.branchForm");
   const tCommon = useTranslations("common");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const { country, currency, locale, states, timeZone } = useGeo();
   const [selectedOversightRegion, setSelectedOversightRegion] = useState(
@@ -56,7 +55,6 @@ export function BranchCreateForm({
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
-    setStatus(null);
 
     try {
       const response = await fetch(`${API_URL}/branches`, {
@@ -82,11 +80,13 @@ export function BranchCreateForm({
         throw new Error(result.message || t("createError"));
       }
 
-      setStatus(t("created"));
-      router.push(createdHref(`/branches/${result._id}`, result, t("entityName")));
+      toast.success(t("created"), { id: savedToastId(result) });
+      router.push(
+        createdHref(`/branches/${result._id}`, result, t("entityName")),
+      );
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("createError"));
+      toast.error(error instanceof Error ? error.message : t("createError"));
     } finally {
       setLoading(false);
     }
@@ -99,9 +99,13 @@ export function BranchCreateForm({
         {t("intro")}
       </p>
       <div className="mt-4 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#55534e]">
-        <span className="font-medium text-[#111111]">{t("regionalProfile")}</span>{" "}
+        <span className="font-medium text-[#111111]">
+          {t("regionalProfile")}
+        </span>{" "}
         {country.name} · {currency.code} ({currency.symbol}) · {timeZone}
-        <span className="block text-[12px] text-[#8a8780]">{t("browserLocale", { locale })}</span>
+        <span className="block text-[12px] text-[#8a8780]">
+          {t("browserLocale", { locale })}
+        </span>
       </div>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <Field label={t("branchName")} required>
@@ -118,7 +122,9 @@ export function BranchCreateForm({
             <select
               name="oversightRegion"
               value={selectedOversightRegion}
-              onChange={(event) => setSelectedOversightRegion(event.target.value)}
+              onChange={(event) =>
+                setSelectedOversightRegion(event.target.value)
+              }
               className="ui-input"
               required
             >
@@ -147,7 +153,11 @@ export function BranchCreateForm({
 
         {isDistrictRole(currentUserRole) ? (
           <Field label={tCommon("district")}>
-            <input type="hidden" name="district" value={defaultDistrict ?? ""} />
+            <input
+              type="hidden"
+              name="district"
+              value={defaultDistrict ?? ""}
+            />
             <input
               value={defaultDistrict || t("currentDistrict")}
               readOnly
@@ -186,12 +196,7 @@ export function BranchCreateForm({
           />
         </Field>
         <Field label={t("state")} required>
-          <select
-            name="state"
-            defaultValue=""
-            className="ui-input"
-            required
-          >
+          <select name="state" defaultValue="" className="ui-input" required>
             <option value="">{t("selectState")}</option>
             {states.map((state) => (
               <option key={state.code} value={state.code}>
@@ -245,7 +250,10 @@ export function BranchCreateForm({
       <p className="mt-4 text-[13px] leading-[1.6] text-[#8a8780]">
         {t.rich("managedFrom", {
           link: (chunks) => (
-            <a href="/structure" className="font-medium text-[#111111] underline underline-offset-2">
+            <a
+              href="/structure"
+              className="font-medium text-[#111111] underline underline-offset-2"
+            >
               {chunks}
             </a>
           ),
@@ -256,15 +264,13 @@ export function BranchCreateForm({
         type="submit"
         icon="plus"
         className="mt-5"
-        disabled={loading || (!isDistrictRole(currentUserRole) && availableDistricts.length === 0)}
+        disabled={
+          loading ||
+          (!isDistrictRole(currentUserRole) && availableDistricts.length === 0)
+        }
       >
         {loading ? t("creating") : t("create")}
       </Button>
-      {status ? (
-        <p role="status" className="mt-4 text-[14px] text-[#55534e]">
-          {status}
-        </p>
-      ) : null}
     </form>
   );
 }

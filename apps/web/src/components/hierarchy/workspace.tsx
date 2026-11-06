@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
@@ -34,17 +35,18 @@ export function HierarchyWorkspace({
     [error, setError] = useState("");
   const [kind, setKind] = useState("zone"),
     [search, setSearch] = useState("");
-  const [message, setMessage] = useState("");
+
   async function save(action: () => Promise<unknown>) {
     if (busy) return;
     setBusy(true);
     setError("");
-    setMessage("");
+
     try {
       await action();
-      setMessage(t("saved"));
+      toast.success(t("saved"));
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("saveError"));
       setError(e instanceof Error ? e.message : t("saveError"));
     } finally {
       setBusy(false);
@@ -101,14 +103,7 @@ export function HierarchyWorkspace({
           {error}
         </p>
       )}
-      {message && (
-        <p
-          role="status"
-          className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800"
-        >
-          {message}
-        </p>
-      )}
+
       {selected && (
         <>
           <Link

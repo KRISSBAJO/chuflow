@@ -1,4 +1,6 @@
 "use client";
+import { useActionToast } from "@/lib/action-feedback";
+import { toast } from "sonner";
 import {
   useEffect,
   useMemo,
@@ -48,7 +50,9 @@ function Field({
     <label className={`block ${className}`}>
       <span className="children-label">{label}</span>
       {children}
-      {hint && <span className="children-muted mt-1 block text-xs">{hint}</span>}
+      {hint && (
+        <span className="children-muted mt-1 block text-xs">{hint}</span>
+      )}
     </label>
   );
 }
@@ -223,7 +227,9 @@ function AdultMemberLink({
       </span>
       {value ? (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span className="children-badge blue">⛓ {t("memberLink.linked")}</span>
+          <span className="children-badge blue">
+            ⛓ {t("memberLink.linked")}
+          </span>
           <button
             type="button"
             className="kids-chip"
@@ -356,6 +362,7 @@ export function FamilyForm({
       router.push(`/children/families/${r._id}?saved=1`);
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("family.saveError"));
       setError(e instanceof Error ? e.message : t("family.saveError"));
       setBusy(false);
     }
@@ -403,7 +410,10 @@ export function FamilyForm({
               ))}
             </select>
           </Field>
-          <Field label={t("family.familyName")} hint={t("family.familyNameHint")}>
+          <Field
+            label={t("family.familyName")}
+            hint={t("family.familyNameHint")}
+          >
             <input
               className="children-input"
               name="name"
@@ -435,7 +445,9 @@ export function FamilyForm({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="kids-avatar">
-                  {initials(`${g.firstName} ${g.lastName}`.trim() || String(i + 1))}
+                  {initials(
+                    `${g.firstName} ${g.lastName}`.trim() || String(i + 1),
+                  )}
                 </span>
                 <div>
                   <h3 className="text-lg font-bold">
@@ -536,7 +548,9 @@ export function FamilyForm({
                 maxLength={60}
                 required
               />
-              <p className="children-muted text-xs">{t("family.relationshipHint")}</p>
+              <p className="children-muted text-xs">
+                {t("family.relationshipHint")}
+              </p>
             </div>
             <Switch
               checked={g.canCheckIn}
@@ -560,7 +574,9 @@ export function FamilyForm({
           >
             {t("family.addAdult")}
           </button>
-          <span className="children-muted text-xs">{t("family.maxAdults")}</span>
+          <span className="children-muted text-xs">
+            {t("family.maxAdults")}
+          </span>
         </div>
       </section>
 
@@ -653,6 +669,7 @@ export function ChildForm({
       router.push(`/children/families/${family._id}?saved=1`);
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("child.saveError"));
       setError(e instanceof Error ? e.message : t("child.saveError"));
       setBusy(false);
     }
@@ -748,7 +765,9 @@ export function ChildForm({
               <div
                 key={g.id}
                 className={`flex flex-wrap items-center justify-between gap-3 rounded-xl p-4 transition-colors ${
-                  linked ? "bg-[#f7f7f0]" : "bg-white border border-dashed border-[#dde4d5]"
+                  linked
+                    ? "bg-[#f7f7f0]"
+                    : "bg-white border border-dashed border-[#dde4d5]"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -792,7 +811,9 @@ export function ChildForm({
                     }
                   >
                     {collects ? "🔑 " : ""}
-                    {collects ? t("child.mayCollect") : t("child.mayNotCollect")}
+                    {collects
+                      ? t("child.mayCollect")
+                      : t("child.mayNotCollect")}
                   </button>
                 </div>
               </div>
@@ -831,7 +852,10 @@ export function ChildForm({
             maxLength={3000}
           />
         </Field>
-        <details className="rounded-xl bg-[#f7f7f0] p-4" open={!!child?.photoUrl}>
+        <details
+          className="rounded-xl bg-[#f7f7f0] p-4"
+          open={!!child?.photoUrl}
+        >
           <summary className="cursor-pointer font-semibold">
             {t("child.photoTitle")}
           </summary>
@@ -888,14 +912,20 @@ function nextWeekday(weekday: number, from = new Date()) {
   d.setDate(d.getDate() + diff);
   return d;
 }
-function quickPick(kind: "now" | "sunday" | "sundayLate" | "midweek" | "saturday") {
+function quickPick(
+  kind: "now" | "sunday" | "sundayLate" | "midweek" | "saturday",
+) {
   const now = new Date();
   if (kind === "now") {
     const start = new Date(now);
     start.setSeconds(0, 0);
     start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15);
     const end = new Date(start.getTime() + 3 * 3600_000);
-    return { date: localDateValue(start), start: localTimeValue(start), end: localTimeValue(end) };
+    return {
+      date: localDateValue(start),
+      start: localTimeValue(start),
+      end: localTimeValue(end),
+    };
   }
   const spec = {
     sunday: { day: 0, start: "09:00", end: "12:30" },
@@ -905,7 +935,8 @@ function quickPick(kind: "now" | "sunday" | "sundayLate" | "midweek" | "saturday
   }[kind];
   let day = nextWeekday(spec.day, now);
   const endsAt = new Date(`${localDateValue(day)}T${spec.end}:00`);
-  if (endsAt <= now) day = nextWeekday(spec.day, new Date(day.getTime() + 86_400_000));
+  if (endsAt <= now)
+    day = nextWeekday(spec.day, new Date(day.getTime() + 86_400_000));
   return { date: localDateValue(day), start: spec.start, end: spec.end };
 }
 
@@ -939,7 +970,10 @@ function YearsMonths({
             aria-label={`${label} – ${t("session.years")}`}
             onChange={(e) =>
               onChange(
-                Math.min(MAX_MONTHS, Math.max(0, Number(e.target.value) * 12 + months)),
+                Math.min(
+                  MAX_MONTHS,
+                  Math.max(0, Number(e.target.value) * 12 + months),
+                ),
               )
             }
             required
@@ -961,7 +995,11 @@ function YearsMonths({
               onChange(
                 Math.min(
                   MAX_MONTHS,
-                  Math.max(0, years * 12 + Math.min(11, Math.max(0, Number(e.target.value)))),
+                  Math.max(
+                    0,
+                    years * 12 +
+                      Math.min(11, Math.max(0, Number(e.target.value))),
+                  ),
                 ),
               )
             }
@@ -976,7 +1014,14 @@ function YearsMonths({
   );
 }
 
-const COVERAGE_COLORS = ["#245b4b", "#e3a84f", "#6f9ccb", "#8c6fb8", "#d97a6a", "#88b8a9"];
+const COVERAGE_COLORS = [
+  "#245b4b",
+  "#e3a84f",
+  "#6f9ccb",
+  "#8c6fb8",
+  "#d97a6a",
+  "#88b8a9",
+];
 
 export function ChildSessionForm({
   options,
@@ -985,13 +1030,14 @@ export function ChildSessionForm({
   options: ChildrenOptions;
   initialBranchId?: string;
 }) {
+  const actionToast = useActionToast();
+
   const t = useTranslations("childrenRecords");
   const format = useFormatter();
   const router = useRouter();
   const registrationKey = useRef("");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
     [reusing, setReusing] = useState(false),
     [submitted, setSubmitted] = useState(false);
   const [branchId, setBranchId] = useState(
@@ -1005,7 +1051,11 @@ export function ChildSessionForm({
     () => true,
     () => false,
   );
-  const [edited, setEdited] = useState<{ date: string; start: string; end: string } | null>(null);
+  const [edited, setEdited] = useState<{
+    date: string;
+    start: string;
+    end: string;
+  } | null>(null);
   const defaultWhen = useMemo(
     () => (mounted ? quickPick("sunday") : { date: "", start: "", end: "" }),
     [mounted],
@@ -1026,15 +1076,21 @@ export function ChildSessionForm({
   );
 
   const startsAt = useMemo(
-    () => (when.date && when.start ? new Date(`${when.date}T${when.start}:00`) : null),
+    () =>
+      when.date && when.start
+        ? new Date(`${when.date}T${when.start}:00`)
+        : null,
     [when.date, when.start],
   );
   const endsAt = useMemo(
-    () => (when.date && when.end ? new Date(`${when.date}T${when.end}:00`) : null),
+    () =>
+      when.date && when.end ? new Date(`${when.date}T${when.end}:00`) : null,
     [when.date, when.end],
   );
   const durationMin =
-    startsAt && endsAt ? Math.round((endsAt.getTime() - startsAt.getTime()) / 60_000) : 0;
+    startsAt && endsAt
+      ? Math.round((endsAt.getTime() - startsAt.getTime()) / 60_000)
+      : 0;
   const timeError =
     startsAt && endsAt
       ? durationMin <= 0
@@ -1045,13 +1101,19 @@ export function ChildSessionForm({
       : "";
 
   /* per-room validation */
-  type RoomError = "nameRequired" | "duplicateName" | "maxBelowMin" | "capacity";
+  type RoomError =
+    | "nameRequired"
+    | "duplicateName"
+    | "maxBelowMin"
+    | "capacity";
   const roomErrors = rooms.map((r) => {
     const errs: RoomError[] = [];
     if (!r.name.trim()) errs.push("nameRequired");
     else if (
       rooms.some(
-        (o) => o !== r && o.name.trim().toLowerCase() === r.name.trim().toLowerCase(),
+        (o) =>
+          o !== r &&
+          o.name.trim().toLowerCase() === r.name.trim().toLowerCase(),
       )
     )
       errs.push("duplicateName");
@@ -1070,7 +1132,12 @@ export function ChildSessionForm({
       const prev = sorted[i - 1]!,
         cur = sorted[i]!;
       if (cur.minMonths > prev.maxMonths + 1)
-        out.push(t("session.hints.gap", { from: age(prev.maxMonths + 1), to: age(cur.minMonths - 1) }));
+        out.push(
+          t("session.hints.gap", {
+            from: age(prev.maxMonths + 1),
+            to: age(cur.minMonths - 1),
+          }),
+        );
       else if (cur.minMonths <= prev.maxMonths && prev.name && cur.name)
         out.push(t("session.hints.overlap", { a: prev.name, b: cur.name }));
     }
@@ -1085,7 +1152,14 @@ export function ChildSessionForm({
   }, [rooms, t]);
 
   const totalCapacity = rooms.reduce((s, r) => s + (r.capacity || 0), 0);
-  const canSubmit = !busy && !!branchId && name.trim().length >= 2 && !timeError && !!startsAt && roomsValid && rooms.length > 0;
+  const canSubmit =
+    !busy &&
+    !!branchId &&
+    name.trim().length >= 2 &&
+    !timeError &&
+    !!startsAt &&
+    roomsValid &&
+    rooms.length > 0;
 
   function patchRoom(key: string, p: Partial<RoomDraft>) {
     setRooms((rows) => rows.map((r) => (r.key === key ? { ...r, ...p } : r)));
@@ -1100,7 +1174,9 @@ export function ChildSessionForm({
             ...rows,
             {
               key: roomKey(),
-              name: rows.some((r) => r.name.toLowerCase() === label.toLowerCase())
+              name: rows.some(
+                (r) => r.name.toLowerCase() === label.toLowerCase(),
+              )
                 ? `${label} ${rows.length + 1}`
                 : label,
               minMonths: tpl.minMonths,
@@ -1112,14 +1188,14 @@ export function ChildSessionForm({
   }
   async function reuse() {
     setReusing(true);
-    setNotice("");
+
     setError("");
     try {
       const last = await apiGet<LatestRooms>(
         `/children/sessions/latest-rooms?branchId=${encodeURIComponent(branchId)}`,
       );
       if (!last) {
-        setNotice(t("session.reuseNone"));
+        toast.info(t("session.reuseNone"));
         return;
       }
       setRooms(last.rooms.slice(0, 20).map((r) => ({ key: roomKey(), ...r })));
@@ -1129,11 +1205,18 @@ export function ChildSessionForm({
       if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
         // Same clock times, next occurrence of the same weekday.
         let day = nextWeekday(s.getDay());
-        if (new Date(`${localDateValue(day)}T${localTimeValue(e)}:00`) <= new Date())
+        if (
+          new Date(`${localDateValue(day)}T${localTimeValue(e)}:00`) <=
+          new Date()
+        )
           day = nextWeekday(s.getDay(), new Date(day.getTime() + 86_400_000));
-        setWhen({ date: localDateValue(day), start: localTimeValue(s), end: localTimeValue(e) });
+        setWhen({
+          date: localDateValue(day),
+          start: localTimeValue(s),
+          end: localTimeValue(e),
+        });
       }
-      setNotice(t("session.reuseDone", { name: last.name }));
+      toast.success(t("session.reuseDone", { name: last.name }));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("session.reuseError"));
     } finally {
@@ -1163,7 +1246,10 @@ export function ChildSessionForm({
       });
       router.push(`/children/sessions/${r._id}`);
       router.refresh();
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("session.openError"));
       setError(e instanceof Error ? e.message : t("session.openError"));
       setBusy(false);
     }
@@ -1175,10 +1261,25 @@ export function ChildSessionForm({
         ? t("session.durationH", { hours: durationMin / 60 })
         : durationMin < 60
           ? t("session.durationM", { minutes: durationMin })
-          : t("session.durationHM", { hours: Math.floor(durationMin / 60), minutes: durationMin % 60 })
+          : t("session.durationHM", {
+              hours: Math.floor(durationMin / 60),
+              minutes: durationMin % 60,
+            })
       : "—";
-  const suggestionKeys = ["sundayFirst", "sundaySecond", "midweek", "special", "holiday"] as const;
-  const quickKeys = ["now", "sunday", "sundayLate", "midweek", "saturday"] as const;
+  const suggestionKeys = [
+    "sundayFirst",
+    "sundaySecond",
+    "midweek",
+    "special",
+    "holiday",
+  ] as const;
+  const quickKeys = [
+    "now",
+    "sunday",
+    "sundayLate",
+    "midweek",
+    "saturday",
+  ] as const;
 
   return (
     <form onSubmit={submit} className="kids-split kids-fade-in" noValidate>
@@ -1187,7 +1288,9 @@ export function ChildSessionForm({
           <div>
             <p className="children-kicker">{t("session.kicker")}</p>
             <h1 className="mt-2 text-3xl font-bold">{t("session.title")}</h1>
-            <p className="children-muted mt-2 max-w-2xl">{t("session.intro")}</p>
+            <p className="children-muted mt-2 max-w-2xl">
+              {t("session.intro")}
+            </p>
           </div>
           <StepHeading n={1} title={t("session.stepBasics")} />
           {options.branches.length > 1 && (
@@ -1286,7 +1389,11 @@ export function ChildSessionForm({
               </span>
               {startsAt && !timeError && (
                 <span className="children-muted">
-                  {format.dateTime(startsAt, { weekday: "long", day: "numeric", month: "long" })}
+                  {format.dateTime(startsAt, {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
                 </span>
               )}
               {timeError && (
@@ -1315,7 +1422,7 @@ export function ChildSessionForm({
               </button>
             }
           />
-          {notice && <p className="children-notice">{notice}</p>}
+
           <div className="space-y-2">
             <span className="children-label">{t("session.templates")}</span>
             <div className="flex flex-wrap gap-2">
@@ -1340,11 +1447,15 @@ export function ChildSessionForm({
                 <div
                   key={r.key}
                   className="children-room rounded-2xl bg-[#fbfbf6] p-4 kids-fade-in"
-                  style={{ borderTopColor: COVERAGE_COLORS[i % COVERAGE_COLORS.length] }}
+                  style={{
+                    borderTopColor: COVERAGE_COLORS[i % COVERAGE_COLORS.length],
+                  }}
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 font-semibold">
-                      <span className="kids-avatar !h-8 !w-8 !text-sm">{i + 1}</span>
+                      <span className="kids-avatar !h-8 !w-8 !text-sm">
+                        {i + 1}
+                      </span>
                       {t("session.room", { n: i + 1 })}
                       <span className="children-badge neutral">
                         {ageShort(r.minMonths, t)} – {ageShort(r.maxMonths, t)}
@@ -1354,7 +1465,9 @@ export function ChildSessionForm({
                       type="button"
                       className="kids-chip"
                       disabled={rooms.length === 1}
-                      onClick={() => setRooms((rows) => rows.filter((x) => x.key !== r.key))}
+                      onClick={() =>
+                        setRooms((rows) => rows.filter((x) => x.key !== r.key))
+                      }
                     >
                       ✕ {t("session.removeRoom")}
                     </button>
@@ -1366,7 +1479,9 @@ export function ChildSessionForm({
                         value={r.name}
                         placeholder={t("session.roomNamePlaceholder")}
                         maxLength={60}
-                        onChange={(e) => patchRoom(r.key, { name: e.target.value })}
+                        onChange={(e) =>
+                          patchRoom(r.key, { name: e.target.value })
+                        }
                         required
                       />
                     </Field>
@@ -1390,13 +1505,18 @@ export function ChildSessionForm({
                         min={1}
                         max={500}
                         value={r.capacity}
-                        onChange={(e) => patchRoom(r.key, { capacity: Number(e.target.value) })}
+                        onChange={(e) =>
+                          patchRoom(r.key, { capacity: Number(e.target.value) })
+                        }
                         required
                       />
                     </Field>
                   </div>
                   {show && errs.length > 0 && (
-                    <ul className="mt-2 space-y-1 text-sm text-[#953c2e]" role="alert">
+                    <ul
+                      className="mt-2 space-y-1 text-sm text-[#953c2e]"
+                      role="alert"
+                    >
                       {errs.map((e) => (
                         <li key={e}>• {t(`session.errors.${e}`)}</li>
                       ))}
@@ -1414,13 +1534,21 @@ export function ChildSessionForm({
               onClick={() =>
                 setRooms([
                   ...rooms,
-                  { key: roomKey(), name: "", minMonths: 0, maxMonths: 215, capacity: 20 },
+                  {
+                    key: roomKey(),
+                    name: "",
+                    minMonths: 0,
+                    maxMonths: 215,
+                    capacity: 20,
+                  },
                 ])
               }
             >
               {t("session.addRoom")}
             </button>
-            <span className="children-muted text-xs">{t("session.maxRooms")}</span>
+            <span className="children-muted text-xs">
+              {t("session.maxRooms")}
+            </span>
           </div>
         </section>
       </div>
@@ -1449,7 +1577,9 @@ export function ChildSessionForm({
               </div>
               <div className="kids-stat amber">
                 <span className="kids-stat-value">{totalCapacity}</span>
-                <span className="kids-stat-label">{t("session.totalCapacity")}</span>
+                <span className="kids-stat-label">
+                  {t("session.totalCapacity")}
+                </span>
                 <span className="kids-stat-hint">
                   {t("session.places", { count: totalCapacity })}
                 </span>
@@ -1458,7 +1588,9 @@ export function ChildSessionForm({
             <div>
               <div className="flex items-center justify-between">
                 <p className="children-label !mb-1">{t("session.coverage")}</p>
-                <span className="children-muted text-xs">{t("session.coverageHint")}</span>
+                <span className="children-muted text-xs">
+                  {t("session.coverageHint")}
+                </span>
               </div>
               <div
                 className="relative h-5 overflow-hidden rounded-full bg-[#ecefe6]"
@@ -1499,7 +1631,9 @@ export function ChildSessionForm({
               </p>
             )}
             {submitted && !canSubmit && !busy && (
-              <p className="children-muted text-[#953c2e]">{t("session.fixFirst")}</p>
+              <p className="children-muted text-[#953c2e]">
+                {t("session.fixFirst")}
+              </p>
             )}
             <button
               type="submit"

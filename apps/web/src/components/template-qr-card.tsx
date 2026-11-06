@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
@@ -16,6 +17,7 @@ export function TemplateQrCard({
   allowSpanish?: boolean;
 }) {
   const t = useTranslations("admin.templateQr");
+  const feedback = useTranslations("common");
   const [language, setLanguage] = useState<FormLanguage>("en");
   const shareUrl = allowSpanish ? localizedFormUrl(url, language) : url;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -52,8 +54,10 @@ export function TemplateQrCard({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      toast.success(t("copied"));
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
+      toast.error(feedback("copyFailed"));
       setCopied(false);
     }
   }

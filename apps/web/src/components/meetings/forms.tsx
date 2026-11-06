@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "sonner";
+import { useActionToast } from "@/lib/action-feedback";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -26,7 +28,8 @@ export function MemberPicker({
 }) {
   const t = useTranslations("services.meetings.picker");
   const tMeetings = useTranslations("services.meetings");
-  const name = (person?: MeetingPerson) => meetingName(person, tMeetings("userUnavailable"));
+  const name = (person?: MeetingPerson) =>
+    meetingName(person, tMeetings("userUnavailable"));
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<{
@@ -369,6 +372,8 @@ export function MeetingGroupForm({
   options: MeetingOptions;
   group?: MeetingGroup;
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("services.meetings.groupForm");
   const [branch, setBranch] = useState(
@@ -403,7 +408,10 @@ export function MeetingGroupForm({
       else await apiPost("/meetings/groups", payload);
       router.push("/meetings/groups");
       router.refresh();
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("saveFailed"));
       setError(e instanceof Error ? e.message : t("saveFailed"));
     } finally {
       setBusy(false);
@@ -482,10 +490,7 @@ export function MeetingGroupForm({
           />
         </Field>
         <p className="text-sm text-[#6b6b6b]">{t("note")}</p>
-        <Field
-          label={t("submitters")}
-          hint={t("submittersHint")}
-        >
+        <Field label={t("submitters")} hint={t("submittersHint")}>
           <UserChoices
             key={`${branch}-s`}
             name="submitterUserIds"
@@ -493,10 +498,7 @@ export function MeetingGroupForm({
             chosen={group?.submitterUserIds}
           />
         </Field>
-        <Field
-          label={t("reviewers")}
-          hint={t("reviewersHint")}
-        >
+        <Field label={t("reviewers")} hint={t("reviewersHint")}>
           <UserChoices
             key={`${branch}-r`}
             name="reviewerUserIds"
@@ -523,6 +525,8 @@ export function MeetingForm({
   options: MeetingOptions;
   meeting?: Meeting;
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("services.meetings.form");
   const available = options.groups.filter(
@@ -615,15 +619,12 @@ export function MeetingForm({
           signal: controller.signal,
         });
         const body = await response.json();
-        if (!response.ok)
-          throw new Error(body.message || t("previewFailed"));
+        if (!response.ok) throw new Error(body.message || t("previewFailed"));
         if (!controller.signal.aborted) setPreview(body);
       } catch (e) {
         if (!controller.signal.aborted) {
           setPreview(null);
-          setPreviewError(
-            e instanceof Error ? e.message : t("previewFailed"),
-          );
+          setPreviewError(e instanceof Error ? e.message : t("previewFailed"));
         }
       } finally {
         if (!controller.signal.aborted) setPreviewBusy(false);
@@ -719,7 +720,10 @@ export function MeetingForm({
           });
       router.push(`/meetings/${result._id}`);
       router.refresh();
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("saveFailed"));
       setError(e instanceof Error ? e.message : t("saveFailed"));
     } finally {
       setBusy(false);
@@ -770,7 +774,8 @@ export function MeetingForm({
                   <option key={g._id} value={g._id}>
                     {t("groupOption", {
                       name: g.name,
-                      branch: typeof g.branchId === "object" ? g.branchId.name : "",
+                      branch:
+                        typeof g.branchId === "object" ? g.branchId.name : "",
                     })}
                   </option>
                 ))}
@@ -843,10 +848,7 @@ export function MeetingForm({
               defaultValue={meeting?.location}
             />
           </Field>
-          <Field
-            label={t("link")}
-            hint={t("linkHint")}
-          >
+          <Field label={t("link")} hint={t("linkHint")}>
             <input
               className="ui-input"
               name="joinUrl"
@@ -873,15 +875,14 @@ export function MeetingForm({
               onChange={(e) => setAudienceMode(e.target.value)}
             >
               <option value="individuals">{t("audienceIndividuals")}</option>
-              <option value="service_groups">{t("audienceServiceGroups")}</option>
+              <option value="service_groups">
+                {t("audienceServiceGroups")}
+              </option>
               <option value="church">{t("audienceChurch")}</option>
             </select>
           </Field>
           {audienceMode === "service_groups" && (
-            <Field
-              label={t("serviceGroups")}
-              hint={t("serviceGroupsHint")}
-            >
+            <Field label={t("serviceGroups")} hint={t("serviceGroupsHint")}>
               <div className="max-h-56 overflow-auto rounded-xl bg-white p-3 space-y-2">
                 {options.serviceUnits
                   .filter((unit) => unit.branchId === branch)
@@ -921,10 +922,7 @@ export function MeetingForm({
               onChange={setMembers}
             />
           </Field>
-          <Field
-            label={t("staff")}
-            hint={t("staffHint")}
-          >
+          <Field label={t("staff")} hint={t("staffHint")}>
             <MemberPicker
               key={`${branch}-staff`}
               branchId={branch}

@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -65,7 +66,7 @@ export function UserAccountEditor({
   const statusLabel = useStatusLabel();
   const { dateTime } = useAppFormat();
   const READ_ONLY_HINT = tForm("readOnlyHint");
-  const [status, setStatus] = useState<string | null>(null);
+
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>(
     {},
@@ -126,7 +127,6 @@ export function UserAccountEditor({
 
   async function handleSubmit(userId: string, formData: FormData) {
     setLoadingId(userId);
-    setStatus(null);
 
     try {
       const branchId = isBranchScopedRole(currentUserRole)
@@ -165,11 +165,11 @@ export function UserAccountEditor({
         throw new Error(result.message || t("updateError"));
       }
 
-      setStatus(t("updated"));
+      toast.success(t("updated"));
       router.replace(returnHref, { scroll: false });
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("updateError"));
+      toast.error(error instanceof Error ? error.message : t("updateError"));
     } finally {
       setLoadingId(null);
     }
@@ -503,14 +503,6 @@ export function UserAccountEditor({
           </section>
         );
       })}
-      {status ? (
-        <p
-          role="status"
-          className="rounded-xl bg-[#f6f5f1] px-4 py-3 text-[14px] text-[#55534e]"
-        >
-          {status}
-        </p>
-      ) : null}
     </div>
   );
 }

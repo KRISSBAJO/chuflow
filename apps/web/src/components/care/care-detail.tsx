@@ -1,4 +1,6 @@
 "use client";
+import { useActionToast } from "@/lib/action-feedback";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CareActivityTable } from "./care-activity-table";
@@ -32,6 +34,8 @@ export function CareDetail({
   initial: CareRecord;
   options: CareOptions;
 }) {
+  const actionToast = useActionToast();
+
   const router = useRouter();
   const t = useTranslations("people.care.detail");
   const tw = useTranslations("workspace");
@@ -55,7 +59,7 @@ export function CareDetail({
   const [tab, setTab] = useState(query.get("tab") || "timeline");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+
   const [link, setLink] = useState("");
   const [owner, setOwner] = useState<CarePerson[]>(
     c.people.filter(
@@ -77,7 +81,7 @@ export function CareDetail({
     if (busy) return;
     setBusy(true);
     setError("");
-    setNotice("");
+
     try {
       const result = await apiPatch<CareRecord>("/care/cases/" + c._id, {
         expectedRevision: c.revision,
@@ -85,9 +89,10 @@ export function CareDetail({
         ...data,
       });
       setCase(result);
-      setNotice(t("saved"));
+      toast.success(t("saved"));
       router.refresh();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorSave"));
       setError(e instanceof Error ? e.message : t("errorSave"));
     } finally {
       setBusy(false);
@@ -103,7 +108,10 @@ export function CareDetail({
         {},
       );
       setLink(result.url);
+
+      actionToast.success();
     } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("errorLink"));
       setError(e instanceof Error ? e.message : t("errorLink"));
     } finally {
       setBusy(false);
@@ -122,11 +130,7 @@ export function CareDetail({
           </button>
         </p>
       )}
-      {notice && (
-        <p role="status" className="text-sm text-green-800">
-          {notice}
-        </p>
-      )}
+
       <Card className="p-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -598,8 +602,11 @@ export function CareDetail({
                       onClick={() => {
                         void navigator.clipboard
                           .writeText(link)
-                          .then(() => setNotice(t("linkCopied")))
-                          .catch(() => setError(t("copyFailed")));
+                          .then(() => toast.success(t("linkCopied")))
+                          .catch(() => {
+                            setError(t("copyFailed"));
+                            toast.error(t("copyFailed"));
+                          });
                       }}
                     >
                       {t("copy")}

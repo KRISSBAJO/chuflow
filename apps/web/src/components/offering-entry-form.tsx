@@ -1,4 +1,5 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +25,9 @@ function getScheduleBranchId(value: ServiceScheduleSummary["branchId"]) {
   return typeof value === "string" ? value : value?._id;
 }
 
-function getScheduleServiceTypeId(value: ServiceScheduleSummary["serviceTypeId"]) {
+function getScheduleServiceTypeId(
+  value: ServiceScheduleSummary["serviceTypeId"],
+) {
   return typeof value === "string" ? value : value?._id;
 }
 
@@ -51,13 +54,16 @@ export function OfferingEntryForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
-  const defaultBranchName = branches.find((branch) => branch._id === defaultBranchId)?.name;
+  const defaultBranchName = branches.find(
+    (branch) => branch._id === defaultBranchId,
+  )?.name;
 
   const availableServiceTypes = useMemo(
     () =>
       serviceTypes.filter(
         (serviceType) =>
-          (!defaultBranchId || getBranchId(serviceType.branchId) === defaultBranchId) &&
+          (!defaultBranchId ||
+            getBranchId(serviceType.branchId) === defaultBranchId) &&
           serviceType.isActive,
       ),
     [defaultBranchId, serviceTypes],
@@ -78,7 +84,9 @@ export function OfferingEntryForm({
     [defaultBranchId, serviceSchedules],
   );
   const selectedSchedule =
-    availableSchedules.find((schedule) => schedule._id === selectedScheduleId) || null;
+    availableSchedules.find(
+      (schedule) => schedule._id === selectedScheduleId,
+    ) || null;
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -108,15 +116,18 @@ export function OfferingEntryForm({
       }
 
       toast.success(t("recordedTitle"), {
+        id: savedToastId(result),
         description: t("recordedDescription"),
       });
       if (onSuccess) onSuccess();
-      else router.push(createdHref("/finance?tab=offerings", result, t("entityName")));
+      else
+        router.push(
+          createdHref("/finance?tab=offerings", result, t("entityName")),
+        );
       router.refresh();
     } catch (error) {
       toast.error(t("notRecordedTitle"), {
-        description:
-          error instanceof Error ? error.message : t("recordError"),
+        description: error instanceof Error ? error.message : t("recordError"),
       });
     } finally {
       setLoading(false);
@@ -145,7 +156,12 @@ export function OfferingEntryForm({
 
       <form action={handleSubmit} className="mt-5 grid gap-4">
         <Field label={t("serviceDate")} required>
-          <input name="serviceDate" type="datetime-local" className="ui-input" required />
+          <input
+            name="serviceDate"
+            type="datetime-local"
+            className="ui-input"
+            required
+          />
         </Field>
 
         <Field label={t("serviceSchedule")} hint={t("scheduleHint")}>
@@ -184,11 +200,13 @@ export function OfferingEntryForm({
           <Field label={t("offeringType")} required>
             <select name="offeringTypeId" className="ui-input" required>
               <option value="">{t("selectOfferingType")}</option>
-              {offeringTypes.filter((type) => type.isActive).map((offeringType) => (
-                <option key={offeringType._id} value={offeringType._id}>
-                  {offeringType.name}
-                </option>
-              ))}
+              {offeringTypes
+                .filter((type) => type.isActive)
+                .map((offeringType) => (
+                  <option key={offeringType._id} value={offeringType._id}>
+                    {offeringType.name}
+                  </option>
+                ))}
             </select>
           </Field>
 
@@ -227,11 +245,16 @@ export function OfferingEntryForm({
         </Field>
 
         <div className="flex flex-wrap items-center gap-3 pt-1">
-          <Button type="submit" disabled={loading || availableServiceTypes.length === 0}>
+          <Button
+            type="submit"
+            disabled={loading || availableServiceTypes.length === 0}
+          >
             {loading ? t("recording") : t("record")}
           </Button>
           {availableServiceTypes.length === 0 ? (
-            <p className="text-[13px] text-[#8a8780]">{t("addServiceTypeFirst")}</p>
+            <p className="text-[13px] text-[#8a8780]">
+              {t("addServiceTypeFirst")}
+            </p>
           ) : null}
         </div>
       </form>

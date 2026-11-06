@@ -1,4 +1,5 @@
 "use client";
+import { savedToastId } from "@/lib/action-feedback";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,7 +8,10 @@ import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
-import { useMemberFormLabels, WEEKDAY_OPTIONS } from "@/lib/member-form-options";
+import {
+  useMemberFormLabels,
+  WEEKDAY_OPTIONS,
+} from "@/lib/member-form-options";
 import { isBranchScopedRole } from "@/lib/permissions";
 import type { BranchSummary, MemberListItem } from "@/lib/types";
 
@@ -62,7 +66,8 @@ export function ServiceUnitCreateForm({
         body: JSON.stringify({
           branchId: (formData.get("branchId") as string) || defaultBranchId,
           name: formData.get("name"),
-          leaderMemberId: (formData.get("leaderMemberId") as string) || undefined,
+          leaderMemberId:
+            (formData.get("leaderMemberId") as string) || undefined,
           secretaryMemberId:
             (formData.get("secretaryMemberId") as string) || undefined,
           meetingDay: formData.get("meetingDay"),
@@ -78,14 +83,16 @@ export function ServiceUnitCreateForm({
       }
 
       toast.success(t("createdTitle"), {
+        id: savedToastId(result),
         description: t("createdBody"),
       });
       onSuccess?.();
-      router.push(createdHref("/service-units?sort=newest", result, t("entityName")));
+      router.push(
+        createdHref("/service-units?sort=newest", result, t("entityName")),
+      );
       router.refresh();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t("createError");
+      const message = error instanceof Error ? error.message : t("createError");
       toast.error(t("createFailed"), {
         description: message,
       });
@@ -97,10 +104,15 @@ export function ServiceUnitCreateForm({
   const leadershipRequired = filteredMembers.length > 0;
 
   return (
-    <form action={handleSubmit} className={showHeader ? "rounded-2xl bg-white p-5 sm:p-6" : undefined}>
+    <form
+      action={handleSubmit}
+      className={showHeader ? "rounded-2xl bg-white p-5 sm:p-6" : undefined}
+    >
       {showHeader ? (
         <div className="mb-5">
-          <h3 className="lp-heading text-[18px] leading-tight">{t("heading")}</h3>
+          <h3 className="lp-heading text-[18px] leading-tight">
+            {t("heading")}
+          </h3>
           <p className="mt-1.5 text-[14px] leading-[1.6] text-[#6b6b6b]">
             {t("intro")}
           </p>
@@ -130,11 +142,20 @@ export function ServiceUnitCreateForm({
         )}
 
         <Field label={t("unitName")} required>
-          <input name="name" placeholder={t("unitNamePlaceholder")} className="ui-input" required />
+          <input
+            name="name"
+            placeholder={t("unitNamePlaceholder")}
+            className="ui-input"
+            required
+          />
         </Field>
 
         <Field label={t("leader")} required={leadershipRequired}>
-          <select name="leaderMemberId" className="ui-input" required={leadershipRequired}>
+          <select
+            name="leaderMemberId"
+            className="ui-input"
+            required={leadershipRequired}
+          >
             <option value="">{t("selectLeader")}</option>
             {filteredMembers.map((member) => (
               <option key={member._id} value={member._id}>
@@ -145,7 +166,11 @@ export function ServiceUnitCreateForm({
         </Field>
 
         <Field label={t("secretary")} required={leadershipRequired}>
-          <select name="secretaryMemberId" className="ui-input" required={leadershipRequired}>
+          <select
+            name="secretaryMemberId"
+            className="ui-input"
+            required={leadershipRequired}
+          >
             <option value="">{t("selectSecretary")}</option>
             {filteredMembers.map((member) => (
               <option key={member._id} value={member._id}>
@@ -156,7 +181,12 @@ export function ServiceUnitCreateForm({
         </Field>
 
         <Field label={t("meetingDay")} required>
-          <select name="meetingDay" defaultValue="Saturday" className="ui-input" required>
+          <select
+            name="meetingDay"
+            defaultValue="Saturday"
+            className="ui-input"
+            required
+          >
             {WEEKDAY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {labels.weekday(option.value)}
@@ -166,7 +196,12 @@ export function ServiceUnitCreateForm({
         </Field>
 
         <Field label={t("prayerDay")} required>
-          <select name="prayerDay" defaultValue="Friday" className="ui-input" required>
+          <select
+            name="prayerDay"
+            defaultValue="Friday"
+            className="ui-input"
+            required
+          >
             {WEEKDAY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {labels.weekday(option.value)}
@@ -190,7 +225,12 @@ export function ServiceUnitCreateForm({
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-5">
         <label className="flex items-center gap-2.5 text-[14px] text-[#55534e]">
-          <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
+          <input
+            type="checkbox"
+            name="isActive"
+            defaultChecked
+            className="h-4 w-4"
+          />
           {t("activeUnit")}
         </label>
         <Button type="submit" disabled={loading}>
