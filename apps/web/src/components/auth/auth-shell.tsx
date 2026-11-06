@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Wordmark } from "@/components/brand/wordmark";
-import { LanguagePicker } from "@/components/i18n/language-picker";
+import { LanguagePicker, LanguageRow } from "@/components/i18n/language-picker";
 import { unsplash } from "@/components/landing/landing-images";
 
 type AuthShellProps = {
@@ -46,11 +46,14 @@ export async function AuthShell({ children, switchPrompt, aside, wide = false }:
           <div className={`lp-rise w-full ${wide ? "max-w-[560px]" : "max-w-[400px]"}`}>{children}</div>
         </main>
 
-        <footer className="flex items-center justify-between gap-4 px-6 py-6 text-[13px] text-[var(--lp-muted)] sm:px-10">
-          <p>{t("copyright", { year: new Date().getFullYear() })}</p>
-          <Link href="/" className="transition-colors hover:text-[var(--lp-ink)]">
-            {t("backToHome")}
-          </Link>
+        <footer className="space-y-5 px-6 py-6 text-[13px] text-[var(--lp-muted)] sm:px-10">
+          <LanguageRow showLabel />
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p>{t("copyright", { year: new Date().getFullYear() })}</p>
+            <Link href="/" className="transition-colors hover:text-[var(--lp-ink)]">
+              {t("backToHome")}
+            </Link>
+          </div>
         </footer>
       </div>
 

@@ -226,7 +226,7 @@ async function Footer() {
         </div>
         <div className="mt-10 flex flex-col gap-5 border-t border-black/[0.06] pt-6 text-[13px] text-[var(--lp-muted)] md:flex-row md:items-center md:justify-between">
           <p>{t("common.copyright", { year: new Date().getFullYear() })}</p>
-          <LanguageRow />
+          <LanguageRow showLabel />
           <p>{t("footer.tagline")}</p>
         </div>
       </div>

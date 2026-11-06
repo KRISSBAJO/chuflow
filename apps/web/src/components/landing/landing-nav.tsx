@@ -60,7 +60,7 @@ export function LandingNav({ signedIn = false, firstName, workspaceHref = "/dash
         </nav>
 
         <div className="flex items-center gap-2">
-          <LanguagePicker className="hidden sm:block" />
+          <LanguagePicker />
           <Link
             href={signedIn ? "/settings" : "/login"}
             className="hidden rounded-full px-4 py-2 text-[14px] font-medium text-[var(--lp-ink)] transition-colors hover:bg-[var(--lp-panel)] sm:block"

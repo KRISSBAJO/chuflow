@@ -109,13 +109,16 @@ export function LanguagePicker({ className = "" }: { className?: string }) {
 }
 
 /** All languages in a row of pills. Used in the mobile menu and footers. */
-export function LanguageRow({ className = "" }: { className?: string }) {
+export function LanguageRow({ className = "", showLabel = false }: { className?: string; showLabel?: boolean }) {
   const t = useTranslations("locale");
   const { locale, pending, switchTo } = useLocaleSwitch();
 
   return (
     <div role="group" aria-label={t("label")} className={`flex flex-wrap items-center gap-1.5 ${className} ${pending ? "opacity-60" : ""}`}>
-      <GlobeIcon className="mr-1 h-4 w-4 text-[var(--lp-muted)]" />
+      <span className="mr-1 inline-flex items-center gap-2 text-[13px] font-medium text-[var(--lp-muted)]">
+        <GlobeIcon className="h-4 w-4" />
+        {showLabel ? t("label") : null}
+      </span>
       {LOCALES.map((code) => {
         const selected = code === locale;
         return (
