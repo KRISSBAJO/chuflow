@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -44,4 +45,14 @@ export class RemovePushSubscriptionDto {
   @IsString()
   @MaxLength(2048)
   endpoint!: string;
+}
+
+export class ExpoPushTokenDto {
+  @ApiProperty({ example: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]' })
+  @IsString()
+  @MaxLength(200)
+  @Matches(/^Expo(nent)?PushToken\[[^\]]+\]$/, {
+    message: 'token must be an Expo push token',
+  })
+  token!: string;
 }

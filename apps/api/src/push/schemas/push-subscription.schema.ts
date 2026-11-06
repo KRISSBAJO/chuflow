@@ -3,6 +3,9 @@ import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type PushSubscriptionDocument = HydratedDocument<PushSubscription>;
 
+export const PUSH_CHANNELS = ['web', 'expo'] as const;
+export type PushChannel = (typeof PUSH_CHANNELS)[number];
+
 @Schema({ _id: false })
 export class PushSubscriptionKeys {
   @Prop({ required: true })
@@ -15,7 +18,10 @@ export class PushSubscriptionKeys {
 export const PushSubscriptionKeysSchema =
   SchemaFactory.createForClass(PushSubscriptionKeys);
 
-/** One browser or installed app on one device that has allowed notifications. */
+/**
+ * One device that has allowed notifications: a browser or installed web app (`web`, a Web Push
+ * endpoint plus keys) or the ChuFlow phone app (`expo`, an Expo push token stored in `endpoint`).
+ */
 @Schema({ timestamps: true })
 export class PushSubscription {
   @Prop({
@@ -26,11 +32,14 @@ export class PushSubscription {
   })
   userId!: Types.ObjectId;
 
+  @Prop({ type: String, enum: PUSH_CHANNELS, default: 'web' })
+  channel!: PushChannel;
+
   @Prop({ required: true, unique: true })
   endpoint!: string;
 
-  @Prop({ type: PushSubscriptionKeysSchema, required: true })
-  keys!: PushSubscriptionKeys;
+  @Prop({ type: PushSubscriptionKeysSchema })
+  keys?: PushSubscriptionKeys;
 
   @Prop()
   userAgent?: string;

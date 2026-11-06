@@ -72,6 +72,13 @@ The three `VAPID_*` values turn on phone and desktop push notifications. Generat
 keep it: changing the keys silently stops notifications on every device that already opted in. Without
 them the API still runs and the app hides the notification switch.
 
+Optional, for the phone app (`apps/mobile`):
+
+```env
+MOBILE_JWT_EXPIRES_IN=30d        # how long a phone stays signed in (default 30d)
+EXPO_ACCESS_TOKEN=<optional>     # only if "Enhanced push security" is on in the Expo project
+```
+
 ## Frontend on AWS Amplify
 
 The repo includes [amplify.yml](/mnt/c/Users/kriss/cmp-be/amplify.yml).

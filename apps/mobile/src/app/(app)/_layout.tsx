@@ -1,0 +1,64 @@
+import { router, Stack } from 'expo-router';
+import { useCallback, useEffect } from 'react';
+import { Platform, Pressable, Text } from 'react-native';
+import { AppLockGate } from '@/components/app-lock';
+import { toast } from '@/components/toast';
+import { colors, fonts } from '@/constants/theme';
+import { AlertsProvider } from '@/lib/alerts';
+import { disablePush, enablePush } from '@/lib/notifications';
+import { useOutboxSync } from '@/lib/offline-queue';
+import { onBeforeSignOut, useSession } from '@/lib/session';
+import { useAlertTaps } from '@/lib/use-alert-taps';
+
+function CancelButton() {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      hitSlop={10}
+      onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      style={{ paddingHorizontal: Platform.OS === 'web' ? 16 : 0 }}
+    >
+      <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.muted }}>Cancel</Text>
+    </Pressable>
+  );
+}
+
+export default function SignedInLayout() {
+  const { user } = useSession();
+
+  // Re-link this phone's alerts to whoever is signed in; unlink on sign-out.
+  useEffect(() => {
+    void enablePush(false).catch(() => undefined);
+    return onBeforeSignOut(() => disablePush().catch(() => undefined));
+  }, []);
+
+  useAlertTaps();
+
+  useOutboxSync(
+    useCallback((count: number) => {
+      toast.success(`${count} saved attendance ${count === 1 ? 'count was' : 'counts were'} sent`);
+    }, []),
+  );
+
+  return (
+    <AppLockGate>
+      <AlertsProvider days={user?.preferences?.defaultReportDays ?? 30}>
+        <Stack
+          screenOptions={{
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colors.page },
+            headerTintColor: colors.ink,
+            headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 16, color: colors.ink },
+            contentStyle: { backgroundColor: colors.page },
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="guest/new" options={{ title: 'New guest', presentation: 'modal', headerLeft: () => <CancelButton /> }} />
+          <Stack.Screen name="guest/[id]" options={{ title: '' }} />
+          <Stack.Screen name="care/[id]" options={{ title: 'Follow-up', presentation: 'modal', headerLeft: () => <CancelButton /> }} />
+          <Stack.Screen name="approvals" options={{ title: 'Approvals' }} />
+        </Stack>
+      </AlertsProvider>
+    </AppLockGate>
+  );
+}

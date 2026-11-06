@@ -6,6 +6,8 @@ export const envValidationSchema = Joi.object({
   MONGODB_URI: Joi.string().required(),
   JWT_SECRET: Joi.string().min(12).required(),
   JWT_EXPIRES_IN: Joi.string().default('1d'),
+  // Sign-ins from the mobile app last longer; the API still rejects deactivated users on every call.
+  MOBILE_JWT_EXPIRES_IN: Joi.string().default('30d'),
   WEB_URL: Joi.string().uri().required(),
   CORS_ALLOWED_ORIGINS: Joi.string().allow('').optional(),
   AUTH_COOKIE_NAME: Joi.string().default('cms_access_token'),
@@ -20,6 +22,8 @@ export const envValidationSchema = Joi.object({
   MAIL_USER: Joi.string().allow('').optional(),
   MAIL_PASS: Joi.string().allow('').optional(),
   MAIL_FROM: Joi.string().allow('').default('no-reply@church.local'),
+  // Only needed if "Enhanced push security" is turned on for the Expo project.
+  EXPO_ACCESS_TOKEN: Joi.string().allow('').optional(),
   VAPID_PUBLIC_KEY: Joi.string().allow('').optional(),
   VAPID_PRIVATE_KEY: Joi.string().allow('').optional(),
   // A mailto: or https: contact the push services can reach if something goes wrong.

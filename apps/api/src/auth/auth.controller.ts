@@ -67,6 +67,25 @@ export class AuthController {
     };
   }
 
+  @Public()
+  @HttpCode(200)
+  @Post('mobile/login')
+  @ApiOperation({
+    summary: 'Login from the mobile app and receive a bearer token',
+  })
+  async mobileLogin(@Body() loginDto: LoginDto) {
+    const expiresIn =
+      this.configService.get<string>('mobileJwtExpiresIn') ?? '30d';
+    const result = await this.authService.login(loginDto, { expiresIn });
+
+    return {
+      accessToken: result.accessToken,
+      tokenType: 'Bearer',
+      expiresIn,
+      user: result.user,
+    };
+  }
+
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('logout')

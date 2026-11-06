@@ -23,7 +23,7 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, options: { expiresIn?: string } = {}) {
     const user = await this.usersService.findByEmailWithPassword(
       loginDto.email,
     );
@@ -52,7 +52,10 @@ export class AuthService {
       branchId: user.branchId?.toString(),
     };
 
-    const accessToken = await this.jwtService.signAsync(payload);
+    const accessToken = await this.jwtService.signAsync(
+      payload,
+      options.expiresIn ? { expiresIn: options.expiresIn as never } : undefined,
+    );
 
     return {
       accessToken,

@@ -9,6 +9,7 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import {
   CreatePushSubscriptionDto,
+  ExpoPushTokenDto,
   RemovePushSubscriptionDto,
 } from './dto/push-subscription.dto';
 import {
@@ -19,7 +20,7 @@ import {
 export type PushPayload = {
   title: string;
   body: string;
-  /** Path inside the web app opened when the notification is tapped. */
+  /** Path inside the web app opened when the notification is tapped. The phone app maps it to its own screens. */
   url: string;
   /** Notifications sharing a tag replace each other on the device instead of stacking. */
   tag?: string;
@@ -27,14 +28,25 @@ export type PushPayload = {
 
 type Recipients = { userIds?: string[]; filter?: Record<string, unknown> };
 
+type StoredSubscription = PushSubscription & { _id: Types.ObjectId };
+
+type ExpoTicket =
+  | { status: 'ok'; id: string }
+  | { status: 'error'; message?: string; details?: { error?: string } };
+
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_BATCH_SIZE = 100;
+
 /**
- * Web Push delivery for the installable web app. Every `notify*` method is fire-and-forget:
- * it never throws and never delays the request that triggered it.
+ * Push delivery to every device a user has allowed: browsers and the installed web app through
+ * Web Push (needs the VAPID keys), and the ChuFlow phone app through Expo's push service.
+ * Every `notify*` method is fire-and-forget: it never throws and never delays the request that
+ * triggered it.
  */
 @Injectable()
 export class PushService implements OnModuleInit {
   private readonly logger = new Logger(PushService.name);
-  private enabled = false;
+  private webEnabled = false;
   private publicKey?: string;
 
   constructor(
@@ -54,18 +66,18 @@ export class PushService implements OnModuleInit {
 
     if (!publicKey || !privateKey || !subject) {
       this.logger.warn(
-        'Push notifications are off: set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT to enable them.',
+        'Browser notifications are off: set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT to enable them. Phone app notifications still work.',
       );
       return;
     }
 
     webpush.setVapidDetails(subject, publicKey, privateKey);
     this.publicKey = publicKey;
-    this.enabled = true;
+    this.webEnabled = true;
   }
 
   getPublicConfig() {
-    return { enabled: this.enabled, publicKey: this.publicKey ?? null };
+    return { enabled: this.webEnabled, publicKey: this.publicKey ?? null };
   }
 
   async subscribe(
@@ -77,6 +89,7 @@ export class PushService implements OnModuleInit {
       { endpoint: dto.endpoint },
       {
         userId: new Types.ObjectId(currentUser.sub),
+        channel: 'web',
         endpoint: dto.endpoint,
         keys: dto.keys,
         userAgent: userAgent?.slice(0, 300),
@@ -89,6 +102,36 @@ export class PushService implements OnModuleInit {
   async unsubscribe(currentUser: AuthUser, dto: RemovePushSubscriptionDto) {
     await this.subscriptionModel.deleteOne({
       endpoint: dto.endpoint,
+      userId: new Types.ObjectId(currentUser.sub),
+    });
+    return { subscribed: false };
+  }
+
+  /** Links the phone app's Expo push token to whoever is signed in on it. */
+  async registerExpoToken(
+    currentUser: AuthUser,
+    dto: ExpoPushTokenDto,
+    userAgent?: string,
+  ) {
+    await this.subscriptionModel.updateOne(
+      { endpoint: dto.token },
+      {
+        $set: {
+          userId: new Types.ObjectId(currentUser.sub),
+          channel: 'expo',
+          endpoint: dto.token,
+          userAgent: userAgent?.slice(0, 300),
+        },
+        $unset: { keys: 1 },
+      },
+      { upsert: true },
+    );
+    return { subscribed: true };
+  }
+
+  async removeExpoToken(currentUser: AuthUser, dto: ExpoPushTokenDto) {
+    await this.subscriptionModel.deleteOne({
+      endpoint: dto.token,
       userId: new Types.ObjectId(currentUser.sub),
     });
     return { subscribed: false };
@@ -141,7 +184,7 @@ export class PushService implements OnModuleInit {
     excludeUserId?: string,
   ) {
     const id = this.toIdString(branchId);
-    if (!id || !this.enabled) return;
+    if (!id) return;
 
     void this.branchModel
       .findById(id)
@@ -172,15 +215,12 @@ export class PushService implements OnModuleInit {
   }
 
   private dispatch(recipients: Recipients, payload: PushPayload) {
-    if (!this.enabled) return;
     void this.deliver(recipients, payload).catch((error: unknown) =>
       this.logFailure(error),
     );
   }
 
   private async deliver(recipients: Recipients, payload: PushPayload) {
-    if (!this.enabled) return 0;
-
     const userFilter: Record<string, unknown> = {
       isActive: true,
       ...(recipients.filter ?? {}),
@@ -194,24 +234,57 @@ export class PushService implements OnModuleInit {
     const users = await this.userModel.find(userFilter).select('_id').lean();
     if (!users.length) return 0;
 
-    const subscriptions = await this.subscriptionModel
+    const subscriptions = (await this.subscriptionModel
       .find({ userId: { $in: users.map((user) => user._id) } })
-      .lean();
+      .lean()) as StoredSubscription[];
     if (!subscriptions.length) return 0;
 
+    const expired: string[] = [];
+    const deliveredIds: Types.ObjectId[] = [];
+    const web = subscriptions.filter(
+      (subscription) => (subscription.channel ?? 'web') === 'web',
+    );
+    const expo = subscriptions.filter(
+      (subscription) => subscription.channel === 'expo',
+    );
+
+    if (this.webEnabled && web.length) {
+      await this.deliverWeb(web, payload, expired, deliveredIds);
+    }
+    if (expo.length) {
+      await this.deliverExpo(expo, payload, expired, deliveredIds);
+    }
+
+    if (expired.length) {
+      await this.subscriptionModel.deleteMany({ endpoint: { $in: expired } });
+    }
+    if (deliveredIds.length) {
+      await this.subscriptionModel.updateMany(
+        { _id: { $in: deliveredIds } },
+        { lastDeliveredAt: new Date() },
+      );
+    }
+
+    return deliveredIds.length;
+  }
+
+  private async deliverWeb(
+    subscriptions: StoredSubscription[],
+    payload: PushPayload,
+    expired: string[],
+    deliveredIds: Types.ObjectId[],
+  ) {
     const body = JSON.stringify(payload);
     const results = await Promise.allSettled(
       subscriptions.map((subscription) =>
         webpush.sendNotification(
-          { endpoint: subscription.endpoint, keys: subscription.keys },
+          { endpoint: subscription.endpoint, keys: subscription.keys! },
           body,
           { TTL: 60 * 60 * 24, urgency: 'normal' },
         ),
       ),
     );
 
-    const expired: string[] = [];
-    const deliveredIds: Types.ObjectId[] = [];
     results.forEach((result, index) => {
       const subscription = subscriptions[index];
       if (result.status === 'fulfilled') {
@@ -229,18 +302,66 @@ export class PushService implements OnModuleInit {
         this.logFailure(reason);
       }
     });
+  }
 
-    if (expired.length) {
-      await this.subscriptionModel.deleteMany({ endpoint: { $in: expired } });
-    }
-    if (deliveredIds.length) {
-      await this.subscriptionModel.updateMany(
-        { _id: { $in: deliveredIds } },
-        { lastDeliveredAt: new Date() },
-      );
-    }
+  private async deliverExpo(
+    subscriptions: StoredSubscription[],
+    payload: PushPayload,
+    expired: string[],
+    deliveredIds: Types.ObjectId[],
+  ) {
+    const accessToken = this.configService.get<string>('expoAccessToken');
 
-    return deliveredIds.length;
+    for (
+      let start = 0;
+      start < subscriptions.length;
+      start += EXPO_BATCH_SIZE
+    ) {
+      const batch = subscriptions.slice(start, start + EXPO_BATCH_SIZE);
+      const messages = batch.map((subscription) => ({
+        to: subscription.endpoint,
+        title: payload.title,
+        body: payload.body,
+        data: { url: payload.url },
+        sound: 'default',
+        channelId: 'default',
+        priority: 'high',
+        ttl: 60 * 60 * 24,
+        ...(payload.tag ? { collapseId: payload.tag } : {}),
+      }));
+
+      try {
+        const response = await fetch(EXPO_PUSH_URL, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify(messages),
+        });
+        const result = (await response.json()) as { data?: ExpoTicket[] };
+        if (!response.ok || !Array.isArray(result.data)) {
+          this.logFailure(`Expo push service answered ${response.status}`);
+          continue;
+        }
+
+        result.data.forEach((ticket, index) => {
+          const subscription = batch[index];
+          if (!subscription) return;
+          if (ticket.status === 'ok') {
+            deliveredIds.push(subscription._id);
+          } else if (ticket.details?.error === 'DeviceNotRegistered') {
+            // The app was removed or its notifications turned off; forget the token.
+            expired.push(subscription.endpoint);
+          } else {
+            this.logFailure(ticket.message ?? 'Expo push ticket error');
+          }
+        });
+      } catch (error) {
+        this.logFailure(error);
+      }
+    }
   }
 
   private excludeFilter(excludeUserId?: string) {

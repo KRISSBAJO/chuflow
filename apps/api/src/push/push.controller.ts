@@ -4,6 +4,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import {
   CreatePushSubscriptionDto,
+  ExpoPushTokenDto,
   RemovePushSubscriptionDto,
 } from './dto/push-subscription.dto';
 import { PushService } from './push.service';
@@ -34,6 +35,23 @@ export class PushController {
     @Body() dto: RemovePushSubscriptionDto,
   ) {
     return this.pushService.unsubscribe(user, dto);
+  }
+
+  @Post('expo-tokens')
+  registerExpoToken(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ExpoPushTokenDto,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.pushService.registerExpoToken(user, dto, userAgent);
+  }
+
+  @Delete('expo-tokens')
+  removeExpoToken(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ExpoPushTokenDto,
+  ) {
+    return this.pushService.removeExpoToken(user, dto);
   }
 
   @Post('test')
