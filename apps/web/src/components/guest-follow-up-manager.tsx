@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession } from "./session-context";
+import { hasPermission } from "@/lib/capabilities";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -24,6 +26,9 @@ export function GuestFollowUpManager({
   users: UserSummary[];
 }) {
   const router = useRouter();
+  const {user}=useSession();
+  const canCreate=!!user && hasPermission(user,"follow_up.create");
+  const canEdit=!!user && hasPermission(user,"follow_up.edit");
   const t = useTranslations("people.guests.followUpManager");
   const tOptions = useTranslations("people.followUpOptions");
   const tsh = useTranslations("people.shared");
@@ -190,7 +195,7 @@ export function GuestFollowUpManager({
                 </Field>
               </div>
               <div className="mt-4 flex justify-end">
-                <Button type="submit" variant="secondary" disabled={loadingId === followUp._id}>
+                <Button type="submit" variant="secondary" disabled={!canEdit || loadingId === followUp._id}>
                   {loadingId === followUp._id ? tc("saving") : t("updateFollowUp")}
                 </Button>
               </div>
@@ -199,7 +204,7 @@ export function GuestFollowUpManager({
         </div>
       )}
 
-      <form action={createFollowUp} className="rounded-2xl bg-[#f6f5f1] p-5">
+      {canCreate && <form action={createFollowUp} className="rounded-2xl bg-[#f6f5f1] p-5">
         <p className="lp-heading text-[17px]">{t("addAnother")}</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Field label={tsh("stage")}>
@@ -247,7 +252,7 @@ export function GuestFollowUpManager({
             {loadingId === "create" ? tc("saving") : t("createFollowUp")}
           </Button>
         </div>
-      </form>
+      </form>}
     </div>
   );
 }

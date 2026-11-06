@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession } from "./session-context";
+import { hasPermission } from "@/lib/capabilities";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -27,6 +29,8 @@ export function CommunicationPanel({
   const { dateTime } = useAppFormat();
   const statusLabel = useStatusLabel();
   const router = useRouter();
+  const {user}=useSession();
+  const canSend=!!user && hasPermission(user,"communications.send");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, startTransition] = useTransition();
   const [templates, setTemplates] = useState<
@@ -143,7 +147,7 @@ export function CommunicationPanel({
     <div>
       <CardHeader label={t("label")} title={title ?? t("defaultTitle")} />
 
-      <form action={handleSubmit} className="mt-5 rounded-2xl bg-[#f6f5f1] p-5">
+      {canSend && <form action={handleSubmit} className="mt-5 rounded-2xl bg-[#f6f5f1] p-5">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label={t("template")}>
             <select
@@ -187,7 +191,7 @@ export function CommunicationPanel({
             {loading ? t("sending") : t("send")}
           </Button>
         </div>
-      </form>
+      </form>}
 
       <div className="mt-5">
         <p className="mb-3 text-[13px] font-medium text-[#6b6b6b]">{t("history")}</p>

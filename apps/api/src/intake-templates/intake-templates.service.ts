@@ -1,3 +1,4 @@
+import { hasAdditionalPermission } from '../common/permissions';
 import {
   BadRequestException,
   ForbiddenException,
@@ -540,6 +541,7 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   private ensureAttendanceSubmissionViewRole(currentUser: AuthUser) {
+    if (hasAdditionalPermission(currentUser, 'reports.view')) return;
     const allowed = [
       'super_admin',
       'national_admin',

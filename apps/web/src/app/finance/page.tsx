@@ -92,11 +92,11 @@ export default async function FinancePage({
       ? params.tab
       : "ledger";
   const canChooseBranch = canFilterAcrossBranches(user.role, user.hasOversight);
-  const canCreateOfferings = canCreateFinanceEntries(user.role);
-  const canCreateExpenses = canCreateExpenseEntries(user.role);
-  const canApproveExpenses = canApproveExpenseEntries(user.role);
+  const canCreateOfferings = canCreateFinanceEntries(user.role, user.additionalPermissions);
+  const canCreateExpenses = canCreateExpenseEntries(user.role, user.additionalPermissions);
+  const canApproveExpenses = canApproveExpenseEntries(user.role, user.additionalPermissions);
   const canManageTypes = canManageFinanceSettings(user.role);
-  const canManageLocks = canManageFinanceLocks(user.role);
+  const canManageLocks = canManageFinanceLocks(user.role, user.additionalPermissions);
   const requestedOversightRegion = isGlobalRole(user.role)
     ? params.oversightRegion?.trim() || undefined
     : user.oversightRegion;

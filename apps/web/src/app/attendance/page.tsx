@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/capabilities";
 import Link from "next/link";
 import { ChurchRecordingLinks } from "@/components/church-recording-links";
 import { WorkspaceTabs } from "@/components/workspace-tabs";
@@ -39,8 +40,8 @@ export default async function AttendancePage({
   if (params.dateTo)
     periodQuery.set("dateTo", params.dateTo + "T23:59:59.999Z");
   const t = await getTranslations("services.attendance.page");
-  const canDirectEditAttendance = user.role !== "follow_up";
-  const canCreateAttendance = canCreateAttendanceEntries(user.role);
+  const canDirectEditAttendance = hasPermission(user,"attendance.edit");
+  const canCreateAttendance = canCreateAttendanceEntries(user.role, user.additionalPermissions);
   const canApproveAttendance = [
     "super_admin",
     "national_admin",

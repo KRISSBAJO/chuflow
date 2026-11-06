@@ -30,7 +30,8 @@
       "reports": "Reports",
       "settings": "Settings",
       "more": "More",
-      "children": "Children’s ministry"
+      "children": "Children’s ministry",
+      "permissions": "Permission manager"
     },
     "quick": {
       "new": "New",

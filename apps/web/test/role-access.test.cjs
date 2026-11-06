@@ -27,6 +27,7 @@ function load(file, mocks = {}, globals = {}) {
       ...globals,
       require: (name) => {
         if (name in mocks) return mocks[name];
+        if (name === "./capabilities" || name === "@/lib/capabilities") return load("apps/web/src/lib/capabilities.ts");
         const t = (key) => key;
         t.has = () => false;
         t.rich = t;

@@ -80,6 +80,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Refresh only additive access in the background; a transient network problem must not sign someone out.
+  useEffect(()=>{
+    if(!ready || !user)return;
+    let mounted=true;
+    const controller=new AbortController();
+    const refresh=async()=>{
+      try {
+        const response=await fetch(`${API_URL}/auth/me`,{credentials:"include",cache:"no-store",signal:controller.signal});
+        if(!mounted)return;
+        if(response.status===401){setExpired(true);return;}
+        if(!response.ok)return;
+        const fresh=await response.json() as SessionUser;
+        if(mounted)setUser(previous=>previous ? {...previous,additionalPermissions:fresh.additionalPermissions,additionalPermissionExpiries:fresh.additionalPermissionExpiries}:previous);
+      } catch { /* Keep the last session; the API still checks every protected request. */ }
+    };
+    const onFocus=()=>{void refresh();};
+    const timer=window.setInterval(onFocus,60000);
+    window.addEventListener("focus",onFocus);
+    return ()=>{mounted=false;controller.abort();window.clearInterval(timer);window.removeEventListener("focus",onFocus);};
+  },[ready,user]);
+
   return (
     <SessionContext.Provider value={{ user, ready, expired, unavailable }}>
       {children}

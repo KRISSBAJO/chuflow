@@ -14,8 +14,8 @@ import type {
 import { redirect } from "next/navigation";
 import { canCreateAttendanceEntries } from "@/lib/permissions";
 export default async function Page() {
-  const user = await requireServerRole("/attendance");
-  if (!canCreateAttendanceEntries(user.role)) redirect("/attendance");
+  const user = await requireServerRole("/attendance/new");
+  if (!canCreateAttendanceEntries(user.role, user.additionalPermissions)) redirect("/attendance");
   const [t, branches, types, schedules] = await Promise.all([
     getTranslations("workspace"),
     serverGet<BranchSummary[]>("/branches/options"),

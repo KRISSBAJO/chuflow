@@ -23,7 +23,7 @@ async function download(request: Request, resource: string, local: boolean) {
         "Please sign in again to download this table.",
         401,
       );
-    if (!canAccessRoute(user.role, definition.permission))
+    if (!canAccessRoute(user.role, definition.permission, user.additionalPermissions))
       throw new ExportError("You do not have access to this table.", 403);
     const query = new URL(request.url).searchParams;
     if (resource === "reports" && !query.get("days"))

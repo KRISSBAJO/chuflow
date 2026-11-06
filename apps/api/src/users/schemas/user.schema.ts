@@ -18,6 +18,7 @@ export const UserPreferencesSchema =
 
 @Schema({ timestamps: true })
 export class User {
+  @Prop({ default: 0 }) permissionRevision!: number;
   @Prop({ required: true })
   firstName!: string;
 

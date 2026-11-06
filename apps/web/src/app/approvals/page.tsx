@@ -63,7 +63,7 @@ export default async function ApprovalsPage({
   const ts = await getTranslations("statuses");
   const params = await searchParams;
   const isSuperAdmin = user.role === "super_admin";
-  const canApproveExpenses = canApproveExpenseEntries(user.role);
+  const canApproveExpenses = canApproveExpenseEntries(user.role, user.additionalPermissions);
   const days = user.preferences?.defaultReportDays ?? 30;
   const workspaceSearch = params.workspaceSearch?.trim() || undefined;
   const workspaceStatus = params.workspaceStatus?.trim() || undefined;

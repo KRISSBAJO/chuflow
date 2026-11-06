@@ -1,3 +1,4 @@
+import type permissions from "../../messages/en/permissions.json";
 import type imports from "../../messages/en/imports.json";
 import type children from "../../messages/en/children.json";
 import type childrenDesk from "../../messages/en/childrenDesk.json";
@@ -20,7 +21,7 @@ import type { LOCALES } from "./config";
 declare module "next-intl" {
   interface AppConfig {
     Locale: (typeof LOCALES)[number];
-    Messages: typeof common &
+    Messages: typeof permissions & typeof common &
       typeof landing &
       typeof auth &
       typeof status &

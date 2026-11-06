@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/capabilities";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { memberGroupNames } from "@/lib/member-service-groups";
@@ -78,7 +79,7 @@ export default async function MemberDetailPage({
   const back = safeReturnTo(query.returnTo, "/members");
   const href = (tab: string, edit = false) =>
     `/members/${id}?${new URLSearchParams({ tab, returnTo: back, ...(edit ? { edit: "1" } : {}) })}`;
-  const edit = (tab: string) => member.recordType === "child" ? null : (
+  const edit = (tab: string) => member.recordType === "child" || !hasPermission(user,"members.edit") ? null : (
     <Link
       href={href(tab, true)}
       scroll={false}
@@ -88,7 +89,7 @@ export default async function MemberDetailPage({
     </Link>
   );
   const editing = (section: "profile" | "growth" | "groups") =>
-    member.recordType !== "child" && query.edit === "1" && query.tab === section ? (
+    hasPermission(user,"members.edit") && member.recordType !== "child" && query.edit === "1" && query.tab === section ? (
       <MemberProfileForm
         member={member}
         defaultBranchId={user.branchId}

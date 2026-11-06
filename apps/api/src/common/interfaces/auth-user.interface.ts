@@ -1,4 +1,6 @@
 export interface AuthUser {
+  additionalPermissions?: string[];
+  additionalPermissionExpiries?: Record<string, string | null>;
   sub: string;
   email: string;
   role:

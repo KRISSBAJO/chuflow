@@ -1,3 +1,4 @@
+import { canDelegatePermissions } from "@/lib/capabilities";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
@@ -37,6 +38,7 @@ export default async function UserDetailPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const viewer = await requireServerRole("/users");
+  const tp = await getTranslations("permissionManager");
   const { id } = await params;
   const query = await searchParams;
   const [user, branches, regions, districts, access, audit, t, format] =
@@ -185,6 +187,7 @@ export default async function UserDetailPage({
               <>
                 <div className="flex justify-end">{edit("access")}</div>
                 {oversight}
+                {canDelegatePermissions(viewer.role) && <Card className="p-6"><CardHeader title={tp("permissionCard")} description={tp("unchanged")} action={<Link href={`/permissions?userId=${id}`} className={buttonClass("secondary")}>{tp("manage")}</Link>}/></Card>}
                 <Card className="p-6">
                   <CardHeader title={t("coveredChurches")} />
                   <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

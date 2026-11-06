@@ -1,3 +1,4 @@
+import { hasAdditionalPermission, canDelegatePermissions } from "./capabilities";
 import type { SessionUser } from "./auth";
 
 export type AppRole =
@@ -106,11 +107,13 @@ export function canAccessFinance(role?: string) {
   );
 }
 
-export function canCreateFinanceEntries(role?: string) {
+export function canCreateFinanceEntries(role?: string, additionalPermissions?: readonly string[]) {
+  if (hasAdditionalPermission({role, additionalPermissions}, "finance.offerings")) return true;
   return includesRole(["resident_pastor", "associate_pastor", "usher"], role);
 }
 
-export function canCreateAttendanceEntries(role?: string) {
+export function canCreateAttendanceEntries(role?: string, additionalPermissions?: readonly string[]) {
+  if (hasAdditionalPermission({role, additionalPermissions}, "attendance.create")) return true;
   return includesRole(["branch_admin", "resident_pastor", "associate_pastor", "usher"], role);
 }
 
@@ -118,7 +121,8 @@ export function canManageFinanceSettings(role?: string) {
   return includesRole(["super_admin"], role);
 }
 
-export function canCreateExpenseEntries(role?: string) {
+export function canCreateExpenseEntries(role?: string, additionalPermissions?: readonly string[]) {
+  if (hasAdditionalPermission({role, additionalPermissions}, "finance.expenses")) return true;
   return includesRole(
     [
       "branch_admin",
@@ -129,7 +133,8 @@ export function canCreateExpenseEntries(role?: string) {
   );
 }
 
-export function canApproveExpenseEntries(role?: string) {
+export function canApproveExpenseEntries(role?: string, additionalPermissions?: readonly string[]) {
+  if (hasAdditionalPermission({role, additionalPermissions}, "finance.approve")) return true;
   return includesRole(
     [
       "super_admin",
@@ -145,7 +150,8 @@ export function canApproveExpenseEntries(role?: string) {
   );
 }
 
-export function canManageFinanceLocks(role?: string) {
+export function canManageFinanceLocks(role?: string, additionalPermissions?: readonly string[]) {
+  if (hasAdditionalPermission({role, additionalPermissions}, "finance.locks")) return true;
   return includesRole(
     [
       "super_admin",
@@ -334,6 +340,7 @@ export function getUserScopeLabel(user: Pick<SessionUser, "role" | "oversightReg
 }
 
 export const routePermissions: Record<string, AppRole[]> = {
+  "/permissions": ["super_admin", "national_admin", "national_pastor", "district_admin", "district_pastor", "branch_admin", "resident_pastor"],
   "/imports": [...LEADERSHIP_ROLES],
   "/children": [...LEADERSHIP_ROLES, "children_worker", "children_supervisor"],
   "/hierarchy": [...LEADERSHIP_ROLES],
@@ -376,7 +383,19 @@ export const routePermissions: Record<string, AppRole[]> = {
   "/settings": [...LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES],
 };
 
-export function canAccessRoute(role: string | undefined, pathname: string) {
+export function canAccessRoute(role: string | undefined, pathname: string, additionalPermissions?: readonly string[]) {
+  if (pathname === "/permissions" || pathname.startsWith("/permissions/")) return canDelegatePermissions(role);
+  const extra = (key: string) => hasAdditionalPermission({ role, additionalPermissions }, key);
+  const feature = [
+    ["/members/new", "members.create"], ["/members", "members.view"],
+    ["/guests/new", "guests.create"], ["/guests", "guests.view"],
+    ["/attendance/new", "attendance.create"], ["/attendance", "attendance.view"],
+    ["/service-units/new", "service_units.create"], ["/service-units", "service_units.view"],
+    ["/finance/new", "finance.offerings", "finance.expenses"], ["/finance", "finance.view"],
+    ["/reports", "reports.view"], ["/weekly-reports", "reports.view"], ["/maag-reports", "reports.view"],
+    ["/communications", "communications.view"], ["/follow-up/new", "follow_up.create"], ["/follow-up", "follow_up.view"],
+  ].find(([route]) => pathname === route || pathname.startsWith(route + "/"));
+  if (feature && feature.slice(1).some(extra)) return true;
   if (role === "children_worker" || role === "children_supervisor") return pathname === "/children" || pathname.startsWith("/children/");
   const matchedEntry = Object.entries(routePermissions).sort(([a], [b]) => b.length - a.length).find(([route]) =>
     pathname === route || pathname.startsWith(`${route}/`),
@@ -390,5 +409,5 @@ export function canAccessRoute(role: string | undefined, pathname: string) {
 }
 
 export function filterNavByRole<T extends { href: string }>(links: T[], user: SessionUser | null) {
-  return links.filter((link) => canAccessRoute(user?.role, link.href));
+  return links.filter((link) => canAccessRoute(user?.role, link.href, user?.additionalPermissions));
 }

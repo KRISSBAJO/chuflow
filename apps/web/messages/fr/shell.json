@@ -30,7 +30,8 @@
       "reports": "Rapports",
       "settings": "Paramètres",
       "more": "Plus",
-      "children": "Ministère des enfants"
+      "children": "Ministère des enfants",
+      "permissions": "Gestion des autorisations"
     },
     "quick": {
       "new": "Nouveau",

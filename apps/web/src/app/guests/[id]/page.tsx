@@ -1,3 +1,4 @@
+import { hasPermission, rolePermissionKeys } from "@/lib/capabilities";
 import type { ReactNode } from "react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Icon } from "@/components/app/icons";
@@ -89,11 +90,11 @@ export default async function GuestDetailPage({
       createdAt?: string;
       convertedToMember?: boolean;
     }>(`/guests/${id}`),
-    canAccessRoute(user.role, "/follow-up")
+    canAccessRoute(user.role, "/follow-up", user.additionalPermissions)
       ? serverGet<FollowUpListResponse>(`/follow-ups?guestId=${id}`)
       : Promise.resolve({ items: [] }),
     serverGet<VisitItem[]>(`/visits?guestId=${id}`),
-    canAccessRoute(user.role, "/communications")
+    canAccessRoute(user.role, "/communications", user.additionalPermissions)
       ? serverGet<CommunicationItem[]>(`/communications?guestId=${id}`).catch(() => [])
       : Promise.resolve([]),
     serverGet<UserSummary[]>("/users/assignment-options").catch(() => []),
@@ -113,18 +114,8 @@ export default async function GuestDetailPage({
       : undefined;
 
   const latestFollowUp = followUps[0];
-  const canManageFollowUp = [
-    "super_admin",
-    "national_admin",
-    "national_pastor",
-    "district_admin",
-    "district_pastor",
-    "branch_admin",
-    "resident_pastor",
-    "associate_pastor",
-    "follow_up",
-  ].includes(user.role);
-  const canCommunicate = canManageFollowUp;
+  const canManageFollowUp = hasPermission(user,"follow_up.edit") || hasPermission(user,"follow_up.create");
+  const canCommunicate = hasPermission(user,"communications.view");
 
   const timeline = [
     ...visits.map((visit) => ({
@@ -217,13 +208,13 @@ export default async function GuestDetailPage({
           </WorkSection>
         ) : null}
 
-        <WorkSection title={t("profileTitle")} description={t("profileDescription")}>
-          <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />
-        </WorkSection>
+        {hasPermission(user,"guests.edit") && <WorkSection title={t("profileTitle")} description={t("profileDescription")}>
+          {hasPermission(user,"guests.edit") && <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />}
+        </WorkSection>}
 
-        <WorkSection title={t("returnTitle")} description={t("returnDescription")}>
+        {rolePermissionKeys(user.role).includes("guests.edit") && <WorkSection title={t("returnTitle")} description={t("returnDescription")}>
           <GuestReturnVisitForm guestId={id} branchId={branchId} followUpId={latestFollowUp?._id} />
-        </WorkSection>
+        </WorkSection>}
 
         {canCommunicate ? (
           <WorkSection title={t("commsTitle")} description={t("commsDescription")} count={communications.length}>

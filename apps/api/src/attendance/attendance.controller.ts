@@ -37,7 +37,11 @@ export class AttendanceController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateAttendanceDto,
   ) {
-    await this.scope.localReportingBranch(user, dto.branchId);
+    await this.scope.localReportingBranch(
+      user,
+      dto.branchId,
+      'attendance.create',
+    );
     return this.attendanceService.create(dto, user);
   }
 

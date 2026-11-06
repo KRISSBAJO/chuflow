@@ -1,3 +1,4 @@
+import { hasAdditionalPermission } from '../common/permissions';
 import {
   BadRequestException,
   ForbiddenException,
@@ -343,6 +344,7 @@ export class FinanceService implements OnModuleInit {
   }
 
   private ensureFinanceViewRole(currentUser: AuthUser) {
+    if (hasAdditionalPermission(currentUser, 'finance.view')) return;
     const allowed = [
       'super_admin',
       'national_admin',
@@ -371,6 +373,7 @@ export class FinanceService implements OnModuleInit {
   }
 
   private ensureOfferingEntryCreator(currentUser: AuthUser) {
+    if (hasAdditionalPermission(currentUser, 'finance.offerings')) return;
     if (
       !['usher', 'resident_pastor', 'associate_pastor'].includes(
         currentUser.role,
@@ -383,6 +386,7 @@ export class FinanceService implements OnModuleInit {
   }
 
   private ensureExpenseEntryCreator(currentUser: AuthUser) {
+    if (hasAdditionalPermission(currentUser, 'finance.expenses')) return;
     const allowed = [
       'super_admin',
       'national_admin',
@@ -400,6 +404,7 @@ export class FinanceService implements OnModuleInit {
   }
 
   private ensureExpenseApprover(currentUser: AuthUser) {
+    if (hasAdditionalPermission(currentUser, 'finance.approve')) return;
     const allowed = [
       'super_admin',
       'national_admin',
@@ -417,6 +422,7 @@ export class FinanceService implements OnModuleInit {
   }
 
   private ensureFinanceLockManager(currentUser: AuthUser) {
+    if (hasAdditionalPermission(currentUser, 'finance.locks')) return;
     const allowed = [
       'super_admin',
       'national_admin',

@@ -1,3 +1,4 @@
+import { PermissionsService } from '../permissions/permissions.service';
 import {
   BadRequestException,
   Injectable,
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly permissions: PermissionsService,
   ) {}
 
   async login(loginDto: LoginDto, options: { expiresIn?: string } = {}) {
@@ -74,8 +76,9 @@ export class AuthService {
     };
   }
 
-  async me(userId: string) {
-    return this.usersService.findById(userId);
+  async me(userId: string): Promise<Record<string, unknown>> {
+    const user = await this.usersService.findById(userId);
+    return { ...user, ...(await this.permissions.resolve(user)) };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {

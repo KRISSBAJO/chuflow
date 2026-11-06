@@ -1,3 +1,4 @@
+import { hasAdditionalPermission } from '../common/permissions';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -128,15 +129,23 @@ export class AccessScopeService {
     return value;
   }
 
-  async localReportingBranch(currentUser: AuthUser, branchId?: string) {
+  async localReportingBranch(
+    currentUser: AuthUser,
+    branchId?: string,
+    delegatedAction?: 'attendance.create',
+  ) {
     // Oversight appointments grant visibility, never another church's entry link.
     if (
-      ![
+      (![
         'branch_admin',
         'resident_pastor',
         'associate_pastor',
         'usher',
-      ].includes(currentUser.role) ||
+      ].includes(currentUser.role) &&
+        !(
+          delegatedAction &&
+          hasAdditionalPermission(currentUser, delegatedAction)
+        )) ||
       !currentUser.branchId ||
       (branchId !== undefined && !Types.ObjectId.isValid(branchId))
     ) {

@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/capabilities";
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
@@ -192,10 +193,10 @@ export default async function FollowUpPage({
         title={t("title")}
         description={t("description")}
         action={<div className="flex flex-wrap gap-2"><Link href="/care" className={buttonClass("secondary")}>{t("careHub")}</Link>
-          <a href={buildCreateHref()} className={buttonClass("primary")}>
+          {hasPermission(user,"follow_up.create") && <a href={buildCreateHref()} className={buttonClass("primary")}>
             <Icon name="plus" className="h-4 w-4" />
             {t("addFollowUp")}
-          </a></div>
+          </a>}</div>
         }
       />
 

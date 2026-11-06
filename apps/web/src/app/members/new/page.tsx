@@ -11,12 +11,12 @@ import type {
 } from "@/lib/types";
 
 export default async function NewPage() {
-  const user = await requireServerRole("/members");
+  const user = await requireServerRole("/members/new");
   const t = await getTranslations("org.memberForm");
   const [branches, guests, units] = await Promise.all([
     serverGet<BranchSummary[]>("/branches"),
-    serverGet<GuestListResponse>("/guests?limit=500"),
-    serverGet<ServiceUnitSummary[]>("/service-units"),
+    serverGet<GuestListResponse>("/guests?limit=500").catch(() => ({items: []})),
+    serverGet<ServiceUnitSummary[]>("/service-units").catch(() => []),
   ]);
   return (
     <CreatePage title={t("pageTitle")} backHref="/members">

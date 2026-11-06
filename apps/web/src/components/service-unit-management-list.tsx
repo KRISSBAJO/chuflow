@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession } from "./session-context";
+import { hasPermission } from "@/lib/capabilities";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -61,6 +63,8 @@ export function ServiceUnitManagementList({
   currentUserRole: string;
 }) {
   const router = useRouter();
+  const {user}=useSession();
+  const canEdit = !!user && hasPermission(user,"service_units.edit");
   const t = useTranslations("org.serviceUnitForm");
   const tCommon = useTranslations("common");
   const labels = useMemberFormLabels();
@@ -170,7 +174,7 @@ export function ServiceUnitManagementList({
               </div>
             </summary>
 
-            <div className="border-t border-black/[0.06] px-4 py-5 sm:px-5">
+            {canEdit && <div className="border-t border-black/[0.06] px-4 py-5 sm:px-5">
               <form
                 action={(formData) => handleSubmit(unit._id, formData)}
                 className="grid gap-4 md:grid-cols-2"
@@ -255,7 +259,7 @@ export function ServiceUnitManagementList({
                   </Button>
                 </div>
               </form>
-            </div>
+            </div>}
           </details>
         );
       })}

@@ -1,3 +1,6 @@
+"use client";
+import { useSession } from "./session-context";
+import { hasPermission } from "@/lib/capabilities";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { buttonClass } from "@/components/ui/ui";
@@ -12,5 +15,7 @@ export function GuestCreateModalButton(props: {
   className?: string;
 }) {
   const t = useTranslations("people.guests.header");
+  const {user} = useSession();
+  if(user && !hasPermission(user,"guests.create"))return null;
   return <Link href={props.defaultBranchId ? `/guests/new?branchId=${encodeURIComponent(props.defaultBranchId)}` : "/guests/new"} className={props.className ?? buttonClass("primary")}>{props.label ?? t("newGuest")}</Link>;
 }

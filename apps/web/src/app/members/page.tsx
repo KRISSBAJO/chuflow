@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/capabilities";
 import { ImportLink } from "@/components/import-link";
 import { WorkspaceTabs } from "@/components/workspace-tabs";
 import { MemberRoster } from "@/components/member-roster";
@@ -81,7 +82,7 @@ export default async function MembersPage({
     })),
     serverGet<IntakeTemplate[]>("/intake-templates").catch(() => []),
     serverGet<BranchSummary[]>("/branches"),
-    serverGet<ServiceUnitSummary[]>("/service-units"),
+    serverGet<ServiceUnitSummary[]>("/service-units").catch(() => []),
   ]);
   const guests = guestList.items;
 
@@ -108,10 +109,10 @@ export default async function MembersPage({
         title={t("title")}
         description={t("description")}
         action={
-          <><ImportLink kind="members" /><Link href="/members/new" className={buttonClass("primary", "md")}>
+          <><ImportLink kind="members" />{hasPermission(user,"members.create") && <Link href="/members/new" className={buttonClass("primary", "md")}>
             <Icon name="plus" className="h-4 w-4" />
             {t("addMember")}
-          </Link></>
+          </Link>}</>
         }
       />
       <section className="grid gap-4 md:grid-cols-3">

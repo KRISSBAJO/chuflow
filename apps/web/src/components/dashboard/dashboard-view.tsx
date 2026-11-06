@@ -419,7 +419,7 @@ export function DashboardView({
   const formatLabel = useStatusLabel();
   const { relative: relativeDate } = useAppFormat();
   const { scope, metrics } = dashboard;
-  const can = (href: string) => canAccessRoute(user.role, href);
+  const can = (href: string) => canAccessRoute(user.role, href, user.additionalPermissions);
   const scopeLabel = scope.kind === "all_network" ? t("allNetwork") : scope.label;
   const headline =
     scope.kind === "all_network"

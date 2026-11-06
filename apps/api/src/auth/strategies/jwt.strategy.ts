@@ -1,3 +1,4 @@
+import { PermissionsService } from '../../permissions/permissions.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -9,6 +10,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
     private readonly usersService: UsersService,
+    private readonly permissions: PermissionsService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -38,6 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       sub: user._id ? String(user._id) : payload.sub,
       email: user.email,
       role: user.role,
+      ...(await this.permissions.resolve(user)),
       oversightRegion: user.oversightRegion,
       district: user.district,
       branchId: user.branchId ? String(user.branchId) : undefined,

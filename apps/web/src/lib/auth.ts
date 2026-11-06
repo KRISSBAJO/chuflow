@@ -11,6 +11,8 @@ export type SessionUser = {
   lastName: string;
   email: string;
   role: string;
+  additionalPermissions?: string[];
+  additionalPermissionExpiries?: Record<string, string | null>;
   oversightRegion?: string;
   district?: string;
   branchId?: string;
@@ -88,7 +90,7 @@ export async function requireServerSession(returnTo?: string) {
 export async function requireServerRole(pathname: string) {
   const user = await requireServerSession();
 
-  if (!canAccessRoute(user.role, pathname)) {
+  if (!canAccessRoute(user.role, pathname, user.additionalPermissions)) {
     redirect("/unauthorized");
   }
 

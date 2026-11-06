@@ -25,7 +25,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (!canAccessRoute(user.role, pathname)) {
+    if (!canAccessRoute(user.role, pathname, user.additionalPermissions)) {
       window.location.href = "/unauthorized";
     }
   }, [expired, unavailable, pathname, ready, user]);
@@ -34,7 +34,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
     return <WorkspaceLoader />;
   }
 
-  if (!user || !canAccessRoute(user.role, pathname)) {
+  if (!user || !canAccessRoute(user.role, pathname, user.additionalPermissions)) {
     return null;
   }
 

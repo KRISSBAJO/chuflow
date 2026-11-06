@@ -62,6 +62,7 @@ const NAV_GROUPS: { label: GroupKey; items: NavItem[] }[] = [
       { href: "/branches", label: "branches", icon: "branches" },
       { href: "/hierarchy", label: "structure", icon: "structure" },
       { href: "/users", label: "users", icon: "users" },
+      { href: "/permissions", label: "permissions", icon: "approvals" },
       { href: "/templates", label: "templates", icon: "templates" },
     ],
   },
@@ -157,7 +158,7 @@ function TabBar({
   onMore: () => void;
 }) {
   const t = useTranslations("shell");
-  const tabs = TAB_CANDIDATES.filter((item) => canAccessRoute(user?.role, item.href)).slice(0, 4);
+  const tabs = TAB_CANDIDATES.filter((item) => canAccessRoute(user?.role, item.href, user?.additionalPermissions)).slice(0, 4);
   const tabClass = (active: boolean) =>
     `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${active ? "text-[var(--lp-ink)]" : "text-[#8a8780] active:text-[var(--lp-ink)]"}`;
   const anyTabActive = tabs.some((item) => isActive(pathname, item.href));
@@ -218,9 +219,9 @@ function Sidebar({
   const scopeLabelOf = useScopeLabel();
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => canAccessRoute(user?.role, item.href)),
+    items: group.items.filter((item) => canAccessRoute(user?.role, item.href, user?.additionalPermissions)),
   })).filter((group) => group.items.length > 0);
-  const showSettings = canAccessRoute(user?.role, SETTINGS_ITEM.href);
+  const showSettings = canAccessRoute(user?.role, SETTINGS_ITEM.href, user?.additionalPermissions);
   const scopeLabel = user ? scopeLabelOf(user) : null;
 
   const renderItem = (item: NavItem) => {
@@ -355,7 +356,7 @@ export function AppFrame({
     followUp: headerStats.pendingFollowUp,
     firstTimers: headerStats.firstTimers,
   };
-  const quickActions = QUICK_ACTIONS.filter((action) => canAccessRoute(user?.role, action.href));
+  const quickActions = QUICK_ACTIONS.filter((action) => canAccessRoute(user?.role, action.href, user?.additionalPermissions));
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

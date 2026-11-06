@@ -41,7 +41,7 @@ export default async function ServiceUnitsPage({
   const [serviceUnits, branches, members] = await Promise.all([
     serverGet<ServiceUnitSummary[]>("/service-units"),
     serverGet<BranchSummary[]>("/branches").catch(() => []),
-    serverGet<MemberListItem[]>("/members"),
+    serverGet<MemberListItem[]>("/members").catch(() => []),
   ]);
 
   const activeUnits = serviceUnits.filter((unit) => unit.isActive).length;

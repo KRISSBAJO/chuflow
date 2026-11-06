@@ -40,12 +40,12 @@ test('server reads bound backend wait time and distinguish expired sessions from
 });
 async function sessionState(fetcher) {
   const state = [];
-  let cleanup;
-  const react = { createContext: () => ({ Provider: 'provider' }), useContext: () => ({}), useState: (initial) => { const index = state.push(initial) - 1; return [initial, (value) => { state[index] = value; }]; }, useEffect: (effect) => { cleanup = effect(); } };
+  const cleanups = [];
+  const react = { createContext: () => ({ Provider: 'provider' }), useContext: () => ({}), useState: (initial) => { const index = state.push(initial) - 1; return [initial, (value) => { state[index] = value; }]; }, useEffect: (effect) => { const cleanup = effect(); if(typeof cleanup === "function") cleanups.push(cleanup); } };
   const { SessionProvider } = load('components/session-context.tsx', { react, 'react/jsx-runtime': { jsx: (_type, props) => props }, '@/lib/api': { API_URL: 'https://api.example.test' } }, { fetch: fetcher, window: { setTimeout: () => 1, clearTimeout() {} } });
   SessionProvider({ children: null });
   await new Promise(setImmediate);
-  cleanup();
+  for (const cleanup of cleanups) cleanup();
   return state;
 }
 test('a waking or unreachable client backend never becomes a false expired-session state', async () => {
