@@ -13,7 +13,7 @@ import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
 import type { BranchSummary } from '@/lib/types';
 
-import { weeklyFigureError, weeklyFigureFlags, weeklyFigureNumber, WSF_AVERAGE } from "../../../../../packages/types/src/weekly-report-figures";
+import { weeklyFigureError, weeklyFigureFlags, weeklyFigureNumber, WSF_AVERAGE } from './weekly-report-figures';
 
 const FIELDS = [
   'currentAttendance',

@@ -849,6 +849,7 @@ export class ReportsService {
       date,
       guests: guestMap.get(date) ?? 0,
       attendance: attendanceMap.get(date)?.total ?? 0,
+      hasAttendanceRecord: attendanceMap.has(date),
       firstTimers: attendanceMap.get(date)?.firstTimers ?? 0,
       newConverts: attendanceMap.get(date)?.newConverts ?? 0,
     }));

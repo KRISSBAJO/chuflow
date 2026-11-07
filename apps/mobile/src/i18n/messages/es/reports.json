@@ -32,14 +32,18 @@
       "summarySubmissions": "Resúmenes enviados",
       "adultsChildren": "Adultos / niños"
     },
-    "daily": {
-      "title": "Tendencia diaria",
-      "subtitle": "Últimos 10 días",
-      "date": "Fecha",
-      "guests": "Invitados",
-      "attendance": "Asist.",
-      "firstTimers": "Nuevos",
-      "empty": "No se ha registrado actividad diaria en este rango."
+    "views": {
+      "attendance": "Asistencia",
+      "people": "Personas y seguimiento",
+      "branches": "Iglesias",
+      "returnRate": "Tasa de retorno"
+    },
+    "serviceDays": {
+      "title": "Tendencia de asistencia",
+      "subtitle": "Cada fecha reúne la asistencia registrada en los servicios de ese día.",
+      "showAll": "Ver todo",
+      "showLess": "Ver menos",
+      "figures": "{firstTimers} visitantes nuevos · {converts} nuevos conversos"
     },
     "followUp": {
       "title": "Desglose del seguimiento",

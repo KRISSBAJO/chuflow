@@ -9,7 +9,7 @@ import { Button, Field } from "@/components/ui/ui";
 import { FilterPanel } from "@/components/filter-panel";
 import type { BranchSummary } from "@/lib/types";
 
-import { weeklyFigureError, weeklyFigureFlags, weeklyFigureNumber, WSF_AVERAGE } from "../../../../packages/types/src/weekly-report-figures";
+import { weeklyFigureError, weeklyFigureFlags, weeklyFigureNumber, WSF_AVERAGE } from "../../../mobile/src/features/reports/weekly-report-figures";
 
 const FIELDS = [
   "currentAttendance",

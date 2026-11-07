@@ -32,14 +32,18 @@
       "summarySubmissions": "Resumos submetidos",
       "adultsChildren": "Adultos / crianças"
     },
-    "daily": {
-      "title": "Tendência diária",
-      "subtitle": "Últimos 10 dias",
-      "date": "Data",
-      "guests": "Visitantes",
-      "attendance": "Presença",
-      "firstTimers": "Novos",
-      "empty": "Não foi registada atividade diária neste intervalo."
+    "views": {
+      "attendance": "Presenças",
+      "people": "Pessoas e acompanhamento",
+      "branches": "Igrejas",
+      "returnRate": "Taxa de retorno"
+    },
+    "serviceDays": {
+      "title": "Tendência de presenças",
+      "subtitle": "Cada data reúne as presenças registadas nos cultos desse dia.",
+      "showAll": "Ver tudo",
+      "showLess": "Ver menos",
+      "figures": "{firstTimers} novos visitantes · {converts} novos convertidos"
     },
     "followUp": {
       "title": "Distribuição do acompanhamento",

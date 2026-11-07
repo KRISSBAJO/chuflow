@@ -32,14 +32,18 @@
       "summarySubmissions": "Résumés soumis",
       "adultsChildren": "Adultes / enfants"
     },
-    "daily": {
-      "title": "Tendance quotidienne",
-      "subtitle": "10 derniers jours",
-      "date": "Date",
-      "guests": "Invités",
-      "attendance": "Présence",
-      "firstTimers": "Nouveaux",
-      "empty": "Aucune activité quotidienne n’a été enregistrée sur cette période."
+    "views": {
+      "attendance": "Présences",
+      "people": "Personnes et suivi",
+      "branches": "Églises",
+      "returnRate": "Taux de retour"
+    },
+    "serviceDays": {
+      "title": "Évolution des présences",
+      "subtitle": "Chaque date regroupe les présences enregistrées pour les cultes de ce jour.",
+      "showAll": "Tout afficher",
+      "showLess": "Afficher moins",
+      "figures": "{firstTimers} nouveaux visiteurs · {converts} nouveaux convertis"
     },
     "followUp": {
       "title": "Répartition du suivi",

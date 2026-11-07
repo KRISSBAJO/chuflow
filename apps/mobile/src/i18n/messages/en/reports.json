@@ -32,14 +32,18 @@
       "summarySubmissions": "Summary submissions",
       "adultsChildren": "Adults / children"
     },
-    "daily": {
-      "title": "Daily trend",
-      "subtitle": "Last 10 days",
-      "date": "Date",
-      "guests": "Guests",
-      "attendance": "Attend.",
-      "firstTimers": "First",
-      "empty": "No daily activity has been recorded in this range."
+    "views": {
+      "attendance": "Attendance",
+      "people": "People & care",
+      "branches": "Branches",
+      "returnRate": "Return rate"
+    },
+    "serviceDays": {
+      "title": "Attendance trend",
+      "subtitle": "Each date combines attendance recorded for services held that day.",
+      "showAll": "Show all",
+      "showLess": "Show less",
+      "figures": "{firstTimers} first timers · {converts} new converts"
     },
     "followUp": {
       "title": "Follow-up breakdown",

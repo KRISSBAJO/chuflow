@@ -14,7 +14,7 @@ export type ReportsSummary = {
     conversionRate: number;
     returnRate: number;
   };
-  trends: { date: string; guests: number; attendance: number; firstTimers: number; newConverts: number }[];
+  trends: { date: string; hasAttendanceRecord?: boolean; guests: number; attendance: number; firstTimers: number; newConverts: number }[];
   followUpBreakdown: { _id: string; total: number }[];
   serviceMix: { _id: string; totalPeople: number; firstTimers: number; newConverts: number; summarySubmissions: number; individualCheckins?: number }[];
 };
