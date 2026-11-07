@@ -17,6 +17,7 @@ import {
 import { API_URL } from "@/lib/api";
 import { roleHomeHref } from "@/lib/permissions";
 import { hasLinkedWorkspaceDirectory, linkedWorkspaceOptions, type WorkspaceMembership } from "@/lib/workspace-sign-in";
+import { SHARED_WORKSPACES } from "@/lib/workspace-routing";
 import { safeReturnTo } from "@/lib/return-to";
 
 type LoginFormProps = {
@@ -78,7 +79,9 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
           if (workspaces.ok) {
             const memberships = (await workspaces.json()) as WorkspaceMembership[];
             if (linkedWorkspaceOptions(memberships).some((workspace) => workspace.destination)) {
-              router.replace(`/workspaces?returnTo=${encodeURIComponent(destination)}`);
+              const chooser = `/workspaces?returnTo=${encodeURIComponent(destination)}`;
+              if (SHARED_WORKSPACES) window.location.replace(chooser);
+              else router.replace(chooser);
               return;
             }
           }
@@ -86,7 +89,8 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
           // A directory outage should leave the current workspace usable.
         }
       }
-      router.replace(destination);
+      if (SHARED_WORKSPACES) window.location.replace(destination);
+      else router.replace(destination);
     } catch (error) {
       const key =
         error instanceof Error && error.name === "AbortError"

@@ -1,8 +1,6 @@
-import { cookies } from "next/headers";
+import { workspaceServerContext } from "./workspace-server";
 import { redirect } from "next/navigation";
 import { serverRead, unavailableHref } from "./server-read";
-
-const AUTH_COOKIE_NAME = "cms_access_token";
 
 export class ServerApiError extends Error {
   constructor(public readonly status: number) {
@@ -11,24 +9,12 @@ export class ServerApiError extends Error {
   }
 }
 
-async function getAuthHeaders() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  const headers: Record<string, string> = {};
-
-  if (token) {
-    headers.Cookie = `${AUTH_COOKIE_NAME}=${token}`;
-  }
-
-  return headers;
-}
-
 export async function serverGet<T>(path: string, options: { redirectOnForbidden?: boolean } = {}): Promise<T> {
-  const headers = await getAuthHeaders();
+  const { base, headers } = await workspaceServerContext();
   let response: Response;
 
   try {
-    response = await serverRead(path, headers);
+    response = await serverRead(path, headers, base);
   } catch {
     redirect(await unavailableHref());
   }

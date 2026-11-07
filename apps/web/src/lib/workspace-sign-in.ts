@@ -1,3 +1,5 @@
+import { SHARED_WORKSPACES, workspaceId } from "./workspace-routing";
+
 export function workspaceSignInOptions(
   currentName: string | undefined,
   configured: string | undefined,
@@ -51,12 +53,16 @@ export function linkedWorkspaceOptions(memberships: WorkspaceMembership[]) {
   const destinations = workspaceSignInOptions(undefined, process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACES);
   return memberships.flatMap<WorkspaceMembership & { destination: string | null }>((membership) => {
     if (membership.current) return [{ ...membership, destination: null }];
+    if (SHARED_WORKSPACES) return workspaceId(membership.id)
+      ? [{ ...membership, destination: "/api/workspace-session" }]
+      : [];
     const site = destinations.find((option) => option.id === membership.id);
     return site ? [{ ...membership, destination: new URL("/api/workspace-session", site.href).href }] : [];
   });
 }
 
 export function workspaceDirectoryHref() {
+  if (SHARED_WORKSPACES) return "/workspaces";
   const origin = process.env.NEXT_PUBLIC_CHUFLOW_DIRECTORY_ORIGIN;
   return origin && /^https:\/\/[a-z0-9.-]+(?::[0-9]+)?$/i.test(origin)
     ? origin + "/workspaces"
@@ -65,5 +71,5 @@ export function workspaceDirectoryHref() {
 
 
 export function hasLinkedWorkspaceDirectory() {
-  return workspaceSignInOptions(undefined, process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACES).some((option) => option.id);
+  return SHARED_WORKSPACES || workspaceSignInOptions(undefined, process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACES).some((option) => option.id);
 }

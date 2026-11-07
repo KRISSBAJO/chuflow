@@ -1,7 +1,8 @@
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { canAccessRoute } from "./permissions";
 import { safeReturnTo } from "./return-to";
+import { workspaceServerContext } from "./workspace-server";
 import { serverRead, unavailableHref } from "./server-read";
 
 export type SessionUser = {
@@ -24,8 +25,6 @@ export type SessionUser = {
   };
 };
 
-const AUTH_COOKIE_NAME = "cms_access_token";
-
 class ApiUnavailableError extends Error {
   constructor() {
     super("ChuFlow API is temporarily unavailable");
@@ -34,8 +33,7 @@ class ApiUnavailableError extends Error {
 }
 
 export async function getServerSessionUser(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+  const { base, token, headers: sessionHeaders } = await workspaceServerContext();
 
   if (!token) {
     return null;
@@ -44,7 +42,7 @@ export async function getServerSessionUser(): Promise<SessionUser | null> {
   let response: Response;
 
   try {
-    response = await serverRead("/auth/me", { Cookie: `${AUTH_COOKIE_NAME}=${token}` });
+    response = await serverRead("/auth/me", sessionHeaders, base);
   } catch {
     throw new ApiUnavailableError();
   }
@@ -57,7 +55,7 @@ export async function getServerSessionUser(): Promise<SessionUser | null> {
   const user = (await response.json()) as SessionUser;
   if (user.role === "resident_pastor") {
     try {
-      const context = await serverRead("/hierarchy/context", { Cookie: `${AUTH_COOKIE_NAME}=${token}` });
+      const context = await serverRead("/hierarchy/context", sessionHeaders, base);
       if (context.ok) user.hasOversight = ((await context.json()) as { hasOversight: boolean }).hasOversight;
     } catch { user.hasOversight = false; }
   }

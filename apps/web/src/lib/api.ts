@@ -1,4 +1,6 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.chuflow.com/api";
+import { PRIMARY_API_URL, SHARED_WORKSPACES, initialWorkspaceProxyUrl } from "./workspace-routing";
+
+export const API_URL = SHARED_WORKSPACES && typeof window !== "undefined" ? initialWorkspaceProxyUrl() : PRIMARY_API_URL;
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeReturnTo } from "./lib/return-to";
 
-const AUTH_COOKIE_NAME = "cms_access_token";
+import { ACTIVE_WORKSPACE_COOKIE, workspaceApiContext } from "./lib/workspace-routing";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
 const publicPages = ["/", "/service-unavailable", "/request-workspace", "/workspaces", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register"];
 
@@ -24,7 +24,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const active = workspaceApiContext(request.cookies.get(ACTIVE_WORKSPACE_COOKIE)?.value);
+  const token = request.cookies.get(active.cookieName)?.value;
   const isAuthPage = authPages.some((route) => matchesRoute(pathname, route));
   const isPublicPage = publicPages.some((route) =>
     matchesRoute(pathname, route),

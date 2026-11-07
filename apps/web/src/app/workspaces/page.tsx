@@ -4,6 +4,7 @@ import { WorkspaceHandoffButton } from "@/components/auth/workspace-handoff-butt
 import { getServerSessionUser } from "@/lib/auth";
 import { roleHomeHref } from "@/lib/permissions";
 import { safeReturnTo } from "@/lib/return-to";
+import { ACTIVE_WORKSPACE_COOKIE, DIRECTORY_COOKIE, SHARED_WORKSPACES } from "@/lib/workspace-routing";
 import { serverRead } from "@/lib/server-read";
 import { getTranslations } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -11,7 +12,9 @@ import { AuthHeading } from "@/components/auth/auth-ui";
 import { linkedWorkspaceOptions, workspaceSignInOptions, type WorkspaceMembership } from "@/lib/workspace-sign-in";
 
 export default async function WorkspacesPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
-  const token = (await cookies()).get("cms_access_token")?.value;
+  const store = await cookies();
+  const token = store.get(DIRECTORY_COOKIE)?.value;
+  const selected = SHARED_WORKSPACES ? store.get(ACTIVE_WORKSPACE_COOKIE)?.value : undefined;
   const [params, user] = await Promise.all([searchParams, getServerSessionUser().catch(() => null)]);
   let linked: ReturnType<typeof linkedWorkspaceOptions> = [];
   if (user && token) {
@@ -44,7 +47,13 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
       <ul className="space-y-3">
         {user ? linked.map(({ id, name, destination }) => (
           <li key={id}>
-            {destination ? <WorkspaceHandoffButton id={id} name={name} destination={destination} /> : (
+            {destination && id !== selected ? <WorkspaceHandoffButton id={id} name={name} destination={destination} /> :
+             !destination && selected && id !== selected ? (
+              <form action="/api/workspace-session" method="post">
+                <input type="hidden" name="workspace" value="directory" />
+                <button className="w-full rounded-xl border border-black/10 px-4 py-4 text-left font-medium hover:bg-[var(--lp-panel)]">{name}</button>
+              </form>
+            ) : (
               <Link href={currentHref} className="flex items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-4 font-medium hover:bg-[var(--lp-panel)]">
                 {name}<span className="text-sm font-normal text-[var(--lp-muted)]">{t("workspacePicker.current")}</span>
               </Link>

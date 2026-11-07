@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
+import { workspaceServerContext } from "@/lib/workspace-server";
 import { getServerSessionUser } from "@/lib/auth";
 import { canAccessRoute } from "@/lib/permissions";
-import { API_URL } from "@/lib/api";
 import { EXPORTS, type ExportRow } from "@/lib/exporting/catalog";
 import { collectExport, ExportError } from "@/lib/exporting/data";
 import { exportCsv, exportWorkbook } from "@/lib/exporting/workbook";
@@ -31,10 +30,10 @@ async function download(request: Request, resource: string, local: boolean) {
     const format = query.get("format") || "xlsx";
     if (!["xlsx", "csv"].includes(format))
       throw new ExportError("Choose Excel or CSV.");
-    const token = (await cookies()).get("cms_access_token")?.value;
+    const { base, headers: sessionHeaders } = await workspaceServerContext();
     const fetchJson = async (path: string) => {
-      const response = await fetch(`${API_URL}${path}`, {
-        headers: { Cookie: `cms_access_token=${token}` },
+      const response = await fetch(`${base}${path}`, {
+        headers: sessionHeaders,
         cache: "no-store",
         signal: request.signal,
       });

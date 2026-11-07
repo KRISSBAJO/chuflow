@@ -11,13 +11,14 @@ function load(file, dependencies = {}, globals = {}) {
   return module.exports;
 }
 const returns = load('lib/return-to.ts');
+const workspaceRouting = load('lib/workspace-routing.ts', {}, { process: { env: { NEXT_PUBLIC_API_URL: 'https://api.example.test' } } });
 test('shared recording return paths survive login without allowing external redirects', () => {
   for (const route of ['/record/aaaaaaaaaaaaaaaaaaaaaaaa/finance', '/record/aaaaaaaaaaaaaaaaaaaaaaaa/attendance?day=sunday']) assert.equal(returns.safeReturnTo(route), route);
   for (const route of ['https://evil.test', '//evil.test', '/\\evil.test', '/login?returnTo=/login', 'javascript:alert(1)', '/\u0000evil']) assert.equal(returns.safeReturnTo(route), '/dashboard');
 });
 test('login proxy preserves the recording target and overwrites untrusted recovery headers', () => {
   const next = { NextResponse: { redirect: (url) => ({ location: url.href }), next: (options) => options || {} } };
-  const { proxy } = load('proxy.ts', { 'next/server': next, './lib/return-to': returns });
+  const { proxy } = load('proxy.ts', { 'next/server': next, './lib/return-to': returns, './lib/workspace-routing': workspaceRouting });
   const url = new URL('https://chuflow.test/record/aaaaaaaaaaaaaaaaaaaaaaaa/finance?x=1');
   url.clone = () => new URL(url);
   const req = { nextUrl: url, url: url.href, headers: new Headers({ 'x-chuflow-return-to': 'https://evil.test' }), cookies: { get: () => undefined } };
@@ -29,7 +30,7 @@ test('login proxy preserves the recording target and overwrites untrusted recove
 });
 test('server reads bound backend wait time and distinguish expired sessions from startup responses', async () => {
   let response = new Response('{}', { headers: { 'content-type': 'application/json' } });
-  const { serverRead } = load('lib/server-read.ts', { 'next/headers': {}, './api': { API_URL: 'https://api.example.test' }, './return-to': returns }, { fetch: async (_url, options) => { assert.ok(options.signal instanceof AbortSignal); return response; } });
+  const { serverRead } = load('lib/server-read.ts', { 'next/headers': {}, './workspace-routing': workspaceRouting, './return-to': returns }, { fetch: async (_url, options) => { assert.ok(options.signal instanceof AbortSignal); return response; } });
   assert.equal((await serverRead('/auth/me')).status, 200);
   response = new Response('{}', { status: 401, headers: { 'content-type': 'application/json' } });
   assert.equal((await serverRead('/auth/me')).status, 401);

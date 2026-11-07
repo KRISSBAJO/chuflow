@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError, getApiSession, NetworkError, request, setApiSession, setUnauthorizedHandler, type ApiSession } from './api';
-import { API_URL, WEB_URL, WORKSPACE_DESTINATIONS } from './config';
+import { API_URL, WEB_URL, SHARED_WORKSPACES, WORKSPACE_DESTINATIONS, workspaceDestination } from './config';
 import { disablePush } from './notifications';
 import { secureStorage } from './secure-storage';
 import type { SessionUser } from './types';
@@ -19,7 +19,7 @@ function directorySession(token: string | null): ApiSession {
 
 function activeApiSession(session: StoredSession): ApiSession {
   if (!session.workspaceId) return directorySession(session.token);
-  const destination = WORKSPACE_DESTINATIONS.find((site) => site.id === session.workspaceId);
+  const destination = workspaceDestination(session.workspaceId);
   if (!destination) throw new Error('Workspace is unavailable.');
   return { ...destination, token: session.token, storageScope: destination.id };
 }
@@ -74,12 +74,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadChoices = useCallback(async (directoryToken: string) => {
-    if (!WORKSPACE_DESTINATIONS.length) return [];
+    if (!SHARED_WORKSPACES && !WORKSPACE_DESTINATIONS.length) return [];
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
     try {
       const options = await request<WorkspaceChoice[]>('GET', '/auth/workspaces', undefined, directorySession(directoryToken), controller.signal);
-      return options.filter((option) => option.current || WORKSPACE_DESTINATIONS.some((site) => site.id === option.id));
+      return options.filter((option) => option.current || workspaceDestination(option.id) !== undefined);
     } finally {
       clearTimeout(timeout);
     }

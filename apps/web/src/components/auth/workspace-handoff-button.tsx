@@ -40,6 +40,13 @@ export function WorkspaceHandoffButton({
       input.name = "handoff";
       input.value = handoff;
       form.append(input);
+      if (destination === "/api/workspace-session") {
+        const workspace = document.createElement("input");
+        workspace.type = "hidden";
+        workspace.name = "workspace";
+        workspace.value = id;
+        form.append(workspace);
+      }
       document.body.append(form);
       form.submit();
     } catch {

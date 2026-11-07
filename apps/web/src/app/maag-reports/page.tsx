@@ -1,3 +1,5 @@
+import { workspaceServerContext } from "@/lib/workspace-server";
+import { SHARED_WORKSPACES } from "@/lib/workspace-routing";
 import type { ReactNode } from "react";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { FilterPanel } from "@/components/filter-panel";
@@ -89,7 +91,8 @@ export default async function MaagReportsPage({
       (!oversightRegion || branch.oversightRegion === oversightRegion) &&
       (!district || branch.district === district),
   );
-  const exportUrl = `${API_URL}/intake-templates/maag-reports/export.csv?${query.toString()}`;
+  const proxyUrl = SHARED_WORKSPACES ? (await workspaceServerContext()).proxyUrl : API_URL;
+  const exportUrl = `${proxyUrl}/intake-templates/maag-reports/export.csv?${query.toString()}`;
 
   const maxTrendAttendance = Math.max(...report.trends.map((trend) => trend.averageAttendance ?? 0), 1);
 

@@ -32,3 +32,12 @@ function workspaceDestinations(raw?: string): WorkspaceDestination[] {
 }
 
 export const WORKSPACE_DESTINATIONS = workspaceDestinations(process.env.EXPO_PUBLIC_CHUFLOW_WORKSPACES);
+
+export const SHARED_WORKSPACES = process.env.EXPO_PUBLIC_CHUFLOW_SHARED_WORKSPACES === 'true';
+
+export function workspaceDestination(id: string): WorkspaceDestination | undefined {
+  if (SHARED_WORKSPACES && id.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
+    return { id, apiUrl: `${API_URL}/w/${id}`, webUrl: WEB_URL };
+  }
+  return WORKSPACE_DESTINATIONS.find((site) => site.id === id);
+}

@@ -1,3 +1,5 @@
+import { workspaceServerContext } from "@/lib/workspace-server";
+import { SHARED_WORKSPACES } from "@/lib/workspace-routing";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { FilterPanel } from "@/components/filter-panel";
 import { Shell } from "@/components/shell";
@@ -97,6 +99,8 @@ export default async function ReportsPage({
   const maxFollowUp = Math.max(1, ...summary.followUpBreakdown.map((item) => item.total));
   const maxServicePeople = Math.max(1, ...summary.serviceMix.map((service) => service.totalPeople));
 
+  const proxyUrl = SHARED_WORKSPACES ? (await workspaceServerContext()).proxyUrl : (process.env.NEXT_PUBLIC_API_URL ?? "https://api.chuflow.com/api");
+
   return (
     <Shell>
       <PageHeader
@@ -105,7 +109,7 @@ export default async function ReportsPage({
         description={t("description", { days })}
         action={
           <a
-            href={`${process.env.NEXT_PUBLIC_API_URL ?? "https://api.chuflow.com/api"}/reports/export.csv?${query.toString()}`}
+            href={`${proxyUrl}/reports/export.csv?${query.toString()}`}
             className={buttonClass("primary")}
           >
             {t("exportCsv")}

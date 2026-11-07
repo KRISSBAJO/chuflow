@@ -571,7 +571,7 @@ for (const [status, destination] of [
     const api = load(
       "apps/web/src/lib/server-api.ts",
       {
-        "next/headers": { cookies: async () => ({ get: () => undefined }) },
+        "./workspace-server": { workspaceServerContext: async () => ({ base: "https://example.test", headers: {} }) },
         "next/navigation": {
           redirect: (destination) => {
             throw new Error("REDIRECT:" + destination);

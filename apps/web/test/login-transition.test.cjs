@@ -66,6 +66,7 @@ function fixture(response) {
         role === "children_worker" ? "/children" : "/dashboard",
     },
     "@/lib/return-to": returnModule.exports,
+    "@/lib/workspace-routing": { SHARED_WORKSPACES: false },
     "@/lib/workspace-sign-in": { hasLinkedWorkspaceDirectory: () => false, linkedWorkspaceOptions: () => [] },
   };
   vm.runInNewContext(compile("components/login-form.tsx"), {
