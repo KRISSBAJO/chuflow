@@ -26,7 +26,8 @@
     },
     "needsYou": {
       "title": "À faire",
-      "caughtUp": "Vous êtes à jour."
+      "caughtUp": "Vous êtes à jour.",
+      "actions": "{count, plural, one {# action requise} other {# actions requises}}"
     },
     "overview": {
       "title": "Vue d’ensemble",
@@ -64,7 +65,8 @@
     "recentGuests": {
       "title": "Invités récents",
       "empty": "Pas encore d’invités",
-      "emptyBody": "Les nouveaux invités que vous enregistrez apparaissent ici."
+      "emptyBody": "Les nouveaux invités que vous enregistrez apparaissent ici.",
+      "strip": "Dites bonjour"
     },
     "newestMembers": {
       "title": "Nouveaux membres",
@@ -85,6 +87,16 @@
       "viewMeeting": "Ouvrir la réunion",
       "moreCare": "Entretenir les liens",
       "todayNetwork": "Aujourd’hui dans vos églises"
+    },
+    "pulse": {
+      "title": "Le pouls de votre église",
+      "attendance": "Présence",
+      "guests": "Invités",
+      "firstTimers": "Nouveaux visiteurs",
+      "up": "{value} de plus que la semaine précédente",
+      "down": "{value} de moins que la semaine précédente",
+      "flat": "Au même niveau que la semaine précédente",
+      "noData": "Rien d’enregistré sur cette période pour l’instant"
     }
   }
 }

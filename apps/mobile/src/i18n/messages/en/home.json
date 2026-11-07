@@ -26,7 +26,8 @@
     },
     "needsYou": {
       "title": "Needs you",
-      "caughtUp": "You’re all caught up."
+      "caughtUp": "You’re all caught up.",
+      "actions": "{count, plural, one {# action required} other {# actions required}}"
     },
     "overview": {
       "title": "Overview",
@@ -64,7 +65,8 @@
     "recentGuests": {
       "title": "Recent guests",
       "empty": "No guests yet",
-      "emptyBody": "New guests you register show up here."
+      "emptyBody": "New guests you register show up here.",
+      "strip": "Say hello"
     },
     "newestMembers": {
       "title": "Newest members",
@@ -85,6 +87,16 @@
       "viewMeeting": "Open meeting",
       "moreCare": "Keep the connection going",
       "todayNetwork": "Across your churches today"
+    },
+    "pulse": {
+      "title": "Your church’s pulse",
+      "attendance": "Attendance",
+      "guests": "Guests",
+      "firstTimers": "First-timers",
+      "up": "{value} more than the week before",
+      "down": "{value} fewer than the week before",
+      "flat": "Level with the week before",
+      "noData": "Nothing recorded in this range yet"
     }
   }
 }

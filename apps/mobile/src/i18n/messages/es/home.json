@@ -26,7 +26,8 @@
     },
     "needsYou": {
       "title": "Pendiente",
-      "caughtUp": "Estás al día."
+      "caughtUp": "Estás al día.",
+      "actions": "{count, plural, one {# acción requerida} other {# acciones requeridas}}"
     },
     "overview": {
       "title": "Resumen",
@@ -64,7 +65,8 @@
     "recentGuests": {
       "title": "Invitados recientes",
       "empty": "Aún no hay invitados",
-      "emptyBody": "Los nuevos invitados que registres aparecen aquí."
+      "emptyBody": "Los nuevos invitados que registres aparecen aquí.",
+      "strip": "Saluda"
     },
     "newestMembers": {
       "title": "Miembros más recientes",
@@ -85,6 +87,16 @@
       "viewMeeting": "Abrir reunión",
       "moreCare": "Mantener la conexión",
       "todayNetwork": "Hoy en tus iglesias"
+    },
+    "pulse": {
+      "title": "El pulso de tu iglesia",
+      "attendance": "Asistencia",
+      "guests": "Invitados",
+      "firstTimers": "Primera visita",
+      "up": "{value} más que la semana anterior",
+      "down": "{value} menos que la semana anterior",
+      "flat": "Igual que la semana anterior",
+      "noData": "Aún no hay nada registrado en este periodo"
     }
   }
 }
