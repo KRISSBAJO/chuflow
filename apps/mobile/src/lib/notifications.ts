@@ -6,9 +6,10 @@ import { AndroidImportance } from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { Platform } from 'react-native';
 import { translate } from '@/i18n/provider';
-import { api } from './api';
+import { api, getApiSession, request } from './api';
 
 const TOKEN_KEY = 'chuflow.pushToken';
+let linking: Promise<PushStatus> | null = null;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -45,7 +46,14 @@ export async function pushStatus(): Promise<PushStatus> {
  * Asks for permission when `prompt` is true (only from a tap), then links this phone's push
  * token to the signed-in user. Without `prompt` it only refreshes an existing grant.
  */
-export async function enablePush(prompt: boolean): Promise<PushStatus> {
+export function enablePush(prompt: boolean): Promise<PushStatus> {
+  if (linking) return linking;
+  linking = linkPush(prompt).finally(() => { linking = null; });
+  return linking;
+}
+
+async function linkPush(prompt: boolean): Promise<PushStatus> {
+  const session = getApiSession();
   const blocker = pushBlocker();
   if (blocker) return blocker;
 
@@ -66,20 +74,23 @@ export async function enablePush(prompt: boolean): Promise<PushStatus> {
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   const { data: token } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-  await api.post('/push/expo-tokens', { token });
+  if (session !== getApiSession()) return 'off';
+  await request('POST', '/push/expo-tokens', { token }, session);
   await AsyncStorage.setItem(TOKEN_KEY, token);
   return 'on';
 }
 
 /** Unlinks this phone from the signed-in user (sign-out, or turning alerts off). */
-export async function disablePush() {
+export async function disablePush(requireSuccess = false) {
+  await linking?.catch(() => undefined);
   const token = await AsyncStorage.getItem(TOKEN_KEY);
   if (!token) return;
   try {
     await api.delete('/push/expo-tokens', { token });
-  } finally {
-    await AsyncStorage.removeItem(TOKEN_KEY);
+  } catch (error) {
+    if (requireSuccess) throw error;
   }
+  await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
 /** Alerts carry website paths; send each to the matching screen in the app. */

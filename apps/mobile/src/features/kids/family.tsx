@@ -6,7 +6,7 @@ import { Badge, Button, Caption, Card, Chip, EmptyState, ErrorState, Heading, Lo
 import { colors, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl } from '@/lib/api';
 import { dialable } from '@/lib/format';
 import { useApi } from '@/lib/use-api';
 import { ageInMonths, familyInitials } from './age';
@@ -34,7 +34,7 @@ export function FamilyScreen() {
   }
 
   const pickupAdults = new Set(f.children.flatMap((c) => c.pickupGuardianIds));
-  const website = (path: string) => void WebBrowser.openBrowserAsync(`${WEB_URL}${path}`);
+  const website = (path: string) => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${path}`);
   const events: TimelineItem[] = [...(f.events ?? []), ...f.children.flatMap((c) => (c.events ?? []).map((e) => ({ ...e, note: e.note || `${c.firstName} ${c.lastName}` })))]
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
     .slice(0, 10)

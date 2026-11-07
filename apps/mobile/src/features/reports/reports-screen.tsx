@@ -10,8 +10,7 @@ import { BarRow } from '@/features/home/bars';
 import { DaysRow } from '@/features/home/days-row';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { query } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl, query } from '@/lib/api';
 import { isoDay } from '@/lib/format';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
@@ -248,7 +247,7 @@ export function ReportsScreen() {
             label={t('exportCsv')}
             variant="secondary"
             icon="download"
-            onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/reports${query({ days, branchId })}`)}
+            onPress={() => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}/reports${query({ days, branchId })}`)}
           />
           <Caption style={{ textAlign: 'center' }}>{t('exportHint')}</Caption>
         </View>

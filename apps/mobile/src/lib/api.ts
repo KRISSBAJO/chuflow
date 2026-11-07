@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/provider';
-import { API_URL } from './config';
+import { API_URL, WEB_URL } from './config';
 
 /*
  * Tiny API client. The session sets the bearer token once signed in, and registers a handler
@@ -22,26 +22,44 @@ export class NetworkError extends Error {
   }
 }
 
-let token: string | null = null;
+export type ApiSession = { token: string | null; apiUrl: string; webUrl: string; storageScope: string };
+const defaultSession: ApiSession = { token: null, apiUrl: API_URL, webUrl: WEB_URL, storageScope: '' };
+let activeSession = defaultSession;
 let onUnauthorized: (() => void) | null = null;
 
-export function setApiToken(next: string | null) {
-  token = next;
+export function setApiSession(session?: ApiSession) {
+  activeSession = session ?? defaultSession;
+}
+
+export function getApiSession() {
+  return activeSession;
+}
+
+export function getWorkspaceWebUrl() {
+  return activeSession.webUrl;
 }
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  session = activeSession,
+  signal?: AbortSignal,
+): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${session.apiUrl}${path}`, {
+      credentials: 'omit',
+      signal,
       method,
       headers: {
         Accept: 'application/json',
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -53,7 +71,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const data = text ? safeJson(text) : null;
 
   if (!response.ok) {
-    if (response.status === 401 && token) onUnauthorized?.();
+    if (response.status === 401 && session.token && session === activeSession) onUnauthorized?.();
     const message = (data as { message?: string | string[] } | null)?.message;
     throw new ApiError(
       Array.isArray(message) ? message.join(', ') : message || `Request failed (${response.status})`,

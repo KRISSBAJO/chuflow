@@ -15,7 +15,9 @@ export default async function LoginPage({
       ? t("apiUnavailable")
       : params.reason === "session-expired"
         ? t("sessionExpired")
-        : null;
+        : params.reason === "workspace-sign-in"
+          ? t("workspacePicker.failed")
+          : null;
 
   return (
     <AuthShell

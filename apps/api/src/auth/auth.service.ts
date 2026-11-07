@@ -14,6 +14,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
+import type { User } from '../users/schemas/user.schema';
 import { getWorkspace } from '../workspaces/workspace-boundary';
 
 @Injectable()
@@ -44,12 +45,28 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    await this.usersService.touchLastLogin(user.id);
+    return this.issueSession(user.id, user, options);
+  }
+
+  async startWorkspaceSession(userId: string, options: { expiresIn?: string } = {}) {
+    const user = await this.usersService.findById(userId).catch(() => null);
+    if (!user?.isActive) {
+      throw new UnauthorizedException('Authentication failed');
+    }
+    return this.issueSession(userId, user, options);
+  }
+
+  private async issueSession(
+    userId: string,
+    user: Pick<User, 'email' | 'role' | 'firstName' | 'lastName' | 'oversightRegion' | 'district' | 'branchId'>,
+    options: { expiresIn?: string },
+  ) {
+    await this.usersService.touchLastLogin(userId);
 
     const workspace = getWorkspace(this.configService);
     const payload = {
       workspaceId: workspace.id,
-      sub: user.id,
+      sub: userId,
       email: user.email,
       role: user.role,
       oversightRegion: user.oversightRegion,
@@ -66,7 +83,7 @@ export class AuthService {
       accessToken,
       user: {
         workspace,
-        id: user.id,
+        id: userId,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,

@@ -14,8 +14,7 @@ import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
-import { api, errorMessage } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl, api, errorMessage } from '@/lib/api';
 import { disablePush, enablePush, pushStatus, type PushStatus } from '@/lib/notifications';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
@@ -86,7 +85,8 @@ function SearchLink({ label, onPress }: { label: string; onPress: () => void }) 
 }
 
 export default function MoreScreen() {
-  const { user, signOut } = useSession();
+  const { user, signOut, workspaces, showWorkspacePicker } = useSession();
+  const workspaceText = useT('auth.workspacePicker');
   const { isUpdatePending } = Updates.useUpdates();
   const { summary } = useAlerts();
   const t = useT('more');
@@ -194,6 +194,10 @@ export default function MoreScreen() {
         />
       ) : null}
 
+      {workspaces.length > 1 ? (
+        <ListRow title={workspaceText('title')} subtitle={user?.workspace?.name} onPress={showWorkspacePicker} />
+      ) : null}
+
       {areas.length ? (
         <View>
           <Section title={t('workspace')} />
@@ -236,7 +240,7 @@ export default function MoreScreen() {
               left={<RowIcon name={link.icon} />}
               right={<Icon name="arrowUpRight" size={14} color={colors.faint} />}
               chevron={false}
-              onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}${link.path}`)}
+              onPress={() => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${link.path}`)}
             />
           ))}
         </View>

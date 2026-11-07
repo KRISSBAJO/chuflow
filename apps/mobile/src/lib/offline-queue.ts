@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useState } from 'react';
 import { translate } from '@/i18n/provider';
-import { api, ApiError, NetworkError } from './api';
+import { ApiError, getApiSession, NetworkError, request } from './api';
 
 /*
  * Attendance counted with no signal is kept on the phone and sent as soon as it is back online.
@@ -10,6 +10,7 @@ import { api, ApiError, NetworkError } from './api';
  */
 
 const KEY = 'chuflow.outbox.attendance';
+const queueKey = (scope: string) => scope ? `${KEY}.${scope}` : KEY;
 
 export type QueuedAttendance = {
   id: string;
@@ -22,43 +23,47 @@ export type QueuedAttendance = {
 
 type Listener = (items: QueuedAttendance[]) => void;
 const listeners = new Set<Listener>();
-let flushing = false;
+const flushing = new Set<string>();
 
-async function read(): Promise<QueuedAttendance[]> {
+async function read(key = queueKey(getApiSession().storageScope)): Promise<QueuedAttendance[]> {
   try {
-    const raw = await AsyncStorage.getItem(KEY);
+    const raw = await AsyncStorage.getItem(key);
     return raw ? (JSON.parse(raw) as QueuedAttendance[]) : [];
   } catch {
     return [];
   }
 }
 
-async function write(items: QueuedAttendance[]) {
-  await AsyncStorage.setItem(KEY, JSON.stringify(items));
-  listeners.forEach((listener) => listener(items));
+async function write(key: string, items: QueuedAttendance[]) {
+  await AsyncStorage.setItem(key, JSON.stringify(items));
+  if (key === queueKey(getApiSession().storageScope)) listeners.forEach((listener) => listener(items));
 }
 
-export async function queueAttendance(label: string, body: Record<string, unknown>) {
-  const items = await read();
+export async function queueAttendance(label: string, body: Record<string, unknown>, scope = getApiSession().storageScope) {
+  const key = queueKey(scope);
+  const items = await read(key);
   items.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: new Date().toISOString(), label, body });
-  await write(items);
+  await write(key, items);
 }
 
 export async function discardQueued(id: string) {
-  await write((await read()).filter((item) => item.id !== id));
+  const key = queueKey(getApiSession().storageScope);
+  await write(key, (await read(key)).filter((item) => item.id !== id));
 }
 
 /** Sends everything waiting. Returns how many were sent. */
 export async function flushAttendance() {
-  if (flushing) return 0;
-  flushing = true;
+  const session = getApiSession();
+  const key = queueKey(session.storageScope);
+  if (!session.token || flushing.has(key)) return 0;
+  flushing.add(key);
   let sent = 0;
   try {
-    const items = await read();
+    const items = await read(key);
     const remaining: QueuedAttendance[] = [];
     for (const [index, item] of items.entries()) {
       try {
-        await api.post('/attendance', item.body);
+        await request('POST', '/attendance', item.body, session);
         sent += 1;
       } catch (error) {
         if (error instanceof NetworkError) {
@@ -69,9 +74,9 @@ export async function flushAttendance() {
         remaining.push({ ...item, error: error instanceof ApiError ? error.message : translate('attendance.outbox.couldNotSend') });
       }
     }
-    await write(remaining);
+    await write(key, remaining);
   } finally {
-    flushing = false;
+    flushing.delete(key);
   }
   return sent;
 }

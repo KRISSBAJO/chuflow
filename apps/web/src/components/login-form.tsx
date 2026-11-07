@@ -16,6 +16,7 @@ import {
 } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
 import { roleHomeHref } from "@/lib/permissions";
+import { hasLinkedWorkspaceDirectory, linkedWorkspaceOptions, type WorkspaceMembership } from "@/lib/workspace-sign-in";
 import { safeReturnTo } from "@/lib/return-to";
 
 type LoginFormProps = {
@@ -66,7 +67,26 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
         : "/dashboard";
       setIsSuccess(true);
       toast.dismiss("login-feedback");
-      router.replace(safeReturnTo(returnTo, homeHref));
+      const destination = safeReturnTo(returnTo, homeHref);
+      if (hasLinkedWorkspaceDirectory()) {
+        try {
+          const workspaces = await fetch(`${API_URL}/auth/workspaces`, {
+            credentials: "include",
+            cache: "no-store",
+            signal: AbortSignal.timeout(3000),
+          });
+          if (workspaces.ok) {
+            const memberships = (await workspaces.json()) as WorkspaceMembership[];
+            if (linkedWorkspaceOptions(memberships).some((workspace) => workspace.destination)) {
+              router.replace(`/workspaces?returnTo=${encodeURIComponent(destination)}`);
+              return;
+            }
+          }
+        } catch {
+          // A directory outage should leave the current workspace usable.
+        }
+      }
+      router.replace(destination);
     } catch (error) {
       const key =
         error instanceof Error && error.name === "AbortError"

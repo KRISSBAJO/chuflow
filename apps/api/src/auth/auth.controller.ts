@@ -2,8 +2,10 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   Post,
+  Param,
   Query,
   Res,
   UseGuards,
@@ -18,7 +20,17 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { IsString, Length, Matches } from 'class-validator';
+import { WorkspaceAccessService } from '../workspaces/workspace-access.service';
+import { JsonSubmissionGuard } from '../common/guards/json-submission.guard';
 import { Public } from '../common/decorators/public.decorator';
+
+class WorkspaceHandoffDto {
+  @IsString()
+  @Length(1, 4096)
+  @Matches(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)
+  handoff!: string;
+}
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -26,6 +38,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly workspaceAccess: WorkspaceAccessService,
   ) {}
 
   private getAuthCookieOptions(includeLifetime = true): CookieOptions {
@@ -84,6 +97,36 @@ export class AuthController {
       expiresIn,
       user: result.user,
     };
+  }
+
+  @Get('workspaces')
+  @Header('Cache-Control', 'no-store')
+  listWorkspaces(@CurrentUser() user: { sub: string }) {
+    return this.workspaceAccess.list(user.sub);
+  }
+
+  @Post('workspaces/:workspaceId/handoff')
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @UseGuards(JsonSubmissionGuard)
+  createWorkspaceHandoff(@CurrentUser() user: { sub: string }, @Param('workspaceId') workspaceId: string) {
+    return this.workspaceAccess.createHandoff(user.sub, workspaceId);
+  }
+
+  @Public()
+  @Post('workspace/exchange')
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @UseGuards(JsonSubmissionGuard)
+  async exchangeWorkspaceHandoff(
+    @Body() dto: WorkspaceHandoffDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const userId = await this.workspaceAccess.redeem(dto.handoff);
+    const { accessToken, user, cookieName } =
+      await this.authService.startWorkspaceSession(userId);
+    response.cookie(cookieName, accessToken, this.getAuthCookieOptions());
+    return { accessToken, tokenType: 'Bearer', user };
   }
 
   @UseGuards(JwtAuthGuard)

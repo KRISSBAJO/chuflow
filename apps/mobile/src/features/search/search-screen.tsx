@@ -7,8 +7,7 @@ import { SearchBar } from '@/components/kit';
 import { Caption, EmptyState, ErrorState, ListRow, Loading, Screen, Section } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
-import { query } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl, query } from '@/lib/api';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
@@ -76,7 +75,7 @@ export function SearchScreen() {
   function open(item: GlobalSearchResultItem) {
     const route = phoneRoute(item);
     if (route) router.push(route);
-    else void WebBrowser.openBrowserAsync(`${WEB_URL}${item.href}`);
+    else void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${item.href}`);
   }
 
   return (

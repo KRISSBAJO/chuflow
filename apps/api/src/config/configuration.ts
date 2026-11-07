@@ -18,6 +18,8 @@ export default () => {
 
   return {
     appName: process.env.APP_NAME ?? 'ChuFlow',
+    workspaceDirectorySigningKey: process.env.WORKSPACE_DIRECTORY_SIGNING_KEY?.trim(),
+    workspaceDirectoryVerificationKey: process.env.WORKSPACE_DIRECTORY_VERIFICATION_KEY?.trim(),
     workspaceId: process.env.WORKSPACE_ID?.trim() || FIRST_WORKSPACE_ID,
     workspaceName: process.env.WORKSPACE_NAME?.trim() || FIRST_WORKSPACE_NAME,
     port: parseInt(process.env.PORT ?? '4000', 10),

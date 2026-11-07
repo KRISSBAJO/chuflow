@@ -11,6 +11,7 @@ export type SessionUser = {
   lastName: string;
   email: string;
   role: string;
+  workspace?: { id: string; name: string };
   additionalPermissions?: string[];
   additionalPermissionExpiries?: Record<string, string | null>;
   oversightRegion?: string;

@@ -11,8 +11,7 @@ import { Button, Caption, Card, EmptyState, ErrorState, Heading, ListRow, Loadin
 import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { query } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl, query } from '@/lib/api';
 import { can } from '@/lib/permissions';
 import { useSession, userBranchId } from '@/lib/session';
 import type { BranchSummary } from '@/lib/types';
@@ -85,7 +84,7 @@ export function KidsHome({ inStack = false }: { inStack?: boolean }) {
   const trendMax = Math.max(1, ...(data?.trend ?? []).map((p) => p.attended));
 
   const openDesk = (id: string, tab?: string, room?: string) => router.push(kidsHref(`/kids/sessions/${id}`, { tab, room }));
-  const openWebsite = (path: string) => void WebBrowser.openBrowserAsync(`${WEB_URL}${path}`);
+  const openWebsite = (path: string) => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${path}`);
 
   return (
     <Screen safeTop={!inStack} refreshing={overview.refreshing} onRefresh={() => void overview.refresh()}>

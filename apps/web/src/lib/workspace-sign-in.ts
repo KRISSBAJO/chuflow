@@ -2,7 +2,7 @@ export function workspaceSignInOptions(
   currentName: string | undefined,
   configured: string | undefined,
 ) {
-  const options = [
+  const options: { name: string; href: string; id?: string }[] = [
     { name: currentName?.trim() || "Winners Chapel International", href: "/login" },
   ];
   if (!configured) return options;
@@ -36,7 +36,34 @@ export function workspaceSignInOptions(
       origins.has(url.origin)
     ) continue;
     origins.add(url.origin);
-    options.push({ name, href: url.origin + "/login" });
+    const id = typeof entry.id === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id)
+      ? entry.id
+      : undefined;
+    options.push({ name, href: url.origin + "/login", ...(id ? { id } : {}) });
   }
   return options;
+}
+
+
+export type WorkspaceMembership = { id: string; name: string; current: boolean };
+
+export function linkedWorkspaceOptions(memberships: WorkspaceMembership[]) {
+  const destinations = workspaceSignInOptions(undefined, process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACES);
+  return memberships.flatMap<WorkspaceMembership & { destination: string | null }>((membership) => {
+    if (membership.current) return [{ ...membership, destination: null }];
+    const site = destinations.find((option) => option.id === membership.id);
+    return site ? [{ ...membership, destination: new URL("/api/workspace-session", site.href).href }] : [];
+  });
+}
+
+export function workspaceDirectoryHref() {
+  const origin = process.env.NEXT_PUBLIC_CHUFLOW_DIRECTORY_ORIGIN;
+  return origin && /^https:\/\/[a-z0-9.-]+(?::[0-9]+)?$/i.test(origin)
+    ? origin + "/workspaces"
+    : "/workspaces";
+}
+
+
+export function hasLinkedWorkspaceDirectory() {
+  return workspaceSignInOptions(undefined, process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACES).some((option) => option.id);
 }

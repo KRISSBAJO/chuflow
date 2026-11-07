@@ -7,8 +7,7 @@ import { Caption, ErrorState, Heading, Loading, Notice, Screen, Segmented } from
 import { space } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { api, errorMessage } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl, api, errorMessage } from '@/lib/api';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
@@ -135,7 +134,7 @@ export function SessionDesk() {
   );
 
   const openScan = (target: 'checkin' | 'pickup') => router.push(kidsHref('/kids/scan', { sessionId: id, tab: target }));
-  const openWebsite = (path: string) => void WebBrowser.openBrowserAsync(`${WEB_URL}${path}`);
+  const openWebsite = (path: string) => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${path}`);
 
   if (!s) {
     return (

@@ -10,7 +10,7 @@ import { Button, Caption, Loading, Notice, tap } from '@/components/ui';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { api, errorMessage, NetworkError } from '@/lib/api';
+import { api, errorMessage, getApiSession, NetworkError } from '@/lib/api';
 import { isoDay } from '@/lib/format';
 import { queueAttendance, useOnline } from '@/lib/offline-queue';
 import { can, canManageLocalServiceTypes } from '@/lib/permissions';
@@ -43,7 +43,10 @@ const FLOW_KEY: Record<CountKey, string> = {
 
 const EMPTY: Counts = { menCount: 0, womenCount: 0, childrenCount: 0, firstTimersCount: 0, newConvertsCount: 0, holySpiritBaptismCount: 0 };
 
-const serviceTypesCacheKey = (branchId: string) => `chuflow.serviceTypes.${branchId || 'all'}`;
+const serviceTypesCacheKey = (branchId: string) => {
+  const scope = getApiSession().storageScope;
+  return `chuflow.serviceTypes.${scope ? scope + '.' : ''}${branchId || 'all'}`;
+};
 const native = Platform.OS !== 'web';
 
 function sameDay(a: Date, b: Date) {
@@ -237,6 +240,7 @@ export function AttendanceCountFlow() {
       ...counts,
       adultsCount: counts.menCount + counts.womenCount,
     };
+    const scope = getApiSession().storageScope;
     const label = tc('queued', { service: selectedType.name, date: format.shortDate(date), count: total });
 
     setSaving(true);
@@ -246,7 +250,7 @@ export function AttendanceCountFlow() {
       toast.success(tc('saved', { count: format.number(total), service: selectedType.name }));
     } catch (error) {
       if (error instanceof NetworkError) {
-        await queueAttendance(label, body);
+        await queueAttendance(label, body, scope);
         toast.info(tc('savedOffline'));
       } else {
         toast.error(errorMessage(error));

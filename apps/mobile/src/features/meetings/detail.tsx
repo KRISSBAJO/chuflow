@@ -8,8 +8,7 @@ import { Avatar, Badge, Body, Button, Caption, Card, ErrorState, Field, Heading,
 import { colors, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { api, errorMessage } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl, api, errorMessage } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { minutesLabel, MINUTES_TONE, STATUS_TONE, statusLabel } from './shared';
 import { refName, type Meeting, type MeetingPerson } from './types';
@@ -81,7 +80,7 @@ export function MeetingDetail() {
   const minutesText = minutes ?? m.minutesBody ?? '';
   const minutesEditable = m.canManage && !['submitted', 'approved'].includes(m.minutesStatus) && m.status !== 'cancelled';
   const minutesBadge = minutesLabel(t, m);
-  const website = (suffix = '') => void WebBrowser.openBrowserAsync(`${WEB_URL}/meetings/${m._id}${suffix}`);
+  const website = (suffix = '') => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}/meetings/${m._id}${suffix}`);
 
   function togglePresent(entry: (typeof people)[number]) {
     const users = new Set(presentUsers);

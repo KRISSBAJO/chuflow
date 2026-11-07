@@ -34,7 +34,7 @@ export default function RootLayout() {
 }
 
 function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
-  const { ready, user } = useSession();
+  const { ready, user, choosingWorkspace } = useSession();
   const { ready: languageReady } = useI18n();
   const loaded = ready && fontsReady && languageReady;
 
@@ -46,8 +46,11 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-      <Stack.Protected guard={!!user}>
+      <Stack.Protected guard={!!user && !choosingWorkspace}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!!user && choosingWorkspace}>
+        <Stack.Screen name="choose-workspace" />
       </Stack.Protected>
       <Stack.Protected guard={!user}>
         <Stack.Screen name="sign-in" />

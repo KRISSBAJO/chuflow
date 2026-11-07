@@ -6,7 +6,7 @@ import { toast } from '@/components/toast';
 import { Caption, ErrorState, ListRow, Loading } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
-import { WEB_URL } from '@/lib/config';
+import { getWorkspaceWebUrl } from '@/lib/api';
 import type { BranchSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
@@ -63,7 +63,7 @@ export function GuestLinkSheet({ onClose }: { onClose: () => void }) {
           title={t('generalForm')}
           subtitle={t('generalFormHint')}
           left={<Icon name="copy" size={18} color={colors.flame} />}
-          onPress={() => void copy(`${WEB_URL}/connect`)}
+          onPress={() => void copy(`${getWorkspaceWebUrl()}/connect`)}
         />
       </ScrollView>
     </Sheet>

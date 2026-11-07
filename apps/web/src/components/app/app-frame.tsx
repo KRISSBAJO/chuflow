@@ -1,5 +1,6 @@
 "use client";
 
+import { workspaceDirectoryHref } from "@/lib/workspace-sign-in";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -214,6 +215,7 @@ function Sidebar({
   onNavigate?: () => void;
   onCollapse?: () => void;
 }) {
+  const workspaceText = useTranslations("auth.workspacePicker");
   const t = useTranslations("shell");
   const roleLabel = useRoleLabel();
   const scopeLabelOf = useScopeLabel();
@@ -306,6 +308,12 @@ function Sidebar({
 
       <div className="shrink-0 space-y-2 border-t border-black/[0.06] p-3">
         {showSettings ? renderItem(SETTINGS_ITEM) : null}
+        {user?.workspace && !compact ? (
+          <a href={workspaceDirectoryHref()} className="block rounded-xl px-3 py-2 hover:bg-[#f6f5f1]">
+            <span className="block truncate text-[13px] font-semibold">{user.workspace.name}</span>
+            <span className="text-xs text-[var(--lp-muted)]">{workspaceText("change")}</span>
+          </a>
+        ) : null}
         {user ? (
           <div className={`flex items-center gap-3 rounded-2xl bg-[#f6f5f1] ${compact ? "flex-col p-2" : "p-2.5"}`}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[13px] font-semibold text-[var(--lp-ink)] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">

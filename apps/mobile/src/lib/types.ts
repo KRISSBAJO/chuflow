@@ -1,6 +1,7 @@
 /* API response shapes the phone app reads. They mirror apps/web/src/lib/types.ts. */
 
 export type SessionUser = {
+  workspace?: { id: string; name: string };
   id?: string;
   _id?: string;
   firstName: string;

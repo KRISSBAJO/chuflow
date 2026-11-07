@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../mail/mail.module';
+import { WorkspaceAccessService } from '../workspaces/workspace-access.service';
 import { UsersModule } from '../users/users.module';
 
 @Module({
@@ -29,7 +30,7 @@ import { UsersModule } from '../users/users.module';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, WorkspaceAccessService],
   controllers: [AuthController],
   exports: [AuthService],
 })
