@@ -5,7 +5,6 @@ import { PressableScale } from '@/components/motion';
 import { Avatar, Chip, Section, tap } from '@/components/ui';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
 import type { GuestListItem } from '@/lib/types';
-import { Wordmark } from '@/components/wordmark';
 import { TrendChart } from './trend-chart';
 
 const PHOTO = require('@/assets/images/home-welcome.webp');
@@ -30,52 +29,52 @@ type HeroBandProps = {
 export function HeroBand({ dateLabel, greeting, name, scope, alerts, alertsLabel, onAlerts, person, profileLabel, onProfile, searchLabel, onSearch }: HeroBandProps) {
   return (
     <View style={styles.bandWrap}>
-      <View style={styles.topRow}>
-        <Wordmark size={24} />
-        <View style={styles.topActions}>
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel={alertsLabel}
-            onPress={() => {
-              tap();
-              onAlerts();
-            }}
-            style={styles.bell}
-          >
-            <Icon name="bell" size={20} color={colors.ink} />
-            {alerts > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>{alerts > 9 ? '9+' : alerts}</Text>
-              </View>
-            ) : null}
-          </PressableScale>
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel={profileLabel}
-            onPress={() => {
-              tap();
-              onProfile();
-            }}
-            style={styles.avatarRing}
-          >
-            <Avatar person={person} size={38} />
-          </PressableScale>
+      <View style={styles.hero}>
+        <View style={styles.heroAccent} pointerEvents="none" />
+        <Image source={PHOTO} style={styles.heroPhoto} contentFit="cover" contentPosition="center" cachePolicy="memory-disk" accessible={false} />
+        <View style={styles.topRow}>
+          <View style={styles.dateRow}>
+            <Icon name="calendar" size={14} color="#ffffff" />
+            <Text style={styles.date}>{dateLabel}</Text>
+          </View>
+          <View style={styles.topActions}>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={alertsLabel}
+              onPress={() => {
+                tap();
+                onAlerts();
+              }}
+              style={styles.bell}
+            >
+              <Icon name="bell" size={20} color="#ffffff" />
+              {alerts > 0 ? (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{alerts > 9 ? '9+' : alerts}</Text>
+                </View>
+              ) : null}
+            </PressableScale>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={profileLabel}
+              onPress={() => {
+                tap();
+                onProfile();
+              }}
+              style={styles.avatarRing}
+            >
+              <Avatar person={person} size={38} />
+            </PressableScale>
+          </View>
         </View>
-      </View>
-      <View style={styles.welcomeRow}>
         <View style={styles.copy}>
           <Text style={styles.greeting}>{greeting},</Text>
           <Text accessibilityRole="header" style={styles.name}>
             {name}
           </Text>
-          <View style={styles.dateRow}>
-            <Icon name="calendar" size={16} color={colors.muted} />
-            <Text style={styles.date}>{dateLabel}</Text>
-          </View>
+          {scope ? <Text style={styles.scope}>{scope}</Text> : null}
         </View>
-        <Image source={PHOTO} style={styles.photo} contentFit="cover" contentPosition="right" cachePolicy="memory-disk" accessible={false} />
       </View>
-      {scope ? <Text style={styles.scope}>{scope}</Text> : null}
       {onSearch && searchLabel ? (
         <PressableScale
           accessibilityRole="button"
@@ -353,10 +352,22 @@ export function GuestStrip({
 const styles = StyleSheet.create({
   bleed: { marginHorizontal: -space.page },
 
-  bandWrap: { gap: space.lg },
+  bandWrap: { marginHorizontal: -space.page },
+  hero: {
+    minHeight: 244,
+    paddingHorizontal: space.page,
+    paddingTop: space.md,
+    paddingBottom: 52,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    backgroundColor: '#221b16',
+  },
+  heroAccent: { position: 'absolute', top: -120, right: -90, width: 280, height: 280, borderRadius: 140, backgroundColor: '#42291a' },
+  heroPhoto: { position: 'absolute', right: -18, bottom: -22, width: '49%', maxWidth: 250, aspectRatio: 1, borderRadius: 150, backgroundColor: '#42291a' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  bell: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  bell: { width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: '#bca28c', alignItems: 'center', justifyContent: 'center' },
   bellBadge: {
     position: 'absolute',
     top: 0,
@@ -370,16 +381,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bellBadgeText: { fontFamily: fonts.semibold, fontSize: 9, color: '#ffffff' },
-  avatarRing: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  welcomeRow: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  copy: { flex: 1, minWidth: 0, gap: 4 },
-  photo: { width: '34%', maxWidth: 152, height: 148, borderRadius: 22, backgroundColor: colors.surface },
-  greeting: { fontFamily: fonts.medium, fontSize: 21, lineHeight: 27, color: colors.text },
-  name: { fontFamily: fonts.semibold, fontSize: 35, lineHeight: 42, letterSpacing: -0.9, color: colors.ink },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
-  date: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted, flexShrink: 1 },
-  scope: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted },
-  search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, padding: 12, borderRadius: radius.pill, backgroundColor: colors.surface },
+  avatarRing: { width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: '#bca28c', alignItems: 'center', justifyContent: 'center' },
+  copy: { width: '55%', marginTop: 24, gap: 3 },
+  greeting: { fontFamily: fonts.medium, fontSize: 16, color: '#e8ddd3' },
+  name: { fontFamily: fonts.semibold, fontSize: 36, lineHeight: 42, letterSpacing: -0.9, color: '#ffffff' },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flexShrink: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#bca28c',
+  },
+  date: { fontFamily: fonts.medium, fontSize: 12, color: '#ffffff', flexShrink: 1 },
+  scope: { fontFamily: fonts.regular, fontSize: 13, color: '#e8ddd3' },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginHorizontal: space.page,
+    marginTop: -25,
+    minHeight: 50,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: radius.pill,
+    backgroundColor: colors.page,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.hairlineStrong,
+  },
   searchText: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.text },
 
   actionsRow: { paddingHorizontal: space.page, gap: 14, paddingVertical: 4 },
