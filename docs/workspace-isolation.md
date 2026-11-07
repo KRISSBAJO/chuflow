@@ -1,6 +1,6 @@
 # Workspace isolation
 
-Each organization has its own API deployment and MongoDB database. The existing hierarchy, global admin role, public form links, and scheduled jobs operate within that database. An organization can contain several national churches.
+Each organization has its own MongoDB database. The workspace gateway pilot serves several organizations from one API deployment and keeps each organization in a separate, database-bound worker. The existing hierarchy, global admin role, public form links, and jobs operate within that database. An organization can contain several national churches.
 
 ## First workspace
 
@@ -9,8 +9,8 @@ Keep the existing Winners Chapel database URI, signing key, public API host, and
 ## Pilot workspace
 
 1. Provision a dedicated, empty MongoDB database and grant its API credentials access only to that database.
-2. Create a dedicated API deployment with a unique `WORKSPACE_ID`, its `WORKSPACE_NAME`, and its own strong JWT signing key and administrator credentials.
-3. Use workspace-specific API and web hosts. Configure the login cookie and CORS for that workspace's hosts. Set the frontend API and web URLs for the same workspace.
+2. Add its ID, name, database connection and separate signing key to the private gateway registry.
+3. Test the scoped API and its separate session cookie through the shared API hostname.
 4. Verify sign-in, public forms, exports, reports, and background jobs in a test workspace before onboarding. The startup check refuses a database already bound to another workspace and refuses to adopt existing data for any workspace other than Winners Chapel.
 
 ## Web sign-in directory
@@ -32,8 +32,10 @@ For shared web sign-in, include the workspace ID alongside its name and origin i
 
 For mobile, configure `EXPO_PUBLIC_CHUFLOW_WORKSPACES` as an array of objects with `id`, `apiOrigin` and `webOrigin` using the operator-approved HTTPS origins. The primary mobile API is the workspace directory. After a switch, requests and offline attendance are scoped to the selected workspace. The original outbox is retained under its existing key for the primary workspace.
 
-## Persistent Test Church staging site
+## Shared API gateway pilot
 
-Use the `codex/workspace-pilot` branch and `render.test-church.yaml` as the Render Blueprint path. The staging service runs the web and API behind one HTTPS origin so the host-only cookie works for both, and it generates its own session key. Set `MONGODB_URI` in Render to the approved Atlas cluster with the explicit `test_church` database and a database user scoped to `readWrite` on that database only. Set a dedicated test administrator email and password in Render. The launcher refuses any other database and never falls back to the live MongoDB setting.
+Run `node scripts/workspace-gateway.cjs` from `apps/api` after building the API. Keep the primary deployment variables as they are, and supply `CHUFLOW_WORKSPACE_REGISTRY` as a secret JSON array. Each entry has `id`, `name`, `mongodbUri`, `jwtSecret`, `adminEmail`, and `adminPassword`. The gateway requires a distinct database on the same cluster and a distinct session key for each workspace.
 
-The free web service can sleep when idle. MongoDB retains the staging records between web deploys. Use synthetic records for this workspace. Once live, verify the public health endpoint, Test Church sign-in, a test branch write, and separation from Winners Chapel before using the site as a shared sign-in pilot.
+The unprefixed `/api` routes keep their current Winners Chapel behavior. Requests for Test Church use `/api/w/test-church/…` on the same hostname. Unknown workspace IDs return 404, and every selected worker validates its own sessions. The gateway starts workers on demand and is a pilot for a small workspace count. Capacity limits and scheduling for background jobs must be addressed before onboarding broadly.
+
+The gateway and its explicit registry are local pilot infrastructure. The production start command is unchanged. Linking the shared web and mobile UI to these scoped routes, an administrator provisioning workflow, and a hosted pilot are still pending.

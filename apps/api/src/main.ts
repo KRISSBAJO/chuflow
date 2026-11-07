@@ -39,6 +39,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document);
 
-  await app.listen(port);
+  const host = process.env.API_BIND_HOST;
+  if (host) await app.listen(port, host);
+  else await app.listen(port);
+  if (process.send) {
+    const address = app.getHttpServer().address();
+    if (address && typeof address !== 'string') {
+      process.send({ type: 'workspace-ready', port: address.port });
+    }
+  }
 }
 bootstrap();
