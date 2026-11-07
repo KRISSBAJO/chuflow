@@ -4,11 +4,12 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
+import { FIRST_WORKSPACE_ID, getWorkspace } from '../../workspaces/workspace-boundary';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    configService: ConfigService,
+    private readonly configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly permissions: PermissionsService,
   ) {
@@ -27,7 +28,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
+  async validate(payload: { sub: string; workspaceId?: string }) {
+    const { id } = getWorkspace(this.configService);
+    const tokenWorkspace = payload.workspaceId === undefined ? FIRST_WORKSPACE_ID : payload.workspaceId;
+    if (tokenWorkspace !== id) {
+      throw new UnauthorizedException('Authentication failed');
+    }
+
     const user = await this.usersService
       .findById(payload.sub)
       .catch(() => null);
@@ -37,6 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     return {
+      workspaceId: id,
       sub: user._id ? String(user._id) : payload.sub,
       email: user.email,
       role: user.role,

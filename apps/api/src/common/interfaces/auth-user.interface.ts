@@ -1,4 +1,5 @@
 export interface AuthUser {
+  workspaceId?: string;
   additionalPermissions?: string[];
   additionalPermissionExpiries?: Record<string, string | null>;
   sub: string;

@@ -5,6 +5,8 @@ import { CareModule } from './care/care.module';
 import { HierarchyModule } from './hierarchy/hierarchy.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { Module } from '@nestjs/common';
+import type { Connection } from 'mongoose';
+import { bindWorkspaceDatabase, getWorkspace } from './workspaces/workspace-boundary';
 import { EvangelismModule } from './evangelism/evangelism.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
@@ -58,6 +60,14 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('mongodbUri'),
+        connectionFactory: async (connection: Connection) => {
+          try {
+            return await bindWorkspaceDatabase(connection, getWorkspace(configService).id);
+          } catch (error) {
+            await connection.close();
+            throw error;
+          }
+        },
       }),
     }),
     AuthModule,

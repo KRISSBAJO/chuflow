@@ -14,6 +14,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
+import { getWorkspace } from '../workspaces/workspace-boundary';
 
 @Injectable()
 export class AuthService {
@@ -45,7 +46,9 @@ export class AuthService {
 
     await this.usersService.touchLastLogin(user.id);
 
+    const workspace = getWorkspace(this.configService);
     const payload = {
+      workspaceId: workspace.id,
       sub: user.id,
       email: user.email,
       role: user.role,
@@ -62,6 +65,7 @@ export class AuthService {
     return {
       accessToken,
       user: {
+        workspace,
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -78,7 +82,11 @@ export class AuthService {
 
   async me(userId: string): Promise<Record<string, unknown>> {
     const user = await this.usersService.findById(userId);
-    return { ...user, ...(await this.permissions.resolve(user)) };
+    return {
+      ...user,
+      ...(await this.permissions.resolve(user)),
+      workspace: getWorkspace(this.configService),
+    };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {

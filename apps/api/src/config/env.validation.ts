@@ -1,7 +1,13 @@
 import * as Joi from 'joi';
+import { FIRST_WORKSPACE_ID } from '../workspaces/workspace-boundary';
 
 export const envValidationSchema = Joi.object({
   APP_NAME: Joi.string().default('ChuFlow'),
+  WORKSPACE_ID: Joi.string().trim().max(64).pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).default(FIRST_WORKSPACE_ID),
+  WORKSPACE_NAME: Joi.string().trim().max(120).when('WORKSPACE_ID', {
+    is: FIRST_WORKSPACE_ID,
+    otherwise: Joi.required(),
+  }),
   PORT: Joi.number().default(4000),
   MONGODB_URI: Joi.string().required(),
   JWT_SECRET: Joi.string().min(12).required(),

@@ -1,3 +1,5 @@
+import { FIRST_WORKSPACE_ID, FIRST_WORKSPACE_NAME } from '../workspaces/workspace-boundary';
+
 function parseCsv(value?: string) {
   return (value ?? '')
     .split(',')
@@ -16,6 +18,8 @@ export default () => {
 
   return {
     appName: process.env.APP_NAME ?? 'ChuFlow',
+    workspaceId: process.env.WORKSPACE_ID?.trim() || FIRST_WORKSPACE_ID,
+    workspaceName: process.env.WORKSPACE_NAME?.trim() || FIRST_WORKSPACE_NAME,
     port: parseInt(process.env.PORT ?? '4000', 10),
     mongodbUri:
       process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/church_mgt',

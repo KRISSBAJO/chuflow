@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/login-form";
@@ -26,6 +27,12 @@ export default async function LoginPage({
         body: t("login.asideBody"),
       }}
     >
+      <p className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="font-medium">{process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACE_NAME?.trim() || "Winners Chapel International"}</span>
+        <Link href="/workspaces" className="text-[var(--lp-muted)] underline underline-offset-4">
+          {t("workspacePicker.change")}
+        </Link>
+      </p>
       <LoginForm notice={notice} returnTo={params.returnTo} />
     </AuthShell>
   );

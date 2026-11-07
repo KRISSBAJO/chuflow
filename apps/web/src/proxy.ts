@@ -3,7 +3,7 @@ import { safeReturnTo } from "./lib/return-to";
 
 const AUTH_COOKIE_NAME = "cms_access_token";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
-const publicPages = ["/", "/service-unavailable", "/request-workspace", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register"];
+const publicPages = ["/", "/service-unavailable", "/request-workspace", "/workspaces", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register"];
 
 function matchesRoute(pathname: string, route: string) {
   if (route === "/") {
