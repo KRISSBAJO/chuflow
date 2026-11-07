@@ -51,6 +51,7 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
       </Stack.Protected>
       <Stack.Protected guard={!user}>
         <Stack.Screen name="sign-in" />
+        <Stack.Screen name="password-recovery" />
       </Stack.Protected>
     </Stack>
   );
