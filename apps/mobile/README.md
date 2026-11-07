@@ -77,5 +77,5 @@ working update available for rollback. Before publishing, run the checks above a
 
 For a new native release, build Android with `--profile preview` and iOS with `--profile production`.
 After the artifacts are available, update `apps/web/public/mobile-release.json` with the real version,
-build number and Android artifact URL, then deploy the website. The app reads this uncached public
+build number and Android artifact URL, then deploy the website. The app checks this public
 manifest to offer a new APK or open TestFlight. Do not announce a native version before it is available.

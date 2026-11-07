@@ -1,5 +1,15 @@
 {
   "schemaVersion": 1,
-  "ios": { "version": "1.0.0", "build": "1", "kind": "testflight", "url": "https://apps.apple.com/app/testflight/id899247664" },
-  "android": { "version": "1.0.0", "build": "1", "kind": "download", "url": "https://expo.dev/artifacts/eas/4yf-nVl3zGnS46JyziXwnSBfafOiNR9HoW8z6knPTLI.apk" }
+  "ios": {
+    "version": "1.0.1",
+    "build": "3",
+    "kind": "testflight",
+    "url": "https://apps.apple.com/app/testflight/id899247664"
+  },
+  "android": {
+    "version": "1.0.1",
+    "build": "3",
+    "kind": "download",
+    "url": "https://expo.dev/artifacts/eas/CEHhjmiUt8v9p_uXcTtU3YeXp8yK0YOOHKYVQQyANg8.apk"
+  }
 }
