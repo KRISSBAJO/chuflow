@@ -69,6 +69,15 @@
     "newestMembers": {
       "title": "Newest members",
       "empty": "No new members have been added in this scope yet."
+    },
+    "welcome": {
+      "profile": "Your profile and workspace",
+      "people": "Every person.",
+      "connected": "Connected.",
+      "nextUp": "Next up",
+      "insights": "Your church at a glance",
+      "insightsHint": "Attendance, growth and care insights",
+      "upcoming": "Coming up"
     }
   }
 }

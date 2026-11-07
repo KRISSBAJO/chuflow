@@ -69,6 +69,15 @@
     "newestMembers": {
       "title": "Miembros más recientes",
       "empty": "Aún no se han añadido miembros nuevos en este ámbito."
+    },
+    "welcome": {
+      "profile": "Tu perfil y espacio de trabajo",
+      "people": "Cada persona.",
+      "connected": "Conectada.",
+      "nextUp": "Tu prioridad",
+      "insights": "Tu iglesia de un vistazo",
+      "insightsHint": "Asistencia, crecimiento y acompañamiento",
+      "upcoming": "Próximamente"
     }
   }
 }

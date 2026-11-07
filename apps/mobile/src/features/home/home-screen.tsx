@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { HomeHero } from '@/components/home-hero';
 import { Icon, type IconName } from '@/components/icon';
-import { Avatar, Caption, EmptyState, ErrorState, ListRow, Notice, Screen, Section, tap } from '@/components/ui';
+import { Avatar, Caption, EmptyState, ListRow, Notice, Screen, Section, tap } from '@/components/ui';
 import { colors, fonts, space } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -14,14 +14,14 @@ import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
 import { DaysRow } from './days-row';
-import { BranchHealth, Watchlist } from './executive-blocks';
-import { AttendanceMix, FollowUpPipeline, NewestMembers } from './operational-blocks';
+import { NewestMembers } from './operational-blocks';
+import { query } from '@/lib/api';
+import type { MeetingListResponse } from '@/features/meetings/types';
 import type { DashboardOverview } from './types';
 
 /*
- * Home for everyone but children's workers: the website dashboard at a phone's scale. The hero
- * carries the four headline numbers; below it the shortcuts, what needs the user, then the
- * dashboard blocks for the chosen range.
+ * Scoped mobile Home: a compact welcome, readable metrics, a priority task and everyday actions.
+ * Detailed analytics stay in Reports; children's workers retain their dedicated workspace.
  */
 
 const ALERT_DOT: Record<string, string> = { critical: colors.danger, warm: colors.warning, cool: colors.info };
@@ -37,8 +37,8 @@ export function HomeScreen() {
   const tc = useT('common');
   const format = useAppFormat();
   const role = user?.role;
-  const [showAllActions, setShowAllActions] = useState(false);
   const [days, setDays] = useState(() => user?.preferences?.defaultReportDays ?? 30);
+  const [showAllNeeds, setShowAllNeeds] = useState(false);
   const dashboard = useApi<DashboardOverview>(`/reports/dashboard?days=${days}`);
   const [today] = useState(() => new Date());
 
@@ -54,15 +54,17 @@ export function HomeScreen() {
     { key: 'reports', label: t('shortcuts.reports'), icon: 'reports', href: '/reports' as Href, show: can.reports(role) },
   ];
   const shortcuts = allShortcuts.filter((shortcut) => shortcut.show);
-  const visibleShortcuts = showAllActions ? shortcuts : shortcuts.slice(0, 6);
+  const visibleShortcuts = shortcuts.slice(0, 3);
 
   const data = dashboard.data;
   const metrics = data?.metrics;
   const operational = data?.operational;
   const recent = operational?.recentGuests ?? [];
-  const needsYou = summary?.items ?? [];
-  const scopeLabel = data?.scope.kind === 'all_network' ? t('allNetwork') : data?.scope.label;
-  const executive = can.executive(role) && data?.scope.kind !== 'branch' ? data?.executive : undefined;
+  const needsYou = (summary?.items ?? []).filter((item) => item.count > 0).sort((a, b) => Number(b.tone === 'critical') - Number(a.tone === 'critical'));
+  const priority = needsYou[0];
+  const scopeLabel = data?.scope.kind === 'all_network' ? t('allNetwork') : (data?.scope.label ?? (typeof user?.branchId === 'object' ? user.branchId?.name : undefined));
+  const meetings = useApi<MeetingListResponse>(can.meetings(role) ? `/meetings${query({ from: today.toISOString(), sort: 'oldest', limit: 2, page: 1 })}` : null);
+  const primary = shortcuts[0];
 
   return (
     <Screen
@@ -70,17 +72,22 @@ export function HomeScreen() {
       onRefresh={() => {
         void dashboard.refresh();
         void refreshAlerts();
+        void meetings.refresh();
       }}
       contentStyle={{ gap: space.xl }}
     >
       <HomeHero
         dateLabel={format.longDate(today)}
+        person={user ?? undefined}
+        onProfile={() => router.push('/more')}
+        primaryLabel={primary?.label ?? tc('tabs.more')}
+        onPrimary={() => router.push(primary?.href ?? '/more')}
         greeting={format.greeting(today)}
         name={user?.firstName || t('friend')}
         scope={[scopeLabel, tc('time.lastNDays', { count: days })].filter(Boolean).join(' · ')}
         alerts={summary?.quickStats.activeAlerts ?? 0}
         alertsLabel={t('alertsLabel', { count: summary?.quickStats.activeAlerts ?? 0 })}
-        onAlerts={() => router.push(can.approvals(role) ? '/approvals' : '/more')}
+        onAlerts={() => router.push(priority ? routeForAlert(priority.href) : '/more')}
         metrics={[
           {
             key: 'guests',
@@ -115,15 +122,59 @@ export function HomeScreen() {
         </Notice>
       ) : null}
 
-      {dashboard.error && !metrics ? <ErrorState message={dashboard.error} onRetry={() => void dashboard.refresh()} /> : null}
+      {dashboard.error && !metrics ? (
+        <View style={styles.connection}>
+          <Caption>{dashboard.error}</Caption>
+          <Pressable accessibilityRole="button" onPress={() => void dashboard.refresh()}>
+            <Text style={styles.retry}>{tc('actions.retry')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      <View style={styles.priority}>
+        <Section
+          title={t('welcome.nextUp')}
+          action={needsYou.length > 1 ? t(showAllNeeds ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
+          onAction={() => setShowAllNeeds(!showAllNeeds)}
+        />
+        {priority ? (
+          <ListRow
+            title={`${format.number(priority.count)} ${priority.label}`}
+            subtitle={priority.description}
+            left={<View style={[styles.alertDot, { backgroundColor: ALERT_DOT[priority.tone] ?? colors.flame }]} />}
+            right={
+              <View style={styles.priorityArrow}>
+                <Icon name="arrowUpRight" size={19} color={colors.flame} />
+              </View>
+            }
+            onPress={() => router.push(routeForAlert(priority.href))}
+          />
+        ) : summary ? (
+          <View style={styles.caughtUp}>
+            <Icon name="check" size={17} color={colors.success} />
+            <Caption>{t('needsYou.caughtUp')}</Caption>
+          </View>
+        ) : (
+          <Caption>{tc('state.loading')}</Caption>
+        )}
+        {showAllNeeds
+          ? needsYou
+              .slice(1)
+              .map((item) => (
+                <ListRow
+                  key={item.key}
+                  divider
+                  title={`${format.number(item.count)} ${item.label}`}
+                  subtitle={item.description}
+                  onPress={() => router.push(routeForAlert(item.href))}
+                />
+              ))
+          : null}
+      </View>
 
       {shortcuts.length ? (
         <View>
-          <Section
-            title={t('shortcuts.title')}
-            action={shortcuts.length > 6 ? t(showAllActions ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
-            onAction={() => setShowAllActions(!showAllActions)}
-          />
+          <Section title={t('shortcuts.title')} action={t('shortcuts.showAll')} onAction={() => router.push('/more')} />
           <View style={styles.shortcuts}>
             {visibleShortcuts.map((shortcut, index) => (
               <Pressable
@@ -148,45 +199,34 @@ export function HomeScreen() {
         </View>
       ) : null}
 
-      <View>
-        <Section title={t('needsYou.title')} />
-        {needsYou.length ? (
-          needsYou
-            .slice(0, 4)
-            .map((item, index) => (
-              <ListRow
-                key={item.key}
-                divider={index > 0}
-                title={`${format.number(item.count)} ${item.label.toLowerCase()}`}
-                subtitle={item.description}
-                left={<View style={[styles.alertDot, { backgroundColor: ALERT_DOT[item.tone] ?? colors.faint }]} />}
-                onPress={() => router.push(routeForAlert(item.href))}
-              />
-            ))
-        ) : summary ? (
-          <View style={styles.caughtUp}>
-            <Icon name="check" size={15} color={colors.success} strokeWidth={2.2} />
-            <Caption>{t('needsYou.caughtUp')}</Caption>
-          </View>
-        ) : (
-          <Caption>{tc('state.loading')}</Caption>
-        )}
-      </View>
-
       <DaysRow title={t('overview.title')} value={days} options={DAY_OPTIONS} onChange={setDays} label={(count) => t('overview.days', { count })} />
 
-      {executive ? (
-        <>
-          <Watchlist executive={executive} />
-          <BranchHealth leaders={executive.topGrowthBranches} attention={executive.bottomGrowthBranches} />
-        </>
+      {can.reports(role) ? (
+        <ListRow
+          title={t('welcome.insights')}
+          subtitle={t('welcome.insightsHint')}
+          left={<Icon name="reports" size={21} color={colors.flame} />}
+          onPress={() => router.push('/reports' as Href)}
+        />
       ) : null}
 
-      {operational ? (
-        <>
-          <FollowUpPipeline pipeline={operational.followUpPipeline} onOpen={can.followUp(role) ? () => router.push('/follow-up') : undefined} />
-          <AttendanceMix mix={operational.attendanceMix} onOpen={can.attendance(role) ? () => router.push('/attendance') : undefined} />
-        </>
+      {meetings.data?.items.length ? (
+        <View>
+          <Section title={t('welcome.upcoming')} action={tc('actions.seeAll')} onAction={() => router.push('/meetings' as Href)} />
+          {meetings.data.items
+            .filter((meeting) => meeting.status !== 'cancelled')
+            .slice(0, 2)
+            .map((meeting, index) => (
+              <ListRow
+                key={meeting._id}
+                divider={index > 0}
+                title={meeting.title}
+                subtitle={format.dateTime(meeting.startsAt)}
+                left={<Icon name="calendar" size={20} color={colors.flame} />}
+                onPress={() => router.push(`/meetings/${meeting._id}` as Href)}
+              />
+            ))}
+        </View>
       ) : null}
 
       <View>
@@ -223,6 +263,10 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  connection: { padding: 14, borderRadius: 14, backgroundColor: colors.surface, gap: 8 },
+  retry: { fontFamily: fonts.semibold, color: colors.flame, fontSize: 13 },
+  priority: { padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.hairlineStrong },
+  priorityArrow: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.flameSoft, alignItems: 'center', justifyContent: 'center' },
   shortcuts: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   shortcut: { width: '31.5%', alignItems: 'center', gap: 7, paddingVertical: 10, borderRadius: 16, backgroundColor: colors.surface },
   shortcutIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },

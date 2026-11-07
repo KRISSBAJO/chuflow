@@ -69,6 +69,15 @@
     "newestMembers": {
       "title": "Nouveaux membres",
       "empty": "Aucun nouveau membre n’a encore été ajouté dans ce périmètre."
+    },
+    "welcome": {
+      "profile": "Votre profil et votre espace",
+      "people": "Chaque personne.",
+      "connected": "En lien.",
+      "nextUp": "Votre priorité",
+      "insights": "Votre église en un regard",
+      "insightsHint": "Présence, croissance et accompagnement",
+      "upcoming": "À venir"
     }
   }
 }
