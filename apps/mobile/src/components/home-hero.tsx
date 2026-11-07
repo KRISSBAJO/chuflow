@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
@@ -74,22 +73,39 @@ export function HomeHero({
         </View>
       </View>
 
-      <View style={styles.cover}>
-        <Image source={CHURCH_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="right" cachePolicy="memory-disk" accessible={false} />
-        <LinearGradient colors={['rgba(23,14,10,0.28)', 'transparent', 'rgba(23,14,10,0.90)']} locations={[0, 0.32, 1]} style={StyleSheet.absoluteFill} />
-        <View style={styles.datePill}>
-          <Icon name="calendar" size={14} color="#ffffff" />
-          <Text style={styles.date}>{dateLabel}</Text>
-        </View>
+      <View style={styles.intro}>
         <View style={styles.welcome}>
-          <View style={styles.spark} />
           <Text style={styles.greeting}>{greeting},</Text>
           <Text accessibilityRole="header" style={styles.name}>
             {name}
           </Text>
-          {scope ? <Text style={styles.scope}>{scope}</Text> : null}
+          <View style={styles.dateRow}>
+            <Icon name="calendar" size={16} color={colors.muted} />
+            <Text style={styles.date}>{dateLabel}</Text>
+          </View>
         </View>
+        <Image source={CHURCH_PHOTO} style={styles.photo} contentFit="cover" contentPosition="right" cachePolicy="memory-disk" accessible={false} />
       </View>
+      {scope ? <Text style={styles.scope}>{scope}</Text> : null}
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metrics}>
+        {metrics.map((metric) => (
+          <Pressable
+            key={metric.key}
+            accessibilityRole={metric.onPress ? 'button' : undefined}
+            accessibilityLabel={`${metric.label}, ${metric.value}`}
+            disabled={!metric.onPress}
+            onPress={() => {
+              tap();
+              metric.onPress?.();
+            }}
+            style={({ pressed }) => [styles.metric, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={[styles.metricValue, metric.key === 'followUp' && { color: '#ac400e' }]}>{metric.value}</Text>
+            <Text style={styles.metricLabel}>{metric.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <Pressable
         accessibilityRole="button"
@@ -112,31 +128,12 @@ export function HomeHero({
           <Icon name="arrowRight" size={19} color="#ffffff" />
         </View>
       </Pressable>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metrics}>
-        {metrics.map((metric) => (
-          <Pressable
-            key={metric.key}
-            accessibilityRole={metric.onPress ? 'button' : undefined}
-            accessibilityLabel={`${metric.label}, ${metric.value}`}
-            disabled={!metric.onPress}
-            onPress={() => {
-              tap();
-              metric.onPress?.();
-            }}
-            style={({ pressed }) => [styles.metric, pressed && { opacity: 0.6 }]}
-          >
-            <Text style={[styles.metricValue, metric.key === 'followUp' && { color: '#ac400e' }]}>{metric.value}</Text>
-            <Text style={styles.metricLabel}>{metric.label}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 16 },
+  stack: { gap: 22 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bell: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
@@ -154,30 +151,21 @@ const styles = StyleSheet.create({
     borderColor: colors.page,
   },
   badgeText: { fontFamily: fonts.semibold, fontSize: 9, color: '#fff' },
-  cover: { minHeight: 266, borderRadius: 28, padding: 20, gap: 34, overflow: 'hidden', justifyContent: 'space-between', backgroundColor: '#3c2820' },
-  datePill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 18,
-    backgroundColor: 'rgba(27,16,12,0.65)',
-  },
-  date: { fontFamily: fonts.medium, fontSize: 12, color: '#ffffff', flexShrink: 1 },
-  welcome: { gap: 4 },
-  spark: { width: 24, height: 4, borderRadius: 2, backgroundColor: '#ff9c59', marginBottom: 5 },
-  greeting: { fontFamily: fonts.medium, fontSize: 15, color: '#fff4e9' },
-  name: { fontFamily: fonts.semibold, fontSize: 34, lineHeight: 39, letterSpacing: -0.9, color: '#ffffff' },
-  scope: { fontFamily: fonts.regular, fontSize: 12, color: '#fff4e9' },
-  focus: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 15, paddingHorizontal: 13, borderRadius: 23, backgroundColor: '#f7f3ef' },
-  focusIcon: { width: 45, height: 45, borderRadius: 16, backgroundColor: '#ffeadb', alignItems: 'center', justifyContent: 'center' },
+  intro: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingVertical: 4 },
+  welcome: { flex: 1, minWidth: 0, gap: 4 },
+  photo: { width: '34%', maxWidth: 152, height: 148, borderRadius: 22, backgroundColor: colors.surface },
+  greeting: { fontFamily: fonts.medium, fontSize: 21, lineHeight: 27, color: colors.text },
+  name: { fontFamily: fonts.semibold, fontSize: 35, lineHeight: 42, letterSpacing: -0.9, color: colors.ink },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  date: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted, flexShrink: 1 },
+  scope: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted },
+  focus: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 15, paddingHorizontal: 13, borderRadius: 23, backgroundColor: colors.surface },
+  focusIcon: { width: 45, height: 45, borderRadius: 16, backgroundColor: colors.flameSoft, alignItems: 'center', justifyContent: 'center' },
   focusCopy: { flex: 1, minWidth: 0, gap: 3 },
   kicker: { fontFamily: fonts.medium, fontSize: 11, color: '#963b14' },
   focusTitle: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 22, color: colors.ink },
-  detail: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.text },
-  forward: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#392219', alignItems: 'center', justifyContent: 'center' },
+  detail: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.text },
+  forward: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.flame, alignItems: 'center', justifyContent: 'center' },
   metrics: { flexGrow: 1, gap: 5, paddingVertical: 6 },
   metric: { flex: 1, minWidth: 83, paddingHorizontal: 7, paddingVertical: 7, gap: 2 },
   metricValue: { fontFamily: fonts.semibold, fontSize: 25, lineHeight: 30, color: colors.ink, fontVariant: ['tabular-nums'] },
