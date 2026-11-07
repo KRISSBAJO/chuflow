@@ -13,6 +13,9 @@ website and covers the jobs people do on their phones:
 - **Approvals** – approve or reject attendance reports and expenses.
 - **More** – phone alerts, Face ID / fingerprint App lock, links to the website, sign out.
 
+The raised orange **New** button opens quick actions allowed for the signed-in role. Follow-up
+is available from Home and More; children-only staff see a smaller navigation bar.
+
 This folder is deliberately **not** an npm workspace of the repo, so the website (Amplify) and
 API (Render) builds never install React Native.
 
@@ -46,4 +49,33 @@ unaffected.
 ```bash
 npx tsc --noEmit
 npx expo lint
+node scripts/check-messages.mjs
+node --test test/update-policy.test.cjs
 ```
+
+## App updates
+
+Installed builds from 1.0.1 include Expo Updates. Startup checks download compatible fixes in
+the background. **More → App updates** also supports checking manually and confirming a restart;
+the app never reloads an active session automatically. Expo Go and the web preview cannot apply OTA.
+
+The Android internal APK uses the `preview` channel. TestFlight uses `production`. Runtime
+fingerprints separate incompatible native builds, even when they share a version number.
+Adding native dependencies, changing permissions or other native configuration needs a new build.
+
+From this folder, set `EXPO_PUBLIC_API_URL=https://api.chuflow.com/api` and
+`EXPO_PUBLIC_WEB_URL=https://chuflow.com` in the publishing environment, then:
+
+```bash
+eas update --channel preview --environment preview --platform all --message "Describe the update"
+# Check the preview on an installed compatible build before releasing to TestFlight users.
+eas update --channel production --environment production --platform all --message "Describe the update"
+```
+
+Confirm that the published runtime matches the intended build's runtime in EAS. Keep the prior
+working update available for rollback. Before publishing, run the checks above and export all platforms.
+
+For a new native release, build Android with `--profile preview` and iOS with `--profile production`.
+After the artifacts are available, update `apps/web/public/mobile-release.json` with the real version,
+build number and Android artifact URL, then deploy the website. The app reads this uncached public
+manifest to offer a new APK or open TestFlight. Do not announce a native version before it is available.
