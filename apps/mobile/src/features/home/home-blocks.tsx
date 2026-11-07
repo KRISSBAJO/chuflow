@@ -7,7 +7,7 @@ import { colors, fonts, radius, space, type } from '@/constants/theme';
 import type { GuestListItem } from '@/lib/types';
 import { TrendChart } from './trend-chart';
 
-const PHOTO = require('@/assets/images/home-welcome.webp');
+const PHOTO = require('@/assets/images/home-chuflow-check-in.webp');
 
 /* ---------- Hero band ---------- */
 
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#221b16',
   },
   heroAccent: { position: 'absolute', top: -120, right: -90, width: 280, height: 280, borderRadius: 140, backgroundColor: '#42291a' },
-  heroPhoto: { position: 'absolute', right: -18, bottom: -22, width: '49%', maxWidth: 250, aspectRatio: 1, borderRadius: 150, backgroundColor: '#42291a' },
+  heroPhoto: { position: 'absolute', right: -8, bottom: -8, width: '47%', maxWidth: 250, aspectRatio: 1, borderRadius: 150, backgroundColor: '#42291a' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bell: { width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: '#bca28c', alignItems: 'center', justifyContent: 'center' },
