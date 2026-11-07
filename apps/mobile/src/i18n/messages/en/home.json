@@ -72,12 +72,19 @@
     },
     "welcome": {
       "profile": "Your profile and workspace",
-      "people": "Every person.",
-      "connected": "Connected.",
       "nextUp": "Next up",
       "insights": "Your church at a glance",
       "insightsHint": "Attendance, growth and care insights",
-      "upcoming": "Coming up"
+      "upcoming": "Coming up",
+      "today": "Today at your church",
+      "careToday": "A connection to make",
+      "nextGathering": "Your next gathering",
+      "opening": "Make someone feel at home.",
+      "openingDetail": "A welcome, a conversation, a next step. Your people are at the heart of it.",
+      "viewTask": "Take the next step",
+      "viewMeeting": "Open meeting",
+      "moreCare": "Keep the connection going",
+      "todayNetwork": "Across your churches today"
     }
   }
 }

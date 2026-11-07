@@ -72,12 +72,19 @@
     },
     "welcome": {
       "profile": "Seu perfil e espaço de trabalho",
-      "people": "Cada pessoa.",
-      "connected": "Conectada.",
       "nextUp": "Sua prioridade",
       "insights": "Sua igreja em resumo",
       "insightsHint": "Presença, crescimento e acompanhamento",
-      "upcoming": "Em breve"
+      "upcoming": "Em breve",
+      "today": "Hoje na sua igreja",
+      "careToday": "Uma conexão para cultivar",
+      "nextGathering": "Seu próximo encontro",
+      "opening": "Faça alguém se sentir em casa.",
+      "openingDetail": "Uma acolhida, uma conversa, um próximo passo. As pessoas estão no centro de tudo.",
+      "viewTask": "Dar o próximo passo",
+      "viewMeeting": "Abrir reunião",
+      "moreCare": "Manter a conexão",
+      "todayNetwork": "Hoje nas suas igrejas"
     }
   }
 }

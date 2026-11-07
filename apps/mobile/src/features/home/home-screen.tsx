@@ -24,7 +24,6 @@ import type { DashboardOverview } from './types';
  * Detailed analytics stay in Reports; children's workers retain their dedicated workspace.
  */
 
-const ALERT_DOT: Record<string, string> = { critical: colors.danger, warm: colors.warning, cool: colors.info };
 const DAY_OPTIONS = [7, 30, 90] as const;
 
 type Shortcut = { key: string; label: string; icon: IconName; href: Href; show: boolean };
@@ -65,6 +64,18 @@ export function HomeScreen() {
   const scopeLabel = data?.scope.kind === 'all_network' ? t('allNetwork') : (data?.scope.label ?? (typeof user?.branchId === 'object' ? user.branchId?.name : undefined));
   const meetings = useApi<MeetingListResponse>(can.meetings(role) ? `/meetings${query({ from: today.toISOString(), sort: 'oldest', limit: 2, page: 1 })}` : null);
   const primary = shortcuts[0];
+  const nextMeeting = meetings.data?.items.find((meeting) => meeting.status !== 'cancelled');
+  const todayLabel = (data ? data.scope.kind !== 'branch' : can.executive(role)) ? t('welcome.todayNetwork') : t('welcome.today');
+  const focusLabel = priority
+    ? t('welcome.careToday')
+    : nextMeeting
+      ? new Date(nextMeeting.startsAt).toDateString() === today.toDateString()
+        ? todayLabel
+        : t('welcome.nextGathering')
+      : todayLabel;
+  const focusTitle = priority ? `${format.number(priority.count)} ${priority.label}` : (nextMeeting?.title ?? t('welcome.opening'));
+  const focusDetail = priority ? priority.description : nextMeeting ? format.dateTime(nextMeeting.startsAt) : t('welcome.openingDetail');
+  const openFocus = () => router.push(priority ? routeForAlert(priority.href) : nextMeeting ? (`/meetings/${nextMeeting._id}` as Href) : (primary?.href ?? '/more'));
 
   return (
     <Screen
@@ -80,8 +91,11 @@ export function HomeScreen() {
         dateLabel={format.longDate(today)}
         person={user ?? undefined}
         onProfile={() => router.push('/more')}
-        primaryLabel={primary?.label ?? tc('tabs.more')}
-        onPrimary={() => router.push(primary?.href ?? '/more')}
+        primaryLabel={priority ? t('welcome.viewTask') : nextMeeting ? t('welcome.viewMeeting') : (primary?.label ?? tc('tabs.more'))}
+        onPrimary={openFocus}
+        focusLabel={focusLabel}
+        focusTitle={focusTitle}
+        focusDetail={focusDetail}
         greeting={format.greeting(today)}
         name={user?.firstName || t('friend')}
         scope={[scopeLabel, tc('time.lastNDays', { count: days })].filter(Boolean).join(' · ')}
@@ -131,46 +145,18 @@ export function HomeScreen() {
         </View>
       ) : null}
 
-      <View style={styles.priority}>
-        <Section
-          title={t('welcome.nextUp')}
-          action={needsYou.length > 1 ? t(showAllNeeds ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
-          onAction={() => setShowAllNeeds(!showAllNeeds)}
-        />
-        {priority ? (
-          <ListRow
-            title={`${format.number(priority.count)} ${priority.label}`}
-            subtitle={priority.description}
-            left={<View style={[styles.alertDot, { backgroundColor: ALERT_DOT[priority.tone] ?? colors.flame }]} />}
-            right={
-              <View style={styles.priorityArrow}>
-                <Icon name="arrowUpRight" size={19} color={colors.flame} />
-              </View>
-            }
-            onPress={() => router.push(routeForAlert(priority.href))}
+      {needsYou.length > 1 ? (
+        <View style={styles.priority}>
+          <Section
+            title={t('welcome.moreCare')}
+            action={needsYou.length > 2 ? t(showAllNeeds ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
+            onAction={() => setShowAllNeeds(!showAllNeeds)}
           />
-        ) : summary ? (
-          <View style={styles.caughtUp}>
-            <Icon name="check" size={17} color={colors.success} />
-            <Caption>{t('needsYou.caughtUp')}</Caption>
-          </View>
-        ) : (
-          <Caption>{tc('state.loading')}</Caption>
-        )}
-        {showAllNeeds
-          ? needsYou
-              .slice(1)
-              .map((item) => (
-                <ListRow
-                  key={item.key}
-                  divider
-                  title={`${format.number(item.count)} ${item.label}`}
-                  subtitle={item.description}
-                  onPress={() => router.push(routeForAlert(item.href))}
-                />
-              ))
-          : null}
-      </View>
+          {needsYou.slice(1, showAllNeeds ? undefined : 2).map((item) => (
+            <ListRow key={item.key} title={`${format.number(item.count)} ${item.label}`} subtitle={item.description} onPress={() => router.push(routeForAlert(item.href))} />
+          ))}
+        </View>
+      ) : null}
 
       {shortcuts.length ? (
         <View>
@@ -210,7 +196,7 @@ export function HomeScreen() {
         />
       ) : null}
 
-      {meetings.data?.items.length ? (
+      {priority && meetings.data?.items.some((meeting) => meeting.status !== 'cancelled') ? (
         <View>
           <Section title={t('welcome.upcoming')} action={tc('actions.seeAll')} onAction={() => router.push('/meetings' as Href)} />
           {meetings.data.items
@@ -266,12 +252,9 @@ const styles = StyleSheet.create({
   connection: { padding: 14, borderRadius: 14, backgroundColor: colors.surface, gap: 8 },
   retry: { fontFamily: fonts.semibold, color: colors.flame, fontSize: 13 },
   priority: { padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.hairlineStrong },
-  priorityArrow: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.flameSoft, alignItems: 'center', justifyContent: 'center' },
   shortcuts: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   shortcut: { width: '31.5%', alignItems: 'center', gap: 7, paddingVertical: 10, borderRadius: 16, backgroundColor: colors.surface },
   shortcutIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   shortcutPrimary: { backgroundColor: colors.flame },
   shortcutLabel: { fontFamily: fonts.medium, fontSize: 11.5, color: colors.text },
-  alertDot: { width: 7, height: 7, borderRadius: 4, marginHorizontal: 2 },
-  caughtUp: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md },
 });

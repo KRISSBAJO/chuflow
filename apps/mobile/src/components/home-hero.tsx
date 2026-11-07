@@ -1,12 +1,12 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
-import { Icon, type IconName } from './icon';
+import { Icon } from './icon';
 import { Avatar, tap } from './ui';
 import { Wordmark } from './wordmark';
 
-const HERO_PHOTO = require('@/assets/images/home-welcome.webp');
+const CHURCH_PHOTO = require('@/assets/images/home-welcome.webp');
 export type HeroMetric = { key: string; label: string; value: string; onPress?: () => void };
 type Props = {
   dateLabel: string;
@@ -21,10 +21,28 @@ type Props = {
   onProfile: () => void;
   primaryLabel: string;
   onPrimary: () => void;
+  focusLabel: string;
+  focusTitle: string;
+  focusDetail: string;
 };
-const ICONS: Record<string, IconName> = { guests: 'guests', attendance: 'attendance', members: 'members', followUp: 'care' };
-/** A quiet welcome, a locally bundled portrait and readable, actionable summary cards. */
-export function HomeHero({ dateLabel, greeting, name, scope, alerts, alertsLabel, onAlerts, metrics, person, onProfile, primaryLabel, onPrimary }: Props) {
+/** ChuFlow's daily brief: a personal greeting, a useful next step and one continuous summary strip. */
+export function HomeHero({
+  dateLabel,
+  greeting,
+  name,
+  scope,
+  alerts,
+  alertsLabel,
+  onAlerts,
+  metrics,
+  person,
+  onProfile,
+  primaryLabel,
+  onPrimary,
+  focusLabel,
+  focusTitle,
+  focusDetail,
+}: Props) {
   const t = useT('home.welcome');
   return (
     <View style={{ gap: space.lg }}>
@@ -52,36 +70,44 @@ export function HomeHero({ dateLabel, greeting, name, scope, alerts, alertsLabel
           </Pressable>
         </View>
       </View>
-      <View style={styles.helloRow}>
-        <Text style={styles.hello}>
-          {greeting}, {name}.
-        </Text>
-        <Text style={styles.date}>{dateLabel}</Text>
-      </View>
       <View style={styles.welcome}>
-        <View style={styles.copy}>
-          <Text accessibilityRole="header" style={styles.headline}>
-            {t('people')}
+        <View style={styles.marker} />
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={styles.greeting}>{greeting},</Text>
+          <Text accessibilityRole="header" style={styles.name}>
+            {name}
           </Text>
-          <Text style={styles.connected}>{t('connected')}</Text>
           <Text style={styles.scope}>{scope}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              tap();
-              onPrimary();
-            }}
-            style={({ pressed }) => [styles.primary, pressed && { opacity: 0.8 }]}
-          >
-            <Text style={styles.primaryText}>{primaryLabel}</Text>
-            <Icon name="arrowUpRight" size={17} color="#ffffff" />
-          </Pressable>
-        </View>
-        <View style={styles.photoFrame}>
-          <Image source={HERO_PHOTO} style={styles.photo} contentFit="cover" contentPosition="center" cachePolicy="memory-disk" accessible={false} />
         </View>
       </View>
-      <View style={styles.metrics}>
+      <View style={styles.brief}>
+        <View style={styles.briefHeader}>
+          <View style={styles.eyebrow}>
+            <Icon name="calendar" size={14} color={colors.flame} />
+            <Text style={styles.kicker}>{focusLabel}</Text>
+          </View>
+          <Text style={styles.date}>{dateLabel}</Text>
+        </View>
+        <View style={styles.briefBody}>
+          <View style={styles.briefCopy}>
+            <Text style={styles.briefTitle}>{focusTitle}</Text>
+            <Text style={styles.detail}>{focusDetail}</Text>
+          </View>
+          <Image source={CHURCH_PHOTO} style={styles.photo} contentFit="cover" contentPosition="bottom" cachePolicy="memory-disk" accessible={false} />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            tap();
+            onPrimary();
+          }}
+          style={({ pressed }) => [styles.primary, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.primaryText}>{primaryLabel}</Text>
+          <Icon name="arrowRight" size={18} color={colors.flame} />
+        </Pressable>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metrics}>
         {metrics.map((metric, index) => (
           <Pressable
             key={metric.key}
@@ -92,26 +118,18 @@ export function HomeHero({ dateLabel, greeting, name, scope, alerts, alertsLabel
               tap();
               metric.onPress?.();
             }}
-            style={({ pressed }) => [styles.metric, index === 0 && styles.featured, index === 3 && styles.soft, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.metric, index > 0 && styles.separator, pressed && { opacity: 0.65 }]}
           >
-            <View style={styles.metricTop}>
-              <Text style={[styles.metricLabel, index === 0 && styles.onOrange]}>{metric.label}</Text>
-              <Icon name={ICONS[metric.key] ?? 'reports'} size={18} color={index === 0 ? '#ffffff' : colors.muted} />
-            </View>
-            <View style={styles.metricBottom}>
-              <Text style={[styles.metricValue, index === 0 && styles.onOrange]} numberOfLines={1} adjustsFontSizeToFit>
-                {metric.value}
-              </Text>
-              {metric.onPress ? <Icon name="arrowUpRight" size={17} color={index === 0 ? '#ffffff' : colors.muted} /> : null}
-            </View>
+            <Text style={[styles.metricValue, metric.key === 'followUp' && { color: colors.flame }]}>{metric.value}</Text>
+            <Text style={styles.metricLabel}>{metric.label}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.hairline },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bell: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   badge: {
@@ -128,45 +146,26 @@ const styles = StyleSheet.create({
     borderColor: colors.page,
   },
   badgeText: { fontFamily: fonts.semibold, fontSize: 9, color: '#fff' },
-  helloRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  hello: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted, flex: 1 },
-  date: { fontFamily: fonts.regular, fontSize: 10, color: colors.muted, maxWidth: '42%', textAlign: 'right' },
-  welcome: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 4 },
-  copy: { flex: 1, gap: 3 },
-  headline: { fontFamily: fonts.semibold, fontSize: 30, lineHeight: 35, letterSpacing: -1, color: colors.ink },
-  connected: { fontFamily: fonts.regular, fontStyle: 'italic', fontSize: 33, lineHeight: 39, letterSpacing: -0.8, color: colors.flame },
-  scope: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 8 },
-  photoFrame: {
-    width: '32%',
-    height: 170,
-    borderTopLeftRadius: 70,
-    borderTopRightRadius: 70,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: '#e8d4c3',
-  },
-  photo: { width: '100%', height: '100%', borderTopLeftRadius: 66, borderTopRightRadius: 66, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
-  primary: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: colors.flame,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginTop: 12,
-  },
-  primaryText: { fontFamily: fonts.medium, fontSize: 12, color: '#fff', flexShrink: 1 },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  metric: { width: '48.4%', minHeight: 103, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: colors.hairlineStrong, justifyContent: 'space-between', gap: 12 },
-  featured: { backgroundColor: colors.flame, borderColor: colors.flame },
-  soft: { backgroundColor: colors.flameSoft, borderColor: colors.flameSoft },
-  metricTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 5 },
-  metricLabel: { fontFamily: fonts.medium, fontSize: 12, color: colors.text, flex: 1 },
-  metricBottom: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6 },
-  metricValue: { fontFamily: fonts.semibold, fontSize: 28, lineHeight: 31, color: colors.ink, flexShrink: 1, fontVariant: ['tabular-nums'] },
-  onOrange: { color: '#ffffff' },
+  welcome: { flexDirection: 'row', gap: 12, alignItems: 'stretch', paddingVertical: 3 },
+  marker: { width: 3, borderRadius: 2, backgroundColor: colors.flame, marginVertical: 4 },
+  greeting: { fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
+  name: { fontFamily: fonts.semibold, fontSize: 30, lineHeight: 36, letterSpacing: -0.7, color: colors.ink },
+  scope: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.muted },
+  brief: { borderRadius: 20, backgroundColor: '#fff7f0', padding: 16, gap: 15, borderWidth: 1, borderColor: '#f4e6da' },
+  briefHeader: { gap: 5 },
+  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  kicker: { fontFamily: fonts.semibold, fontSize: 11, color: '#a63f0c', flexShrink: 1 },
+  date: { fontFamily: fonts.regular, fontSize: 10, color: colors.muted, marginLeft: 20 },
+  briefBody: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  briefCopy: { flex: 1, gap: 7 },
+  briefTitle: { fontFamily: fonts.semibold, fontSize: 19, lineHeight: 25, color: colors.ink, letterSpacing: -0.3 },
+  detail: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.text },
+  photo: { width: 83, height: 86, borderRadius: 12, backgroundColor: colors.surfaceStrong },
+  primary: { borderTopWidth: 1, borderTopColor: '#eddccc', paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  primaryText: { fontFamily: fonts.semibold, fontSize: 13, color: '#a63f0c', flexShrink: 1 },
+  metrics: { flexGrow: 1, paddingVertical: 13, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.hairlineStrong },
+  metric: { flex: 1, minWidth: 83, paddingHorizontal: 10, gap: 4, justifyContent: 'center' },
+  separator: { borderLeftWidth: 1, borderLeftColor: colors.hairlineStrong },
+  metricValue: { fontFamily: fonts.semibold, fontSize: 23, lineHeight: 28, color: colors.ink, fontVariant: ['tabular-nums'] },
+  metricLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted },
 });
