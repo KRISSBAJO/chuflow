@@ -7,7 +7,13 @@
       "register": "Registrar um visitante",
       "searchPlaceholder": "Buscar por nome, telefone ou e-mail",
       "emptyTitle": "Ainda não há visitantes",
-      "emptyBody": "Registre seu primeiro visitante e o acompanhamento começa automaticamente."
+      "emptyBody": "Registre seu primeiro visitante e o acompanhamento começa automaticamente.",
+      "shareForm": "Compartilhar formulário de visitantes",
+      "shareFormHint": "Escolha um formulário para copiar seu link público.",
+      "generalForm": "Formulário geral de visitantes",
+      "generalFormHint": "Os visitantes podem escolher sua igreja.",
+      "formCopied": "Link do formulário copiado.",
+      "copyFailed": "Não foi possível copiar o link. Tente novamente."
     },
     "new": {
       "title": "Novo visitante",

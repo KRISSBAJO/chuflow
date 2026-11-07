@@ -1,10 +1,9 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Icon } from '@/components/icon';
 import { SheetPicker, StatGrid, StatTile } from '@/components/kit';
-import { Button, Field, Caption, EmptyState, ErrorState, ListRow, Loading, Screen, ScreenHeader, tap } from '@/components/ui';
+import { Button, Field, Caption, EmptyState, ErrorState, ListRow, Loading, RoundAction, Screen, ScreenHeader } from '@/components/ui';
 import { Reveal } from '@/components/motion';
 import { colors, space, type } from '@/constants/theme';
 import { OutboxNotices } from '@/features/attendance/outbox';
@@ -68,7 +67,12 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
           : rangeStart(range, today);
   const end =
     range === 'month' ? new Date(Number(year), Number(month) + 1, 0) : range === 'year' ? new Date(Number(year), 11, 31) : range === 'custom' ? new Date(to + 'T00:00:00') : today;
-  const validDates = Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && start <= end && (!(range==='month'||range==='year') || /^\d{4}$/.test(year)) && (range!=='custom' || (isoDay(start)===from && isoDay(end)===to));
+  const validDates =
+    Number.isFinite(start.getTime()) &&
+    Number.isFinite(end.getTime()) &&
+    start <= end &&
+    (!(range === 'month' || range === 'year') || /^\d{4}$/.test(year)) &&
+    (range !== 'custom' || (isoDay(start) === from && isoDay(end) === to));
   const serviceOptions = useApi<{ _id: string; key: string; name: string }[]>(allowed ? '/service-types' : null);
 
   const branches = useApi<BranchSummary[]>(allowed && pickBranch ? '/branches' : null);
@@ -144,22 +148,7 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
         <ScreenHeader
           title={t('title')}
           subtitle={canCount ? tTab('subtitle') : undefined}
-          right={
-            canCount ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={tTab('newCount')}
-                hitSlop={8}
-                onPress={() => {
-                  tap();
-                  router.push(NEW_COUNT);
-                }}
-                style={({ pressed }) => [styles.add, pressed && { opacity: 0.75 }]}
-              >
-                <Icon name="plus" size={20} color="#ffffff" strokeWidth={2.2} />
-              </Pressable>
-            ) : null
-          }
+          right={canCount ? <RoundAction icon="plus" label={tTab('newCount')} tone="dark" onPress={() => router.push(NEW_COUNT)} /> : null}
         />
       ) : null}
       {canCount ? <OutboxNotices onSent={() => void list.reload()} /> : null}
@@ -256,7 +245,14 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
 
   return (
     <View style={styles.page}>
-      {asTab ? null : <Stack.Screen options={{ title: t('title') }} />}
+      {asTab ? null : (
+        <Stack.Screen
+          options={{
+            title: t('title'),
+            headerRight: canCount ? () => <RoundAction icon="plus" label={tTab('newCount')} tone="dark" onPress={() => router.push(NEW_COUNT)} /> : undefined,
+          }}
+        />
+      )}
       <SectionList<AttendanceSummaryRecord, DaySection>
         sections={list.loading || (list.error && !list.data) ? [] : sections}
         keyExtractor={(item) => item._id}
@@ -300,7 +296,6 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.page, paddingBottom: space.xxl },
   header: { paddingTop: space.sm, paddingBottom: space.xs, gap: space.lg },
   controls: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  add: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md, marginTop: space.lg, marginBottom: 2 },
   sectionTitle: { ...type.micro, textTransform: 'uppercase' },
   count: { ...type.label, fontVariant: ['tabular-nums'] },

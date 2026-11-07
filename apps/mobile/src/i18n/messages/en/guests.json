@@ -7,7 +7,13 @@
       "register": "Register a guest",
       "searchPlaceholder": "Search name, phone or email",
       "emptyTitle": "No guests yet",
-      "emptyBody": "Register your first guest and their follow-up starts automatically."
+      "emptyBody": "Register your first guest and their follow-up starts automatically.",
+      "shareForm": "Share guest form",
+      "shareFormHint": "Choose a church form to copy its public link.",
+      "generalForm": "General guest form",
+      "generalFormHint": "Guests can choose their church.",
+      "formCopied": "Guest form link copied.",
+      "copyFailed": "Couldn’t copy the link. Try again."
     },
     "new": {
       "title": "New guest",

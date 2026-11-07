@@ -7,7 +7,13 @@
       "register": "Registrar un invitado",
       "searchPlaceholder": "Buscar por nombre, teléfono o correo",
       "emptyTitle": "Aún no hay invitados",
-      "emptyBody": "Registra a tu primer invitado y su seguimiento empieza automáticamente."
+      "emptyBody": "Registra a tu primer invitado y su seguimiento empieza automáticamente.",
+      "shareForm": "Compartir formulario de invitados",
+      "shareFormHint": "Elige un formulario para copiar su enlace público.",
+      "generalForm": "Formulario general de invitados",
+      "generalFormHint": "Los invitados pueden elegir su iglesia.",
+      "formCopied": "Enlace del formulario copiado.",
+      "copyFailed": "No se pudo copiar el enlace. Inténtalo de nuevo."
     },
     "new": {
       "title": "Nuevo invitado",

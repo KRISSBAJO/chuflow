@@ -7,7 +7,13 @@
       "register": "Inscrire un invité",
       "searchPlaceholder": "Rechercher un nom, un téléphone ou un e-mail",
       "emptyTitle": "Pas encore d’invités",
-      "emptyBody": "Inscrivez votre premier invité : son suivi démarre automatiquement."
+      "emptyBody": "Inscrivez votre premier invité : son suivi démarre automatiquement.",
+      "shareForm": "Partager le formulaire invité",
+      "shareFormHint": "Choisissez un formulaire pour copier son lien public.",
+      "generalForm": "Formulaire invité général",
+      "generalFormHint": "Les invités peuvent choisir leur église.",
+      "formCopied": "Lien du formulaire copié.",
+      "copyFailed": "Impossible de copier le lien. Réessayez."
     },
     "new": {
       "title": "Nouvel invité",

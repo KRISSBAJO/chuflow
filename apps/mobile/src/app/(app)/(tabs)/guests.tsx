@@ -4,6 +4,7 @@ import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { Avatar, Badge, Caption, EmptyState, ErrorState, ListRow, Loading, RoundAction, ScreenHeader } from '@/components/ui';
+import { GuestLinkSheet } from '@/features/guests/guest-link-sheet';
 import { Reveal } from '@/components/motion';
 import { colors, fonts, radius, space } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
@@ -20,6 +21,7 @@ export default function GuestsScreen() {
   const t = useT('guests.list');
   const common = useT('common');
   const format = useAppFormat();
+  const [showGuestLinks, setShowGuestLinks] = useState(false);
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   // Later pages belong to the first page they extend; a new search or refresh drops them.
@@ -52,10 +54,9 @@ export default function GuestsScreen() {
   }
 
   const subtitle = first.data
-    ? [
-        t(debounced ? 'matching' : 'inScope', { count: format.number(first.data.pagination.total) }),
-        t('today', { count: format.number(first.data.summary.todayCount) }),
-      ].join(' · ')
+    ? [t(debounced ? 'matching' : 'inScope', { count: format.number(first.data.pagination.total) }), t('today', { count: format.number(first.data.summary.todayCount) })].join(
+        ' · ',
+      )
     : ' ';
 
   return (
@@ -74,7 +75,12 @@ export default function GuestsScreen() {
             <ScreenHeader
               title={common('areas.guests')}
               subtitle={subtitle}
-              right={<RoundAction icon="plus" label={t('register')} tone="dark" onPress={() => router.push('/guest/new')} />}
+              right={
+                <View style={styles.headerActions}>
+                  <RoundAction icon="link" label={t('shareForm')} onPress={() => setShowGuestLinks(true)} />
+                  <RoundAction icon="plus" label={t('register')} tone="dark" onPress={() => router.push('/guest/new')} />
+                </View>
+              }
             />
             <View style={styles.search}>
               <Icon name="search" size={16} color={colors.faint} />
@@ -111,17 +117,14 @@ export default function GuestsScreen() {
           ) : first.error ? (
             <ErrorState message={first.error} onRetry={() => void first.refresh()} />
           ) : (
-            <EmptyState
-              icon="guests"
-              title={debounced ? common('state.noMatches') : t('emptyTitle')}
-              body={debounced ? common('state.noMatchesHint') : t('emptyBody')}
-            />
+            <EmptyState icon="guests" title={debounced ? common('state.noMatches') : t('emptyTitle')} body={debounced ? common('state.noMatchesHint') : t('emptyBody')} />
           )
         }
         ListFooterComponent={
           loadingMore ? <Loading /> : first.data && page >= totalPages && items.length > 8 ? <Caption style={styles.end}>{common('state.endOfList')}</Caption> : undefined
         }
       />
+      {showGuestLinks ? <GuestLinkSheet onClose={() => setShowGuestLinks(false)} /> : null}
     </View>
   );
 }
@@ -130,6 +133,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.page },
   content: { paddingHorizontal: space.page, paddingBottom: space.xxl },
   header: { paddingTop: space.md, paddingBottom: space.sm, gap: space.md },
+  headerActions: { flexDirection: 'row', gap: space.sm },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
