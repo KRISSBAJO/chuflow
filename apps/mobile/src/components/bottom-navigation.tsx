@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, type Href } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useState } from 'react';
@@ -7,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from './icon';
 import { Sheet } from './kit';
 import { Caption, ListRow, tap } from './ui';
-import { colors, flameGradient, fonts, space } from '@/constants/theme';
+import { colors, fonts, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
 import { useAppFormat } from '@/i18n/format';
 import { useAlerts } from '@/lib/alerts';
@@ -91,9 +90,9 @@ export function BottomNavigation({ state, descriptors, emitter, navigateToTab }:
           style={({ pressed }) => [styles.centre, pressed && { transform: [{ scale: 0.96 }] }]}
         >
           <View style={styles.ring}>
-            <LinearGradient colors={flameGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.circle}>
-              <Icon name="plus" size={29} color={colors.ink} strokeWidth={2.2} />
-            </LinearGradient>
+            <View style={styles.circle}>
+              <Icon name="plus" size={29} color="#ffffff" strokeWidth={2.2} />
+            </View>
           </View>
           <Text style={styles.newLabel}>{tabs('new')}</Text>
         </Pressable>
@@ -138,7 +137,7 @@ const styles = StyleSheet.create({
   activeLabel: { fontFamily: fonts.semibold, color: colors.ink },
   centre: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', height: 76, marginTop: -20, gap: 1 },
   ring: { width: 66, height: 66, padding: 5, borderRadius: 33, backgroundColor: colors.page },
-  circle: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 12px rgba(234,88,12,0.22)' },
+  circle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.flame, alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 12px rgba(234,88,12,0.22)' },
   newLabel: { fontFamily: fonts.semibold, fontSize: 11.5, lineHeight: 16, color: colors.ink },
   badge: {
     position: 'absolute',
