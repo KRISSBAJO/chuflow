@@ -99,6 +99,14 @@
       "unknown": "Not available",
       "selectDistrict": "Select a district",
       "firstStep": "Weekly figures",
+      "completeFigures": "Enter every figure before submitting. Use zero where applicable.",
+      "validation": {
+        "invalidCount": "Enter a non-negative whole number within the supported range.",
+        "invalidAverage": "Enter a non-negative average within the supported range. Decimals are allowed.",
+        "aboveAttendance": "Cannot exceed current attendance.",
+        "highFigure": "Unusually high. Check for an extra digit or a figure from a different period.",
+        "attendanceChange": "Attendance is at least double or at most half of last week, with a change of 50 or more. Verify the figure."
+      },
       "next": "Review figures",
       "summaryHint": "Totals include acknowledged reports only. Missing reports and unavailable comparisons are not treated as zero.",
       "fields": {

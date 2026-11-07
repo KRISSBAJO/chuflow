@@ -9,6 +9,8 @@ import { Button, Field } from "@/components/ui/ui";
 import { FilterPanel } from "@/components/filter-panel";
 import type { BranchSummary } from "@/lib/types";
 
+import { weeklyFigureError, weeklyFigureFlags, weeklyFigureNumber, WSF_AVERAGE } from "../../../../packages/types/src/weekly-report-figures";
+
 const FIELDS = [
   "currentAttendance",
   "firstTimersCount",
@@ -184,12 +186,20 @@ export function WeeklyReportWorkspace({
       setBusy(false);
     }
   }
+  const fieldError = (key: string) => weeklyFigureError(key, figures[key] ?? '', figures.currentAttendance ?? '');
+  const hasFigureErrors = FIELDS.some((key) => fieldError(key));
+  const values = Object.fromEntries(FIELDS.filter((key) => figures[key]).map((key) => [key, weeklyFigureNumber(figures[key])]));
+  const flags = locked && current
+    ? weeklyFigureFlags(current, current.previousAttendance, FIELDS)
+    : weeklyFigureFlags(values, baseline.previousAttendance, FIELDS).filter(({ key }) => !fieldError(key));
+
   function save(submit: boolean) {
-    const values = Object.fromEntries(
-      FIELDS.filter((key) => figures[key] !== "")
-        .filter((key) => figures[key] !== undefined)
-        .map((key) => [key, Number(figures[key])]),
-    );
+    if (hasFigureErrors) return;
+    if (submit && FIELDS.some((key) => !figures[key])) {
+      toast.error(t('completeFigures'));
+      setStep(1);
+      return;
+    }
     void action(
       () =>
         reportId
@@ -314,14 +324,20 @@ export function WeeklyReportWorkspace({
                   <Field key={key} label={t(`fields.${key}`)}>
                     <input
                       className="ui-input"
-                      type="number"
-                      min={0}
-                      step={1}
+                      type="text"
+                      inputMode={key === WSF_AVERAGE ? "decimal" : "numeric"}
+                      aria-invalid={!!fieldError(key)}
+                      aria-describedby={fieldError(key) ? `weekly-error-${key}` : undefined}
                       value={figures[key] ?? ""}
                       onChange={(e) =>
                         setFigures({ ...figures, [key]: e.target.value })
                       }
                     />
+                    {fieldError(key) && (
+                      <span id={`weekly-error-${key}`} className="text-sm text-red-700">
+                        {t(`validation.${fieldError(key)}`)}
+                      </span>
+                    )}
                   </Field>
                 ))}
               </div>
@@ -332,7 +348,7 @@ export function WeeklyReportWorkspace({
                   onChange={(e) => setRemarks(e.target.value)}
                 />
               </Field>
-              <Button onClick={() => setStep(2)}>{t("next")}</Button>
+              <Button disabled={hasFigureErrors} onClick={() => setStep(2)}>{t("next")}</Button>
             </>
           ) : (
             <>
@@ -346,7 +362,7 @@ export function WeeklyReportWorkspace({
                         locked
                           ? current?.[key]
                           : figures[key] !== undefined && figures[key] !== ""
-                            ? Number(figures[key])
+                            ? weeklyFigureNumber(figures[key])
                             : undefined,
                       )}
                     </dd>
@@ -370,10 +386,17 @@ export function WeeklyReportWorkspace({
               )}
             </>
           )}
+          {flags.length > 0 && (
+            <ul className="space-y-1 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+              {flags.map(({ key, message }) => (
+                <li key={`${key}-${message}`}>{t(`fields.${key}`)} · {t(`validation.${message}`)}</li>
+              ))}
+            </ul>
+          )}
           {!locked && (
             <div className="flex gap-3">
               <Button
-                disabled={busy || !matrix || (!!reportId && !current)}
+                disabled={busy || hasFigureErrors || !matrix || (!!reportId && !current)}
                 variant="secondary"
                 onClick={() => save(false)}
               >
@@ -381,7 +404,7 @@ export function WeeklyReportWorkspace({
               </Button>
               {step === 2 && (
                 <Button
-                  disabled={busy || !matrix || (!!reportId && !current)}
+                  disabled={busy || hasFigureErrors || !matrix || (!!reportId && !current)}
                   onClick={() => save(true)}
                 >
                   {t("submit")}
@@ -428,6 +451,11 @@ export function WeeklyReportWorkspace({
                     >
                       {t("open")}
                     </Link>
+                    {weeklyFigureFlags(row.report!, row.report!.previousAttendance, FIELDS).map(({ key, message }) => (
+                      <p key={`${key}-${message}`} className="basis-full text-sm text-amber-800">
+                        {t(`fields.${key}`)} · {t(`validation.${message}`)}
+                      </p>
+                    ))}
                     {matrix.canReview &&
                       row.report?.status === "pending" &&
                       row.report.submittedBy !== userId && (

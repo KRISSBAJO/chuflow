@@ -1,4 +1,8 @@
-import { WeeklyWorkflowService } from './weekly-workflow.service';
+import {
+  validateWeeklyFigures,
+  WEEKLY_FIGURES,
+  WeeklyWorkflowService,
+} from './weekly-workflow.service';
 import { weeklyComparisons } from './weekly-comparisons';
 import { hasAdditionalPermission } from '../common/permissions';
 import {
@@ -2025,11 +2029,19 @@ export class IntakeTemplatesService implements OnModuleInit {
         );
       }
 
-      return this.buildWeeklyReportSubmissionSnapshot(
+      const snapshot = this.buildWeeklyReportSubmissionSnapshot(
         template,
         answers,
         branchId,
       );
+      validateWeeklyFigures(
+        Object.fromEntries(
+          WEEKLY_FIGURES.filter((key) => snapshot[key] !== undefined).map(
+            (key) => [key, snapshot[key]],
+          ),
+        ),
+      );
+      return snapshot;
     }
 
     if (template.kind === 'maag_report') {

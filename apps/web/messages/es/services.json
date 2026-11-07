@@ -652,6 +652,14 @@
         "unknown": "No disponible",
         "selectDistrict": "Seleccionar un distrito",
         "firstStep": "Cifras semanales",
+        "completeFigures": "Completa todas las cifras antes de enviar. Usa cero cuando corresponda.",
+        "validation": {
+          "invalidCount": "Introduce un número entero no negativo dentro del rango permitido.",
+          "invalidAverage": "Introduce un promedio no negativo dentro del rango permitido. Se admiten decimales.",
+          "aboveAttendance": "No puede superar la asistencia actual.",
+          "highFigure": "Cifra inusualmente alta. Revisa los dígitos y el período.",
+          "attendanceChange": "La asistencia es al menos el doble o como máximo la mitad de la semana anterior, con una diferencia de 50 o más. Verifica la cifra."
+        },
         "next": "Revisar cifras",
         "summaryHint": "Los totales solo incluyen informes confirmados. Los informes ausentes y las comparaciones no disponibles no se cuentan como cero.",
         "fields": {

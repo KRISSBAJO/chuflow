@@ -99,6 +99,14 @@
       "unknown": "Indisponível",
       "selectDistrict": "Selecionar um distrito",
       "firstStep": "Números semanais",
+      "completeFigures": "Preencha todos os valores antes de enviar. Use zero quando aplicável.",
+      "validation": {
+        "invalidCount": "Insira um número inteiro não negativo dentro do intervalo permitido.",
+        "invalidAverage": "Insira uma média não negativa dentro do intervalo permitido. São aceites decimais.",
+        "aboveAttendance": "Não pode exceder a frequência atual.",
+        "highFigure": "Valor invulgarmente elevado. Verifique os dígitos e o período.",
+        "attendanceChange": "A frequência é pelo menos o dobro ou no máximo metade da semana anterior, com uma diferença de 50 ou mais. Verifique o valor."
+      },
       "next": "Rever números",
       "summaryHint": "Os totais incluem apenas relatórios confirmados. Relatórios em falta e comparações indisponíveis não são contados como zero.",
       "fields": {

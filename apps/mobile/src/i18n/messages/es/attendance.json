@@ -1,5 +1,17 @@
 {
   "attendance": {
+    "serviceTypes": {
+      "title": "Tipos de servicio",
+      "hint": "Administra los servicios disponibles al registrar la asistencia de tu iglesia.",
+      "name": "Nombre del servicio",
+      "add": "Añadir tipo de servicio",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "saved": "Tipos de servicio actualizados.",
+      "empty": "Todavía no hay tipos de servicio."
+    },
     "count": {
       "subtitle": "Cuenta a medida que entra la gente. Sin señal, se guarda en tu teléfono.",
       "offline": "Estás sin conexión. Los conteos se guardan en este teléfono.",

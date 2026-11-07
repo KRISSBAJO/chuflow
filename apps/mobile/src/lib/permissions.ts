@@ -75,3 +75,7 @@ const ROLE_LABELS: Record<string, string> = {
 export function roleLabel(role?: string) {
   return (role && ROLE_LABELS[role]) || role?.replace(/_/g, ' ') || '';
 }
+
+export function canManageLocalServiceTypes(role?: string) {
+  return role === 'branch_admin' || role === 'resident_pastor';
+}

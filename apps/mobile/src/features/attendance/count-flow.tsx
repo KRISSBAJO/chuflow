@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, Stack } from 'expo-router';
+import { router, Stack, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { useT } from '@/i18n/provider';
 import { api, errorMessage, NetworkError } from '@/lib/api';
 import { isoDay } from '@/lib/format';
 import { queueAttendance, useOnline } from '@/lib/offline-queue';
-import { can } from '@/lib/permissions';
+import { can, canManageLocalServiceTypes } from '@/lib/permissions';
 import { useSession, userBranchId } from '@/lib/session';
 import type { BranchSummary, ServiceType } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
@@ -126,6 +126,7 @@ export function AttendanceCountFlow() {
   const { user } = useSession();
   const t = useT('attendance.flow');
   const tc = useT('attendance.count');
+  const tTypes = useT('attendance.serviceTypes');
   const common = useT('common');
   const format = useAppFormat();
   const online = useOnline();
@@ -301,6 +302,14 @@ export function AttendanceCountFlow() {
         {t('service.none')}
       </Notice>
     );
+    if (canManageLocalServiceTypes(user?.role)) {
+      body = (
+        <View style={{ gap: space.md }}>
+          {types.length || serviceTypes.loading ? body : <Notice tone="info" icon="info">{tTypes('empty')}</Notice>}
+          <Button label={tTypes('title')} variant="secondary" onPress={() => router.push('/attendance/service-types' as Href)} />
+        </View>
+      );
+    }
   } else if (current === 'date') {
     question = t('date.question');
     hint = t('date.hint');

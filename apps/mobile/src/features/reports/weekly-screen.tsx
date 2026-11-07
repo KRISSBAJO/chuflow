@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View, Text } from 'react-native';
 import { KeyValue, SheetPicker } from '@/components/kit';
 import { toast } from '@/components/toast';
-import { Badge, Button, Caption, EmptyState, ErrorState, Field, Loading, Screen, Section } from '@/components/ui';
+import { Badge, Button, Caption, EmptyState, ErrorState, Field, Loading, Notice, Screen, Section } from '@/components/ui';
 import { space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -12,6 +12,8 @@ import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
 import type { BranchSummary } from '@/lib/types';
+
+import { weeklyFigureError, weeklyFigureFlags, weeklyFigureNumber, WSF_AVERAGE } from "../../../../../packages/types/src/weekly-report-figures";
 
 const FIELDS = [
   'currentAttendance',
@@ -85,8 +87,20 @@ export function WeeklyReportsScreen({ form = false }: { form?: boolean }) {
       setBusy(false);
     }
   }
+  const fieldError = (key: string) => weeklyFigureError(key, figures[key] ?? '', figures.currentAttendance ?? '');
+  const hasFigureErrors = FIELDS.some((key) => fieldError(key));
+  const values = Object.fromEntries(FIELDS.filter((key) => figures[key]).map((key) => [key, weeklyFigureNumber(figures[key])]));
+  const flags = locked && current
+    ? weeklyFigureFlags(current, current.previousAttendance, FIELDS)
+    : weeklyFigureFlags(values, defaults.data?.previousAttendance, FIELDS).filter(({ key }) => !fieldError(key));
+
   function save(submit: boolean) {
-    const values = Object.fromEntries(FIELDS.filter((key) => figures[key] !== undefined && figures[key] !== '').map((key) => [key, Number(figures[key])]));
+    if (hasFigureErrors) return;
+    if (submit && FIELDS.some((key) => !figures[key])) {
+      toast.error(t('completeFigures'));
+      setStep(1);
+      return;
+    }
     const payload = { branchId: branch, weekEnding: week, figures: values, remarks, submit, revision: current?.workflowRevision ?? 0 };
     void action(() => (params.id ? api.patch(`/weekly-reports/${params.id}`, payload) : api.post('/weekly-reports', payload)), true);
   }
@@ -118,19 +132,20 @@ export function WeeklyReportsScreen({ form = false }: { form?: boolean }) {
                       key={key}
                       label={t(`fields.${key}`)}
                       value={figures[key] ?? ''}
-                      keyboardType="number-pad"
+                      keyboardType={key === WSF_AVERAGE ? "decimal-pad" : "number-pad"}
+                      error={fieldError(key) ? t(`validation.${fieldError(key)}`) : undefined}
                       onChangeText={(value) => setFigures({ ...figures, [key]: value })}
                     />
                   ))}
                   <Field label={t('remarks')} value={remarks} onChangeText={setRemarks} multiline />
-                  <Button label={t('next')} onPress={() => setStep(2)} />
+                  <Button label={t('next')} disabled={hasFigureErrors} onPress={() => setStep(2)} />
                 </>
               ) : (
                 <>
                   <KeyValue
                     rows={FIELDS.map((key) => ({
                       label: t(`fields.${key}`),
-                      value: n(locked ? current?.[key] : figures[key] !== undefined && figures[key] !== '' ? Number(figures[key]) : undefined),
+                      value: n(locked ? current?.[key] : figures[key] !== undefined && figures[key] !== '' ? weeklyFigureNumber(figures[key]) : undefined),
                     }))}
                   />
                   {!locked ? <Button label={t('firstStep')} variant="secondary" onPress={() => setStep(1)} /> : null}
@@ -139,10 +154,15 @@ export function WeeklyReportsScreen({ form = false }: { form?: boolean }) {
               <KeyValue
                 rows={['previousAttendance', 'averageLastYear', 'averageLastPeriod'].map((key) => ({ label: t(key), value: n(locked ? current?.[key] : defaults.data?.[key]) }))}
               />
+              {flags.map(({ key, message }) => (
+                <Notice key={`${key}-${message}`} tone="warning">
+                  {t(`fields.${key}`)} · {t(`validation.${message}`)}
+                </Notice>
+              ))}
               {!locked ? (
                 <>
-                  <Button label={t('save')} variant="secondary" disabled={busy || !branch || !matrix.data || (!!params.id && !current)} onPress={() => save(false)} />
-                  {step === 2 ? <Button label={t('submit')} disabled={busy || !branch || !matrix.data || (!!params.id && !current)} onPress={() => save(true)} /> : null}
+                  <Button label={t('save')} variant="secondary" disabled={busy || hasFigureErrors || !branch || !matrix.data || (!!params.id && !current)} onPress={() => save(false)} />
+                  {step === 2 ? <Button label={t('submit')} disabled={busy || hasFigureErrors || !branch || !matrix.data || (!!params.id && !current)} onPress={() => save(true)} /> : null}
                 </>
               ) : null}
             </>
@@ -173,6 +193,11 @@ export function WeeklyReportsScreen({ form = false }: { form?: boolean }) {
                               { label: t('growth'), value: n(row.report.growth) },
                             ]}
                           />
+                          {weeklyFigureFlags(row.report, row.report.previousAttendance, FIELDS).map(({ key, message }) => (
+                            <Notice key={`${key}-${message}`} tone="warning">
+                              {t(`fields.${key}`)} · {t(`validation.${message}`)}
+                            </Notice>
+                          ))}
                           <Button
                             label={t('open')}
                             variant="secondary"

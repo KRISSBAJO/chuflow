@@ -12,7 +12,7 @@ import { useT } from '@/i18n/provider';
 import { BranchFilter, daysAgo, periodQuery, RangeChips, startOfWeek } from '@/features/finance/shared';
 import { query } from '@/lib/api';
 import { branchName, isoDay, toLocalDate } from '@/lib/format';
-import { can } from '@/lib/permissions';
+import { can, canManageLocalServiceTypes } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 import type { BranchSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
@@ -37,6 +37,7 @@ const NEW_COUNT = '/attendance/new' as Href;
 export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) {
   const t = useT('attendanceHistory');
   const tTab = useT('attendance.list');
+  const tTypes = useT('attendance.serviceTypes');
   const format = useAppFormat();
   const insets = useSafeAreaInsets();
   const { user } = useSession();
@@ -158,6 +159,9 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
         </View>
         {canCount && !asTab ? <Button label={t('countNow')} size="sm" icon="plus" onPress={() => router.push(NEW_COUNT)} /> : null}
       </View>
+      {canManageLocalServiceTypes(role) ? (
+        <Button label={tTypes('title')} variant="secondary" size="sm" onPress={() => router.push('/attendance/service-types' as Href)} />
+      ) : null}
       <Button icon="filter" label={t('advanced.filters')} variant="secondary" size="sm" onPress={() => setFiltersOpen(!filtersOpen)} />
       {filtersOpen ? (
         <View style={{ gap: space.md }}>

@@ -99,6 +99,14 @@
       "unknown": "Indisponible",
       "selectDistrict": "Choisir un district",
       "firstStep": "Chiffres hebdomadaires",
+      "completeFigures": "Renseignez chaque chiffre avant l’envoi. Saisissez zéro si nécessaire.",
+      "validation": {
+        "invalidCount": "Saisissez un nombre entier positif ou nul dans la plage autorisée.",
+        "invalidAverage": "Saisissez une moyenne positive ou nulle dans la plage autorisée. Les décimales sont acceptées.",
+        "aboveAttendance": "Ne peut pas dépasser la fréquentation actuelle.",
+        "highFigure": "Chiffre inhabituellement élevé. Vérifiez les chiffres et la période.",
+        "attendanceChange": "La fréquentation a au moins doublé ou diminué de moitié depuis la semaine dernière, avec un écart d’au moins 50. Vérifiez le chiffre."
+      },
       "next": "Vérifier les chiffres",
       "summaryHint": "Les totaux comprennent uniquement les rapports reçus. Les rapports manquants et les comparaisons indisponibles ne sont pas comptés comme zéro.",
       "fields": {

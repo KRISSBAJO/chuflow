@@ -100,7 +100,14 @@ export class ServiceTypesService {
     }
 
     const name = dto.name.trim();
-    const key = this.slugify(dto.key || dto.name);
+    const key = this.slugify(
+      dto.key || name.normalize('NFKD').replace(/\p{M}/gu, ''),
+    );
+    if (!name || !key) {
+      throw new BadRequestException(
+        'Enter a service name with a Latin letter or number, or provide a service key.',
+      );
+    }
 
     await this.ensureUniqueWithinBranch(branchId, name, key);
 

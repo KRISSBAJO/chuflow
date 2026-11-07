@@ -1,5 +1,17 @@
 {
   "attendance": {
+    "serviceTypes": {
+      "title": "Service types",
+      "hint": "Manage the services available when recording attendance for your church.",
+      "name": "Service name",
+      "add": "Add service type",
+      "active": "Active",
+      "inactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "saved": "Service types updated.",
+      "empty": "No service types yet."
+    },
     "count": {
       "subtitle": "Count as people come in. With no signal it saves on your phone.",
       "offline": "You’re offline. Counts are kept on this phone.",

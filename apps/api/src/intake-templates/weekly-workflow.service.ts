@@ -66,16 +66,30 @@ export function validateWeeklyFigures(
     )
   )
     throw new BadRequestException('Unknown weekly report figure.');
-  for (const [key,value] of Object.entries(figures))
+  for (const [key, value] of Object.entries(figures))
     if (
       typeof value !== 'number' ||
       !Number.isFinite(value) ||
       value < 0 ||
-      (key!=='winnersSatelliteFellowshipAverage' && !Number.isInteger(value))
+      value > Number.MAX_SAFE_INTEGER ||
+      (key !== 'winnersSatelliteFellowshipAverage' && !Number.isSafeInteger(value))
     )
       throw new BadRequestException(
-        'Weekly figures must be non-negative whole numbers.',
+        'Enter non-negative whole numbers within the supported range. The WSF average may include decimals.',
       );
+  const attendance = figures.currentAttendance;
+  if (typeof attendance === 'number') {
+    const limits = [
+      ['firstTimersCount', 'First timers'],
+      ['newConvertsCount', 'New converts'],
+    ] as const;
+    for (const [key, label] of limits) {
+      const count = figures[key];
+      if (typeof count === 'number' && count > attendance) {
+        throw new BadRequestException(`${label} cannot exceed current attendance.`);
+      }
+    }
+  }
   if (submit && WEEKLY_FIGURES.some((key) => figures[key] === undefined))
     throw new BadRequestException(
       'Complete every figure before submitting; enter zero where applicable.',

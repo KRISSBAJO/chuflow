@@ -1,5 +1,17 @@
 {
   "attendance": {
+    "serviceTypes": {
+      "title": "Types de culte",
+      "hint": "Gérez les cultes proposés lors de la saisie des présences de votre église.",
+      "name": "Nom du culte",
+      "add": "Ajouter un type de culte",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "activate": "Activer",
+      "deactivate": "Désactiver",
+      "saved": "Types de culte mis à jour.",
+      "empty": "Aucun type de culte."
+    },
     "count": {
       "subtitle": "Comptez à mesure que les gens arrivent. Sans réseau, tout reste sur votre téléphone.",
       "offline": "Vous êtes hors ligne. Les comptages sont conservés sur ce téléphone.",

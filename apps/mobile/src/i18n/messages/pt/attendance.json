@@ -1,5 +1,17 @@
 {
   "attendance": {
+    "serviceTypes": {
+      "title": "Tipos de culto",
+      "hint": "Gerencie os cultos disponíveis ao registar a presença da sua igreja.",
+      "name": "Nome do culto",
+      "add": "Adicionar tipo de culto",
+      "active": "Ativo",
+      "inactive": "Inativo",
+      "activate": "Ativar",
+      "deactivate": "Desativar",
+      "saved": "Tipos de culto atualizados.",
+      "empty": "Ainda não há tipos de culto."
+    },
     "count": {
       "subtitle": "Conte à medida que as pessoas chegam. Sem sinal, fica salvo no seu telefone.",
       "offline": "Você está offline. As contagens ficam guardadas neste telefone.",
