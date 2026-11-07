@@ -12,14 +12,17 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.chuflow.com/api",
         "EXPO_PUBLIC_WEB_URL": "https://chuflow.com"
-      }
+      },
+      "channel": "preview",
+      "autoIncrement": true
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.chuflow.com/api",
         "EXPO_PUBLIC_WEB_URL": "https://chuflow.com"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

@@ -50,6 +50,51 @@
       "lockedBody": "Unlock with Face ID, fingerprint or your phone passcode.",
       "unlock": "Unlock"
     },
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "updates": {
+      "title": "App updates",
+      "hint": "Keep ChuFlow up to date.",
+      "version": "Version",
+      "build": "Build",
+      "smallTitle": "Small updates",
+      "smallBody": "Improvements and fixes download in the background. You choose when to restart.",
+      "check": "Check for updates",
+      "checking": "Checking for updates…",
+      "downloading": "Downloading update…",
+      "ready": "An update is ready to apply.",
+      "apply": "Restart to apply",
+      "restartTitle": "Apply update?",
+      "restartBody": "Save your work before restarting ChuFlow.",
+      "restart": "Restart now",
+      "cancel": "Not now",
+      "current": "Your small updates are up to date.",
+      "unavailable": "Small updates are available in the installed ChuFlow app.",
+      "failed": "Couldn’t check for small updates. Please try again.",
+      "nativeTitle": "App version",
+      "nativeBody": "Larger updates install through TestFlight or a new Android download.",
+      "getApp": "Get latest app",
+      "openTestFlight": "Open TestFlight",
+      "nativeCurrent": "Your app version is current.",
+      "nativeFailed": "Couldn’t check the latest app version.",
+      "lastChecked": "Last checked",
+      "notChecked": "Not checked yet",
+      "embedded": "Included with this app",
+      "updated": "Downloaded update",
+      "details": "Update details",
+      "updateReady": "Update ready"
+    },
+    "quickActions": {
+      "new": "New",
+      "title": "Quick actions",
+      "hint": "Choose what you want to do.",
+      "newGuest": "Add a guest",
+      "newMember": "Add a member",
+      "attendance": "Record attendance",
+      "meeting": "Schedule a meeting",
+      "offering": "Record an offering",
+      "expense": "Record an expense",
+      "kids": "Children’s check-in",
+      "report": "Weekly report"
+    }
   }
 }

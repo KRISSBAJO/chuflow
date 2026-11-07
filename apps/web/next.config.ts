@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/mobile-release.json",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
+      {
         // Browsers must always fetch the latest worker so app updates reach installed phones.
         source: "/sw.js",
         headers: [

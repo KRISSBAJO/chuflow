@@ -50,6 +50,51 @@
       "lockedBody": "Desbloqueie com Face ID, digital ou o código do seu telefone.",
       "unlock": "Desbloquear"
     },
-    "workspace": "Áreas de trabalho"
+    "workspace": "Áreas de trabalho",
+    "updates": {
+      "title": "Atualizações",
+      "hint": "Mantenha o ChuFlow atualizado.",
+      "version": "Versão",
+      "build": "Compilação",
+      "smallTitle": "Pequenas atualizações",
+      "smallBody": "As melhorias e correções são transferidas em segundo plano. Escolha quando reiniciar.",
+      "check": "Procurar atualizações",
+      "checking": "A procurar atualizações…",
+      "downloading": "A transferir atualização…",
+      "ready": "Uma atualização está pronta.",
+      "apply": "Reiniciar para aplicar",
+      "restartTitle": "Aplicar atualização?",
+      "restartBody": "Guarde o seu trabalho antes de reiniciar o ChuFlow.",
+      "restart": "Reiniciar agora",
+      "cancel": "Agora não",
+      "current": "As pequenas atualizações estão em dia.",
+      "unavailable": "As pequenas atualizações estão disponíveis na aplicação ChuFlow instalada.",
+      "failed": "Não foi possível verificar as pequenas atualizações. Tente novamente.",
+      "nativeTitle": "Versão da aplicação",
+      "nativeBody": "As atualizações maiores são instaladas pelo TestFlight ou por uma nova transferência Android.",
+      "getApp": "Obter a versão mais recente",
+      "openTestFlight": "Abrir TestFlight",
+      "nativeCurrent": "A sua aplicação está atualizada.",
+      "nativeFailed": "Não foi possível verificar a versão mais recente.",
+      "lastChecked": "Última verificação",
+      "notChecked": "Ainda não verificado",
+      "embedded": "Incluído na aplicação",
+      "updated": "Atualização transferida",
+      "details": "Detalhes da atualização",
+      "updateReady": "Atualização pronta"
+    },
+    "quickActions": {
+      "new": "Novo",
+      "title": "Ações rápidas",
+      "hint": "Escolha o que pretende fazer.",
+      "newGuest": "Adicionar visitante",
+      "newMember": "Adicionar membro",
+      "attendance": "Registar presença",
+      "meeting": "Agendar reunião",
+      "offering": "Registar oferta",
+      "expense": "Registar despesa",
+      "kids": "Receção de crianças",
+      "report": "Relatório semanal"
+    }
   }
 }

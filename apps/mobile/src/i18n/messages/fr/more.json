@@ -50,6 +50,51 @@
       "lockedBody": "Déverrouillez avec Face ID, l’empreinte ou le code de votre téléphone.",
       "unlock": "Déverrouiller"
     },
-    "workspace": "Espace de travail"
+    "workspace": "Espace de travail",
+    "updates": {
+      "title": "Mises à jour",
+      "hint": "Gardez ChuFlow à jour.",
+      "version": "Version",
+      "build": "Compilation",
+      "smallTitle": "Petites mises à jour",
+      "smallBody": "Les améliorations et corrections se téléchargent en arrière-plan. Vous choisissez quand redémarrer.",
+      "check": "Rechercher des mises à jour",
+      "checking": "Recherche en cours…",
+      "downloading": "Téléchargement…",
+      "ready": "Une mise à jour est prête.",
+      "apply": "Redémarrer pour appliquer",
+      "restartTitle": "Appliquer la mise à jour ?",
+      "restartBody": "Enregistrez votre travail avant de redémarrer ChuFlow.",
+      "restart": "Redémarrer",
+      "cancel": "Plus tard",
+      "current": "Les petites mises à jour sont à jour.",
+      "unavailable": "Les petites mises à jour sont disponibles dans l’application ChuFlow installée.",
+      "failed": "Impossible de vérifier les petites mises à jour. Réessayez.",
+      "nativeTitle": "Version de l’application",
+      "nativeBody": "Les mises à jour majeures passent par TestFlight ou un nouveau téléchargement Android.",
+      "getApp": "Obtenir la dernière version",
+      "openTestFlight": "Ouvrir TestFlight",
+      "nativeCurrent": "Votre application est à jour.",
+      "nativeFailed": "Impossible de vérifier la dernière version.",
+      "lastChecked": "Dernière vérification",
+      "notChecked": "Pas encore vérifié",
+      "embedded": "Inclus dans l’application",
+      "updated": "Mise à jour téléchargée",
+      "details": "Détails de la mise à jour",
+      "updateReady": "Mise à jour prête"
+    },
+    "quickActions": {
+      "new": "Nouveau",
+      "title": "Actions rapides",
+      "hint": "Choisissez une action.",
+      "newGuest": "Ajouter un visiteur",
+      "newMember": "Ajouter un membre",
+      "attendance": "Enregistrer la présence",
+      "meeting": "Planifier une réunion",
+      "offering": "Enregistrer une offrande",
+      "expense": "Enregistrer une dépense",
+      "kids": "Accueil des enfants",
+      "report": "Rapport hebdomadaire"
+    }
   }
 }

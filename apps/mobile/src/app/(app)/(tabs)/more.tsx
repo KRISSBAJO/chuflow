@@ -1,3 +1,4 @@
+import * as Updates from 'expo-updates';
 import * as WebBrowser from 'expo-web-browser';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -86,6 +87,7 @@ function SearchLink({ label, onPress }: { label: string; onPress: () => void }) 
 
 export default function MoreScreen() {
   const { user, signOut } = useSession();
+  const { isUpdatePending } = Updates.useUpdates();
   const { summary } = useAlerts();
   const t = useT('more');
   const common = useT('common');
@@ -174,6 +176,14 @@ export default function MoreScreen() {
         <Badge label={format.role(role)} tone="flame" />
       </View>
 
+      {can.followUp(role) ? (
+        <ListRow
+          title={common('tabs.followUp')}
+          left={<RowIcon name="care" />}
+          right={summary?.quickStats.pendingFollowUp ? <Badge label={format.number(summary.quickStats.pendingFollowUp)} tone="flame" /> : undefined}
+          onPress={() => router.push('/follow-up')}
+        />
+      ) : null}
       {can.approvals(role) ? (
         <ListRow
           title={common('areas.approvals')}
@@ -211,9 +221,7 @@ export default function MoreScreen() {
           onChange={(value) => void togglePush(value)}
         />
         {push === 'on' ? <ListRow divider title={t('testAlert')} left={<RowIcon name="sparkle" />} onPress={() => void sendTest()} /> : null}
-        {lockAvailable ? (
-          <SwitchRow divider icon="lock" title={t('appLock')} body={t('appLockHint')} value={lockOn} onChange={(value) => void toggleLock(value)} />
-        ) : null}
+        {lockAvailable ? <SwitchRow divider icon="lock" title={t('appLock')} body={t('appLockHint')} value={lockOn} onChange={(value) => void toggleLock(value)} /> : null}
         <LanguageRow divider />
       </View>
 
@@ -234,6 +242,13 @@ export default function MoreScreen() {
         </View>
       ) : null}
 
+      <ListRow
+        title={t('updates.title')}
+        subtitle={isUpdatePending ? t('updates.updateReady') : t('updates.hint')}
+        left={<RowIcon name="refresh" />}
+        right={isUpdatePending ? <Badge label={t('updates.updateReady')} tone="flame" /> : undefined}
+        onPress={() => router.push('/app-updates' as Href)}
+      />
       <ListRow title={t('signOut')} left={<Icon name="logout" size={18} color={colors.danger} />} chevron={false} onPress={confirmSignOut} />
 
       <View style={styles.footer}>

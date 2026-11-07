@@ -2,7 +2,7 @@
   "expo": {
     "name": "ChuFlow",
     "slug": "chuflow",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "chuflow",
@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.chuflow.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSFaceIDUsageDescription": "ChuFlow uses Face ID to unlock the app when App lock is on."
+        "NSFaceIDUsageDescription": "ChuFlow uses Face ID to unlock the app when App lock is on.",
+        "LSApplicationQueriesSchemes": ["itms-beta"]
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -75,6 +76,14 @@
         "projectId": "905f34db-2b85-4fa2-93e5-1d82900cebde"
       }
     },
-    "owner": "logaxp"
+    "owner": "logaxp",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/905f34db-2b85-4fa2-93e5-1d82900cebde",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
