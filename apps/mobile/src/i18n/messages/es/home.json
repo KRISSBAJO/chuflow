@@ -97,6 +97,12 @@
       "down": "{value} menos que la semana anterior",
       "flat": "Igual que la semana anterior",
       "noData": "Aún no hay nada registrado en este periodo"
+    },
+    "searchTips": {
+      "name": "Prueba con un nombre o apellido",
+      "phone": "Pega un número de teléfono",
+      "branch": "Busca una iglesia local",
+      "email": "Busca por correo electrónico"
     }
   }
 }

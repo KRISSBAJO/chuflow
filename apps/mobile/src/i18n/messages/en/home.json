@@ -97,6 +97,12 @@
       "down": "{value} fewer than the week before",
       "flat": "Level with the week before",
       "noData": "Nothing recorded in this range yet"
+    },
+    "searchTips": {
+      "name": "Try a first or last name",
+      "phone": "Paste a phone number",
+      "branch": "Look up a branch",
+      "email": "Search by email"
     }
   }
 }

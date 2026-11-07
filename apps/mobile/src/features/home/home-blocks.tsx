@@ -1,9 +1,14 @@
 import { Image } from 'expo-image';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useIsFocused } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { useReducedMotion } from 'react-native-reanimated';
+import { Animated, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/motion';
 import { Avatar, Chip, Section, tap } from '@/components/ui';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
+import { useT } from '@/i18n/provider';
 import type { GuestListItem } from '@/lib/types';
 import { TrendChart } from './trend-chart';
 
@@ -75,22 +80,63 @@ export function HeroBand({ dateLabel, greeting, name, scope, alerts, alertsLabel
           {scope ? <Text style={styles.scope}>{scope}</Text> : null}
         </View>
       </View>
-      {onSearch && searchLabel ? (
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel={searchLabel}
-          onPress={() => {
-            tap();
-            onSearch();
-          }}
-          style={styles.search}
-        >
-          <Icon name="search" size={20} color={colors.flame} />
-          <Text style={styles.searchText}>{searchLabel}</Text>
-          <Icon name="arrowRight" size={17} color={colors.muted} />
-        </PressableScale>
-      ) : null}
+      {onSearch && searchLabel ? <HomeSearchPill label={searchLabel} onPress={onSearch} /> : null}
     </View>
+  );
+}
+
+const SEARCH_TIPS = ['name', 'phone', 'branch', 'email'] as const;
+const SEARCH_TIP_INTERVAL = 5000;
+const useNativeAnimationDriver = Platform.OS !== 'web';
+
+function HomeSearchPill({ label, onPress }: { label: string; onPress: () => void }) {
+  const t = useT('home.searchTips');
+  const focused = useIsFocused();
+  const reduceMotion = useReducedMotion();
+  const [tipIndex, setTipIndex] = useState(0);
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    if (!focused || reduceMotion) return;
+    const timer = setInterval(() => {
+      Animated.timing(opacity, { toValue: 0, duration: 140, useNativeDriver: useNativeAnimationDriver, isInteraction: false }).start(({ finished }) => {
+        if (!finished) return;
+        setTipIndex((index) => (index + 1) % (SEARCH_TIPS.length + 1));
+        Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: useNativeAnimationDriver, isInteraction: false }).start();
+      });
+    }, SEARCH_TIP_INTERVAL);
+    return () => {
+      clearInterval(timer);
+      opacity.stopAnimation();
+      opacity.setValue(1);
+    };
+  }, [focused, opacity, reduceMotion]);
+
+  const tip = reduceMotion || tipIndex === 0 ? label : t(SEARCH_TIPS[tipIndex - 1]);
+
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      scaleTo={reduceMotion ? 1 : 0.985}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={styles.searchWrap}
+    >
+      <LinearGradient colors={[colors.flameFrom, colors.flameTo, '#f5c29d']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.searchRing}>
+        <View style={styles.search}>
+          <LinearGradient colors={[colors.flameFrom, colors.flameTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.searchLens}>
+            <Icon name="search" size={20} color="#ffffff" strokeWidth={2.2} />
+          </LinearGradient>
+          <Animated.Text style={[styles.searchText, { opacity }]} numberOfLines={1}>
+            {tip}
+          </Animated.Text>
+          <Icon name="sparkle" size={16} color={colors.flame} />
+        </View>
+      </LinearGradient>
+    </PressableScale>
   );
 }
 
@@ -398,20 +444,25 @@ const styles = StyleSheet.create({
   },
   date: { fontFamily: fonts.medium, fontSize: 12, color: '#ffffff', flexShrink: 1 },
   scope: { fontFamily: fonts.regular, fontSize: 13, color: '#e8ddd3' },
+  searchWrap: {
+    marginHorizontal: space.page,
+    marginTop: -27,
+    borderRadius: radius.pill,
+    boxShadow: '0 5px 0 rgba(234,88,12,0.22), 0 9px 18px rgba(48,25,12,0.13)',
+  },
+  searchRing: { padding: 1, borderRadius: radius.pill },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
-    marginHorizontal: space.page,
-    marginTop: -25,
-    minHeight: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 11,
+    minHeight: 53,
+    paddingLeft: 6,
+    paddingRight: 15,
+    paddingVertical: 6,
     borderRadius: radius.pill,
     backgroundColor: colors.page,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.hairlineStrong,
   },
+  searchLens: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   searchText: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.text },
 
   actionsRow: { paddingHorizontal: space.page, gap: 14, paddingVertical: 4 },
