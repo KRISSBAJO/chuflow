@@ -31,3 +31,9 @@ Clients can list authorized workspaces through `GET /auth/workspaces`, request a
 For shared web sign-in, include the workspace ID alongside its name and origin in the directory's `NEXT_PUBLIC_CHUFLOW_WORKSPACES`. On each receiving web deployment set `NEXT_PUBLIC_CHUFLOW_DIRECTORY_ORIGIN` to the exact HTTPS origin of the trusted directory. The browser posts handoffs to the destination web host, which checks the request origin before exchanging them. Configure each workspace's web and API cookie scope so it does not overlap any other workspace.
 
 For mobile, configure `EXPO_PUBLIC_CHUFLOW_WORKSPACES` as an array of objects with `id`, `apiOrigin` and `webOrigin` using the operator-approved HTTPS origins. The primary mobile API is the workspace directory. After a switch, requests and offline attendance are scoped to the selected workspace. The original outbox is retained under its existing key for the primary workspace.
+
+## Persistent Test Church staging site
+
+Use the `codex/workspace-pilot` branch and `render.test-church.yaml` as the Render Blueprint path. The staging service runs the web and API behind one HTTPS origin so the host-only cookie works for both, and it generates its own session key. Set `MONGODB_URI` in Render to the approved Atlas cluster with the explicit `test_church` database and a database user scoped to `readWrite` on that database only. Set a dedicated test administrator email and password in Render. The launcher refuses any other database and never falls back to the live MongoDB setting.
+
+The free web service can sleep when idle. MongoDB retains the staging records between web deploys. Use synthetic records for this workspace. Once live, verify the public health endpoint, Test Church sign-in, a test branch write, and separation from Winners Chapel before using the site as a shared sign-in pilot.

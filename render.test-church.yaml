@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: chuflow-test-church
+    runtime: node
+    plan: free
+    branch: codex/workspace-pilot
+    buildCommand: npm ci && npm run build --workspace api && NEXT_PUBLIC_API_URL="$RENDER_EXTERNAL_URL/api" npm run build --workspace web
+    startCommand: node scripts/start-test-church.cjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: WORKSPACE_ID
+        value: test-church
+      - key: WORKSPACE_NAME
+        value: Test Church
+      - key: NEXT_PUBLIC_CHUFLOW_WORKSPACE_NAME
+        value: Test Church
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: MAIL_PROVIDER
+        value: smtp
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAME_SITE
+        value: lax
