@@ -1,7 +1,11 @@
 import {
   Body,
+  CanActivate,
   Controller,
+  ExecutionContext,
   Get,
+  HttpException,
+  Injectable,
   Param,
   Patch,
   Post,
@@ -18,6 +22,31 @@ import { CreateWorkspaceRequestDto } from './dto/create-workspace-request.dto';
 import { UpdateWorkspaceRequestDto } from './dto/update-workspace-request.dto';
 import { WorkspaceRequestsService } from './workspace-requests.service';
 
+@Injectable()
+export class WorkspaceHandleRateGuard implements CanActivate {
+  private window = -1;
+  private readonly hits = new Map<string, number>();
+
+  canActivate(context: ExecutionContext) {
+    const http = context.switchToHttp();
+    const ip = http.getRequest<{ ip?: string }>().ip ?? 'unknown';
+    const now = Date.now();
+    const window = Math.floor(now / 60_000);
+    if (window !== this.window) {
+      this.window = window;
+      this.hits.clear();
+    }
+    const count = this.hits.get(ip) ?? 0;
+    if (count >= 60 || (count === 0 && this.hits.size >= 10_000)) {
+      http.getResponse<{ setHeader(name: string, value: string): void }>()
+        .setHeader('Retry-After', String(Math.ceil((60_000 - now % 60_000) / 1000)));
+      throw new HttpException('Please try again shortly.', 429);
+    }
+    this.hits.set(ip, count + 1);
+    return true;
+  }
+}
+
 @ApiTags('Workspace Requests')
 @Controller('workspace-requests')
 export class WorkspaceRequestsController {
@@ -26,6 +55,7 @@ export class WorkspaceRequestsController {
   ) {}
 
   @Public()
+  @UseGuards(WorkspaceHandleRateGuard)
   @Get('public/handle')
   checkHandle(@Query('handle') handle?: string) {
     return this.workspaceRequestsService.checkHandle(handle);

@@ -1,10 +1,23 @@
 const { fork } = require('node:child_process');
 const http = require('node:http');
+const { isIP } = require('node:net');
 const path = require('node:path');
 
 const PRIMARY = 'winners-chapel-international';
 const PREFIX = '/api/w/';
 const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CLIENT_IP_HEADER = 'x-chuflow-client-ip';
+
+function upstreamHeaders(request, isRender) {
+  const headers = { ...request.headers };
+  const edgeIp = headers['cf-connecting-ip'];
+  const ip = isRender && typeof edgeIp === 'string' && isIP(edgeIp)
+    ? edgeIp
+    : request.socket.remoteAddress;
+  delete headers[CLIENT_IP_HEADER];
+  if (ip && isIP(ip)) headers[CLIENT_IP_HEADER] = ip;
+  return headers;
+}
 const sharedEnvironment = [
   'PATH', 'Path', 'SystemRoot', 'TEMP', 'TMP', 'HOME', 'NODE_ENV', 'NODE_PATH',
   'WEB_URL', 'CORS_ALLOWED_ORIGINS', 'COOKIE_SECURE', 'COOKIE_SAME_SITE',
@@ -162,7 +175,7 @@ function start(env = process.env) {
     try {
       const port = await workerFor(route.id);
       if (request.aborted || response.destroyed || closing) return;
-      const headers = { ...request.headers };
+      const headers = upstreamHeaders(request, Boolean(env.RENDER_GIT_COMMIT));
       if (headers.cookie) {
         const name = cookieName(env, route.id);
         headers.cookie = headers.cookie.split(';')
@@ -201,4 +214,4 @@ if (require.main === module) {
   process.on('SIGINT', close);
 }
 
-module.exports = { routeWorkspace, readRegistry, start };
+module.exports = { routeWorkspace, readRegistry, start, upstreamHeaders };

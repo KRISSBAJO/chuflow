@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import type { Request, Response, NextFunction } from 'express';
+import { isIP } from 'node:net';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -15,6 +17,15 @@ async function bootstrap() {
   ) ?? ['http://localhost:3001'];
 
   app.setGlobalPrefix('api');
+  if (process.send && process.env.API_BIND_HOST === '127.0.0.1') {
+    app.use((request: Request, _response: Response, next: NextFunction) => {
+      const ip = request.headers['x-chuflow-client-ip'];
+      if (request.socket.remoteAddress === '127.0.0.1' && typeof ip === 'string' && isIP(ip)) {
+        Object.defineProperty(request, 'ip', { value: ip });
+      }
+      next();
+    });
+  }
   app.use(cookieParser());
   app.enableCors({
     origin: corsAllowedOrigins,

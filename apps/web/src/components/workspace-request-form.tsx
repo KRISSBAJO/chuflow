@@ -12,6 +12,7 @@ import {
   SubmitButton,
 } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
+import { PRIMARY_API_URL } from "@/lib/workspace-routing";
 import { useGeo } from "@/hooks/use-geo";
 
 function SectionTitle({ step, title }: { step: number; title: string }) {
@@ -45,7 +46,7 @@ export function WorkspaceRequestForm() {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`${API_URL}/workspace-requests/public/handle?handle=${encodeURIComponent(handle)}`, {
+        const response = await fetch(`${PRIMARY_API_URL}/workspace-requests/public/handle?handle=${encodeURIComponent(handle)}`, {
           signal: controller.signal,
           cache: "no-store",
         });
