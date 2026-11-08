@@ -106,7 +106,75 @@
     "exportHint": "All matching records across pages. Import either file into Google Sheets using File → Import → Upload.",
     "table": "Table",
     "downloadReady": "Download ready",
-    "copyFailed": "Could not copy the link. Please copy it manually."
+    "copyFailed": "Could not copy the link. Please copy it manually.",
+    "plan": {
+      "trialTitle": "{days, plural, =0 {Your {plan} trial ends today.} one {Your {plan} trial ends in # day.} other {Your {plan} trial ends in # days.}}",
+      "trialBody": "To keep using ChuFlow after that, contact the ChuFlow operators and they will activate your plan.",
+      "pastDueTitle": "Payment for the {plan} plan is overdue.",
+      "pastDueBody": "Full access continues until {date}. After that the workspace becomes read-only until a payment is recorded.",
+      "readOnlyTitle": "This workspace is read-only.",
+      "readOnlyBody": "You can view records but not add or change them until a payment is recorded. Contact the ChuFlow operators.",
+      "lockedTitle": "This workspace is locked",
+      "lockedSuspended": "The ChuFlow operators have suspended this workspace.",
+      "lockedCancelled": "This subscription was cancelled.",
+      "lockedTrialEnded": "The trial has ended.",
+      "lockedOverdue": "The paid period ended and the grace period has run out.",
+      "lockedBody": "Contact the ChuFlow operators to restore access. Your data is kept safe meanwhile.",
+      "lockedBadge": "Plan",
+      "lockedNav": "{feature} is not included in your plan",
+      "notInPlan": "Not in your plan",
+      "viewPlan": "View plan",
+      "page": {
+        "label": "Subscription",
+        "title": "Your plan",
+        "body": "What your ChuFlow plan includes, its limits and when it renews.",
+        "notEnforced": "This workspace has no plan limits.",
+        "blocked": "That action is not available on your current plan.",
+        "contact": "To change your plan or record a payment, contact the ChuFlow operators.",
+        "trialEnds": "Trial ends",
+        "paidThrough": "Paid through",
+        "graceEnds": "Read-only from",
+        "features": "Features",
+        "quotas": "Limits",
+        "unlimited": "Unlimited",
+        "included": "Included",
+        "notIncluded": "Not included"
+      },
+      "features": {
+        "guests": "Guests",
+        "members": "Members",
+        "attendance": "Attendance",
+        "follow_up": "Follow-up",
+        "care": "Care",
+        "meetings": "Meetings",
+        "kids": "Kids ministry",
+        "finance": "Finance",
+        "communications": "Communications",
+        "reporting": "Reporting",
+        "exports": "Exports",
+        "api": "API access"
+      },
+      "quotas": {
+        "branches": "Branches",
+        "users": "Staff accounts",
+        "members": "Members",
+        "children": "Children"
+      },
+      "statuses": {
+        "trialing": "Trial",
+        "active": "Active",
+        "past_due": "Payment overdue",
+        "delinquent": "Read-only",
+        "suspended": "Suspended",
+        "cancelled": "Cancelled",
+        "legacy": "No plan"
+      },
+      "access": {
+        "full": "Full access",
+        "read_only": "Read-only",
+        "locked": "Locked"
+      }
+    }
   },
   "roles": {
     "super_admin": "Overall oversight admin",

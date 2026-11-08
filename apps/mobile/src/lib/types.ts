@@ -1,7 +1,41 @@
 /* API response shapes the phone app reads. They mirror apps/web/src/lib/types.ts. */
 
+export type FeatureKey =
+  | 'guests'
+  | 'members'
+  | 'attendance'
+  | 'follow_up'
+  | 'care'
+  | 'meetings'
+  | 'kids'
+  | 'finance'
+  | 'communications'
+  | 'reporting'
+  | 'exports'
+  | 'api';
+
+export type QuotaKey = 'branches' | 'users' | 'members' | 'children';
+
+/** What the church's plan allows right now, as the API computes it (`/auth/me`). */
+export type EntitlementSnapshot = {
+  workspaceId: string;
+  /** False when the API has no control plane: nothing is enforced. */
+  enforced: boolean;
+  planId: string;
+  planName: string;
+  status: 'trialing' | 'active' | 'past_due' | 'delinquent' | 'suspended' | 'cancelled' | 'legacy';
+  access: 'full' | 'read_only' | 'locked';
+  features: FeatureKey[];
+  quotas: Record<QuotaKey, number | null>;
+  trialEndsAt?: string;
+  currentPeriodEnd?: string;
+  graceEndsAt?: string;
+  reason?: 'trial_ended' | 'payment_overdue' | 'suspended' | 'cancelled';
+};
+
 export type SessionUser = {
   workspace?: { id: string; name: string };
+  entitlements?: EntitlementSnapshot;
   id?: string;
   _id?: string;
   firstName: string;

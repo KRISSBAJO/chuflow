@@ -106,7 +106,75 @@
     "exportHint": "Toutes les fiches correspondantes, toutes pages confondues. Importez l'un des fichiers dans Google Sheets via Fichier → Importer → Importer.",
     "table": "Tableau",
     "downloadReady": "Téléchargement prêt",
-    "copyFailed": "Impossible de copier le lien. Copiez-le manuellement."
+    "copyFailed": "Impossible de copier le lien. Copiez-le manuellement.",
+    "plan": {
+      "trialTitle": "{days, plural, =0 {Votre essai {plan} se termine aujourd'hui.} one {Votre essai {plan} se termine dans # jour.} other {Votre essai {plan} se termine dans # jours.}}",
+      "trialBody": "Pour continuer à utiliser ChuFlow ensuite, contactez les opérateurs ChuFlow : ils activeront votre offre.",
+      "pastDueTitle": "Le paiement de l'offre {plan} est en retard.",
+      "pastDueBody": "L'accès complet continue jusqu'au {date}. Ensuite, l'espace passe en lecture seule jusqu'à l'enregistrement d'un paiement.",
+      "readOnlyTitle": "Cet espace est en lecture seule.",
+      "readOnlyBody": "Vous pouvez consulter les fiches, mais rien ajouter ni modifier tant qu'un paiement n'est pas enregistré. Contactez les opérateurs ChuFlow.",
+      "lockedTitle": "Cet espace est verrouillé",
+      "lockedSuspended": "Les opérateurs ChuFlow ont suspendu cet espace.",
+      "lockedCancelled": "Cet abonnement a été annulé.",
+      "lockedTrialEnded": "L'essai est terminé.",
+      "lockedOverdue": "La période payée est terminée et le délai de grâce est épuisé.",
+      "lockedBody": "Contactez les opérateurs ChuFlow pour rétablir l'accès. Vos données sont conservées entre-temps.",
+      "lockedBadge": "Offre",
+      "lockedNav": "{feature} ne fait pas partie de votre offre",
+      "notInPlan": "Hors de votre offre",
+      "viewPlan": "Voir l'offre",
+      "page": {
+        "label": "Abonnement",
+        "title": "Votre offre",
+        "body": "Ce que votre offre ChuFlow comprend, ses limites et sa date de renouvellement.",
+        "notEnforced": "Cet espace n'a aucune limite d'offre.",
+        "blocked": "Cette action n'est pas disponible dans votre offre actuelle.",
+        "contact": "Pour changer d'offre ou enregistrer un paiement, contactez les opérateurs ChuFlow.",
+        "trialEnds": "Fin de l'essai",
+        "paidThrough": "Payé jusqu'au",
+        "graceEnds": "Lecture seule à partir du",
+        "features": "Fonctions",
+        "quotas": "Limites",
+        "unlimited": "Illimité",
+        "included": "Inclus",
+        "notIncluded": "Non inclus"
+      },
+      "features": {
+        "guests": "Invités",
+        "members": "Membres",
+        "attendance": "Présences",
+        "follow_up": "Suivi",
+        "care": "Accompagnement",
+        "meetings": "Réunions",
+        "kids": "Ministère des enfants",
+        "finance": "Finances",
+        "communications": "Communications",
+        "reporting": "Rapports",
+        "exports": "Exports",
+        "api": "Accès API"
+      },
+      "quotas": {
+        "branches": "Antennes",
+        "users": "Comptes du personnel",
+        "members": "Membres",
+        "children": "Enfants"
+      },
+      "statuses": {
+        "trialing": "Essai",
+        "active": "Actif",
+        "past_due": "Paiement en retard",
+        "delinquent": "Lecture seule",
+        "suspended": "Suspendu",
+        "cancelled": "Annulé",
+        "legacy": "Sans offre"
+      },
+      "access": {
+        "full": "Accès complet",
+        "read_only": "Lecture seule",
+        "locked": "Verrouillé"
+      }
+    }
   },
   "roles": {
     "super_admin": "Administrateur de la supervision générale",

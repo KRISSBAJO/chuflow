@@ -2,6 +2,7 @@ import { router, Stack } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { Platform, Pressable, Text } from 'react-native';
 import { AppLockGate } from '@/components/app-lock';
+import { PlanGate } from '@/components/plan-banner';
 import { toast } from '@/components/toast';
 import { colors, fonts } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
@@ -56,6 +57,7 @@ export default function SignedInLayout() {
   return (
     <AppLockGate>
       <AlertsProvider days={user?.preferences?.defaultReportDays ?? 30}>
+        <PlanGate>
         <Stack
           screenOptions={{
             headerShadowVisible: false,
@@ -72,6 +74,7 @@ export default function SignedInLayout() {
             <Stack.Screen key={name} name={name} options={{ presentation: 'modal', headerLeft: () => <CancelButton /> }} />
           ))}
         </Stack>
+        </PlanGate>
       </AlertsProvider>
     </AppLockGate>
   );

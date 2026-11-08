@@ -208,6 +208,50 @@
       "resolved": "Résolu",
       "on_hold": "En pause"
     },
-    "outboxSent": "{count, plural, one {# comptage de présence enregistré a été envoyé} other {# comptages de présence enregistrés ont été envoyés}}"
+    "outboxSent": "{count, plural, one {# comptage de présence enregistré a été envoyé} other {# comptages de présence enregistrés ont été envoyés}}",
+    "plan": {
+      "trialTitle": "{days, plural, =0 {Votre essai {plan} se termine aujourd'hui.} one {Votre essai {plan} se termine dans # jour.} other {Votre essai {plan} se termine dans # jours.}}",
+      "trialBody": "Pour continuer à utiliser ChuFlow ensuite, contactez les opérateurs ChuFlow : ils activeront votre offre.",
+      "pastDueTitle": "Le paiement de l'offre {plan} est en retard.",
+      "pastDueBody": "L'accès complet continue jusqu'au {date}. Ensuite, l'espace passe en lecture seule jusqu'à l'enregistrement d'un paiement.",
+      "readOnlyTitle": "Cet espace est en lecture seule.",
+      "readOnlyBody": "Vous pouvez consulter les fiches, mais rien ajouter ni modifier tant qu'un paiement n'est pas enregistré. Contactez les opérateurs ChuFlow.",
+      "lockedTitle": "Cet espace est verrouillé",
+      "lockedSuspended": "Les opérateurs ChuFlow ont suspendu cet espace.",
+      "lockedCancelled": "Cet abonnement a été annulé.",
+      "lockedTrialEnded": "L'essai est terminé.",
+      "lockedOverdue": "La période payée est terminée et le délai de grâce est épuisé.",
+      "lockedBody": "Contactez les opérateurs ChuFlow pour rétablir l'accès. Vos données sont conservées entre-temps.",
+      "lockedBadge": "Offre",
+      "notInPlan": "Hors de votre offre",
+      "viewPlan": "Voir l'offre",
+      "features": {
+        "guests": "Invités",
+        "members": "Membres",
+        "attendance": "Présences",
+        "follow_up": "Suivi",
+        "care": "Accompagnement",
+        "meetings": "Réunions",
+        "kids": "Ministère des enfants",
+        "finance": "Finances",
+        "communications": "Communications",
+        "reporting": "Rapports",
+        "exports": "Exports",
+        "api": "Accès API"
+      },
+      "quotaUnits": {
+        "branches": "antennes",
+        "users": "comptes du personnel",
+        "members": "membres",
+        "children": "enfants"
+      },
+      "errors": {
+        "feature_locked": "{feature} ne fait pas partie de votre offre. Contactez les opérateurs ChuFlow pour l'ajouter.",
+        "quota_exceeded": "Votre offre autorise {limit} {quota} et vous en avez déjà {current}. Contactez les opérateurs ChuFlow pour relever la limite.",
+        "workspace_read_only": "Cet espace est en lecture seule jusqu'à l'enregistrement d'un paiement. Rien ne peut être ajouté ou modifié pour l'instant.",
+        "workspace_locked": "Cet espace est verrouillé. Contactez les opérateurs ChuFlow pour rétablir l'accès.",
+        "workspace_suspended": "Cet espace a été suspendu. Contactez les opérateurs ChuFlow."
+      }
+    }
   }
 }

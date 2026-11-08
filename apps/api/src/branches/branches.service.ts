@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -22,6 +23,7 @@ import { OversightRegionsService } from '../oversight-regions/oversight-regions.
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateBranchDto, UpdateBranchDto } from './dto/create-branch.dto';
 import { Branch, BranchDocument } from './schemas/branch.schema';
+import { EntitlementsService } from '../platform/entitlements.service';
 
 export type BranchTeamSummary = {
   _id: string;
@@ -142,6 +144,7 @@ export class BranchesService {
     private readonly accessScopeService: AccessScopeService,
     private readonly oversightRegionsService: OversightRegionsService,
     private readonly districtsService: DistrictsService,
+    @Optional() private readonly entitlements?: EntitlementsService,
   ) {}
 
   private buildScopedBranchPayload(
@@ -392,12 +395,17 @@ export class BranchesService {
     };
   }
 
-  create(dto: CreateBranchDto, currentUser: AuthUser) {
+  async create(dto: CreateBranchDto, currentUser: AuthUser) {
     const payload = this.buildScopedBranchPayload(currentUser, dto);
+    if (this.entitlements) {
+      await this.entitlements.assertQuota(
+        'branches',
+        await this.branchModel.countDocuments({}),
+      );
+    }
 
-    return this.ensureHierarchyCatalogEntries(payload, currentUser).then(() =>
-      this.branchModel.create(payload),
-    );
+    await this.ensureHierarchyCatalogEntries(payload, currentUser);
+    return this.branchModel.create(payload);
   }
 
   async findAll(currentUser: AuthUser) {

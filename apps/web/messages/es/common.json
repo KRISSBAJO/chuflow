@@ -106,7 +106,75 @@
     "exportHint": "Todos los registros coincidentes de todas las páginas. Importa cualquiera de los archivos en Google Sheets con Archivo → Importar → Subir.",
     "table": "Tabla",
     "downloadReady": "Descarga lista",
-    "copyFailed": "No se pudo copiar el enlace. Cópielo manualmente."
+    "copyFailed": "No se pudo copiar el enlace. Cópielo manualmente.",
+    "plan": {
+      "trialTitle": "{days, plural, =0 {Su prueba de {plan} termina hoy.} one {Su prueba de {plan} termina en # día.} other {Su prueba de {plan} termina en # días.}}",
+      "trialBody": "Para seguir usando ChuFlow después, contacte a los operadores de ChuFlow y activarán su plan.",
+      "pastDueTitle": "El pago del plan {plan} está vencido.",
+      "pastDueBody": "El acceso completo continúa hasta el {date}. Después, el espacio pasa a solo lectura hasta que se registre un pago.",
+      "readOnlyTitle": "Este espacio es de solo lectura.",
+      "readOnlyBody": "Puede ver los registros, pero no añadir ni cambiar nada hasta que se registre un pago. Contacte a los operadores de ChuFlow.",
+      "lockedTitle": "Este espacio está bloqueado",
+      "lockedSuspended": "Los operadores de ChuFlow han suspendido este espacio.",
+      "lockedCancelled": "Esta suscripción fue cancelada.",
+      "lockedTrialEnded": "La prueba ha terminado.",
+      "lockedOverdue": "El periodo pagado terminó y el plazo de gracia se agotó.",
+      "lockedBody": "Contacte a los operadores de ChuFlow para recuperar el acceso. Sus datos se conservan mientras tanto.",
+      "lockedBadge": "Plan",
+      "lockedNav": "{feature} no está incluido en su plan",
+      "notInPlan": "No está en su plan",
+      "viewPlan": "Ver plan",
+      "page": {
+        "label": "Suscripción",
+        "title": "Su plan",
+        "body": "Qué incluye su plan de ChuFlow, sus límites y cuándo se renueva.",
+        "notEnforced": "Este espacio no tiene límites de plan.",
+        "blocked": "Esa acción no está disponible en su plan actual.",
+        "contact": "Para cambiar de plan o registrar un pago, contacte a los operadores de ChuFlow.",
+        "trialEnds": "La prueba termina",
+        "paidThrough": "Pagado hasta",
+        "graceEnds": "Solo lectura desde",
+        "features": "Funciones",
+        "quotas": "Límites",
+        "unlimited": "Ilimitado",
+        "included": "Incluido",
+        "notIncluded": "No incluido"
+      },
+      "features": {
+        "guests": "Invitados",
+        "members": "Miembros",
+        "attendance": "Asistencia",
+        "follow_up": "Seguimiento",
+        "care": "Cuidado pastoral",
+        "meetings": "Reuniones",
+        "kids": "Ministerio infantil",
+        "finance": "Finanzas",
+        "communications": "Comunicaciones",
+        "reporting": "Informes",
+        "exports": "Exportaciones",
+        "api": "Acceso API"
+      },
+      "quotas": {
+        "branches": "Sedes",
+        "users": "Cuentas de personal",
+        "members": "Miembros",
+        "children": "Niños"
+      },
+      "statuses": {
+        "trialing": "Prueba",
+        "active": "Activo",
+        "past_due": "Pago vencido",
+        "delinquent": "Solo lectura",
+        "suspended": "Suspendido",
+        "cancelled": "Cancelado",
+        "legacy": "Sin plan"
+      },
+      "access": {
+        "full": "Acceso completo",
+        "read_only": "Solo lectura",
+        "locked": "Bloqueado"
+      }
+    }
   },
   "roles": {
     "super_admin": "Administrador de supervisión general",

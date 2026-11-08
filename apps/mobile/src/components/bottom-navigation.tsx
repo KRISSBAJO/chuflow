@@ -10,6 +10,7 @@ import { colors, fonts, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
 import { useAppFormat } from '@/i18n/format';
 import { useAlerts } from '@/lib/alerts';
+import { usePlan } from '@/lib/entitlements';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 
@@ -25,19 +26,20 @@ export function BottomNavigation({ state, descriptors, emitter, navigateToTab }:
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const role = user?.role;
-  const visible = ['index', ...(can.guests(role) ? ['guests'] : []), ...(can.attendance(role) ? ['attendance'] : []), 'more'];
+  const { allows } = usePlan();
+  const visible = ['index', ...(can.guests(role) && allows('guests') ? ['guests'] : []), ...(can.attendance(role) && allows('attendance') ? ['attendance'] : []), 'more'];
   const routes = visible.flatMap((name) => state.routes.filter((route) => route.name === name));
   const split = Math.ceil(routes.length / 2);
-  const count = (summary?.quickStats.pendingApprovals ?? 0) + (can.followUp(role) ? (summary?.quickStats.pendingFollowUp ?? 0) : 0);
+  const count = (summary?.quickStats.pendingApprovals ?? 0) + (can.followUp(role) && allows('follow_up') ? (summary?.quickStats.pendingFollowUp ?? 0) : 0);
   const actions = [
-    { key: 'newGuest', icon: 'guests', href: '/guest/new', show: can.guests(role) },
-    { key: 'newMember', icon: 'members', href: '/members/new', show: can.members(role) },
-    { key: 'attendance', icon: 'attendance', href: '/attendance/new', show: can.recordAttendance(role) },
-    { key: 'meeting', icon: 'calendar', href: '/meetings/new', show: can.lead(role) },
-    { key: 'offering', icon: 'finance', href: '/finance/offerings/new', show: can.recordOfferings(role) },
-    { key: 'expense', icon: 'cash', href: '/finance/expenses/new', show: can.recordExpenses(role) },
-    { key: 'kids', icon: 'smile', href: '/kids', show: can.kids(role) },
-    { key: 'report', icon: 'reports', href: '/weekly-reports/new', show: can.reports(role) },
+    { key: 'newGuest', icon: 'guests', href: '/guest/new', show: can.guests(role) && allows('guests') },
+    { key: 'newMember', icon: 'members', href: '/members/new', show: can.members(role) && allows('members') },
+    { key: 'attendance', icon: 'attendance', href: '/attendance/new', show: can.recordAttendance(role) && allows('attendance') },
+    { key: 'meeting', icon: 'calendar', href: '/meetings/new', show: can.lead(role) && allows('meetings') },
+    { key: 'offering', icon: 'finance', href: '/finance/offerings/new', show: can.recordOfferings(role) && allows('finance') },
+    { key: 'expense', icon: 'cash', href: '/finance/expenses/new', show: can.recordExpenses(role) && allows('finance') },
+    { key: 'kids', icon: 'smile', href: '/kids', show: can.kids(role) && allows('kids') },
+    { key: 'report', icon: 'reports', href: '/weekly-reports/new', show: can.reports(role) && allows('reporting') },
   ].filter((action) => action.show);
 
   function destination(route: (typeof state.routes)[number]) {

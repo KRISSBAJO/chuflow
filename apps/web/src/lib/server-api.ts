@@ -21,6 +21,8 @@ export async function serverGet<T>(path: string, options: { redirectOnForbidden?
 
   if (response.status === 401) redirect("/login?reason=session-expired");
   if (response.status === 403 && options.redirectOnForbidden !== false) redirect("/unauthorized");
+  // The church's plan refused it: explain on the plan page instead of a generic error.
+  if (response.status === 402) redirect("/plan?blocked=1");
   if (!response.ok) {
     throw new ServerApiError(response.status);
   }

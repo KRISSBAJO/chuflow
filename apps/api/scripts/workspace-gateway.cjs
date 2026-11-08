@@ -2,6 +2,7 @@ const { fork } = require('node:child_process');
 const http = require('node:http');
 const { isIP } = require('node:net');
 const path = require('node:path');
+const secrets = require('./workspace-secrets.cjs');
 
 const PRIMARY = 'winners-chapel-international';
 const PREFIX = '/api/w/';
@@ -21,8 +22,9 @@ function upstreamHeaders(request, isRender) {
 const sharedEnvironment = [
   'PATH', 'Path', 'SystemRoot', 'TEMP', 'TMP', 'HOME', 'NODE_ENV', 'NODE_PATH',
   'WEB_URL', 'CORS_ALLOWED_ORIGINS', 'COOKIE_SECURE', 'COOKIE_SAME_SITE',
-  'RENDER_GIT_COMMIT', 'WORKSPACE_DIRECTORY_VERIFICATION_KEY',
+  'RENDER_GIT_COMMIT', 'WORKSPACE_DIRECTORY_VERIFICATION_KEY', 'CONTROL_DATABASE_NAME',
 ];
+const REGISTRY_REFRESH_MS = 30000;
 
 function databaseLocation(uri) {
   try {
@@ -37,8 +39,7 @@ function databaseLocation(uri) {
   throw new Error('Every workspace requires an explicit MongoDB database.');
 }
 
-function readRegistry(env) {
-  const primary = databaseLocation(env.MONGODB_URI);
+function parseRegistryEnvironment(env) {
   let entries;
   try {
     entries = JSON.parse(env.CHUFLOW_WORKSPACE_REGISTRY || '[]');
@@ -46,9 +47,42 @@ function readRegistry(env) {
     throw new Error('The workspace registry must be a JSON array.');
   }
   if (!Array.isArray(entries)) throw new Error('The workspace registry must be a JSON array.');
+  return entries;
+}
+
+/**
+ * Workspaces from the control database, where the site admin provisions them. Secrets are
+ * sealed at rest; only the gateway opens them, to hand each worker its own key and first admin.
+ */
+function registryFromRecords(records, env) {
+  const key = env.CONTROL_ENCRYPTION_KEY;
+  return records
+    .filter((record) => record && typeof record._id === 'string' && ['active', 'suspended'].includes(record.status))
+    .map((record) => ({
+      id: record._id,
+      name: record.name,
+      databaseName: record.databaseName,
+      jwtSecret: secrets.open(record.jwtSecret, key),
+      adminEmail: record.adminEmail,
+      adminPassword: secrets.open(record.adminPassword, key),
+      status: record.status,
+    }));
+}
+
+/** Validates the environment registry plus any entries from the control database. */
+function readRegistry(env, extraEntries = []) {
+  const primary = databaseLocation(env.MONGODB_URI);
+  const entries = [...parseRegistryEnvironment(env), ...extraEntries];
 
   const workspaces = new Map();
   const databases = new Set([primary.name.toLowerCase(), 'admin', 'config', 'local']);
+  if (env.CONTROL_DATABASE_NAME) {
+    const controlDatabase = env.CONTROL_DATABASE_NAME.toLowerCase();
+    if (databases.has(controlDatabase)) {
+      throw new Error('The control database must be separate from workspace and system databases.');
+    }
+    databases.add(controlDatabase);
+  }
   const keys = new Set([env.JWT_SECRET]);
   for (const entry of entries) {
     if (
@@ -74,9 +108,25 @@ function readRegistry(env) {
     }
     databases.add(databaseKey);
     keys.add(entry.jwtSecret);
-    workspaces.set(entry.id, shared ? { ...entry, mongodbUri: env.MONGODB_URI } : entry);
+    const status = entry.status === 'suspended' ? 'suspended' : 'active';
+    workspaces.set(entry.id, { ...entry, status, mongodbUri: shared ? env.MONGODB_URI : entry.mongodbUri });
   }
   return workspaces;
+}
+
+/** Reads provisioned workspaces from the control database when one is configured. */
+async function loadRegistry(env, client) {
+  if (!env.CONTROL_DATABASE_NAME) return readRegistry(env);
+  const { MongoClient } = require('mongoose').mongo;
+  const owned = !client;
+  const connection = client || new MongoClient(env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+  try {
+    const records = await connection.db(env.CONTROL_DATABASE_NAME).collection('workspaces')
+      .find({ status: { $in: ['active', 'suspended'] } }).toArray();
+    return readRegistry(env, registryFromRecords(records, env));
+  } finally {
+    if (owned) await connection.close();
+  }
 }
 
 function routeWorkspace(rawUrl) {
@@ -125,9 +175,33 @@ function workerEnvironment(env, entry) {
 }
 
 function start(env = process.env) {
-  const registry = readRegistry(env);
+  const registry = { entries: readRegistry(env) };
   const workers = new Map();
   let closing = false;
+  let control = null;
+
+  // The control database is the source of truth once configured: new workspaces appear and
+  // suspended or archived ones stop being served within one refresh, no restart needed.
+  if (env.CONTROL_DATABASE_NAME) {
+    const { MongoClient } = require('mongoose').mongo;
+    control = new MongoClient(env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    const refresh = async () => {
+      try {
+        registry.entries = await loadRegistry(env, control);
+        for (const [id, state] of workers) {
+          if (id !== PRIMARY && !registry.entries.has(id)) {
+            workers.delete(id);
+            state.child.kill();
+          }
+        }
+      } catch (error) {
+        console.error('Workspace registry refresh failed:', error instanceof Error ? error.message : error);
+      }
+    };
+    registry.ready = refresh();
+    registry.timer = setInterval(() => { if (!closing) void refresh(); }, REGISTRY_REFRESH_MS);
+    registry.timer.unref();
+  }
 
   function workerFor(id) {
     const current = workers.get(id);
@@ -135,8 +209,8 @@ function start(env = process.env) {
     const child = fork(path.join(__dirname, '..', 'dist', 'main.js'), [], {
       env: workerEnvironment({
         ...env,
-        CHUFLOW_RESERVED_WORKSPACE_HANDLES: [...registry.keys()].join(','),
-      }, registry.get(id)),
+        CHUFLOW_RESERVED_WORKSPACE_HANDLES: [...registry.entries.keys()].join(','),
+      }, registry.entries.get(id)),
       execArgv: [],
       windowsHide: true,
     });
@@ -166,9 +240,16 @@ function start(env = process.env) {
 
   const server = http.createServer(async (request, response) => {
     const route = routeWorkspace(request.url);
-    if (!route || (route.id !== PRIMARY && !registry.has(route.id))) {
+    if (registry.ready) await registry.ready;
+    const entry = route && route.id !== PRIMARY ? registry.entries.get(route.id) : null;
+    if (!route || (route.id !== PRIMARY && !entry)) {
       response.writeHead(404, { 'Content-Type': 'application/json' });
       response.end('{"message":"Workspace not found."}');
+      return;
+    }
+    if (entry && entry.status === 'suspended') {
+      response.writeHead(402, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      response.end('{"code":"workspace_suspended","message":"This workspace is suspended. Contact ChuFlow support."}');
       return;
     }
 
@@ -202,6 +283,8 @@ function start(env = process.env) {
   const close = () => {
     closing = true;
     server.close();
+    if (registry.timer) clearInterval(registry.timer);
+    if (control) void control.close().catch(() => undefined);
     for (const { child } of workers.values()) child.kill();
   };
   server.listen(Number(env.PORT || 10000), env.API_BIND_HOST || '0.0.0.0');
@@ -214,4 +297,4 @@ if (require.main === module) {
   process.on('SIGINT', close);
 }
 
-module.exports = { routeWorkspace, readRegistry, start, upstreamHeaders };
+module.exports = { routeWorkspace, readRegistry, registryFromRecords, loadRegistry, start, upstreamHeaders };

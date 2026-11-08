@@ -11,6 +11,7 @@ import type { ReportsSummary } from '@/features/reports/types';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
+import { usePlan } from '@/lib/entitlements';
 import { query } from '@/lib/api';
 import { routeForAlert } from '@/lib/notifications';
 import { useOnline } from '@/lib/offline-queue';
@@ -39,6 +40,7 @@ export function HomeScreen() {
   const tw = useT('auth.workspacePicker');
   const format = useAppFormat();
   const role = user?.role;
+  const { allows } = usePlan();
   const [days, setDays] = useState(() => user?.preferences?.defaultReportDays ?? 30);
   const [showAllNeeds, setShowAllNeeds] = useState(false);
   const [series, setSeries] = useState<Series>('attendance');
@@ -103,22 +105,22 @@ export function HomeScreen() {
   const pendingApprovals = summary?.quickStats.pendingApprovals ?? 0;
   const actions: QuickAction[] = (
     [
-      { key: 'newGuest', icon: 'plus', label: t('shortcuts.newGuest'), tone: 'flame', onPress: () => router.push('/guest/new'), show: can.guests(role) },
-      { key: 'attendance', icon: 'attendance', label: t('shortcuts.attendance'), onPress: () => router.push('/attendance/new' as Href), show: can.recordAttendance(role) },
+      { key: 'newGuest', icon: 'plus', label: t('shortcuts.newGuest'), tone: 'flame', onPress: () => router.push('/guest/new'), show: can.guests(role) && allows('guests') },
+      { key: 'attendance', icon: 'attendance', label: t('shortcuts.attendance'), onPress: () => router.push('/attendance/new' as Href), show: can.recordAttendance(role) && allows('attendance') },
       {
         key: 'followUp',
         icon: 'care',
         label: t('shortcuts.followUp'),
         onPress: () => router.push('/follow-up'),
-        show: can.followUp(role),
+        show: can.followUp(role) && allows('follow_up'),
         badge: summary?.quickStats.pendingFollowUp,
       },
       { key: 'approvals', icon: 'approvals', label: t('shortcuts.approvals'), onPress: () => router.push('/approvals'), show: can.approvals(role), badge: pendingApprovals },
-      { key: 'members', icon: 'members', label: t('shortcuts.members'), onPress: () => router.push('/members' as Href), show: can.members(role) },
-      { key: 'kids', icon: 'smile', label: t('shortcuts.kids'), onPress: () => router.push('/kids' as Href), show: can.kids(role) && !can.kidsOnly(role) },
-      { key: 'meetings', icon: 'calendar', label: t('shortcuts.meetings'), onPress: () => router.push('/meetings' as Href), show: can.meetings(role) },
-      { key: 'finance', icon: 'finance', label: t('shortcuts.finance'), onPress: () => router.push('/finance' as Href), show: can.finance(role) },
-      { key: 'reports', icon: 'reports', label: t('shortcuts.reports'), onPress: () => router.push('/reports' as Href), show: can.reports(role) },
+      { key: 'members', icon: 'members', label: t('shortcuts.members'), onPress: () => router.push('/members' as Href), show: can.members(role) && allows('members') },
+      { key: 'kids', icon: 'smile', label: t('shortcuts.kids'), onPress: () => router.push('/kids' as Href), show: can.kids(role) && !can.kidsOnly(role) && allows('kids') },
+      { key: 'meetings', icon: 'calendar', label: t('shortcuts.meetings'), onPress: () => router.push('/meetings' as Href), show: can.meetings(role) && allows('meetings') },
+      { key: 'finance', icon: 'finance', label: t('shortcuts.finance'), onPress: () => router.push('/finance' as Href), show: can.finance(role) && allows('finance') },
+      { key: 'reports', icon: 'reports', label: t('shortcuts.reports'), onPress: () => router.push('/reports' as Href), show: can.reports(role) && allows('reporting') },
     ] as (QuickAction & { show: boolean })[]
   )
     .filter((action) => action.show)

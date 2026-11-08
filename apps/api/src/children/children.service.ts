@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { EntitlementsService } from '../platform/entitlements.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomUUID, randomBytes } from 'node:crypto';
@@ -62,6 +63,7 @@ export class ChildrenService {
     @Optional()
     @InjectModel(User.name)
     private readonly users?: Model<User>,
+    @Optional() private readonly entitlements?: EntitlementsService,
   ) {}
   private id(v: string) {
     if (!Types.ObjectId.isValid(v))
@@ -303,7 +305,10 @@ export class ChildrenService {
     const page = Math.max(1, Number(q.page) || 1),
       limit = 20;
     const sessionPage = Math.max(1, Number(q.sessionPage) || 1);
-    const sessionFilter = { branchId: bid, ...(manage ? {} : { status: 'open' }) };
+    const sessionFilter = {
+      branchId: bid,
+      ...(manage ? {} : { status: 'open' }),
+    };
     const [
       families,
       total,
@@ -588,6 +593,12 @@ export class ChildrenService {
   }
   async saveChild(u: AuthUser, d: ChildDto, id?: string) {
     const f = await this.family(u, d.familyId);
+    if (!id && this.entitlements) {
+      await this.entitlements.assertQuota(
+        'children',
+        await this.children.countDocuments({ isActive: true }),
+      );
+    }
     ageMonths(d.birthDate);
     if (ageMonths(d.birthDate) >= 216)
       throw new BadRequestException(
@@ -801,7 +812,9 @@ export class ChildrenService {
     const staff =
       this.users && actorIds.length
         ? await this.users
-            .find({ _id: { $in: actorIds.map((id) => new Types.ObjectId(id)) } })
+            .find({
+              _id: { $in: actorIds.map((id) => new Types.ObjectId(id)) },
+            })
             .select('_id firstName lastName')
             .lean()
         : [];

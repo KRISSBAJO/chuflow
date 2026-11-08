@@ -1,5 +1,5 @@
 const { MongoClient } = require('mongoose').mongo;
-const { readRegistry } = require('./workspace-gateway.cjs');
+const { loadRegistry } = require('./workspace-gateway.cjs');
 
 class LinkError extends Error {}
 
@@ -18,7 +18,7 @@ async function main([workspaceId, sourceEmail, targetEmail]) {
   if (!sourceEmail?.includes('@') || !targetEmail?.includes('@')) {
     throw new LinkError('Supply a workspace ID and both account emails.');
   }
-  const entry = readRegistry(process.env).get(workspaceId);
+  const entry = (await loadRegistry(process.env)).get(workspaceId);
   if (!entry) throw new LinkError('The destination is outside the gateway registry.');
   const options = { serverSelectionTimeoutMS: 8000 };
   const source = new MongoClient(process.env.MONGODB_URI, options);

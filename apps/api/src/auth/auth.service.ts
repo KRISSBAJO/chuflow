@@ -2,6 +2,7 @@ import { PermissionsService } from '../permissions/permissions.service';
 import {
   BadRequestException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -16,6 +17,8 @@ import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
 import type { User } from '../users/schemas/user.schema';
 import { getWorkspace } from '../workspaces/workspace-boundary';
+import { EntitlementsService } from '../platform/entitlements.service';
+import { publicSnapshot } from '../platform/subscription-rules';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +28,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
     private readonly permissions: PermissionsService,
+    @Optional() private readonly entitlements?: EntitlementsService,
   ) {}
 
   async login(loginDto: LoginDto, options: { expiresIn?: string } = {}) {
@@ -48,7 +52,10 @@ export class AuthService {
     return this.issueSession(user.id, user, options);
   }
 
-  async startWorkspaceSession(userId: string, options: { expiresIn?: string } = {}) {
+  async startWorkspaceSession(
+    userId: string,
+    options: { expiresIn?: string } = {},
+  ) {
     const user = await this.usersService.findById(userId).catch(() => null);
     if (!user?.isActive) {
       throw new UnauthorizedException('Authentication failed');
@@ -58,7 +65,16 @@ export class AuthService {
 
   private async issueSession(
     userId: string,
-    user: Pick<User, 'email' | 'role' | 'firstName' | 'lastName' | 'oversightRegion' | 'district' | 'branchId'>,
+    user: Pick<
+      User,
+      | 'email'
+      | 'role'
+      | 'firstName'
+      | 'lastName'
+      | 'oversightRegion'
+      | 'district'
+      | 'branchId'
+    >,
     options: { expiresIn?: string },
   ) {
     await this.usersService.touchLastLogin(userId);
@@ -103,6 +119,9 @@ export class AuthService {
       ...user,
       ...(await this.permissions.resolve(user)),
       workspace: getWorkspace(this.configService),
+      ...(this.entitlements
+        ? { entitlements: publicSnapshot(await this.entitlements.snapshot()) }
+        : {}),
     };
   }
 

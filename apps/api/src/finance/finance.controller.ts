@@ -38,11 +38,13 @@ import {
   UpdateOfferingTypeDto,
 } from './dto/create-offering-type.dto';
 import { FinanceService } from './finance.service';
+import { RequiresFeature } from '../platform/requires-feature.decorator';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 
 @ApiTags('Finance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequiresFeature('finance')
 @Controller('finance')
 export class FinanceController {
   constructor(

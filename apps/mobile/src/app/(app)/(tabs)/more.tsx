@@ -14,9 +14,11 @@ import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
+import { usePlan } from '@/lib/entitlements';
 import { getWorkspaceWebUrl, api, errorMessage } from '@/lib/api';
 import { disablePush, enablePush, pushStatus, type PushStatus } from '@/lib/notifications';
 import { can } from '@/lib/permissions';
+import type { FeatureKey } from '@/lib/types';
 import { useSession } from '@/lib/session';
 
 /*
@@ -27,14 +29,14 @@ import { useSession } from '@/lib/session';
 type AreaKey = 'members' | 'kids' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports';
 
 /** Areas listed under the search; search itself sits at the top as a field. */
-const AREAS: { key: AreaKey; icon: IconName; href: Href; show: (role?: string) => boolean }[] = [
-  { key: 'members', icon: 'members', href: '/members' as Href, show: can.members },
-  { key: 'kids', icon: 'smile', href: '/kids' as Href, show: (role) => can.kids(role) && !can.kidsOnly(role) },
-  { key: 'finance', icon: 'finance', href: '/finance' as Href, show: can.finance },
-  { key: 'meetings', icon: 'calendar', href: '/meetings' as Href, show: can.meetings },
-  { key: 'careCases', icon: 'care', href: '/care-cases' as Href, show: can.careCases },
-  { key: 'attendanceHistory', icon: 'history', href: '/attendance-history' as Href, show: can.attendance },
-  { key: 'reports', icon: 'reports', href: '/reports' as Href, show: can.reports },
+const AREAS: { key: AreaKey; icon: IconName; href: Href; feature: FeatureKey; show: (role?: string) => boolean }[] = [
+  { key: 'members', icon: 'members', href: '/members' as Href, feature: 'members', show: can.members },
+  { key: 'kids', icon: 'smile', href: '/kids' as Href, feature: 'kids', show: (role) => can.kids(role) && !can.kidsOnly(role) },
+  { key: 'finance', icon: 'finance', href: '/finance' as Href, feature: 'finance', show: can.finance },
+  { key: 'meetings', icon: 'calendar', href: '/meetings' as Href, feature: 'meetings', show: can.meetings },
+  { key: 'careCases', icon: 'care', href: '/care-cases' as Href, feature: 'care', show: can.careCases },
+  { key: 'attendanceHistory', icon: 'history', href: '/attendance-history' as Href, feature: 'attendance', show: can.attendance },
+  { key: 'reports', icon: 'reports', href: '/reports' as Href, feature: 'reporting', show: can.reports },
 ];
 
 type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings';
@@ -92,6 +94,7 @@ export default function MoreScreen() {
   const t = useT('more');
   const common = useT('common');
   const format = useAppFormat();
+  const { allows } = usePlan();
   const [push, setPush] = useState<PushStatus | null>(null);
   const [lockAvailable, setLockAvailable] = useState(false);
   const [lockOn, setLockOn] = useState(false);
@@ -201,16 +204,22 @@ export default function MoreScreen() {
       {areas.length ? (
         <View>
           <Section title={t('workspace')} />
-          {areas.map((area, index) => (
-            <ListRow
-              key={area.key}
-              divider={index > 0}
-              title={common(`areas.${area.key}`)}
-              subtitle={t(`hints.${area.key}`)}
-              left={<AreaIcon name={area.icon} />}
-              onPress={() => router.push(area.href)}
-            />
-          ))}
+          {areas.map((area, index) => {
+            const locked = !allows(area.feature);
+            return (
+              <View key={area.key} style={locked ? styles.lockedArea : undefined} accessibilityState={{ disabled: locked }}>
+                <ListRow
+                  divider={index > 0}
+                  title={common(`areas.${area.key}`)}
+                  subtitle={locked ? common('plan.notInPlan') : t(`hints.${area.key}`)}
+                  left={<AreaIcon name={locked ? 'lock' : area.icon} />}
+                  right={locked ? <Badge label={common('plan.lockedBadge')} tone="neutral" /> : undefined}
+                  chevron={!locked}
+                  onPress={locked ? undefined : () => router.push(area.href)}
+                />
+              </View>
+            );
+          })}
         </View>
       ) : null}
 
@@ -268,6 +277,7 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   profile: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   areaIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  lockedArea: { opacity: 0.55 },
   searchLink: {
     flexDirection: 'row',
     alignItems: 'center',

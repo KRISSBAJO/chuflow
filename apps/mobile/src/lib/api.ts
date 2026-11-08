@@ -1,5 +1,6 @@
 import { translate } from '@/i18n/provider';
 import { API_URL, WEB_URL } from './config';
+import { isPlanErrorCode, type PlanErrorCode } from './plan-codes';
 
 /*
  * Tiny API client. The session sets the bearer token once signed in, and registers a handler
@@ -13,6 +14,27 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+/** A 402: the church's plan, not the person's role, refused the request. */
+export class PlanError extends ApiError {
+  constructor(
+    readonly code: PlanErrorCode,
+    readonly details: { feature?: string; quota?: string; limit?: number; current?: number },
+  ) {
+    super(planErrorMessage(code, details), 402);
+  }
+}
+
+function planErrorMessage(code: PlanErrorCode, details: { feature?: string; quota?: string; limit?: number; current?: number }) {
+  const feature = details.feature ? translate(`common.plan.features.${details.feature}`) : '';
+  const quota = details.quota ? translate(`common.plan.quotaUnits.${details.quota}`) : '';
+  return translate(`common.plan.errors.${code}`, {
+    feature,
+    quota,
+    limit: details.limit ?? 0,
+    current: details.current ?? 0,
+  });
 }
 
 /** Thrown when the phone can't reach the API at all (no signal, server down). */
@@ -72,6 +94,10 @@ export async function request<T>(
 
   if (!response.ok) {
     if (response.status === 401 && session.token && session === activeSession) onUnauthorized?.();
+    const refusal = data as { code?: unknown; feature?: string; quota?: string; limit?: number; current?: number } | null;
+    if (response.status === 402 && isPlanErrorCode(refusal?.code)) {
+      throw new PlanError(refusal.code, { feature: refusal.feature, quota: refusal.quota, limit: refusal.limit, current: refusal.current });
+    }
     const message = (data as { message?: string | string[] } | null)?.message;
     throw new ApiError(
       Array.isArray(message) ? message.join(', ') : message || `Request failed (${response.status})`,

@@ -208,6 +208,50 @@
       "resolved": "Resolved",
       "on_hold": "On hold"
     },
-    "outboxSent": "{count, plural, one {# saved attendance count was sent} other {# saved attendance counts were sent}}"
+    "outboxSent": "{count, plural, one {# saved attendance count was sent} other {# saved attendance counts were sent}}",
+    "plan": {
+      "trialTitle": "{days, plural, =0 {Your {plan} trial ends today.} one {Your {plan} trial ends in # day.} other {Your {plan} trial ends in # days.}}",
+      "trialBody": "To keep using ChuFlow after that, contact the ChuFlow operators and they will activate your plan.",
+      "pastDueTitle": "Payment for the {plan} plan is overdue.",
+      "pastDueBody": "Full access continues until {date}. After that the workspace becomes read-only until a payment is recorded.",
+      "readOnlyTitle": "This workspace is read-only.",
+      "readOnlyBody": "You can view records but not add or change them until a payment is recorded. Contact the ChuFlow operators.",
+      "lockedTitle": "This workspace is locked",
+      "lockedSuspended": "The ChuFlow operators have suspended this workspace.",
+      "lockedCancelled": "This subscription was cancelled.",
+      "lockedTrialEnded": "The trial has ended.",
+      "lockedOverdue": "The paid period ended and the grace period has run out.",
+      "lockedBody": "Contact the ChuFlow operators to restore access. Your data is kept safe meanwhile.",
+      "lockedBadge": "Plan",
+      "notInPlan": "Not in your plan",
+      "viewPlan": "View plan",
+      "features": {
+        "guests": "Guests",
+        "members": "Members",
+        "attendance": "Attendance",
+        "follow_up": "Follow-up",
+        "care": "Care",
+        "meetings": "Meetings",
+        "kids": "Kids ministry",
+        "finance": "Finance",
+        "communications": "Communications",
+        "reporting": "Reporting",
+        "exports": "Exports",
+        "api": "API access"
+      },
+      "quotaUnits": {
+        "branches": "branches",
+        "users": "staff accounts",
+        "members": "members",
+        "children": "children"
+      },
+      "errors": {
+        "feature_locked": "{feature} is not included in your plan. Contact the ChuFlow operators to upgrade.",
+        "quota_exceeded": "Your plan allows {limit} {quota} and you already have {current}. Contact the ChuFlow operators to raise the limit.",
+        "workspace_read_only": "This workspace is read-only until a payment is recorded. Nothing can be added or changed right now.",
+        "workspace_locked": "This workspace is locked. Contact the ChuFlow operators to restore access.",
+        "workspace_suspended": "This workspace has been suspended. Contact the ChuFlow operators."
+      }
+    }
   }
 }

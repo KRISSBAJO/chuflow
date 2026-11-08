@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -16,6 +17,7 @@ import {
 } from '../service-units/schemas/service-unit.schema';
 import { CreateMemberDto, UpdateMemberDto } from './dto/create-member.dto';
 import { Member, MemberDocument } from './schemas/member.schema';
+import { EntitlementsService } from '../platform/entitlements.service';
 import { MemberDirectoryDto } from './dto/member-directory.dto';
 
 @Injectable()
@@ -28,6 +30,7 @@ export class MembersService {
     private readonly serviceUnitModel: Model<ServiceUnitDocument>,
     private readonly guestsService: GuestsService,
     private readonly accessScopeService: AccessScopeService,
+    @Optional() private readonly entitlements?: EntitlementsService,
   ) {}
 
   private escapeRegExp(value: string) {
@@ -287,6 +290,12 @@ export class MembersService {
   async create(dto: CreateMemberDto, currentUser?: AuthUser) {
     const normalizedDto = this.normalizeMemberPayload(dto);
     this.validateMemberPayload(normalizedDto);
+    if (this.entitlements) {
+      await this.entitlements.assertQuota(
+        'members',
+        await this.memberModel.countDocuments({}),
+      );
+    }
     const branchId = await this.accessScopeService.resolveScopedBranchId(
       currentUser,
       normalizedDto.branchId,

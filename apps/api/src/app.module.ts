@@ -6,7 +6,10 @@ import { HierarchyModule } from './hierarchy/hierarchy.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { Module } from '@nestjs/common';
 import type { Connection } from 'mongoose';
-import { bindWorkspaceDatabase, getWorkspace } from './workspaces/workspace-boundary';
+import {
+  bindWorkspaceDatabase,
+  getWorkspace,
+} from './workspaces/workspace-boundary';
 import { EvangelismModule } from './evangelism/evangelism.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
@@ -15,6 +18,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './common/app.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { EntitlementsGuard } from './platform/entitlements.guard';
+import { EntitlementsModule } from './platform/entitlements.module';
+import { PlatformModule } from './platform/platform.module';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './auth/auth.module';
@@ -62,13 +68,23 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
         uri: configService.get<string>('mongodbUri'),
         connectionFactory: async (connection: Connection) => {
           try {
-              const databaseName = configService.get<string>('WORKSPACE_DATABASE_NAME');
-              const workspace = getWorkspace(configService);
-              if (databaseName && databaseName.toLowerCase() === connection.name.toLowerCase()) {
-                throw new Error('A workspace must use a distinct database.');
-              }
-              const workspaceConnection = databaseName ? connection.useDb(databaseName) : connection;
-              return await bindWorkspaceDatabase(workspaceConnection, workspace.id);
+            const databaseName = configService.get<string>(
+              'WORKSPACE_DATABASE_NAME',
+            );
+            const workspace = getWorkspace(configService);
+            if (
+              databaseName &&
+              databaseName.toLowerCase() === connection.name.toLowerCase()
+            ) {
+              throw new Error('A workspace must use a distinct database.');
+            }
+            const workspaceConnection = databaseName
+              ? connection.useDb(databaseName)
+              : connection;
+            return await bindWorkspaceDatabase(
+              workspaceConnection,
+              workspace.id,
+            );
           } catch (error) {
             await connection.close();
             throw error;
@@ -76,6 +92,8 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
         },
       }),
     }),
+    EntitlementsModule,
+    PlatformModule,
     AuthModule,
     EvangelismModule,
     MeetingsModule,
@@ -116,6 +134,10 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: EntitlementsGuard,
     },
   ],
 })

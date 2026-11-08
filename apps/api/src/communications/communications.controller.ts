@@ -18,6 +18,7 @@ import {
   UpdateCommunicationTemplateDto,
 } from './dto/manage-template.dto';
 import { CommunicationsService } from './communications.service';
+import { RequiresFeature } from '../platform/requires-feature.decorator';
 import { CreateCommunicationDto } from './dto/create-communication.dto';
 
 @ApiTags('Communications')
@@ -34,6 +35,7 @@ import { CreateCommunicationDto } from './dto/create-communication.dto';
   'associate_pastor',
   'follow_up',
 )
+@RequiresFeature('communications')
 @Controller('communications')
 export class CommunicationsController {
   constructor(private readonly communicationsService: CommunicationsService) {}

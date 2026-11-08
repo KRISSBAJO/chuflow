@@ -15,6 +15,8 @@ import type { SessionUser } from "@/lib/auth";
 import { canAccessRoute } from "@/lib/permissions";
 import type { AlertsSummary } from "@/lib/types";
 import { Icon, type IconName } from "./icons";
+import { PlanBanner } from "./plan-banner";
+import { planLocksRoute } from "@/lib/entitlements";
 
 type BadgeKey = "approvals" | "followUp" | "firstTimers";
 
@@ -159,7 +161,9 @@ function TabBar({
   onMore: () => void;
 }) {
   const t = useTranslations("shell");
-  const tabs = TAB_CANDIDATES.filter((item) => canAccessRoute(user?.role, item.href, user?.additionalPermissions)).slice(0, 4);
+  const tabs = TAB_CANDIDATES.filter(
+    (item) => canAccessRoute(user?.role, item.href, user?.additionalPermissions) && !planLocksRoute(user?.entitlements, item.href),
+  ).slice(0, 4);
   const tabClass = (active: boolean) =>
     `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${active ? "text-[var(--lp-ink)]" : "text-[#8a8780] active:text-[var(--lp-ink)]"}`;
   const anyTabActive = tabs.some((item) => isActive(pathname, item.href));
@@ -217,6 +221,7 @@ function Sidebar({
 }) {
   const workspaceText = useTranslations("auth.workspacePicker");
   const t = useTranslations("shell");
+  const plan = useTranslations("common.plan");
   const roleLabel = useRoleLabel();
   const scopeLabelOf = useScopeLabel();
   const groups = NAV_GROUPS.map((group) => ({
@@ -229,6 +234,26 @@ function Sidebar({
   const renderItem = (item: NavItem) => {
     const active = isActive(pathname, item.href);
     const count = item.badge ? badges[item.badge] : 0;
+    if (planLocksRoute(user?.entitlements, item.href)) {
+      // The role allows it but the plan does not: shown, never a dead link.
+      return (
+        <span
+          key={item.href}
+          aria-disabled="true"
+          title={plan("lockedNav", { feature: t(`nav.${item.label}`) })}
+          className={[
+            "app-nav-item relative flex cursor-not-allowed items-center gap-3 rounded-xl text-[14px] font-medium text-[#b5b2ab]",
+            compact ? "h-11 justify-center" : "h-10 px-3",
+          ].join(" ")}
+        >
+          <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0 opacity-70" />
+          {compact ? null : <span className="truncate">{t(`nav.${item.label}`)}</span>}
+          {compact ? null : (
+            <span className="ml-auto rounded-full bg-black/[0.05] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8a8780]">{plan("lockedBadge")}</span>
+          )}
+        </span>
+      );
+    }
     return (
       <Link
         key={item.href}
@@ -364,7 +389,9 @@ export function AppFrame({
     followUp: headerStats.pendingFollowUp,
     firstTimers: headerStats.firstTimers,
   };
-  const quickActions = QUICK_ACTIONS.filter((action) => canAccessRoute(user?.role, action.href, user?.additionalPermissions));
+  const quickActions = QUICK_ACTIONS.filter(
+    (action) => canAccessRoute(user?.role, action.href, user?.additionalPermissions) && !planLocksRoute(user?.entitlements, action.href),
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -571,7 +598,7 @@ export function AppFrame({
           className={`mx-auto flex max-w-[1440px] flex-col px-4 sm:px-6 lg:px-8 ${user?.preferences?.interfaceDensity === "compact" ? "gap-4 py-4 lg:py-5" : "gap-6 py-6 lg:py-8"}`}
         >
           <AppNudge />
-          {children}
+          <PlanBanner user={user}>{children}</PlanBanner>
         </main>
       </div>
 

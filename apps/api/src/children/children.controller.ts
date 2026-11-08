@@ -14,6 +14,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { ChildrenService } from './children.service';
+import { RequiresFeature } from '../platform/requires-feature.decorator';
 import {
   FamilyDto,
   ChildDto,
@@ -28,6 +29,7 @@ import {
   KioskDto,
   KioskCheckInDto,
 } from './children.dto';
+@RequiresFeature('kids')
 @Controller('children')
 @Roles(...APP_ROLES)
 export class ChildrenController {
@@ -179,6 +181,7 @@ export class ChildrenController {
     return this.service.revokeKiosks(u, id);
   }
 }
+@RequiresFeature('kids')
 @Controller('children-kiosk')
 export class ChildrenKioskController {
   constructor(private readonly service: ChildrenService) {}

@@ -92,7 +92,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if(response.status===401){setExpired(true);return;}
         if(!response.ok)return;
         const fresh=await response.json() as SessionUser;
-        if(mounted)setUser(previous=>previous ? {...previous,additionalPermissions:fresh.additionalPermissions,additionalPermissionExpiries:fresh.additionalPermissionExpiries}:previous);
+        if(mounted)setUser(previous=>previous ? {...previous,additionalPermissions:fresh.additionalPermissions,additionalPermissionExpiries:fresh.additionalPermissionExpiries,entitlements:fresh.entitlements}:previous);
       } catch { /* Keep the last session; the API still checks every protected request. */ }
     };
     const onFocus=()=>{void refresh();};

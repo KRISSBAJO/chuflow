@@ -1,4 +1,7 @@
-import { FIRST_WORKSPACE_ID, FIRST_WORKSPACE_NAME } from '../workspaces/workspace-boundary';
+import {
+  FIRST_WORKSPACE_ID,
+  FIRST_WORKSPACE_NAME,
+} from '../workspaces/workspace-boundary';
 
 function parseCsv(value?: string) {
   return (value ?? '')
@@ -18,10 +21,20 @@ export default () => {
 
   return {
     appName: process.env.APP_NAME ?? 'ChuFlow',
-    workspaceDirectorySigningKey: process.env.WORKSPACE_DIRECTORY_SIGNING_KEY?.trim(),
-    workspaceDirectoryVerificationKey: process.env.WORKSPACE_DIRECTORY_VERIFICATION_KEY?.trim(),
+    workspaceDirectorySigningKey:
+      process.env.WORKSPACE_DIRECTORY_SIGNING_KEY?.trim(),
+    workspaceDirectoryVerificationKey:
+      process.env.WORKSPACE_DIRECTORY_VERIFICATION_KEY?.trim(),
     workspaceId: process.env.WORKSPACE_ID?.trim() || FIRST_WORKSPACE_ID,
     workspaceName: process.env.WORKSPACE_NAME?.trim() || FIRST_WORKSPACE_NAME,
+    // The control plane: tenant directory, operators, plans and subscriptions.
+    controlDatabaseName: process.env.CONTROL_DATABASE_NAME?.trim() || undefined,
+    controlEncryptionKey:
+      process.env.CONTROL_ENCRYPTION_KEY?.trim() || undefined,
+    platformEnabled: process.env.PLATFORM_ENABLED === 'true',
+    platformJwtSecret: process.env.PLATFORM_JWT_SECRET?.trim() || undefined,
+    platformOwnerEmail: process.env.PLATFORM_OWNER_EMAIL?.trim() || undefined,
+    platformOwnerPassword: process.env.PLATFORM_OWNER_PASSWORD || undefined,
     port: parseInt(process.env.PORT ?? '4000', 10),
     mongodbUri:
       process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/church_mgt',

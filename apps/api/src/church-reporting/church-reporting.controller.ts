@@ -9,10 +9,12 @@ import { CreateAttendanceDto } from '../attendance/dto/create-attendance.dto';
 import { CreateOfferingEntryDto } from '../finance/dto/create-offering-entry.dto';
 import { CreateExpenseEntryDto } from '../finance/dto/create-expense-entry.dto';
 import { ChurchReportingService } from './church-reporting.service';
+import { RequiresFeature } from '../platform/requires-feature.decorator';
 
 @ApiTags('Local church reporting')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, JsonSubmissionGuard)
+@RequiresFeature('reporting')
 @Controller('church-reporting')
 export class ChurchReportingController {
   constructor(private readonly reporting: ChurchReportingService) {}

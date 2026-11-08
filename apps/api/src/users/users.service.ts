@@ -4,12 +4,14 @@ import {
   Injectable,
   NotFoundException,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'crypto';
 import { MailService } from '../mail/mail.service';
+import { EntitlementsService } from '../platform/entitlements.service';
 import { Model } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
@@ -56,6 +58,7 @@ export class UsersService implements OnModuleInit {
     private readonly districtsService: DistrictsService,
     private readonly auditLogsService: AuditLogsService,
     private readonly mailService: MailService,
+    @Optional() private readonly entitlements?: EntitlementsService,
   ) {}
 
   async onModuleInit() {
@@ -673,6 +676,12 @@ export class UsersService implements OnModuleInit {
   ): Promise<Record<string, unknown>> {
     this.validateRoleAssignment(currentUser, dto.role);
     await this.ensureEmailAvailable(dto.email);
+    if (this.entitlements) {
+      await this.entitlements.assertQuota(
+        'users',
+        await this.userModel.countDocuments({ isActive: true }),
+      );
+    }
 
     const scope = await this.resolveScopeForRole(currentUser, dto.role, dto);
     await this.ensureUniquePastoralBranchRole(dto.role, scope.branchId);

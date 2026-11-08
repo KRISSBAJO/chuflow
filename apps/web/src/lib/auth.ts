@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import type { EntitlementSnapshot } from "./entitlements";
 import { canAccessRoute } from "./permissions";
 import { safeReturnTo } from "./return-to";
 import { workspaceServerContext } from "./workspace-server";
@@ -23,6 +24,8 @@ export type SessionUser = {
     interfaceDensity?: string;
     defaultReportDays?: number;
   };
+  /** The workspace's plan, when the API enforces one. */
+  entitlements?: EntitlementSnapshot;
 };
 
 class ApiUnavailableError extends Error {
