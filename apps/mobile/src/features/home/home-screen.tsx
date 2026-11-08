@@ -30,12 +30,13 @@ const SERIES: Series[] = ['attendance', 'guests', 'firstTimers'];
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
 
 export function HomeScreen() {
-  const { user } = useSession();
+  const { user, workspaces, showWorkspacePicker } = useSession();
   const { summary, refresh: refreshAlerts } = useAlerts();
   const online = useOnline();
   const t = useT('home');
   const tc = useT('common');
   const tm = useT('more');
+  const tw = useT('auth.workspacePicker');
   const format = useAppFormat();
   const role = user?.role;
   const [days, setDays] = useState(() => user?.preferences?.defaultReportDays ?? 30);
@@ -141,6 +142,11 @@ export function HomeScreen() {
         dateLabel={format.longDate(today)}
         greeting={format.greeting(today)}
         name={user?.firstName || t('friend')}
+        workspace={user?.workspace?.name ? {
+          name: user.workspace.name,
+          pickerLabel: tw('title'),
+          onPress: workspaces.length > 1 ? showWorkspacePicker : undefined,
+        } : undefined}
         scope={[scopeLabel, tc('time.lastNDays', { count: days })].filter(Boolean).join(' · ')}
         alerts={summary?.quickStats.activeAlerts ?? 0}
         alertsLabel={t('alertsLabel', { count: summary?.quickStats.activeAlerts ?? 0 })}

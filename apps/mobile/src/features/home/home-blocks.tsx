@@ -20,6 +20,7 @@ type HeroBandProps = {
   dateLabel: string;
   greeting: string;
   name: string;
+  workspace?: { name: string; pickerLabel: string; onPress?: () => void };
   scope?: string;
   alerts: number;
   alertsLabel: string;
@@ -31,7 +32,8 @@ type HeroBandProps = {
   onSearch?: () => void;
 };
 
-export function HeroBand({ dateLabel, greeting, name, scope, alerts, alertsLabel, onAlerts, person, profileLabel, onProfile, searchLabel, onSearch }: HeroBandProps) {
+export function HeroBand({ dateLabel, greeting, name, workspace, scope, alerts, alertsLabel, onAlerts, person, profileLabel, onProfile, searchLabel, onSearch }: HeroBandProps) {
+  const workspaceName = workspace ? <Text numberOfLines={1} style={styles.workspaceName}>{workspace.name}</Text> : null;
   return (
     <View style={styles.bandWrap}>
       <View style={styles.hero}>
@@ -77,6 +79,19 @@ export function HeroBand({ dateLabel, greeting, name, scope, alerts, alertsLabel
           <Text accessibilityRole="header" style={styles.name}>
             {name}
           </Text>
+          {workspace?.onPress ? (
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={workspace.name}
+              accessibilityHint={workspace.pickerLabel}
+              hitSlop={6}
+              onPress={workspace.onPress}
+              style={styles.workspaceRow}
+            >
+              {workspaceName}
+              <Icon name="arrowRight" size={12} color="#f6bb88" />
+            </PressableScale>
+          ) : workspaceName}
           {scope ? <Text style={styles.scope}>{scope}</Text> : null}
         </View>
       </View>
@@ -431,6 +446,8 @@ const styles = StyleSheet.create({
   copy: { width: '55%', marginTop: 24, gap: 3 },
   greeting: { fontFamily: fonts.medium, fontSize: 16, color: '#e8ddd3' },
   name: { fontFamily: fonts.semibold, fontSize: 36, lineHeight: 42, letterSpacing: -0.9, color: '#ffffff' },
+  workspaceRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', maxWidth: '100%', gap: 5 },
+  workspaceName: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 19, color: '#f6bb88', flexShrink: 1 },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
