@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OPERATOR_COOKIE, platformFetch } from "@/lib/ops/session";
+import { SHARED_WEB_ORIGIN } from "@/lib/workspace-routing";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ export const runtime = "nodejs";
  */
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const origin = request.headers.get("origin");
-  if (request.method !== "GET" && origin !== request.nextUrl.origin) return new Response(null, { status: 403 });
+  if (request.method !== "GET" && origin !== (SHARED_WEB_ORIGIN || request.nextUrl.origin)) return new Response(null, { status: 403 });
 
   const { path } = await context.params;
   if (!path.length || path.some((part) => !part || part === "." || part === ".." || /[/%\\]/.test(part))) {

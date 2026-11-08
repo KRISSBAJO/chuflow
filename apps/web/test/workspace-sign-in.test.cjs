@@ -68,3 +68,38 @@ test("sign-in links carry the workspace only when there is one", () => {
   assert.equal(workspaceSignInHref("/forgot-password", null), "/forgot-password");
   assert.equal(workspaceSignInHref("/login", "Not A Handle"), "/login");
 });
+
+test("operator POSTs trust the configured public origin behind the hosting proxy", async () => {
+  function route(relativePath) {
+    const source = fs.readFileSync(path.join(__dirname, "../src/app/api/ops", relativePath), "utf8");
+    const code = ts.transpileModule(source, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    const module = { exports: {} };
+    vm.runInNewContext(code, {
+      module,
+      exports: module.exports,
+      Response,
+      require: (name) => name === "@/lib/workspace-routing"
+        ? { SHARED_WEB_ORIGIN: "https://chuflow.com" }
+        : {},
+    });
+    return module.exports.POST;
+  }
+  const request = (origin) => ({
+    method: "POST",
+    headers: new Headers(origin ? { origin } : {}),
+    nextUrl: new URL("http://internal-host:3000/api/ops/session"),
+    cookies: { get: () => undefined },
+    json: async () => ({}),
+  });
+  const signIn = route("session/route.ts");
+  const proxy = route("proxy/[...path]/route.ts");
+  const context = { params: Promise.resolve({ path: ["workspaces"] }) };
+  assert.equal((await signIn(request("https://chuflow.com"))).status, 400);
+  assert.equal((await proxy(request("https://chuflow.com"), context)).status, 401);
+  for (const origin of [undefined, "https://untrusted.example", "http://internal-host:3000"]) {
+    assert.equal((await signIn(request(origin))).status, 403);
+    assert.equal((await proxy(request(origin), context)).status, 403);
+  }
+});

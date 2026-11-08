@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OPERATOR_COOKIE, platformFetch } from "@/lib/ops/session";
+import { SHARED_WEB_ORIGIN } from "@/lib/workspace-routing";
 
 export const runtime = "nodejs";
 
@@ -7,7 +8,7 @@ const SESSION_SECONDS = 8 * 3600;
 
 function sameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  return !origin || origin === request.nextUrl.origin;
+  return origin === (SHARED_WEB_ORIGIN || request.nextUrl.origin);
 }
 
 /** Signs an operator in: the API's Bearer token is kept in an HttpOnly cookie, never returned. */
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set(OPERATOR_COOKIE, session.accessToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: request.nextUrl.protocol === "https:",
+    secure: (SHARED_WEB_ORIGIN || request.nextUrl.origin).startsWith("https:"),
     path: "/",
     maxAge: session.expiresIn ?? SESSION_SECONDS,
   });
