@@ -39,7 +39,7 @@ export default async function LoginPage({
           {resolved === "missing" ? null : (workspace?.name ?? process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACE_NAME?.trim() ?? "Winners Chapel International")}
         </span>
         <Link href="/workspaces" className="text-[var(--lp-muted)] underline underline-offset-4">
-          {t("workspacePicker.change")}
+          {t("workspacePicker.title")}
         </Link>
       </p>
       {resolved === "missing" ? (
