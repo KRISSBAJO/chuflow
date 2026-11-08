@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { careEventFilters, type CareEventFilters } from './event-filters';
@@ -43,6 +44,7 @@ import {
   CareTokenDocument,
 } from './care.schema';
 import { CARE_ROLES, careAllowed } from './care.policy';
+import { EntitlementException, EntitlementsService } from '../platform/entitlements.service';
 import {
   CareChangeDto,
   CareListDto,
@@ -78,6 +80,7 @@ export class CareService {
     @InjectModel(ServiceUnit.name) readonly units: Model<ServiceUnitDocument>,
     readonly scope: AccessScopeService,
     private readonly config: ConfigService,
+    @Optional() private readonly entitlements?: EntitlementsService,
   ) {}
   id(value: string) {
     if (!Types.ObjectId.isValid(value))
@@ -1123,7 +1126,7 @@ export class CareService {
     const c = await this.context(u, id, true);
     return { url: await this.issueToken(c) };
   }
-  async publicInfo(token: string) {
+  async publicInfo(token: string, submitting = false) {
     const row = await this.tokens
       .findOne({
         hash: this.tokenHash(token),
@@ -1133,6 +1136,16 @@ export class CareService {
       .lean();
     if (!row)
       throw new NotFoundException('This link is invalid, used, or expired.');
+    // A dedicated opt-out link remains usable even when ordinary check-ins are disabled.
+    if (row.kind !== 'unsubscribe') {
+      const plan = await this.entitlements?.snapshot();
+      if (plan?.enforced && plan.access === 'locked') {
+        throw new EntitlementException('workspace_locked', 'This workspace is not active. Contact your administrator.');
+      }
+      if (plan?.enforced && plan.access === 'read_only' && submitting) {
+        throw new EntitlementException('workspace_read_only', 'Your subscription needs attention before changes can be made.');
+      }
+    }
     const c = await this.cases.findById(row.caseId).lean();
     if (!c || c.mergedInto) throw new NotFoundException();
     const branch = await this.branches
@@ -1148,7 +1161,7 @@ export class CareService {
         +new Date(dto.until) > Date.now() + 180 * 86400000)
     )
       throw new BadRequestException('Choose a future date within 180 days.');
-    await this.publicInfo(token);
+    await this.publicInfo(token, true);
     const row = await this.tokens
       .findOneAndUpdate(
         {

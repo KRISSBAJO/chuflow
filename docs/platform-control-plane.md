@@ -44,6 +44,8 @@ The catalog is seeded with `trial`, `starter`, `growth` and `enterprise`; owners
 
 A subscription is one record per workspace: plan, status (`trialing`, `active`, `past_due`, `suspended`, `cancelled`), billing mode (`manual` today), trial end, paid period end, grace days and optional per-workspace overrides for features and quotas. `PUT /api/platform/workspaces/:id/subscription` sets it; `POST /api/platform/workspaces/:id/payments` records a payment received outside the app, which extends the paid period and reactivates the workspace. A card processor later plugs into the same two calls from its webhooks.
 
+Public church forms follow subscription access too. A locked subscription closes ordinary public forms, and a read-only subscription blocks their submissions. The platform workspace request form, account recovery, and valid dedicated care unsubscribe links remain available during a subscription lock. An operator suspension at the gateway takes the entire secondary workspace offline.
+
 ### What the workspace experiences
 
 The lifecycle is evaluated on every request from the stored dates, so nothing depends on a scheduled job:

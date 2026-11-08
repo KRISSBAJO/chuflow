@@ -141,6 +141,7 @@ function fixture() {
     buildBranchFilter: jest.fn().mockResolvedValue({ branchId: branch }),
   };
   const config = { get: jest.fn().mockReturnValue('https://chuflow.com') };
+  const entitlements = { snapshot: jest.fn().mockResolvedValue(undefined) };
   const args = [
     cases,
     tasks,
@@ -156,6 +157,7 @@ function fixture() {
     units,
     scope,
     config,
+    entitlements,
   ] as unknown as ConstructorParameters<typeof CareService>;
   const service = new CareService(...args);
   const flush = jest.spyOn(service, 'flush').mockResolvedValue(undefined);
@@ -172,6 +174,7 @@ function fixture() {
     users,
     scope,
     flush,
+    entitlements,
   };
 }
 describe('Care contact and retention policies', () => {
@@ -481,6 +484,18 @@ describe('Care case permissions and reliable state changes', () => {
 });
 describe('Private member check-in links', () => {
   const token = 'a'.repeat(64);
+  it('blocks check-ins under a lock without consuming their links and allows dedicated opt-outs', async () => {
+    const f = fixture();
+    f.entitlements.snapshot.mockResolvedValue({ enforced: true, access: 'locked' });
+    const reply = { response: 'well', contactRequested: false, language: 'en' };
+    await expect(f.service.publicInfo(token)).rejects.toMatchObject({ status: 402 });
+    await expect(f.service.publicReply(token, reply)).rejects.toMatchObject({ status: 402 });
+    expect(f.tokens.findOneAndUpdate).not.toHaveBeenCalled();
+    f.tokens.findOne.mockReturnValue(query({ _id: id(), caseId, kind: 'unsubscribe' }));
+    f.tokens.findOneAndUpdate.mockReturnValue(query({ _id: id(), caseId, kind: 'unsubscribe' }));
+    await expect(f.service.publicReply(token, reply)).resolves.toEqual({ success: true });
+    expect(f.cases.updateOne.mock.calls[0][1].$set).toMatchObject({ stopContact: true, emailAllowed: false });
+  });
   it('retains a submitted reply for recovery when applying it is interrupted', async () => {
     const f = fixture();
     jest

@@ -21,6 +21,7 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { CreateWorkspaceRequestDto } from './dto/create-workspace-request.dto';
 import { UpdateWorkspaceRequestDto } from './dto/update-workspace-request.dto';
 import { WorkspaceRequestsService } from './workspace-requests.service';
+import { SubscriptionExempt } from '../platform/entitlements.guard';
 
 @Injectable()
 export class WorkspaceHandleRateGuard implements CanActivate {
@@ -57,12 +58,14 @@ export class WorkspaceRequestsController {
   @Public()
   @UseGuards(WorkspaceHandleRateGuard)
   @Get('public/handle')
+  @SubscriptionExempt()
   checkHandle(@Query('handle') handle?: string) {
     return this.workspaceRequestsService.checkHandle(handle);
   }
 
   @Public()
   @Post()
+  @SubscriptionExempt()
   create(
     @Body() dto: CreateWorkspaceRequestDto,
   ): Promise<Record<string, unknown>> {

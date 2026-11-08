@@ -1,7 +1,6 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, SetMetadata } from '@nestjs/common';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../common/decorators/public.decorator';
 import {
   EntitlementException,
   EntitlementsService,
@@ -12,6 +11,8 @@ import { REQUIRES_FEATURE_KEY } from './requires-feature.decorator';
 /** Routes that must keep working whatever the subscription says. */
 const ALWAYS_OPEN = new Set(['auth', 'platform', 'push', '']);
 const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const SUBSCRIPTION_EXEMPT = 'subscriptionExempt';
+export const SubscriptionExempt = () => SetMetadata(SUBSCRIPTION_EXEMPT, true);
 
 /*
  * Applies the plan after sign-in and role checks: a locked workspace gets nothing, a read-only
@@ -26,16 +27,13 @@ export class EntitlementsGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
     const controller =
       this.reflector.get<string | undefined>(
         PATH_METADATA,
         context.getClass(),
       ) ?? '';
-    if (isPublic || ALWAYS_OPEN.has(controller.split('/')[0])) return true;
+    if (ALWAYS_OPEN.has(controller.split('/')[0]) ||
+        this.reflector.get<boolean>(SUBSCRIPTION_EXEMPT, context.getHandler())) return true;
 
     const snapshot = await this.entitlements.snapshot();
     if (!snapshot.enforced) return true;

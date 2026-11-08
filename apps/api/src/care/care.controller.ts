@@ -24,6 +24,7 @@ import {
   CarePublicDto,
 } from './care.dto';
 import { CareService } from './care.service';
+import { SubscriptionExempt } from '../platform/entitlements.guard';
 @Injectable()
 class CarePublicGuard implements CanActivate {
   private attempts = new Map<string, { n: number; until: number }>();
@@ -54,6 +55,7 @@ export class CareController {
   @Roles()
   @UseGuards(CarePublicGuard)
   @Get('public/:token')
+  @SubscriptionExempt()
   publicInfo(@Param('token') token: string) {
     return this.service.publicInfo(token);
   }
@@ -61,6 +63,7 @@ export class CareController {
   @Roles()
   @UseGuards(CarePublicGuard)
   @Post('public/:token')
+  @SubscriptionExempt()
   publicReply(@Param('token') token: string, @Body() dto: CarePublicDto) {
     return this.service.publicReply(token, dto);
   }

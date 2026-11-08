@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import type { Server } from 'node:http';
 import request from 'supertest';
 import { Public } from '../common/decorators/public.decorator';
-import { EntitlementsGuard } from './entitlements.guard';
+import { EntitlementsGuard, SubscriptionExempt } from './entitlements.guard';
 import { EntitlementsService } from './entitlements.service';
 import type { EntitlementSnapshot } from './platform.types';
 import { RequiresFeature } from './requires-feature.decorator';
@@ -47,6 +47,31 @@ class AuthStub {
   }
 }
 
+@Controller('intake-templates')
+class PublicIntakeStub {
+  @Public()
+  @Get('public/form')
+  form() {
+    return { ok: true };
+  }
+
+  @Public()
+  @Post('public/form')
+  submit() {
+    return { ok: true };
+  }
+}
+
+@Controller('workspace-requests')
+class WorkspaceRequestsStub {
+  @Public()
+  @SubscriptionExempt()
+  @Post()
+  signup() {
+    return { ok: true };
+  }
+}
+
 describe('EntitlementsGuard', () => {
   let app: INestApplication;
   let snapshot: EntitlementSnapshot;
@@ -54,7 +79,7 @@ describe('EntitlementsGuard', () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      controllers: [MembersStub, AttendanceStub, ChildrenStub, AuthStub],
+      controllers: [MembersStub, AttendanceStub, ChildrenStub, AuthStub, PublicIntakeStub, WorkspaceRequestsStub],
       providers: [
         { provide: EntitlementsService, useValue: service },
         { provide: APP_GUARD, useClass: EntitlementsGuard },
@@ -118,5 +143,17 @@ describe('EntitlementsGuard', () => {
       code: 'workspace_locked',
       reason: 'suspended',
     });
+  });
+
+  it('applies subscription locks to public forms and keeps platform signup open', async () => {
+    snapshot = enforced({ access: 'locked', reason: 'suspended' });
+    await request(server()).get('/intake-templates/public/form').expect(402);
+    await request(server()).post('/intake-templates/public/form').expect(402);
+    await request(server()).post('/workspace-requests').expect(201);
+    snapshot = enforced({ access: 'read_only', reason: 'payment_overdue' });
+    await request(server()).get('/intake-templates/public/form').expect(200);
+    await request(server()).post('/intake-templates/public/form').expect(402);
+    snapshot = legacySnapshot('test-church');
+    await request(server()).post('/intake-templates/public/form').expect(201);
   });
 });
