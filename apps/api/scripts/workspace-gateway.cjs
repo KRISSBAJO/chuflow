@@ -23,6 +23,10 @@ const sharedEnvironment = [
   'PATH', 'Path', 'SystemRoot', 'TEMP', 'TMP', 'HOME', 'NODE_ENV', 'NODE_PATH',
   'WEB_URL', 'CORS_ALLOWED_ORIGINS', 'COOKIE_SECURE', 'COOKIE_SAME_SITE',
   'RENDER_GIT_COMMIT', 'WORKSPACE_DIRECTORY_VERIFICATION_KEY', 'CONTROL_DATABASE_NAME',
+  // Password recovery mail for every workspace goes out through the platform's own sender until
+  // per-tenant mail settings exist. The provider key never reaches the web app.
+  'APP_NAME', 'MAIL_PROVIDER', 'RELYKIT_API_KEY', 'MAIL_HOST', 'MAIL_PORT', 'MAIL_SECURE',
+  'MAIL_USER', 'MAIL_PASS', 'MAIL_FROM',
 ];
 const REGISTRY_REFRESH_MS = 30000;
 
@@ -168,9 +172,6 @@ function workerEnvironment(env, entry) {
     ADMIN_EMAIL: entry.adminEmail,
     ADMIN_PASSWORD: entry.adminPassword,
     AUTH_COOKIE_NAME: cookieName(env, entry.id),
-    MAIL_PROVIDER: 'smtp',
-    MAIL_HOST: '127.0.0.1',
-    MAIL_PORT: '1',
   };
 }
 
@@ -297,4 +298,4 @@ if (require.main === module) {
   process.on('SIGINT', close);
 }
 
-module.exports = { routeWorkspace, readRegistry, registryFromRecords, loadRegistry, start, upstreamHeaders };
+module.exports = { routeWorkspace, readRegistry, registryFromRecords, loadRegistry, start, upstreamHeaders, workerEnvironment };

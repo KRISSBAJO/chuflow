@@ -26,6 +26,8 @@ export type SessionUser = {
   };
   /** The workspace's plan, when the API enforces one. */
   entitlements?: EntitlementSnapshot;
+  /** A provisioned workspace's first admin still holds the generated password. */
+  passwordChangeRequired?: boolean;
 };
 
 class ApiUnavailableError extends Error {
@@ -84,6 +86,10 @@ export async function requireServerSession(returnTo?: string) {
     // The cookie is still there but no longer valid. The reason tells the proxy not to bounce
     // this visit back to /dashboard, which would loop forever.
     redirect(`/login?reason=session-expired${returnQuery}`);
+  }
+
+  if (user.passwordChangeRequired) {
+    redirect(`/change-password${returnQuery ? `?${returnQuery.slice(1)}` : ""}`);
   }
 
   return user;

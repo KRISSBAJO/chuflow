@@ -134,7 +134,11 @@ describe('public password reset responses', () => {
       },
       {
         $set: { password: expect.any(String) },
-        $unset: { passwordResetToken: 1, passwordResetExpiresAt: 1 },
+        $unset: {
+          passwordResetToken: 1,
+          passwordResetExpiresAt: 1,
+          passwordChangeRequired: 1,
+        },
       },
       { new: true },
     );

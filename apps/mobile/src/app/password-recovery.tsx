@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,17 +7,23 @@ import { Body, Button, Field, Notice, Title } from '@/components/ui';
 import { Wordmark } from '@/components/wordmark';
 import { colors, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
-import { api, ApiError } from '@/lib/api';
-import { WEB_URL } from '@/lib/config';
+import { ApiError, request } from '@/lib/api';
+import { SHARED_WORKSPACES, WEB_URL } from '@/lib/config';
+import { directorySession, workspaceApiSession } from '@/lib/session';
 
-function readResetToken(value: string): string | null {
+const HANDLE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** A reset link names its workspace when it came from a provisioned church's API. */
+function readResetToken(value: string): { token: string; workspace: string } | null {
   try {
     const link = new URL(value.trim());
     const site = new URL(WEB_URL);
     const host = (url: URL) => url.hostname.replace(/^www\./i, '');
     if (host(link) !== host(site) || link.port !== site.port || link.protocol !== site.protocol || link.pathname.replace(/\/$/, '') !== '/reset-password') return null;
     const token = link.searchParams.get('token');
-    return token && /^[a-f0-9]{64}$/i.test(token) ? token : null;
+    const workspace = link.searchParams.get('workspace') ?? '';
+    if (workspace && !HANDLE.test(workspace)) return null;
+    return token && /^[a-f0-9]{64}$/i.test(token) ? { token, workspace } : null;
   } catch {
     return null;
   }
@@ -27,6 +33,8 @@ export default function PasswordRecoveryScreen() {
   const insets = useSafeAreaInsets();
   const t = useT('auth.recovery');
   const signIn = useT('auth.signIn');
+  const params = useLocalSearchParams<{ workspace?: string }>();
+  const [workspace, setWorkspace] = useState(typeof params.workspace === 'string' ? params.workspace.toLowerCase() : '');
   const [step, setStep] = useState<'request' | 'reset' | 'done'>('request');
   const [email, setEmail] = useState('');
   const [link, setLink] = useState('');
@@ -51,11 +59,17 @@ export default function PasswordRecoveryScreen() {
       setError(t('invalidEmail'));
       return;
     }
+    const handle = SHARED_WORKSPACES ? workspace.trim() : '';
+    const session = handle ? workspaceApiSession(handle) : directorySession(null);
+    if (!session) {
+      setError(signIn('workspaceUnavailable'));
+      return;
+    }
     setBusy(true);
     setError('');
     setSent(false);
     try {
-      await api.post('/auth/forgot-password', { email: address });
+      await request('POST', '/auth/forgot-password', { email: address }, session);
       setSent(true);
     } catch {
       setError(t('sendFailed'));
@@ -66,9 +80,19 @@ export default function PasswordRecoveryScreen() {
 
   async function resetPassword() {
     if (busy) return;
-    const token = readResetToken(link);
-    if (!token) {
+    const reset = readResetToken(link);
+    if (!reset) {
       setError(t('invalidLink'));
+      return;
+    }
+    if (reset.workspace && !SHARED_WORKSPACES) {
+      setError(signIn('workspaceUnavailable'));
+      return;
+    }
+    const handle = reset.workspace;
+    const session = handle ? workspaceApiSession(handle) : directorySession(null);
+    if (!session) {
+      setError(signIn('workspaceUnavailable'));
       return;
     }
     if (password.length < 8) {
@@ -83,7 +107,7 @@ export default function PasswordRecoveryScreen() {
     setBusy(true);
     setError('');
     try {
-      await api.post('/auth/reset-password', { token, newPassword: password });
+      await request('POST', '/auth/reset-password', { token: reset.token, newPassword: password }, session);
       setLink('');
       setPassword('');
       setConfirmation('');
@@ -109,6 +133,19 @@ export default function PasswordRecoveryScreen() {
         </View>
 
         {error ? <Notice tone="danger">{error}</Notice> : null}
+        {step === 'request' && SHARED_WORKSPACES ? (
+          <Field
+            label={signIn('workspace')}
+            hint={t('workspaceHint')}
+            placeholder={signIn('workspacePlaceholder')}
+            value={workspace}
+            onChangeText={(value) => setWorkspace(value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, ''))}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            editable={!busy}
+          />
+        ) : null}
         {step === 'request' ? (
           <>
             {sent ? <Notice tone="success">{t('sent')}</Notice> : null}

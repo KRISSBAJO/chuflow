@@ -24,6 +24,10 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       window.location.href = `/login?reason=session-expired&returnTo=${returnTo}`;
       return;
     }
+    if (user.passwordChangeRequired && pathname !== "/change-password") {
+      window.location.href = `/change-password?returnTo=${returnTo}`;
+      return;
+    }
 
     if (!canAccessRoute(user.role, pathname, user.additionalPermissions)) {
       window.location.href = "/unauthorized";
@@ -35,6 +39,9 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user || !canAccessRoute(user.role, pathname, user.additionalPermissions)) {
+    return null;
+  }
+  if (user.passwordChangeRequired && pathname !== "/change-password") {
     return null;
   }
 

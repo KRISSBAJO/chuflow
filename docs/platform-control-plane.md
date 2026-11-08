@@ -34,6 +34,8 @@ Roles: `owner` (everything, including other operators and archiving), `support` 
 
 The gateway reads the directory every 30 seconds. A new workspace is served at `/api/w/<handle>/…` on its first request, when the worker starts and seeds the admin from the sealed credentials. Suspending a workspace makes the gateway answer `402 workspace_suspended` before any worker runs; archiving removes it from the gateway and stops its worker. Both keep the data. The primary workspace is listed but managed by environment, so it cannot be suspended here.
 
+With shared workspace routing enabled, send the admin the workspace's `/login?workspace=<handle>` link for web sign-in. On mobile, they enter the handle on the sign-in screen. The temporary password only grants access to account setup. Choosing a permanent password invalidates the temporary session. Recovery emails carry the same workspace handle and use the configured ChuFlow mail sender.
+
 `GET /api/platform/workspaces/:id/usage` counts branches, active users, members, active children and guests straight from the workspace's database next to its quotas.
 
 ## Plans and subscriptions
@@ -64,4 +66,4 @@ Workers cache the snapshot for one minute and keep the last known answer if the 
 
 ## Not yet built
 
-Tenant-aware first sign-in and password recovery for newly provisioned workspaces, card payments and dunning emails, usage metering of messages and storage, break-glass impersonation, custom domains, and per-tenant mail settings for gateway workers. The operator web console is under `/ops`.
+Card payments and dunning emails, usage metering of messages and storage, break-glass impersonation, custom domains, and per-tenant mail settings for gateway workers. The operator web console is under `/ops`.

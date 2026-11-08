@@ -46,6 +46,10 @@ export class User {
   @Prop()
   lastLoginAt?: Date;
 
+  /** Set for a seeded first admin: the generated password must be replaced at first sign-in. */
+  @Prop()
+  passwordChangeRequired?: boolean;
+
   @Prop()
   welcomeEmailAttemptAt?: Date;
 

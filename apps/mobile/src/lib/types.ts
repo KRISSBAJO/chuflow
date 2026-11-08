@@ -36,6 +36,8 @@ export type EntitlementSnapshot = {
 export type SessionUser = {
   workspace?: { id: string; name: string };
   entitlements?: EntitlementSnapshot;
+  /** A provisioned workspace's first admin still holds the generated password. */
+  passwordChangeRequired?: boolean;
   id?: string;
   _id?: string;
   firstName: string;

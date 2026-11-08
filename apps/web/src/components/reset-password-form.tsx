@@ -15,6 +15,7 @@ import {
   SubmitButton,
 } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
+import { SHARED_WORKSPACES, workspaceProxyUrl, workspaceSignInHref } from "@/lib/workspace-routing";
 
 function formatExpiry(value: unknown, locale: string) {
   const date = new Date(String(value));
@@ -25,8 +26,17 @@ function formatExpiry(value: unknown, locale: string) {
   });
 }
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({
+  workspace,
+  missing,
+}: {
+  /** A provisioned church: the token was issued by, and is redeemed at, its own API. */
+  workspace?: { id: string; name: string } | null;
+  missing?: boolean;
+}) {
   const actionToast = useActionToast();
+  const tw = useTranslations("auth.workspacePicker");
+  const apiBase = SHARED_WORKSPACES ? workspaceProxyUrl(workspace?.id) : API_URL;
 
   const t = useTranslations("auth.reset");
   const locale = useLocale();
@@ -43,15 +53,15 @@ export function ResetPasswordForm() {
     let mounted = true;
 
     async function verifyToken() {
-      if (!token) {
-        setStatus(t("missingToken"));
+      if (!token || missing) {
+        setStatus(missing ? tw("notFound") : t("missingToken"));
         setChecking(false);
         return;
       }
 
       try {
         const response = await fetch(
-          `${API_URL}/auth/reset-password/verify?token=${encodeURIComponent(token)}`,
+          `${apiBase}/auth/reset-password/verify?token=${encodeURIComponent(token)}`,
         );
         const result = await response.json();
 
@@ -83,7 +93,7 @@ export function ResetPasswordForm() {
     return () => {
       mounted = false;
     };
-  }, [token, locale, t]);
+  }, [token, locale, t, tw, apiBase, missing]);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -99,7 +109,7 @@ export function ResetPasswordForm() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/auth/reset-password`, {
+      const response = await fetch(`${apiBase}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword }),
@@ -127,7 +137,7 @@ export function ResetPasswordForm() {
       <div>
         <AuthHeading title={t("doneTitle")} body={t("doneBody")} />
         <Link
-          href="/login"
+          href={workspaceSignInHref("/login", workspace?.id)}
           className="lp-pill-dark inline-flex h-12 w-full items-center justify-center rounded-full text-[15px] font-medium"
         >
           {t("goToSignIn")}
@@ -190,7 +200,7 @@ export function ResetPasswordForm() {
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
         {t("linkExpired")}{" "}
         <Link
-          href="/forgot-password"
+          href={workspaceSignInHref("/forgot-password", workspace?.id)}
           className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline"
         >
           {t("requestNew")}

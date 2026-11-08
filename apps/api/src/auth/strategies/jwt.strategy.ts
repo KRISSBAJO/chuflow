@@ -28,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; workspaceId?: string }) {
+  async validate(payload: { sub: string; workspaceId?: string; temporaryPassword?: boolean }) {
     const { id } = getWorkspace(this.configService);
     const tokenWorkspace = payload.workspaceId === undefined ? FIRST_WORKSPACE_ID : payload.workspaceId;
     if (tokenWorkspace !== id) {
@@ -39,12 +39,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       .findById(payload.sub)
       .catch(() => null);
 
-    if (!user || user.isActive === false) {
+    if (!user || user.isActive === false ||
+        (payload.temporaryPassword === true) !== (user.passwordChangeRequired === true)) {
       throw new UnauthorizedException('Authentication failed');
     }
 
     return {
       workspaceId: id,
+      passwordChangeRequired: user.passwordChangeRequired === true,
       sub: user._id ? String(user._id) : payload.sub,
       email: user.email,
       role: user.role,

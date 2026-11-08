@@ -8,6 +8,7 @@ import { Mono, Notice } from "./ops-ui";
 import { Button, buttonClass, Card, CardHeader, Field } from "@/components/ui/ui";
 import { errorMessage, opsRequest } from "@/lib/ops/client";
 import { formatMoney, type Plan, type WorkspaceView } from "@/lib/ops/types";
+import { SHARED_WEB_ORIGIN } from "@/lib/workspace-routing";
 
 type Result = { workspace: WorkspaceView; adminEmail: string; adminPassword: string };
 
@@ -18,6 +19,12 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 64);
+}
+
+/** Where the church's admin signs in: the shared web origin, or this console's own when none is set. */
+function signInLink(id: string) {
+  const origin = SHARED_WEB_ORIGIN ?? (typeof window === "undefined" ? "" : window.location.origin);
+  return `${origin}/login?workspace=${id}`;
 }
 
 export function ProvisionForm({ plans }: { plans: Plan[] }) {
@@ -57,7 +64,7 @@ export function ProvisionForm({ plans }: { plans: Plan[] }) {
   async function copy() {
     if (!result) return;
     try {
-      await navigator.clipboard.writeText(`Workspace: ${result.workspace.id}\nAdmin email: ${result.adminEmail}\nTemporary password: ${result.adminPassword}`);
+      await navigator.clipboard.writeText(`Workspace: ${result.workspace.id}\nSign in: ${signInLink(result.workspace.id)}\nAdmin email: ${result.adminEmail}\nTemporary password: ${result.adminPassword}`);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
@@ -87,6 +94,11 @@ export function ProvisionForm({ plans }: { plans: Plan[] }) {
               <dd className="mt-0.5"><Mono>{result.adminPassword}</Mono></dd>
             </div>
           </dl>
+          <div className="rounded-2xl bg-[#f6f5f1] p-4 text-[14px]">
+            <div className="text-[12px] text-[#8a8780]">Sign-in link</div>
+            <div className="mt-0.5 break-all"><Mono>{signInLink(result.workspace.id)}</Mono></div>
+            <p className="mt-2 text-[13px] text-[#8a8780]">The admin signs in here with the temporary password and is asked to choose their own before anything else.</p>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="flame" onClick={() => void copy()}>
               {copied ? "Copied" : "Copy credentials"}

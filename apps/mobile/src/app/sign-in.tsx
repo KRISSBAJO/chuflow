@@ -8,14 +8,23 @@ import { Wordmark } from '@/components/wordmark';
 import { colors, fonts, space } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
 import { errorMessage } from '@/lib/api';
+import { SHARED_WORKSPACES } from '@/lib/config';
 import { useSession } from '@/lib/session';
+
+/** Handles are typed loosely; the API only knows the lowercase slug form. */
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '');
+}
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
-  const { signIn } = useSession();
+  const { signIn, rememberedWorkspace } = useSession();
   const t = useT('auth.signIn');
   const common = useT('common');
   const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
+  // Untouched (null) shows the last handle used on this phone, which loads after first render.
+  const [typedWorkspace, setWorkspace] = useState<string | null>(null);
+  const workspace = typedWorkspace ?? rememberedWorkspace;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +39,7 @@ export default function SignInScreen() {
     setLoading(true);
     setError(null);
     try {
-      await signIn(email, password);
+      await signIn(email, password, SHARED_WORKSPACES ? workspace.trim().replace(/-+$/, '') : undefined);
     } catch (caught) {
       setError(errorMessage(caught, t('failed')));
       setLoading(false);
@@ -52,6 +61,19 @@ export default function SignInScreen() {
 
         <View style={styles.form}>
           {error ? <Notice tone="danger">{error}</Notice> : null}
+          {SHARED_WORKSPACES ? (
+            <Field
+              label={t('workspace')}
+              hint={t('workspaceHint')}
+              value={workspace}
+              onChangeText={(value) => setWorkspace(slugify(value))}
+              placeholder={t('workspacePlaceholder')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              returnKeyType="next"
+            />
+          ) : null}
           <Field
             label={t('email')}
             value={email}
@@ -93,7 +115,7 @@ export default function SignInScreen() {
 
           <Pressable
             accessibilityRole="link"
-            onPress={() => router.push('/password-recovery')}
+            onPress={() => router.push(workspace.trim() ? { pathname: '/password-recovery', params: { workspace: workspace.trim() } } : '/password-recovery')}
             style={styles.forgot}
           >
             <Text style={styles.forgotText}>{t('forgotPassword')}</Text>

@@ -17,15 +17,17 @@ import {
 import { API_URL } from "@/lib/api";
 import { roleHomeHref } from "@/lib/permissions";
 import { hasLinkedWorkspaceDirectory, linkedWorkspaceOptions, type WorkspaceMembership } from "@/lib/workspace-sign-in";
-import { SHARED_WORKSPACES } from "@/lib/workspace-routing";
+import { SHARED_WORKSPACES, workspaceProxyUrl, workspaceSignInHref } from "@/lib/workspace-routing";
 import { safeReturnTo } from "@/lib/return-to";
 
 type LoginFormProps = {
   notice?: string | null;
   returnTo?: string;
+  /** A provisioned church: its accounts live at its own API, not in the shared directory. */
+  workspace?: { id: string; name: string } | null;
 };
 
-export function LoginForm({ notice, returnTo }: LoginFormProps) {
+export function LoginForm({ notice, returnTo, workspace }: LoginFormProps) {
   const router = useRouter();
   const t = useTranslations("auth");
   const tc = useTranslations("common");
@@ -42,7 +44,8 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const authBase = SHARED_WORKSPACES ? workspaceProxyUrl(workspace?.id) : API_URL;
+      const response = await fetch(`${authBase}/auth/login`, {
         method: "POST",
         signal: controller.signal,
         headers: { "Content-Type": "application/json" },
@@ -62,16 +65,25 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
         return;
       }
 
-      const result = (await response.json()) as { user?: { role?: string } };
+      const result = (await response.json()) as { user?: { role?: string; passwordChangeRequired?: boolean } };
       const homeHref = result.user?.role
         ? roleHomeHref(result.user.role)
         : "/dashboard";
       setIsSuccess(true);
       toast.dismiss("login-feedback");
-      const destination = safeReturnTo(returnTo, homeHref);
+      const home = safeReturnTo(returnTo, homeHref);
+      // The generated first password must be replaced before anything else.
+      const destination = result.user?.passwordChangeRequired
+        ? `/change-password?returnTo=${encodeURIComponent(home)}`
+        : home;
+      if (workspace) {
+        // A full load: this tab's API scope now points at the workspace.
+        window.location.replace(destination);
+        return;
+      }
       if (hasLinkedWorkspaceDirectory()) {
         try {
-          const workspaces = await fetch(`${API_URL}/auth/workspaces`, {
+          const workspaces = await fetch(`${authBase}/auth/workspaces`, {
             credentials: "include",
             cache: "no-store",
             signal: AbortSignal.timeout(3000),
@@ -142,7 +154,7 @@ export function LoginForm({ notice, returnTo }: LoginFormProps) {
           label={t("password")}
           aside={
             <Link
-              href="/forgot-password"
+              href={workspaceSignInHref("/forgot-password", workspace?.id)}
               className="text-[13px] font-medium text-[var(--lp-muted)] transition-colors hover:text-[var(--lp-ink)]"
             >
               {t("login.forgotPassword")}

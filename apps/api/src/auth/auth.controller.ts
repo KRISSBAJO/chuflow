@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Header,
+  Headers,
   HttpCode,
   Post,
   Param,
@@ -19,7 +20,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AllowTemporaryPassword, JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { IsString, Length, Matches } from 'class-validator';
 import { WorkspaceAccessService } from '../workspaces/workspace-access.service';
 import { JsonSubmissionGuard } from '../common/guards/json-submission.guard';
@@ -57,6 +58,14 @@ export class AuthController {
     }
 
     return options;
+  }
+
+  @Public()
+  @Get('workspace')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({ summary: 'Name the workspace this API serves' })
+  workspace() {
+    return this.authService.workspaceInfo();
   }
 
   @Public()
@@ -109,7 +118,10 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @HttpCode(200)
   @UseGuards(JsonSubmissionGuard)
-  createWorkspaceHandoff(@CurrentUser() user: { sub: string }, @Param('workspaceId') workspaceId: string) {
+  createWorkspaceHandoff(
+    @CurrentUser() user: { sub: string },
+    @Param('workspaceId') workspaceId: string,
+  ) {
     return this.workspaceAccess.createHandoff(user.sub, workspaceId);
   }
 
@@ -132,6 +144,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('logout')
+  @AllowTemporaryPassword()
   logout(@Res({ passthrough: true }) response: Response) {
     response.clearCookie(
       this.configService.get<string>('cookieName') ?? 'cms_access_token',
@@ -143,6 +156,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('me')
+  @AllowTemporaryPassword()
   me(@CurrentUser() user: { sub: string }) {
     return this.authService.me(user.sub);
   }
@@ -150,11 +164,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('change-password')
-  changePassword(
-    @CurrentUser() user: { sub: string },
+  @AllowTemporaryPassword()
+  async changePassword(
+    @CurrentUser() user: { sub: string; passwordChangeRequired?: boolean },
     @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) response: Response,
+    @Headers('authorization') authorization?: string,
   ) {
-    return this.authService.changePassword(user.sub, dto);
+    const result = await this.authService.changePassword(user.sub, dto);
+    if (!user.passwordChangeRequired) return result;
+    const mobile = /^Bearer /i.test(authorization ?? '');
+    const expiresIn = mobile ? this.configService.get<string>('mobileJwtExpiresIn') ?? '30d' : undefined;
+    const { accessToken, user: profile, cookieName } = await this.authService.startWorkspaceSession(user.sub, { expiresIn });
+    response.cookie(cookieName, accessToken, this.getAuthCookieOptions());
+    return { ...result, accessToken, user: profile };
   }
 
   @Public()

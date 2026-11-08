@@ -29,6 +29,11 @@ import { DistrictsService } from '../districts/districts.service';
 import { OversightRegionsService } from '../oversight-regions/oversight-regions.service';
 import { CreateUserDto, UpdateUserDto } from './dto/manage-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
+import {
+  FIRST_WORKSPACE_ID,
+  getWorkspace,
+  workspaceWebLink,
+} from '../workspaces/workspace-boundary';
 import { normalizeUserEmail, userEmailPattern } from './email-identity';
 
 type UserScopePayload = {
@@ -74,6 +79,10 @@ export class UsersService implements OnModuleInit {
         this.configService.get<string>('adminPassword')!,
         10,
       );
+      // A provisioned workspace starts from a generated password the operator has seen once,
+      // so its first admin must choose their own before using the workspace.
+      const provisioned =
+        getWorkspace(this.configService).id !== FIRST_WORKSPACE_ID;
       await this.userModel.create({
         firstName: 'Super',
         lastName: 'Admin',
@@ -81,6 +90,7 @@ export class UsersService implements OnModuleInit {
         password: hash,
         role: 'super_admin',
         isActive: true,
+        ...(provisioned ? { passwordChangeRequired: true } : {}),
       });
     }
   }
@@ -753,9 +763,9 @@ export class UsersService implements OnModuleInit {
     let status = 'failed';
     let messageId: string | null = null;
     try {
-      const webUrl =
-        this.configService.get<string>('webUrl') ?? 'http://localhost:3001';
-      const setupUrl = `${webUrl.replace(/\/$/, '')}/reset-password?token=${rawToken}`;
+      const setupUrl = workspaceWebLink(this.configService, '/reset-password', {
+        token: rawToken,
+      });
       let scope =
         [target.district, target.oversightRegion].filter(Boolean).join(' · ') ||
         'ChuFlow';
@@ -983,11 +993,13 @@ export class UsersService implements OnModuleInit {
     userId: string,
     password: string,
     resetTokenHash?: string,
+    temporaryPasswordHash?: string,
   ) {
     const hash = await bcrypt.hash(password, 10);
     const user = await this.userModel.findOneAndUpdate(
       {
         _id: userId,
+        ...(temporaryPasswordHash ? { password: temporaryPasswordHash, passwordChangeRequired: true, isActive: true } : {}),
         ...(resetTokenHash
           ? {
               passwordResetToken: resetTokenHash,
@@ -998,7 +1010,11 @@ export class UsersService implements OnModuleInit {
       },
       {
         $set: { password: hash },
-        $unset: { passwordResetToken: 1, passwordResetExpiresAt: 1 },
+        $unset: {
+          passwordResetToken: 1,
+          passwordResetExpiresAt: 1,
+          passwordChangeRequired: 1,
+        },
       },
       { new: true },
     );

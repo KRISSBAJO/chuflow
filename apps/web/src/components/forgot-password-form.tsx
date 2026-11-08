@@ -12,9 +12,18 @@ import {
   SubmitButton,
 } from "@/components/auth/auth-ui";
 import { API_URL } from "@/lib/api";
+import { SHARED_WORKSPACES, workspaceProxyUrl, workspaceSignInHref } from "@/lib/workspace-routing";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({
+  workspace,
+  missing,
+}: {
+  /** A provisioned church: the reset is requested from its own API. */
+  workspace?: { id: string; name: string } | null;
+  missing?: boolean;
+}) {
   const actionToast = useActionToast();
+  const tw = useTranslations("auth.workspacePicker");
 
   const t = useTranslations("auth.forgot");
   const ta = useTranslations("auth");
@@ -29,7 +38,8 @@ export function ForgotPasswordForm() {
     setFailed(false);
 
     try {
-      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      const authBase = SHARED_WORKSPACES ? workspaceProxyUrl(workspace?.id) : API_URL;
+      const response = await fetch(`${authBase}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.get("email") }),
@@ -54,7 +64,13 @@ export function ForgotPasswordForm() {
 
   return (
     <div>
-      <AuthHeading title={t("title")} body={t("body")} />
+      <AuthHeading title={t("title")} body={workspace ? t("bodyWorkspace", { name: workspace.name }) : t("body")} />
+
+      {missing ? (
+        <div className="mb-6">
+          <Alert tone="error">{tw("notFound")}</Alert>
+        </div>
+      ) : null}
 
       <form action={handleSubmit} className="space-y-5">
         <Field label={tc("email")}>
@@ -83,7 +99,7 @@ export function ForgotPasswordForm() {
       <p className="mt-10 text-[14px] text-[var(--lp-muted)]">
         {ta("rememberedIt")}{" "}
         <Link
-          href="/login"
+          href={workspaceSignInHref("/login", workspace?.id)}
           className="font-medium text-[var(--lp-ink)] underline-offset-4 hover:underline"
         >
           {t("backToSignIn")}

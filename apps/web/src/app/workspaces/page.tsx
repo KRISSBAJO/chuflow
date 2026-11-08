@@ -10,6 +10,7 @@ import { getTranslations } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthHeading } from "@/components/auth/auth-ui";
 import { linkedWorkspaceOptions, workspaceSignInOptions, type WorkspaceMembership } from "@/lib/workspace-sign-in";
+import { WorkspaceHandleForm } from "@/components/auth/workspace-handle-form";
 
 export default async function WorkspacesPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
   const store = await cookies();
@@ -78,6 +79,13 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
           );
         })}
       </ul>
+      {!user && SHARED_WORKSPACES ? (
+        <div className="mt-8 border-t border-black/10 pt-8">
+          <h2 className="text-[18px] font-semibold">{t("workspacePicker.openTitle")}</h2>
+          <p className="mb-5 mt-2 text-[14px] text-[var(--lp-muted)]">{t("workspacePicker.openBody")}</p>
+          <WorkspaceHandleForm />
+        </div>
+      ) : null}
       <Link href="/request-workspace" className="mt-6 inline-block text-sm underline underline-offset-4">
         {tc("requestWorkspace")}
       </Link>

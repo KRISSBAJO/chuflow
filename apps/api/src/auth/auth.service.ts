@@ -16,7 +16,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
 import type { User } from '../users/schemas/user.schema';
-import { getWorkspace } from '../workspaces/workspace-boundary';
+import {
+  FIRST_WORKSPACE_ID,
+  getWorkspace,
+  workspaceWebLink,
+} from '../workspaces/workspace-boundary';
 import { EntitlementsService } from '../platform/entitlements.service';
 import { publicSnapshot } from '../platform/subscription-rules';
 
@@ -74,6 +78,7 @@ export class AuthService {
       | 'oversightRegion'
       | 'district'
       | 'branchId'
+      | 'passwordChangeRequired'
     >,
     options: { expiresIn?: string },
   ) {
@@ -82,6 +87,7 @@ export class AuthService {
     const workspace = getWorkspace(this.configService);
     const payload = {
       workspaceId: workspace.id,
+      ...(user.passwordChangeRequired === true ? { temporaryPassword: true } : {}),
       sub: userId,
       email: user.email,
       role: user.role,
@@ -107,16 +113,24 @@ export class AuthService {
         oversightRegion: user.oversightRegion,
         district: user.district,
         branchId: user.branchId,
+        passwordChangeRequired: user.passwordChangeRequired === true,
       },
       cookieName:
         this.configService.get<string>('cookieName') ?? 'cms_access_token',
     };
   }
 
+  /** Which church this API serves, for the sign-in page of a provisioned workspace. */
+  workspaceInfo() {
+    const workspace = getWorkspace(this.configService);
+    return { ...workspace, primary: workspace.id === FIRST_WORKSPACE_ID };
+  }
+
   async me(userId: string): Promise<Record<string, unknown>> {
     const user = await this.usersService.findById(userId);
     return {
       ...user,
+      passwordChangeRequired: user.passwordChangeRequired === true,
       ...(await this.permissions.resolve(user)),
       workspace: getWorkspace(this.configService),
       ...(this.entitlements
@@ -149,7 +163,11 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    await this.usersService.updatePassword(userId, dto.newPassword);
+    if (user.passwordChangeRequired === true) {
+      await this.usersService.updatePassword(userId, dto.newPassword, undefined, userWithPassword.password);
+    } else {
+      await this.usersService.updatePassword(userId, dto.newPassword);
+    }
 
     return {
       message: 'Password changed successfully',
@@ -176,9 +194,10 @@ export class AuthService {
       expiresAt,
     );
 
-    const webUrl =
-      this.configService.get<string>('webUrl') ?? 'http://localhost:3001';
-    const resetUrl = `${webUrl}/reset-password?token=${rawToken}`;
+    // The link carries the workspace so the web app resets the password in the right church.
+    const resetUrl = workspaceWebLink(this.configService, '/reset-password', {
+      token: rawToken,
+    });
     try {
       await this.mailService.sendPasswordResetEmail(
         user.email,

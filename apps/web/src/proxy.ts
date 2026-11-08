@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeReturnTo } from "./lib/return-to";
 
-import { ACTIVE_WORKSPACE_COOKIE, workspaceApiContext } from "./lib/workspace-routing";
+import { ACTIVE_WORKSPACE_COOKIE, workspaceApiContext, workspaceId } from "./lib/workspace-routing";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
 // `/ops` is the operator console: it keeps its own session and guards itself.
 const publicPages = ["/", "/service-unavailable", "/request-workspace", "/workspaces", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register", "/ops"];
@@ -37,11 +37,14 @@ export function proxy(request: NextRequest) {
     url.pathname = "/login";
     url.search = "";
     url.searchParams.set("returnTo", `${pathname}${request.nextUrl.search}`);
+    const workspace = workspaceId(request.cookies.get(ACTIVE_WORKSPACE_COOKIE)?.value);
+    if (workspace) url.searchParams.set("workspace", workspace);
     return NextResponse.redirect(url);
   }
 
   // `reason` means the app sent the user here on purpose (e.g. a stale cookie), so let them sign in.
-  if (token && isAuthPage && !request.nextUrl.searchParams.has("reason")) {
+  if (token && isAuthPage && pathname === "/login" &&
+      !request.nextUrl.searchParams.has("reason") && !request.nextUrl.searchParams.has("workspace")) {
     return NextResponse.redirect(new URL(safeReturnTo(request.nextUrl.searchParams.get("returnTo")), request.url));
   }
 

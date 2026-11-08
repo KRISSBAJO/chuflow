@@ -1,34 +1,27 @@
 import { getTranslations } from "next-intl/server";
 import { NextRequest, NextResponse } from "next/server";
+import { proxyTarget } from "@/lib/workspace-proxy";
 import {
-  ACTIVE_WORKSPACE_COOKIE, DIRECTORY_COOKIE, PRIMARY_API_URL, SHARED_WEB_ORIGIN, SHARED_WORKSPACES, WORKSPACE_TAB_HINT, workspaceApiContext, workspaceId,
+  ACTIVE_WORKSPACE_COOKIE, DIRECTORY_COOKIE, PRIMARY_API_URL, SHARED_WEB_ORIGIN, WORKSPACE_TAB_HINT,
 } from "@/lib/workspace-routing";
 
 export const runtime = "nodejs";
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
-  if (!SHARED_WORKSPACES) return new Response(null, { status: 404 });
   if (request.method !== "GET" && (!SHARED_WEB_ORIGIN || request.headers.get("origin") !== SHARED_WEB_ORIGIN)) {
     return new Response(null, { status: 403 });
   }
 
   const { path } = await context.params;
-  if (!path.length || path.some((part) => !part || part === "." || part === ".." || /[/%\\]/.test(part))) {
+  const target = proxyTarget(path, request.method, request.cookies.get(ACTIVE_WORKSPACE_COOKIE)?.value);
+  if (target.status !== 200) {
+    if (target.status === 409) {
+      const t = await getTranslations("auth.workspacePicker");
+      return Response.json({ message: t("scopeChanged") }, { status: 409 });
+    }
     return new Response(null, { status: 404 });
   }
-  const expected = path[0] === "directory" ? null : path[0] === "w" ? workspaceId(path[1]) : undefined;
-  if (expected === undefined || (path[0] === "w" && !expected)) return new Response(null, { status: 404 });
-  const endpoint = "/" + path.slice(path[0] === "w" ? 2 : 1).map(encodeURIComponent).join("/");
-  if (endpoint === "/") return new Response(null, { status: 404 });
-  const active = workspaceId(request.cookies.get(ACTIVE_WORKSPACE_COOKIE)?.value);
-  // The shared sign-in directory always lives at the primary API.
-  const directory = /^\/auth\/(?:login|forgot-password|reset-password|workspaces)(?:\/|$)/.test(endpoint) || endpoint.includes("/public/")
-    || (endpoint === "/workspace-requests" && request.method === "POST");
-  if (!directory && expected !== active) {
-    const t = await getTranslations("auth.workspacePicker");
-    return Response.json({ message: t("scopeChanged") }, { status: 409 });
-  }
-  const { base, cookieName } = workspaceApiContext(directory ? null : active);
+  const { base, cookieName, endpoint, signInWorkspace } = target;
   const token = request.cookies.get(cookieName)?.value;
   const upstreamHeaders = new Headers();
   for (const name of ["accept", "content-type"]) {
@@ -53,7 +46,12 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     }
     for (const cookie of upstream.headers.getSetCookie()) response.headers.append("Set-Cookie", cookie);
     response.headers.set("Cache-Control", "no-store");
-    if (upstream.ok && (endpoint === "/auth/login" || endpoint === "/auth/logout")) {
+    if (upstream.ok && signInWorkspace) {
+      // Signed in at a provisioned workspace: every later request in this tab stays with it.
+      const secure = SHARED_WEB_ORIGIN?.startsWith("https:") ? "; Secure" : "";
+      response.headers.append("Set-Cookie", `${ACTIVE_WORKSPACE_COOKIE}=${signInWorkspace}; Path=/; Max-Age=86400; SameSite=Lax; HttpOnly${secure}`);
+      response.headers.append("Set-Cookie", `${WORKSPACE_TAB_HINT}=${signInWorkspace}; Path=/; Max-Age=86400; SameSite=Lax${secure}`);
+    } else if (upstream.ok && (endpoint === "/auth/login" || endpoint === "/auth/logout")) {
       response.headers.append("Set-Cookie", `${ACTIVE_WORKSPACE_COOKIE}=; Max-Age=0; Path=/; HttpOnly`);
       response.headers.append("Set-Cookie", `${WORKSPACE_TAB_HINT}=; Max-Age=0; Path=/`);
     }

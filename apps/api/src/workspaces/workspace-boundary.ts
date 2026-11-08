@@ -10,6 +10,27 @@ export function getWorkspace(config: ConfigService) {
   return { id, name };
 }
 
+/**
+ * A link into the web app that lands in this workspace. The primary workspace keeps its plain
+ * links; a provisioned workspace adds `workspace=<handle>` so sign-in and recovery pages talk
+ * to its own API and session.
+ */
+export function workspaceWebLink(
+  config: ConfigService,
+  path: string,
+  params: Record<string, string> = {},
+) {
+  const webUrl = (
+    config.get<string>('webUrl') ?? 'http://localhost:3001'
+  ).replace(/\/$/, '');
+  const { id } = getWorkspace(config);
+  const search = new URLSearchParams(
+    id === FIRST_WORKSPACE_ID ? params : { workspace: id, ...params },
+  );
+  const query = search.toString();
+  return `${webUrl}${path}${query ? `?${query}` : ''}`;
+}
+
 type WorkspaceBinding = { _id: 'workspace'; workspaceId: string };
 
 /** Verify ownership before Nest registers models or starts application jobs. */

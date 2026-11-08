@@ -24,6 +24,17 @@ export function workspaceProxyUrl(id?: string | null) {
   return WORKSPACE_PROXY_URL + (scope ? "/w/" + scope : "/directory");
 }
 
+/** A sign-in, recovery or reset link that lands in the given provisioned workspace. */
+export function workspaceSignInHref(
+  path: "/login" | "/forgot-password" | "/reset-password" | "/change-password",
+  id?: string | null,
+  params: Record<string, string> = {},
+) {
+  const workspace = workspaceId(id);
+  const search = new URLSearchParams({ ...(workspace ? { workspace } : {}), ...params }).toString();
+  return search ? `${path}?${search}` : path;
+}
+
 export function initialWorkspaceProxyUrl() {
   const hint = document.cookie.split(";").map((part) => part.trim())
     .find((part) => part.startsWith(WORKSPACE_TAB_HINT + "="));

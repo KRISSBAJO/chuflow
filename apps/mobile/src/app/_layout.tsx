@@ -46,8 +46,11 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-      <Stack.Protected guard={!!user && !choosingWorkspace}>
+      <Stack.Protected guard={!!user && !choosingWorkspace && !user.passwordChangeRequired}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!!user && !!user.passwordChangeRequired}>
+        <Stack.Screen name="change-password" />
       </Stack.Protected>
       <Stack.Protected guard={!!user && choosingWorkspace}>
         <Stack.Screen name="choose-workspace" />

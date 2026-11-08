@@ -2,13 +2,17 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { ResetPasswordForm } from "@/components/reset-password-form";
+import { workspaceSignInHref } from "@/lib/workspace-routing";
+import { resolveSignInWorkspace } from "@/lib/workspace-sign-in-server";
 
-export default async function ResetPasswordPage() {
-  const [t, tc] = await Promise.all([getTranslations("auth"), getTranslations("common")]);
+export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ workspace?: string }> }) {
+  const [params, t, tc] = await Promise.all([searchParams, getTranslations("auth"), getTranslations("common")]);
+  const resolved = await resolveSignInWorkspace(params.workspace);
+  const workspace = resolved === "missing" ? null : resolved;
 
   return (
     <AuthShell
-      switchPrompt={{ text: t("knowYourPassword"), label: tc("signIn"), href: "/login" }}
+      switchPrompt={{ text: t("knowYourPassword"), label: tc("signIn"), href: workspaceSignInHref("/login", workspace?.id) }}
       aside={{
         photoId: "1604072424771-7300bc5de457",
         photoAlt: t("reset.asideAlt"),
@@ -17,7 +21,7 @@ export default async function ResetPasswordPage() {
       }}
     >
       <Suspense fallback={null}>
-        <ResetPasswordForm />
+        <ResetPasswordForm workspace={workspace} missing={resolved === "missing"} />
       </Suspense>
     </AuthShell>
   );
