@@ -3,6 +3,7 @@ const http = require('node:http');
 const { isIP } = require('node:net');
 const path = require('node:path');
 const secrets = require('./workspace-secrets.cjs');
+const { LOGIN_PATH, createWorkspaceLogin } = require('./workspace-login.cjs');
 
 const PRIMARY = 'winners-chapel-international';
 const PREFIX = '/api/w/';
@@ -178,6 +179,7 @@ function workerEnvironment(env, entry) {
 function start(env = process.env) {
   const registry = { entries: readRegistry(env) };
   const workers = new Map();
+  const lookupClients = new Map();
   let closing = false;
   let control = null;
 
@@ -239,9 +241,44 @@ function start(env = process.env) {
     return state.ready;
   }
 
+  const workspaceLogin = createWorkspaceLogin({
+    primary: PRIMARY,
+    entries: () => registry.entries,
+    workerFor,
+    headersFor: (request) => {
+      const ip = upstreamHeaders(request, Boolean(env.RENDER_GIT_COMMIT))[CLIENT_IP_HEADER];
+      return ip ? { [CLIENT_IP_HEADER]: ip } : {};
+    },
+    async hasAccount(entry, email) {
+      if (entry.adminEmail.trim().toLowerCase() === email) return true;
+      let client = entry.databaseName ? control : null;
+      if (!client) {
+        client = lookupClients.get(entry.id);
+        if (!client) {
+          const { MongoClient } = require('mongoose').mongo;
+          client = new MongoClient(entry.mongodbUri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 2 });
+          lookupClients.set(entry.id, client);
+        }
+      }
+      const name = entry.databaseName || databaseLocation(entry.mongodbUri).name;
+      const { userEmailPattern } = require('../dist/users/email-identity');
+      return Boolean(await client.db(name).collection('users').findOne(
+        { email: userEmailPattern(email) },
+        { projection: { _id: 1 }, maxTimeMS: 2000 },
+      ));
+    },
+  });
+
   const server = http.createServer(async (request, response) => {
     const route = routeWorkspace(request.url);
     if (registry.ready) await registry.ready;
+    if (request.url === LOGIN_PATH) return workspaceLogin(request, response);
+    // This endpoint belongs to the gateway, including when a scoped URL is used.
+    if (route?.path.split('?')[0] === LOGIN_PATH) {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
     const entry = route && route.id !== PRIMARY ? registry.entries.get(route.id) : null;
     if (!route || (route.id !== PRIMARY && !entry)) {
       response.writeHead(404, { 'Content-Type': 'application/json' });
@@ -286,6 +323,7 @@ function start(env = process.env) {
     server.close();
     if (registry.timer) clearInterval(registry.timer);
     if (control) void control.close().catch(() => undefined);
+    for (const client of lookupClients.values()) void client.close().catch(() => undefined);
     for (const { child } of workers.values()) child.kill();
   };
   server.listen(Number(env.PORT || 10000), env.API_BIND_HOST || '0.0.0.0');
