@@ -1,3 +1,4 @@
+import { KidsExtraFields } from './extra-fields';
 import * as WebBrowser from 'expo-web-browser';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Linking, StyleSheet, Text, View } from 'react-native';
@@ -6,7 +7,7 @@ import { Badge, Button, Caption, Card, Chip, EmptyState, ErrorState, Heading, Lo
 import { colors, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { getWorkspaceWebUrl } from '@/lib/api';
+import { workspaceBrowserHref } from '@/lib/api';
 import { dialable } from '@/lib/format';
 import { useApi } from '@/lib/use-api';
 import { ageInMonths, familyInitials } from './age';
@@ -17,6 +18,7 @@ import type { Family, RecordEvent } from './types';
 export function FamilyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useT('kids.family');
+  const tf = useT('members.form');
   const ta = useT('kids.age');
   const tt = useT('kids.desk.supervisor.timeline');
   const tc = useT('common.actions');
@@ -34,7 +36,7 @@ export function FamilyScreen() {
   }
 
   const pickupAdults = new Set(f.children.flatMap((c) => c.pickupGuardianIds));
-  const website = (path: string) => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${path}`);
+  const website = (path: string) => void WebBrowser.openBrowserAsync(workspaceBrowserHref(path));
   const events: TimelineItem[] = [...(f.events ?? []), ...f.children.flatMap((c) => (c.events ?? []).map((e) => ({ ...e, note: e.note || `${c.firstName} ${c.lastName}` })))]
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
     .slice(0, 10)
@@ -69,6 +71,8 @@ export function FamilyScreen() {
       </View>
       <Caption>{t('printHint')}</Caption>
 
+      {f.customAnswers?.length ? <View><Section title={tf('extraAnswers')} />{f.customAnswers.map(({ key, label, value }) => <Caption key={key}>{label} · {String(value)}</Caption>)}</View> : null}
+      <KidsExtraFields family={f} onSaved={() => void family.reload()} />
       <Section title={t('adults')} />
       {f.guardians.length ? (
         f.guardians.map((g, i) => (
@@ -139,6 +143,8 @@ export function FamilyScreen() {
                   <Text style={type.body}>{c.pickupNotes}</Text>
                 </View>
               ) : null}
+              {c.customAnswers?.map(({ key, label, value }) => <Caption key={key}>{label} · {String(value)}</Caption>)}
+              <KidsExtraFields family={f} child={c} onSaved={() => void family.reload()} />
             </Card>
           );
         })

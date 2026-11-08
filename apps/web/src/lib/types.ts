@@ -127,6 +127,7 @@ export type Member = {
 };
 
 export type ServiceUnitSummary = {
+  customAnswers?: import("./guest-fields").GuestCustomAnswer[];
   _id: string;
   name: string;
   meetingDay: string;
@@ -617,6 +618,7 @@ export type IntakeTemplateField = {
 };
 
 export type IntakeTemplate = {
+  formRevision?: number;
   spanish?: Partial<Record<"title" | "subtitle" | "introTitle" | "introBody" | "closingText" | "submitLabel" | "successTitle" | "successMessage", string>>;
   _id: string;
   kind: "guest" | "member" | "attendance" | "weekly_report" | "maag_report";

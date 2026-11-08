@@ -8,7 +8,9 @@ import {
   ArrayMaxSize,
 } from 'class-validator';
 
-export class CreateMemberDto {
+import { FormAnswersDto } from '../../guests/form-answers.dto';
+
+export class CreateMemberDto extends FormAnswersDto {
   @ApiProperty({ required: false, type: [String] })
   @IsOptional()
   @IsArray()

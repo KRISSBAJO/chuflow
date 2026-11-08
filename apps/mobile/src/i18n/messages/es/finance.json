@@ -147,6 +147,8 @@
       "approved": "Registro aprobado",
       "rejected": "Registro rechazado",
       "failed": "No se pudo revisar este registro"
-    }
+    },
+    "customAnswers": "Respuestas del registro",
+    "customLoadFailed": "No se pudieron cargar los campos. Actualiza para reintentar."
   }
 }

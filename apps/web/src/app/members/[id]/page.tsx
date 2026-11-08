@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { memberGroupNames } from "@/lib/member-service-groups";
 import { CommunicationPanel } from "@/components/communication-panel";
 import { MemberProfileForm } from "@/components/member-profile-form";
+import { MemberAnswersEditor } from "@/components/member-custom-fields";
+import type { GuestCustomAnswer } from "@/lib/guest-fields";
 import { WorkspaceTabs } from "@/components/workspace-tabs";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/page-header";
@@ -29,6 +31,7 @@ import type {
 } from "@/lib/types";
 
 type MemberDetail = MemberListItem & {
+  customAnswers?: GuestCustomAnswer[];
   recordType?: string;
   phone?: string;
   email?: string;
@@ -185,6 +188,7 @@ export default async function MemberDetailPage({
           </div>
         }
       />
+      {member.recordType !== "child" ? <MemberAnswersEditor id={id} answers={member.customAnswers ?? []} editable={hasPermission(user,"members.edit")} /> : null}
       <WorkspaceTabs
         defaultTab="overview"
         tabs={[

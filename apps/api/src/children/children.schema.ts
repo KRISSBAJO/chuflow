@@ -43,6 +43,9 @@ export type ChildEvent = {
 };
 @Schema({ timestamps: true })
 export class ChildFamily {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({ required: true, unique: true }) requestKey!: string;
   @Prop({
     type: SchemaTypes.ObjectId,
@@ -62,6 +65,9 @@ export const ChildFamilySchema = SchemaFactory.createForClass(ChildFamily);
 ChildFamilySchema.index({ branchId: 1, name: 1 });
 @Schema({ timestamps: true })
 export class ChildProfile {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({ required: true, unique: true }) requestKey!: string;
   @Prop({
     type: SchemaTypes.ObjectId,

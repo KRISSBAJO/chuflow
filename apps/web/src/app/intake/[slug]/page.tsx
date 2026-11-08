@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PublicIntakeForm } from "@/components/public-intake-form";
 import { publicServerGet } from "@/lib/server-api";
 import type { IntakeTemplate, PublicBranchOption } from "@/lib/types";
+import { workspaceApiContext, workspaceId } from "@/lib/workspace-routing";
 
 export default async function PublicIntakePage({
   params,
@@ -14,10 +15,14 @@ export default async function PublicIntakePage({
     oversightRegion?: string;
     district?: string;
     lang?: string;
+    workspace?: string;
   }>;
 }) {
   const { slug } = await params;
-  const { branchId, oversightRegion, district, lang } = await searchParams;
+  const { branchId, oversightRegion, district, lang, workspace } = await searchParams;
+  const scope = workspaceId(workspace);
+  if (workspace && !scope) notFound();
+  const apiBase = scope ? workspaceApiContext(scope).base : undefined;
 
   let template: IntakeTemplate;
   let branchOptions: PublicBranchOption[];
@@ -31,6 +36,7 @@ export default async function PublicIntakePage({
 
     template = await publicServerGet<IntakeTemplate>(
       `/intake-templates/public/${slug}${query.toString() ? `?${query.toString()}` : ""}`,
+      apiBase,
     );
     const branchOptionQuery = new URLSearchParams();
 
@@ -50,7 +56,7 @@ export default async function PublicIntakePage({
               branchOptionQuery.toString()
                 ? `?${branchOptionQuery.toString()}`
                 : ""
-            }`,
+            }`, apiBase,
           ).catch(() => [])
         : [];
   } catch {
@@ -60,6 +66,7 @@ export default async function PublicIntakePage({
   return (
     <PublicIntakeForm
       template={template}
+      publicApiBase={template.kind === "guest" || template.kind === "member" ? workspaceApiContext(scope).base : apiBase}
       initialLanguage={formLanguage(lang)}
       branchId={branchId}
       branchOptions={branchOptions}

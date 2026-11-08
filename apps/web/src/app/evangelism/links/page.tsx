@@ -8,10 +8,11 @@ import { TemplateQrCard } from "@/components/template-qr-card";
 import { Badge, buttonClass, Card, EmptyState } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
+import { workspacePublicHref } from "@/lib/workspace-routing";
 import { outreachName, type OutreachLink } from "@/lib/evangelism";
 
 export default async function OutreachLinksPage() {
-  await requireServerRole("/evangelism");
+  const user = await requireServerRole("/evangelism");
   const [t, tsh] = await Promise.all([getTranslations("people.evangelism.links"), getTranslations("people.shared")]);
   const links = await serverGet<OutreachLink[]>("/evangelism/links");
   const origin = (
@@ -54,7 +55,7 @@ export default async function OutreachLinksPage() {
               {link.isActive ? (
                 <TemplateQrCard
                   allowSpanish
-                  url={`${origin}/outreach/${link.token}`}
+                  url={origin + workspacePublicHref(`/outreach/${link.token}`, user.workspace?.id)}
                   title={link.name}
                 />
               ) : (
@@ -75,7 +76,7 @@ export default async function OutreachLinksPage() {
                 <OutreachLinkToggle id={link._id} active={link.isActive} />
                 {link.isActive && (
                   <Link
-                    href={`/outreach/${link.token}`}
+                    href={workspacePublicHref(`/outreach/${link.token}`, user.workspace?.id)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm underline"

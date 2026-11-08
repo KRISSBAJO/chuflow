@@ -46,6 +46,9 @@ export type MinutesHistory = {
 };
 @Schema({ timestamps: true })
 export class Meeting {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({
     type: SchemaTypes.ObjectId,
     ref: 'Branch',

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Badge, Button, EmptyState, Field, type BadgeTone } from "@/components/ui/ui";
 import { useAppFormat, useStatusLabel } from "@/i18n/labels";
+import { FinanceEntryAnswers } from "@/components/finance-entry-answers";
 import { API_URL } from "@/lib/api";
 import type {
   ExpenseCategorySummary,
@@ -53,6 +54,7 @@ export function ExpenseEntriesTable({
       maximumFractionDigits: 2,
     });
   const router = useRouter();
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -169,6 +171,10 @@ export function ExpenseEntriesTable({
         return (
           <details
             key={entry._id}
+            onToggle={(event) => {
+              const open = event.currentTarget.open;
+              setOpened((current) => current[entry._id] === open ? current : { ...current, [entry._id]: open });
+            }}
             className="group rounded-2xl border border-black/[0.06] transition-colors hover:border-black/[0.12] open:border-black/[0.12]"
           >
             <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
@@ -215,6 +221,7 @@ export function ExpenseEntriesTable({
                 </div>
               </dl>
 
+              {opened[entry._id] ? <FinanceEntryAnswers kind="expense" id={entry._id} editable={entry.permissions.canEdit} /> : null}
               {entry.permissions.canEdit ? (
                 <form
                   action={(formData) => updateEntry(entry._id, formData)}

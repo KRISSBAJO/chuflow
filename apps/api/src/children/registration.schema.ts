@@ -8,6 +8,7 @@ export type ParentAdult = {
   relationship: string;
 };
 export type ParentChild = {
+  customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
   firstName: string;
   lastName: string;
   birthDate: string;
@@ -35,6 +36,8 @@ export const ChildrenRegistrationLinkSchema = SchemaFactory.createForClass(
 );
 @Schema({ timestamps: true })
 export class ChildrenRegistration {
+  @Prop({ type: [Object], default: undefined })
+  customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
   @Prop({
     type: SchemaTypes.ObjectId,
     ref: 'Branch',

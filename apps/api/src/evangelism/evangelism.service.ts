@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import {
   BadRequestException,
   ConflictException,
@@ -49,6 +51,7 @@ export class EvangelismService {
     @InjectModel(User.name) private readonly users: Model<UserDocument>,
     @InjectModel(Guest.name) private readonly guests: Model<GuestDocument>,
     private readonly scope: AccessScopeService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
 
   private id(value: string) {
@@ -207,6 +210,7 @@ export class EvangelismService {
     const { branch, link } = await this.publicLink(token);
     return {
       branchName: branch.name,
+      form: await this.forms?.publicForm(MinistryFormKind.Outreach),
       churchName: link.churchName || branch.name,
       ...(link.headerTextColor
         ? { headerTextColor: link.headerTextColor }
@@ -230,6 +234,7 @@ export class EvangelismService {
     isPublic: boolean,
   ) {
     if (dto.website) return { success: true };
+    const customAnswers = await this.forms?.prepare(MinistryFormKind.Outreach, dto, undefined, isPublic ? 'public' : 'staff');
     if (!dto.consentToContact)
       throw new BadRequestException('Permission to follow up is required');
     if (dto.preferredContactMethod === 'email' && !dto.email)
@@ -246,6 +251,7 @@ export class EvangelismService {
     const now = new Date();
     try {
       const contact = await this.contacts.create({
+        customAnswers,
         branchId,
         ...source,
         firstName: dto.firstName.trim(),
@@ -402,7 +408,7 @@ export class EvangelismService {
   }
 
   async detail(user: AuthUser, id: string) {
-    const contact = await this.contacts.findById(this.id(id));
+    const contact = await this.contacts.findById(this.id(id)).select('+customAnswers');
     if (!contact) throw new NotFoundException('Contact not found');
     await this.scope.ensureBranchAccess(user, String(contact.branchId));
     return contact.populate([
@@ -493,7 +499,7 @@ export class EvangelismService {
   }
 
   async update(user: AuthUser, id: string, dto: UpdateOutreachDto) {
-    const contact = await this.contacts.findById(this.id(id));
+    const contact = await this.contacts.findById(this.id(id)).select('+customAnswers');
     if (!contact) throw new NotFoundException('Contact not found');
     await this.scope.ensureBranchAccess(user, String(contact.branchId));
     if (!dto.note.trim()) throw new BadRequestException('Add a follow-up note');
@@ -527,7 +533,8 @@ export class EvangelismService {
         : dto.nextActionDate
           ? new Date(dto.nextActionDate)
           : contact.nextActionDate;
-    const set: Record<string, unknown> = { stage: dto.stage };
+    const customAnswers = await this.forms?.prepare(MinistryFormKind.Outreach, dto, contact.customAnswers ?? []);
+    const set: Record<string, unknown> = { stage: dto.stage, ...(customAnswers ? { customAnswers } : {}) };
     const unset: Record<string, string> = {};
     if (assignedTo) set.assignedTo = assignedTo;
     else unset.assignedTo = '';

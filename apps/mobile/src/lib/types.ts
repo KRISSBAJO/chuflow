@@ -84,6 +84,7 @@ export type GuestListItem = {
 };
 
 export type GuestDetail = GuestListItem & {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   prayerRequest?: string;
   invitedBy?: string;
   heardAboutChurch?: string;

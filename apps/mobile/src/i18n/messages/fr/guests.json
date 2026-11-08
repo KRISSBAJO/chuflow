@@ -55,6 +55,11 @@
       "prayerRequest": "Sujet de prière",
       "phoneCopied": "Numéro de téléphone copié",
       "convertToMember": "Convertir en membre"
+    },
+    "fields": {
+      "answers": "Réponses de l’invité",
+      "loadFailed": "Impossible de charger le formulaire. Actualisez pour réessayer.",
+      "required": "Obligatoire"
     }
   }
 }

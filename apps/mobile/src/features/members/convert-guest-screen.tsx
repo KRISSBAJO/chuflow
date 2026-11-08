@@ -14,6 +14,7 @@ import type { GuestDetail } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { EMPTY_MEMBER_FORM, MemberFields, validateMember, type MemberFormErrors, type MemberFormValues } from './member-fields';
 import type { MemberDetail } from './types';
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from './custom-member-fields';
 
 /**
  * Converts a guest into a member: POST /members/convert/:guestId carries the name and contact
@@ -50,6 +51,8 @@ export function ConvertGuestScreen() {
 
 function ConvertForm({ guest }: { guest: GuestDetail }) {
   const t = useT('members.form');
+  const definition = useApi<MemberFormDefinition>(`/members/convert/${guest._id}/form`);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
   const format = useAppFormat();
   const [value, setValue] = useState<MemberFormValues>(() => ({
     ...EMPTY_MEMBER_FORM,
@@ -65,13 +68,18 @@ function ConvertForm({ guest }: { guest: GuestDetail }) {
   const alreadyMember = guest.convertedToMember || guest.visitStatus === 'member';
 
   async function convert() {
+    if (!definition.data) {
+      setFormError(t('customLoadFailed'));
+      void definition.refresh();
+      return;
+    }
     const nextErrors = validateMember(value, t, { identity: false, needsBranch: false });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     setSaving(true);
     setFormError(null);
     try {
-      const created = await api.post<MemberDetail>(`/members/convert/${guest._id}`);
+      const created = await api.post<MemberDetail>(`/members/convert/${guest._id}`, memberFormPayload(definition.data, custom));
       const extras = {
         ...(value.title ? { title: value.title } : {}),
         ...(value.membershipStatus !== 'active' ? { membershipStatus: value.membershipStatus } : {}),
@@ -116,7 +124,8 @@ function ConvertForm({ guest }: { guest: GuestDetail }) {
         {alreadyMember ? <Notice tone="warning">{t('alreadyMember')}</Notice> : null}
         {formError ? <Notice tone="danger">{formError}</Notice> : null}
 
-        <MemberFields value={value} onChange={setValue} errors={errors} identity={false} />
+        <MemberFields value={value} onChange={setValue} errors={errors} identity={false} hidden={definition.data?.hiddenStaff} />
+        <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} />
       </Screen>
     </KeyboardAvoidingView>
   );

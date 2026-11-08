@@ -1,3 +1,4 @@
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from '@/features/members/custom-member-fields';
 import { FinanceReviewControls } from './review-controls';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -22,6 +23,8 @@ export function OfferingDetailScreen() {
   const money = moneyOf(format);
   const { user } = useSession();
   const entry = useApi<OfferingEntrySummary>(can.finance(user?.role) && id ? `/finance/offerings/${id}` : null);
+  const definition = useApi<MemberFormDefinition>(entry.data?.permissions?.canEdit ? '/finance/staff-form/offering' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -30,9 +33,10 @@ export function OfferingDetailScreen() {
 
   async function save(next: { amount: number; notes?: string }) {
     if (!item) return;
+    if (!definition.data) { toast.error(t('customLoadFailed')); void definition.refresh(); return; }
     setSaving(true);
     try {
-      await api.patch(`/finance/offerings/${item._id}`, { amount: next.amount, notes: next.notes ?? '' });
+      await api.patch(`/finance/offerings/${item._id}`, { amount: next.amount, notes: next.notes ?? '', reviewRevision: item.reviewRevision, ...memberFormPayload(definition.data, custom) });
       entry.setData((current) => current && { ...current, amount: next.amount, notes: next.notes });
       toast.success(t('offering.saved'));
       setEditing(false);
@@ -56,7 +60,9 @@ export function OfferingDetailScreen() {
           <BigAmount caption={[item.serviceLabel || item.serviceTypeLabel, format.date(item.serviceDate)].filter(Boolean).join(' · ')}>{money(item.amount, item.currency)}</BigAmount>
 
           {editing ? (
-            <AmountNotesEditor amount={item.amount} notes={item.notes} saving={saving} saveLabel={t('offering.save')} onSave={(next) => void save(next)} onCancel={() => setEditing(false)} />
+            <AmountNotesEditor amount={item.amount} notes={item.notes} saving={saving} saveLabel={t('offering.save')} onSave={(next) => void save(next)} showNotes={!definition.data?.hiddenStaff.includes('notes')} onCancel={() => setEditing(false)}>
+              <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} title={t('customAnswers')} />
+            </AmountNotesEditor>
           ) : (
             <View>
               <Section title={t('offering.title')} />
@@ -76,9 +82,10 @@ export function OfferingDetailScreen() {
             </View>
           )}
 
+          {!editing && item.customAnswers?.length ? <View><Section title={t('customAnswers')} /><KeyValue rows={item.customAnswers.map(({ label, value }) => ({ label, value: String(value) }))} /></View> : null}
           <Badge label={format.status(item.status||'approved')} />
           {!editing ? <FinanceReviewControls id={item._id} status={item.status} canReview={item.permissions?.canReview} revision={item.reviewRevision} onReviewed={()=>void entry.reload()} /> : null}
-          {!editing && canEdit ? <Button label={t('offering.edit')} variant="secondary" icon="edit" onPress={() => setEditing(true)} /> : null}
+          {!editing && canEdit ? <Button label={t('offering.edit')} variant="secondary" icon="edit" onPress={() => { setCustom(Object.fromEntries((item.customAnswers ?? []).map(({ key, value }) => [key, value]))); setEditing(true); }} /> : null}
           {!editing && item.permissions?.reason ? <Caption>{item.permissions.reason}</Caption> : null}
         </>
       ) : null}

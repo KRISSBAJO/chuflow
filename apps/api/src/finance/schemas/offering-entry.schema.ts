@@ -5,6 +5,9 @@ export type OfferingEntryDocument = HydratedDocument<OfferingEntry>;
 
 @Schema({ timestamps: true })
 export class OfferingEntry {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({
     enum: ['submitted', 'approved', 'rejected', 'locked'],
     default: 'submitted',

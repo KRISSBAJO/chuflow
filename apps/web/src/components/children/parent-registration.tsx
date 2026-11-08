@@ -1,9 +1,10 @@
 "use client";
+import { MemberCustomFields } from "@/components/member-custom-fields";
+import type { GuestStaffForm } from "@/lib/guest-fields";
 import { toast } from "sonner";
 import { useActionToast } from "@/lib/action-feedback";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { API_URL } from "@/lib/api";
 import { ChildrenWelcome } from "./welcome";
 import {
   RELATIONSHIP_KEYS,
@@ -26,11 +27,23 @@ const newChild = () => ({
   birthDate: "",
   pickupAdults: [0],
   careNotes: "",
+  extra: {} as Record<string, string | number>,
 });
+function answerPayload(form: GuestStaffForm | undefined, answers: Record<string, string | number>) {
+  return {
+    formRevision: form?.revision,
+    customFields: Object.fromEntries((form?.fields ?? []).map((field) => {
+      const answer = answers[field.key] ?? "";
+      return [field.key, field.type === "number" && String(answer).trim() ? Number(answer) : answer];
+    })),
+  };
+}
 const STEPS = [1, 2, 3] as const;
 
-export function ParentRegistrationForm({ token }: { token: string }) {
+export function ParentRegistrationForm({ token, apiBase }: { token: string; apiBase: string }) {
   const actionToast = useActionToast();
+  const [forms, setForms] = useState<{ familyForm?: GuestStaffForm; childForm?: GuestStaffForm }>({});
+  const [extra, setExtra] = useState<Record<string, string | number>>({});
 
   const t = useTranslations("childrenRecords");
   const defaultRelationship = t("parent.relationshipDefault");
@@ -47,17 +60,17 @@ export function ParentRegistrationForm({ token }: { token: string }) {
     form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     let active = true;
-    void fetch(`${API_URL}/children-registration`, {
+    void fetch(`${apiBase}/children-registration`, {
       headers: { "x-children-registration": token },
       credentials: "omit",
       cache: "no-store",
     })
       .then(async (r) => {
         if (!r.ok) throw new Error(t("parent.unavailable"));
-        return (await r.json()) as { churchName: string };
+        return (await r.json()) as { churchName: string; familyForm?: GuestStaffForm; childForm?: GuestStaffForm };
       })
       .then((r) => {
-        if (active) setChurch(r.churchName);
+        if (active) { setChurch(r.churchName); setForms(r); }
       })
       .catch((e) => {
         if (active)
@@ -66,7 +79,7 @@ export function ParentRegistrationForm({ token }: { token: string }) {
     return () => {
       active = false;
     };
-  }, [token, t]);
+  }, [token, apiBase, t]);
   function removeAdult(index: number) {
     setAdults((rows) => rows.filter((_, i) => i !== index));
     setChildren((rows) =>
@@ -101,7 +114,7 @@ export function ParentRegistrationForm({ token }: { token: string }) {
     setError("");
     if (!requestKey.current) requestKey.current = crypto.randomUUID();
     try {
-      const response = await fetch(`${API_URL}/children-registration`, {
+      const response = await fetch(`${apiBase}/children-registration`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,8 +125,9 @@ export function ParentRegistrationForm({ token }: { token: string }) {
         body: JSON.stringify({
           requestKey: requestKey.current,
           familyName,
+          ...answerPayload(forms.familyForm, extra),
           adults: adults.map((a) => ({ ...a, email: a.email || undefined })),
-          children,
+          children: children.map(({ extra, ...child }) => ({ ...child, ...answerPayload(forms.childForm, extra) })),
           consent,
           website: new FormData(e.currentTarget).get("website") || "",
         }),
@@ -389,6 +403,7 @@ export function ParentRegistrationForm({ token }: { token: string }) {
                   </div>
                 </section>
               ))}
+              {forms.familyForm?.fields.length ? <MemberCustomFields fields={forms.familyForm.fields} values={extra} onChange={setExtra} /> : null}
               <button
                 type="button"
                 className="children-button secondary"
@@ -553,6 +568,7 @@ export function ParentRegistrationForm({ token }: { token: string }) {
                       maxLength={2000}
                     />
                   </label>
+                  {forms.childForm?.fields.length ? <MemberCustomFields fields={forms.childForm.fields} values={c.extra} onChange={(values) => setChildren((rows) => rows.map((row, i) => i === index ? { ...row, extra: values } : row))} /> : null}
                 </section>
               ))}
               <button

@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { FormAnswersDto } from '../guests/form-answers.dto';
 import {
   IsString,
   MinLength,
@@ -26,7 +27,7 @@ export class ParentAdultDto {
   @IsOptional() @IsEmail() email?: string;
   @IsString() @MinLength(2) @MaxLength(60) relationship!: string;
 }
-export class ParentChildDto {
+export class ParentChildDto extends FormAnswersDto {
   @IsString() @MinLength(1) @MaxLength(80) firstName!: string;
   @IsString() @MinLength(1) @MaxLength(80) lastName!: string;
   @Matches(/^\d{4}-\d{2}-\d{2}$/) birthDate!: string;
@@ -39,7 +40,7 @@ export class ParentChildDto {
   pickupAdults!: number[];
   @IsString() @MaxLength(2000) careNotes!: string;
 }
-export class ParentRegistrationDto {
+export class ParentRegistrationDto extends FormAnswersDto {
   @IsUUID() requestKey!: string;
   @IsString() @MinLength(2) @MaxLength(120) familyName!: string;
   @IsArray()

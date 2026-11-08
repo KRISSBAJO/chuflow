@@ -15,7 +15,7 @@ import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
 import { usePlan } from '@/lib/entitlements';
-import { getWorkspaceWebUrl, api, errorMessage } from '@/lib/api';
+import { workspaceBrowserHref, api, errorMessage } from '@/lib/api';
 import { disablePush, enablePush, pushStatus, type PushStatus } from '@/lib/notifications';
 import { can } from '@/lib/permissions';
 import type { FeatureKey } from '@/lib/types';
@@ -39,10 +39,13 @@ const AREAS: { key: AreaKey; icon: IconName; href: Href; feature: FeatureKey; sh
   { key: 'reports', icon: 'reports', href: '/reports' as Href, feature: 'reporting', show: can.reports },
 ];
 
-type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings';
+type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings' | 'outreach' | 'serviceUnits' | 'registerFamily';
 
 /** Website-only screens, gated like apps/web/src/lib/permissions.ts. */
 const WEB_LINKS: { key: LinkKey; icon: IconName; path: string; show: (role?: string) => boolean }[] = [
+  { key: 'outreach', icon: 'members', path: '/evangelism', show: can.guests },
+  { key: 'serviceUnits', icon: 'grid', path: '/service-units', show: can.lead },
+  { key: 'registerFamily', icon: 'user', path: '/children/families/new', show: can.kidsSupervise },
   { key: 'branches', icon: 'building', path: '/branches', show: can.lead },
   { key: 'users', icon: 'user', path: '/users', show: can.lead },
   { key: 'templates', icon: 'clipboard', path: '/templates', show: can.lead },
@@ -249,7 +252,7 @@ export default function MoreScreen() {
               left={<RowIcon name={link.icon} />}
               right={<Icon name="arrowUpRight" size={14} color={colors.faint} />}
               chevron={false}
-              onPress={() => void WebBrowser.openBrowserAsync(`${getWorkspaceWebUrl()}${link.path}`)}
+              onPress={() => void WebBrowser.openBrowserAsync(workspaceBrowserHref(link.path))}
             />
           ))}
         </View>

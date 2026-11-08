@@ -30,11 +30,11 @@ export async function serverGet<T>(path: string, options: { redirectOnForbidden?
   return response.json() as Promise<T>;
 }
 
-export async function publicServerGet<T>(path: string): Promise<T> {
+export async function publicServerGet<T>(path: string, base?: string): Promise<T> {
   let response: Response;
 
   try {
-    response = await serverRead(path);
+    response = await serverRead(path, {}, base);
   } catch {
     redirect(await unavailableHref());
   }

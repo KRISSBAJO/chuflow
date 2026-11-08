@@ -53,9 +53,11 @@ describe('Multiple service-group membership', () => {
   beforeEach(() => {
     create = jest.fn().mockResolvedValue({});
     const chain = {
+      select: jest.fn(),
       populate: jest.fn(),
       lean: jest.fn().mockResolvedValue({}),
     };
+    chain.select.mockReturnValue(chain);
     chain.populate.mockReturnValue(chain);
     update = jest.fn().mockReturnValue(chain);
     findUnits = jest

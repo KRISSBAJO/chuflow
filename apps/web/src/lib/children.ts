@@ -10,6 +10,7 @@ export type Guardian = {
   canCheckIn: boolean;
 };
 export type ChildProfile = {
+  customAnswers?: import("./guest-fields").GuestCustomAnswer[];
   _id: string;
   familyId: string;
   branchId: string;
@@ -27,6 +28,7 @@ export type ChildProfile = {
   revision: number;
 };
 export type Family = {
+  customAnswers?: import("./guest-fields").GuestCustomAnswer[];
   _id: string;
   name: string;
   branchId: string;

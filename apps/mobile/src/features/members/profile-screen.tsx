@@ -17,6 +17,7 @@ import { useApi } from '@/lib/use-api';
 import { memberDisplayName, useMemberLabels } from './labels';
 import { MemberFields, validateMember, type MemberFormErrors, type MemberFormValues } from './member-fields';
 import { MEMBER_COURSES, memberGroupIds, memberGroupNames, yesNo, type MemberDetail, type MembershipStatus, type ServiceUnitSummary } from './types';
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from './custom-member-fields';
 
 function QuickAction({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
@@ -62,6 +63,8 @@ export function MemberProfileScreen() {
   const format = useAppFormat();
   const { user } = useSession();
   const member = useApi<MemberDetail>(`/members/${id}`);
+  const definition = useApi<MemberFormDefinition>(can.members(user?.role) ? '/members/staff-form' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<MemberFormValues | null>(null);
@@ -92,6 +95,7 @@ export function MemberProfileScreen() {
 
   function openEdit() {
     setDraft(formValues(person));
+    setCustom(Object.fromEntries((person.customAnswers ?? []).map(({ key, value }) => [key, value])));
     setErrors({});
     setFormError(null);
     setEditing(true);
@@ -99,6 +103,11 @@ export function MemberProfileScreen() {
 
   async function save() {
     if (!draft) return;
+    if (!definition.data) {
+      setFormError(tf('customLoadFailed'));
+      void definition.refresh();
+      return;
+    }
     const nextErrors = validateMember(draft, tf, { identity: true, needsBranch: false });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -106,6 +115,7 @@ export function MemberProfileScreen() {
     setFormError(null);
     try {
       const updated = await api.patch<MemberDetail>(`/members/${person._id}`, {
+        ...memberFormPayload(definition.data, custom),
         title: draft.title || undefined,
         firstName: draft.firstName.trim(),
         lastName: draft.lastName.trim(),
@@ -196,6 +206,10 @@ export function MemberProfileScreen() {
         <Section title={t('details')} />
         <KeyValue rows={details} />
       </View>
+      {person.customAnswers?.length ? <View>
+        <Section title={tf('customAnswers')} />
+        <KeyValue rows={person.customAnswers.map(({ label, value }) => ({ label, value: String(value) }))} />
+      </View> : null}
 
       <View>
         <Section title={t('formation')} />
@@ -241,7 +255,8 @@ export function MemberProfileScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: space.lg, paddingBottom: space.md }}>
             {formError ? <Notice tone="danger">{formError}</Notice> : null}
-            {draft ? <MemberFields value={draft} onChange={setDraft} errors={errors} knownUnits={knownUnits} /> : null}
+            {draft ? <MemberFields value={draft} onChange={setDraft} errors={errors} knownUnits={knownUnits} hidden={definition.data?.hiddenStaff} /> : null}
+            <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} />
           </ScrollView>
         </KeyboardAvoidingView>
       </Sheet>

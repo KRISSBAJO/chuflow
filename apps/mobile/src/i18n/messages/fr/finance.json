@@ -147,6 +147,8 @@
       "approved": "Écriture approuvée",
       "rejected": "Écriture rejetée",
       "failed": "Impossible de réviser cette écriture"
-    }
+    },
+    "customAnswers": "Réponses de l’écriture",
+    "customLoadFailed": "Impossible de charger les champs. Actualisez pour réessayer."
   }
 }

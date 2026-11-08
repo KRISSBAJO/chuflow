@@ -1,3 +1,8 @@
+function selectable<T>(value: T) {
+  const query = Promise.resolve(value);
+  return Object.assign(query, { select: () => query });
+}
+
 import {
   BadRequestException,
   ConflictException,
@@ -183,7 +188,7 @@ describe('Evangelism follow-up safeguards', () => {
   });
 
   it('denies cross-branch updates before changing a contact', async () => {
-    contacts.findById.mockResolvedValue({ branchId });
+    contacts.findById.mockReturnValue(selectable({ branchId }));
     scope.ensureBranchAccess.mockRejectedValue(new ForbiddenException());
     await expect(
       service.update(user, String(new Types.ObjectId()), {
@@ -196,13 +201,13 @@ describe('Evangelism follow-up safeguards', () => {
   });
 
   it('records opt-out atomically and removes the next action', async () => {
-    contacts.findById.mockResolvedValue({
+    contacts.findById.mockReturnValue(selectable({
       _id: new Types.ObjectId(),
       branchId,
       stage: 'contacted',
       revision: 0,
       nextActionDate: new Date(),
-    });
+    }));
     await service.update(user, String(new Types.ObjectId()), {
       stage: 'do_not_contact',
       note: 'Asked us to stop contacting them.',
@@ -222,7 +227,7 @@ describe('Evangelism follow-up safeguards', () => {
   });
 
   it('does not allow an opted-out person to be reactivated', async () => {
-    contacts.findById.mockResolvedValue({ branchId, stage: 'do_not_contact' });
+    contacts.findById.mockReturnValue(selectable({ branchId, stage: 'do_not_contact' }));
     await expect(
       service.update(user, String(new Types.ObjectId()), {
         stage: 'contacted',
@@ -234,12 +239,12 @@ describe('Evangelism follow-up safeguards', () => {
   });
 
   it('detects concurrent updates rather than losing another team member’s changes', async () => {
-    contacts.findById.mockResolvedValue({
+    contacts.findById.mockReturnValue(selectable({
       _id: new Types.ObjectId(),
       branchId,
       stage: 'new',
       revision: 2,
-    });
+    }));
     contacts.findOneAndUpdate.mockResolvedValue(null);
     await expect(
       service.update(user, String(new Types.ObjectId()), {
@@ -252,7 +257,7 @@ describe('Evangelism follow-up safeguards', () => {
   });
 
   it('refuses to link a guest from another branch', async () => {
-    contacts.findById.mockResolvedValue({ branchId });
+    contacts.findById.mockReturnValue(selectable({ branchId }));
     guests.findOne.mockResolvedValue(null);
     await expect(
       service.linkGuest(
@@ -266,12 +271,12 @@ describe('Evangelism follow-up safeguards', () => {
 
   it('connects the guest journey without creating or changing attendance', async () => {
     const guestId = new Types.ObjectId();
-    contacts.findById.mockResolvedValue({
+    contacts.findById.mockReturnValue(selectable({
       _id: new Types.ObjectId(),
       branchId,
       revision: 0,
       stage: 'visited',
-    });
+    }));
     guests.findOne.mockResolvedValue({
       _id: guestId,
       firstName: 'Ada',

@@ -36,7 +36,10 @@
       "branches": "Branches",
       "users": "Users",
       "templates": "Templates",
-      "structure": "Structure"
+      "structure": "Structure",
+      "outreach": "Outreach",
+      "serviceUnits": "Service units",
+      "registerFamily": "Register a family"
     },
     "signOut": "Sign out",
     "signOutTitle": "Sign out?",

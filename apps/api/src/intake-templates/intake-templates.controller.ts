@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Ip,
   Param,
   Patch,
   Post,
@@ -355,12 +356,14 @@ export class IntakeTemplatesController {
     @Param('slug') slug: string,
     @Body() dto: PublicTemplateSubmitDto,
     @Query('branchId') branchId?: string,
+    @Ip() ip?: string,
   ) {
     return this.intakeTemplatesService.submitPublic(
       slug,
       dto,
       this.getWebUrl(),
       branchId,
+      ip,
     );
   }
 

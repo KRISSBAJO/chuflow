@@ -1,3 +1,4 @@
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from '@/features/members/custom-member-fields';
 import { router, Stack, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
@@ -41,6 +42,9 @@ export function MeetingForm() {
   const format = useAppFormat();
   const { user } = useSession();
   const allowed = can.meetings(user?.role);
+  const forms = useApi<MemberFormDefinition>(allowed ? '/guests/ministry-form/meeting' : null);
+  const [extra, setExtra] = useState<Record<string, string | number>>({});
+  const tf = useT('members.form');
   const options = useApi<MeetingOptions>(allowed ? '/meetings/options?mode=form' : null);
   const o = options.data;
 
@@ -102,12 +106,14 @@ export function MeetingForm() {
   const canSubmit = !busy && groupValid && titleValid && !timeError && peopleValid;
 
   async function submit() {
+    if (!forms.data) { setError(tf('extraLoadFailed')); void forms.refresh(); return; }
     setSubmitted(true);
     if (!canSubmit || !startsAt || !endsAt) return;
     setBusy(true);
     setError('');
     try {
       const r = await api.post<{ _id: string }>('/meetings', {
+        ...memberFormPayload(forms.data, extra),
         title: title.trim(),
         startsAt: startsAt.toISOString(),
         endsAt: endsAt.toISOString(),
@@ -196,9 +202,10 @@ export function MeetingForm() {
             />
           ))}
         </View>
-        <Field label={t('form.location')} value={location} onChangeText={setLocation} placeholder={t('form.locationPlaceholder')} maxLength={300} />
-        <Field label={t('form.link')} value={joinUrl} onChangeText={setJoinUrl} placeholder="https://" hint={t('form.linkHint')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2000} />
-        <Field label={t('form.agenda')} value={agenda} onChangeText={setAgenda} placeholder={t('form.agendaPlaceholder')} multiline numberOfLines={4} textAlignVertical="top" style={{ minHeight: 96 }} maxLength={10000} />
+        {!forms.data?.hiddenStaff.includes('location') ? <Field label={t('form.location')} value={location} onChangeText={setLocation} placeholder={t('form.locationPlaceholder')} maxLength={300} /> : null}
+        {!forms.data?.hiddenStaff.includes('joinUrl') ? <Field label={t('form.link')} value={joinUrl} onChangeText={setJoinUrl} placeholder="https://" hint={t('form.linkHint')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2000} /> : null}
+        {!forms.data?.hiddenStaff.includes('agenda') ? <Field label={t('form.agenda')} value={agenda} onChangeText={setAgenda} placeholder={t('form.agendaPlaceholder')} multiline numberOfLines={4} textAlignVertical="top" style={{ minHeight: 96 }} maxLength={10000} /> : null}
+        <CustomMemberFields form={forms.data ?? undefined} values={extra} onChange={setExtra} title={tf('extraAnswers')} />
 
         <Section title={t('form.step2')} />
         <Text style={styles.label}>{t('form.audience')}</Text>

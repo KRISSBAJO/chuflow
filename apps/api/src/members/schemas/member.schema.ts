@@ -5,6 +5,9 @@ export type MemberDocument = HydratedDocument<Member>;
 
 @Schema({ timestamps: true })
 export class Member {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'ImportBatch' }) importBatchId?: Types.ObjectId;
   @Prop() importedAt?: Date;
   @Prop({ enum: ['adult', 'child'], default: 'adult' }) recordType!: string;

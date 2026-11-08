@@ -1,4 +1,6 @@
 "use client";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
+
 import { useActionToast } from "@/lib/action-feedback";
 import { toast } from "sonner";
 import {
@@ -326,6 +328,9 @@ export function FamilyForm({
 }) {
   const t = useTranslations("childrenRecords");
   const router = useRouter();
+  const { form: fieldDefinition, failed: fieldFailure } = useMemberFields(undefined, true, "/guests/ministry-form/family");
+  const tf = useTranslations("admin.settings.guestFields");
+
   const defaultRelationship = t("relationships.parent");
   const [branch, setBranch] = useState(
       family?.branchId || initialBranchId || options.branches[0]?._id || "",
@@ -343,11 +348,13 @@ export function FamilyForm({
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!fieldDefinition) return;
     if (!registrationKey.current) registrationKey.current = crypto.randomUUID();
     setBusy(true);
     setError("");
     const f = new FormData(e.currentTarget);
     const body = {
+      ...memberFieldPayload(fieldDefinition, f),
       branchId: branch,
       name: f.get("name"),
       guardians: guardians.map((g) => ({
@@ -607,11 +614,13 @@ export function FamilyForm({
         <button
           className="children-button lg"
           type="submit"
-          disabled={busy || !branch}
+          disabled={!fieldDefinition || busy || !branch}
         >
           {busy ? t("common.saving") : t("family.save")}
         </button>
       </section>
+    {fieldFailure ? <p role="alert">{tf("extraLoadFailed")}</p> : null}
+      {fieldDefinition?.fields.length ? <MemberCustomFields fields={fieldDefinition.fields} values={Object.fromEntries((family?.customAnswers ?? []).map(({ key, value }) => [key, value]))} /> : null}
     </form>
   );
 }
@@ -628,6 +637,9 @@ export function ChildForm({
   const t = useTranslations("childrenRecords");
   const ageLabel = useAgeLabel();
   const router = useRouter();
+  const { form: fieldDefinition, failed: fieldFailure } = useMemberFields(undefined, true, "/guests/ministry-form/child");
+  const tf = useTranslations("admin.settings.guestFields");
+
   const registrationKey = useRef("");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -649,11 +661,13 @@ export function ChildForm({
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!fieldDefinition) return;
     if (!registrationKey.current) registrationKey.current = crypto.randomUUID();
     setBusy(true);
     setError("");
     const f = new FormData(e.currentTarget);
     const body = {
+      ...memberFieldPayload(fieldDefinition, f),
       familyId: family._id,
       registrationKey: registrationKey.current,
       firstName: f.get("firstName"),
@@ -891,9 +905,11 @@ export function ChildForm({
           {error}
         </p>
       )}
-      <button className="children-button lg" type="submit" disabled={busy}>
+      <button className="children-button lg" type="submit" disabled={!fieldDefinition || busy}>
         {busy ? t("common.saving") : t("child.save")}
       </button>
+    {fieldFailure ? <p role="alert">{tf("extraLoadFailed")}</p> : null}
+      {fieldDefinition?.fields.length ? <MemberCustomFields fields={fieldDefinition.fields} values={Object.fromEntries((child?.customAnswers ?? []).map(({ key, value }) => [key, value]))} /> : null}
     </form>
   );
 }

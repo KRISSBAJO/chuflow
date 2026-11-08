@@ -55,6 +55,11 @@
       "prayerRequest": "Prayer request",
       "phoneCopied": "Phone number copied",
       "convertToMember": "Convert to member"
+    },
+    "fields": {
+      "answers": "Guest answers",
+      "loadFailed": "Unable to load the guest form. Refresh to try again.",
+      "required": "Required"
     }
   }
 }

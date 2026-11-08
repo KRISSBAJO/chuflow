@@ -28,6 +28,13 @@ import { VisitsService } from '../visits/visits.service';
 import { Visit, VisitDocument } from '../visits/schemas/visit.schema';
 import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
 import { Guest, GuestDocument } from './schemas/guest.schema';
+import { GuestFieldsService, type GuestAnswer } from './guest-fields.service';
+
+export class DuplicateGuestError extends BadRequestException {
+  constructor() {
+    super('Guest with this phone or email already exists');
+  }
+}
 
 @Injectable()
 export class GuestsService {
@@ -46,6 +53,7 @@ export class GuestsService {
     private readonly followUpsService: FollowUpsService,
     private readonly accessScopeService: AccessScopeService,
     private readonly pushService: PushService,
+    private readonly guestFields: GuestFieldsService,
   ) {}
 
   /** Lets the branch's leaders and follow-up team know someone new just walked in. */
@@ -161,7 +169,16 @@ export class GuestsService {
     };
   }
 
-  async create(dto: CreateGuestDto, currentUser?: AuthUser) {
+  async create(input: CreateGuestDto, currentUser?: AuthUser, publicAnswers?: GuestAnswer[]) {
+    const { customFields, formRevision, ...dto } = input;
+    let customAnswers = publicAnswers;
+    if (currentUser) {
+      const definition = await this.guestFields.get();
+      this.guestFields.checkRevision(definition, formRevision);
+      const data = dto as Record<string, unknown>;
+      for (const key of definition.hiddenStaff) delete data[key];
+      customAnswers = this.guestFields.collect(definition, 'staff', customFields);
+    }
     const branchId = await this.accessScopeService.resolveScopedBranchId(
       currentUser,
       dto.branchId,
@@ -171,13 +188,12 @@ export class GuestsService {
     });
 
     if (duplicate) {
-      throw new BadRequestException(
-        'Guest with this phone or email already exists',
-      );
+      throw new DuplicateGuestError();
     }
 
     const guest = await this.guestModel.create({
       ...dto,
+      ...(customAnswers?.length ? { customAnswers } : {}),
       branchId,
       visitStatus: dto.visitStatus ?? 'first_time',
     });
@@ -418,6 +434,7 @@ export class GuestsService {
   async findOne(id: string, currentUser?: AuthUser) {
     const guest = await this.guestModel
       .findById(id)
+      .select('+customAnswers')
       .populate('branchId')
       .lean();
     if (!guest) {
@@ -502,8 +519,8 @@ export class GuestsService {
     }
 
     const [target, source] = await Promise.all([
-      this.guestModel.findById(targetGuestId),
-      this.guestModel.findById(sourceGuestId),
+      this.guestModel.findById(targetGuestId).select('+customAnswers'),
+      this.guestModel.findById(sourceGuestId).select('+customAnswers'),
     ]);
 
     if (!target || !source) {
@@ -544,7 +561,13 @@ export class GuestsService {
       ),
     ]);
 
-    await this.guestModel.findByIdAndUpdate(target._id, mergedPayload);
+    const customAnswers = [...new Map(
+      [...(source.customAnswers ?? []), ...(target.customAnswers ?? [])].map((answer) => [answer.key, answer]),
+    ).values()];
+    await this.guestModel.findByIdAndUpdate(target._id, {
+      ...mergedPayload,
+      ...(customAnswers.length ? { customAnswers } : {}),
+    });
     await this.guestModel.findByIdAndDelete(source._id);
 
     return this.findOne(String(target._id), currentUser);

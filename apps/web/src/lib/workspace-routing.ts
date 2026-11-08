@@ -29,6 +29,13 @@ export function workspaceProxyUrl(id?: string | null) {
   return WORKSPACE_PROXY_URL + (scope ? "/w/" + scope : "/directory");
 }
 
+export function workspacePublicHref(path: string, id?: string | null) {
+  const scope = workspaceId(id);
+  return scope && scope !== "winners-chapel-international"
+    ? `${path}${path.includes("?") ? "&" : "?"}workspace=${encodeURIComponent(scope)}`
+    : path;
+}
+
 /** A sign-in, recovery or reset link that lands in the given provisioned workspace. */
 export function workspaceSignInHref(
   path: "/login" | "/forgot-password" | "/reset-password" | "/change-password",

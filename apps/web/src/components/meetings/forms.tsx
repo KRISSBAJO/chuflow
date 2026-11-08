@@ -1,4 +1,6 @@
 "use client";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
+
 import { toast } from "sonner";
 import { useActionToast } from "@/lib/action-feedback";
 import { useEffect, useId, useState, type FormEvent } from "react";
@@ -528,6 +530,9 @@ export function MeetingForm({
   const actionToast = useActionToast();
 
   const router = useRouter();
+  const { form: fieldDefinition, failed: fieldFailure } = useMemberFields(undefined, true, "/guests/ministry-form/meeting");
+  const tf = useTranslations("admin.settings.guestFields");
+
   const t = useTranslations("services.meetings.form");
   const available = options.groups.filter(
     (g) =>
@@ -686,7 +691,7 @@ export function MeetingForm({
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || !fieldDefinition) return;
     if (step === 1) {
       nextStep(e.currentTarget);
       return;
@@ -696,12 +701,13 @@ export function MeetingForm({
     setError("");
     try {
       const payload = {
+        ...memberFieldPayload(fieldDefinition, d),
         title: d.get("title"),
-        agenda: d.get("agenda"),
+        agenda: fieldDefinition.hiddenStaff.includes("agenda") ? undefined : d.get("agenda"),
         startsAt: new Date(String(d.get("startsAt"))).toISOString(),
         endsAt: new Date(String(d.get("endsAt"))).toISOString(),
-        location: d.get("location"),
-        joinUrl: d.get("joinUrl") || "",
+        location: fieldDefinition.hiddenStaff.includes("location") ? undefined : d.get("location"),
+        joinUrl: fieldDefinition.hiddenStaff.includes("joinUrl") ? undefined : d.get("joinUrl") || "",
         attendeeUserIds: staffIds,
         audienceMode,
         audienceServiceUnitIds: audienceGroups,
@@ -840,15 +846,15 @@ export function MeetingForm({
               />
             </Field>
           </div>
-          <Field label={t("location")}>
+          {!fieldDefinition?.hiddenStaff.includes("location") ? <Field label={t("location")}>
             <input
               className="ui-input"
               name="location"
               maxLength={300}
               defaultValue={meeting?.location}
             />
-          </Field>
-          <Field label={t("link")} hint={t("linkHint")}>
+          </Field> : null}
+          {!fieldDefinition?.hiddenStaff.includes("joinUrl") ? <Field label={t("link")} hint={t("linkHint")}>
             <input
               className="ui-input"
               name="joinUrl"
@@ -857,15 +863,15 @@ export function MeetingForm({
               defaultValue={meeting?.joinUrl}
               placeholder="https://…"
             />
-          </Field>
-          <Field label={t("agenda")}>
+          </Field> : null}
+          {!fieldDefinition?.hiddenStaff.includes("agenda") ? <Field label={t("agenda")}>
             <textarea
               className="ui-input min-h-36"
               name="agenda"
               maxLength={10000}
               defaultValue={meeting?.agenda}
             />
-          </Field>
+          </Field> : null}
         </fieldset>
         <fieldset hidden={step !== 2} className="space-y-5">
           <Field label={t("audience")}>
@@ -959,7 +965,9 @@ export function MeetingForm({
             )}
             {previewError && <p className="text-red-700">{previewError}</p>}
           </div>
-        </fieldset>
+        {fieldFailure ? <p role="alert">{tf("extraLoadFailed")}</p> : null}
+      {fieldDefinition?.fields.length ? <MemberCustomFields fields={fieldDefinition.fields} values={Object.fromEntries((meeting?.customAnswers ?? []).map(({ key, value }) => [key, value]))} /> : null}
+</fieldset>
         {error && (
           <p role="alert" className="text-red-700">
             {error}

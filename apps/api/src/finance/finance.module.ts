@@ -11,6 +11,7 @@ import {
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { FinanceController } from './finance.controller';
 import { FinanceService } from './finance.service';
+import { GuestsModule } from '../guests/guests.module';
 import {
   ExpenseCategory,
   ExpenseCategorySchema,
@@ -50,6 +51,7 @@ import {
     AccessScopeModule,
     AuditLogsModule,
     ServiceSchedulesModule,
+    GuestsModule,
     MongooseModule.forFeature([
       { name: OfferingType.name, schema: OfferingTypeSchema },
       { name: OfferingEntry.name, schema: OfferingEntrySchema },

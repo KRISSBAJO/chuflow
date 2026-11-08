@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Field } from '@/components/ui';
 import { space } from '@/constants/theme';
@@ -13,6 +13,8 @@ export function AmountNotesEditor({
   saveLabel,
   onSave,
   onCancel,
+  showNotes = true,
+  children,
 }: {
   amount: number;
   notes?: string;
@@ -20,6 +22,8 @@ export function AmountNotesEditor({
   saveLabel: string;
   onSave: (next: { amount: number; notes?: string }) => void;
   onCancel: () => void;
+  showNotes?: boolean;
+  children?: ReactNode;
 }) {
   const t = useT('finance');
   const tc = useT('common.actions');
@@ -40,7 +44,8 @@ export function AmountNotesEditor({
   return (
     <View style={styles.editor}>
       <Field label={t('fields.amount')} required value={amountText} onChangeText={setAmountText} keyboardType="decimal-pad" inputMode="decimal" error={error} style={styles.amount} />
-      <Field label={t('fields.notes')} value={notesText} onChangeText={setNotesText} multiline />
+      {showNotes ? <Field label={t('fields.notes')} value={notesText} onChangeText={setNotesText} multiline /> : null}
+      {children}
       <View style={styles.actions}>
         <Button label={tc('cancel')} variant="secondary" style={{ flex: 1 }} disabled={saving} onPress={onCancel} />
         <Button label={saveLabel} icon="check" style={{ flex: 1.4 }} loading={saving} onPress={submit} />

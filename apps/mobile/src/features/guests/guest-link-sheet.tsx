@@ -9,6 +9,7 @@ import { useT } from '@/i18n/provider';
 import { getWorkspaceWebUrl } from '@/lib/api';
 import type { BranchSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
+import { useSession } from '@/lib/session';
 
 type PublicGuestForm = {
   _id: string;
@@ -19,6 +20,9 @@ type PublicGuestForm = {
 
 export function GuestLinkSheet({ onClose }: { onClose: () => void }) {
   const t = useT('guests.list');
+  const { user } = useSession();
+  const workspace = user?.workspace?.id;
+  const connectQuery = workspace && workspace !== 'winners-chapel-international' ? `?workspace=${encodeURIComponent(workspace)}` : '';
   const branches = useApi<BranchSummary[]>('/branches/options');
   const forms = useApi<PublicGuestForm[]>('/intake-templates/public/templates?kind=guest');
   const branchNames = new Map(branches.data?.map((branch) => [branch._id, branch.name]));
@@ -63,7 +67,7 @@ export function GuestLinkSheet({ onClose }: { onClose: () => void }) {
           title={t('generalForm')}
           subtitle={t('generalFormHint')}
           left={<Icon name="copy" size={18} color={colors.flame} />}
-          onPress={() => void copy(`${getWorkspaceWebUrl()}/connect`)}
+          onPress={() => void copy(`${getWorkspaceWebUrl()}/connect${connectQuery}`)}
         />
       </ScrollView>
     </Sheet>

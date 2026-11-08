@@ -5,6 +5,9 @@ export type ExpenseEntryDocument = HydratedDocument<ExpenseEntry>;
 
 @Schema({ timestamps: true })
 export class ExpenseEntry {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({ default: 0 })
   reviewRevision!: number;
   @Prop({

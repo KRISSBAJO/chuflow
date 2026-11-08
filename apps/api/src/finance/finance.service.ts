@@ -1,3 +1,4 @@
+import { FinanceFormKind, GuestFieldsService, type GuestAnswer } from '../guests/guest-fields.service';
 import { hasAdditionalPermission } from '../common/permissions';
 import {
   BadRequestException,
@@ -6,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, type ClientSession } from 'mongoose';
@@ -272,6 +274,7 @@ export class FinanceService implements OnModuleInit {
     private readonly accessScopeService: AccessScopeService,
     private readonly auditLogsService: AuditLogsService,
     private readonly serviceSchedulesService: ServiceSchedulesService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
 
   async onModuleInit() {
@@ -1563,12 +1566,34 @@ export class FinanceService implements OnModuleInit {
     );
   }
 
+  private async entryForm(
+    kind: FinanceFormKind,
+    dto: { formRevision?: number; customFields?: Record<string, unknown> },
+    existing?: GuestAnswer[],
+  ) {
+    const definition = await this.forms?.get(kind);
+    if (!definition) return undefined;
+    this.forms!.checkRevision(definition, dto.formRevision);
+    const data = dto as Record<string, unknown>;
+    for (const key of definition.hiddenStaff) delete data[key];
+    if (existing && dto.customFields === undefined) return undefined;
+    const active = new Set(definition.fields.filter((field) => field.staff).map(({ key }) => key));
+    return [
+      ...(existing ?? []).filter(({ key }) => !active.has(key)),
+      ...this.forms!.collect(definition, 'staff', {
+        ...Object.fromEntries((existing ?? []).map(({ key, value }) => [key, value])),
+        ...dto.customFields,
+      }),
+    ];
+  }
+
   async createOfferingEntry(
     dto: CreateOfferingEntryDto,
     currentUser: AuthUser,
   ) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureOfferingEntryCreator(currentUser);
+    const customAnswers = await this.entryForm(FinanceFormKind.Offering, dto);
 
     const branch = await this.resolveScopedCreateBranch(currentUser);
     const serviceDate = this.validatePastOrTodayDate(
@@ -1602,6 +1627,7 @@ export class FinanceService implements OnModuleInit {
             {
               status: 'submitted',
               reviewRevision: 0,
+              ...(customAnswers?.length ? { customAnswers } : {}),
               branchId: branch._id,
               oversightRegion: branch.oversightRegion,
               district: branch.district,
@@ -1914,6 +1940,7 @@ export class FinanceService implements OnModuleInit {
 
     const entry = await this.offeringEntryModel
       .findById(id)
+      .select('+customAnswers')
       .populate('branchId', 'name oversightRegion district')
       .populate('serviceTypeId', 'name key')
       .populate('serviceScheduleId', 'name dayOfWeek startTime')
@@ -1937,10 +1964,10 @@ export class FinanceService implements OnModuleInit {
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
 
-    return this.toOfferingEntryResponse(
-      entry as unknown as Record<string, unknown>,
-      currentUser,
-    );
+    return {
+      ...this.toOfferingEntryResponse(entry as unknown as Record<string, unknown>, currentUser),
+      customAnswers: entry.customAnswers,
+    };
   }
 
   async updateOfferingEntry(
@@ -1950,7 +1977,7 @@ export class FinanceService implements OnModuleInit {
   ) {
     this.ensureFinanceViewRole(currentUser);
 
-    const existing = (await this.offeringEntryModel.findById(id).lean()) as
+    const existing = (await this.offeringEntryModel.findById(id).select('+customAnswers').lean()) as
       | (OfferingEntry & { _id?: unknown; createdAt?: Date; updatedAt?: Date })
       | null;
 
@@ -1973,11 +2000,16 @@ export class FinanceService implements OnModuleInit {
       throw new ForbiddenException(permission.reason);
     }
 
+    if (dto.reviewRevision !== undefined && dto.reviewRevision !== (existing.reviewRevision ?? 0)) {
+      throw new ConflictException('This entry changed. Refresh before editing.');
+    }
+    const customAnswers = await this.entryForm(FinanceFormKind.Offering, dto, existing.customAnswers ?? []);
+    await this.ensurePeriodOpen(String(existing.branchId), existing.serviceDate);
     const serviceDate =
       dto.serviceDate !== undefined
         ? this.validatePastOrTodayDate(dto.serviceDate, 'Service date')
         : existing.serviceDate;
-    await this.ensurePeriodOpen(String(existing.branchId), serviceDate);
+    if (serviceDate !== existing.serviceDate) await this.ensurePeriodOpen(String(existing.branchId), serviceDate);
 
     const serviceType = dto.serviceTypeId
       ? await this.resolveServiceType(
@@ -1992,7 +2024,7 @@ export class FinanceService implements OnModuleInit {
       ? await this.resolveOfferingType(dto.offeringTypeId)
       : await this.resolveOfferingType(String(existing.offeringTypeId));
     const account = await this.resolveOfferingAccount(
-      dto.accountId,
+      dto.accountId ?? (!dto.offeringTypeId ? String(existing.accountId) : undefined),
       offeringType.key,
     );
     const serviceInstance =
@@ -2012,6 +2044,7 @@ export class FinanceService implements OnModuleInit {
         },
         {
           $set: {
+            ...(customAnswers ? { customAnswers } : {}),
             status: 'submitted',
             approvedBy: null,
             reviewedAt: null,
@@ -2068,10 +2101,10 @@ export class FinanceService implements OnModuleInit {
           sourceId: id,
           serviceScheduleId: serviceInstance?.serviceScheduleId
             ? String(serviceInstance.serviceScheduleId)
-            : dto.serviceScheduleId,
+            : dto.serviceScheduleId ?? (existing.serviceScheduleId ? String(existing.serviceScheduleId) : undefined),
           serviceInstanceId: serviceInstance?._id
             ? String(serviceInstance._id)
-            : dto.serviceInstanceId,
+            : dto.serviceInstanceId ?? (existing.serviceInstanceId ? String(existing.serviceInstanceId) : undefined),
           serviceLabel:
             serviceInstance?.serviceScheduleName ||
             existing.serviceLabel ||
@@ -2095,6 +2128,7 @@ export class FinanceService implements OnModuleInit {
       actor: currentUser,
       branchId: String(existing.branchId),
       metadata: {
+        ...(customAnswers ? { customFieldKeys: Object.keys(dto.customFields ?? {}) } : {}),
         amount: dto.amount ?? existing.amount,
         currency: dto.currency ?? existing.currency,
         account: account.name,
@@ -2108,6 +2142,7 @@ export class FinanceService implements OnModuleInit {
   async createExpenseEntry(dto: CreateExpenseEntryDto, currentUser: AuthUser) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureExpenseEntryCreator(currentUser);
+    const customAnswers = await this.entryForm(FinanceFormKind.Expense, dto);
 
     const branch = await this.resolveScopedCreateBranch(
       currentUser,
@@ -2139,6 +2174,7 @@ export class FinanceService implements OnModuleInit {
           [
             {
               reviewRevision: 0,
+              ...(customAnswers?.length ? { customAnswers } : {}),
               branchId: branch._id,
               oversightRegion: branch.oversightRegion,
               district: branch.district,
@@ -2354,6 +2390,7 @@ export class FinanceService implements OnModuleInit {
 
     const entry = await this.expenseEntryModel
       .findById(id)
+      .select('+customAnswers')
       .populate('branchId', 'name oversightRegion district')
       .populate('accountId', 'name key')
       .populate('expenseCategoryId', 'name key')
@@ -2374,10 +2411,10 @@ export class FinanceService implements OnModuleInit {
 
     await this.accessScopeService.ensureBranchAccess(currentUser, branchId);
 
-    return this.toExpenseEntryResponse(
-      entry as unknown as Record<string, unknown>,
-      currentUser,
-    );
+    return {
+      ...this.toExpenseEntryResponse(entry as unknown as Record<string, unknown>, currentUser),
+      customAnswers: entry.customAnswers,
+    };
   }
 
   async updateExpenseEntry(
@@ -2387,7 +2424,7 @@ export class FinanceService implements OnModuleInit {
   ) {
     this.ensureFinanceViewRole(currentUser);
 
-    const existing = (await this.expenseEntryModel.findById(id).lean()) as
+    const existing = (await this.expenseEntryModel.findById(id).select('+customAnswers').lean()) as
       | (ExpenseEntry & { _id?: unknown; createdAt?: Date })
       | null;
 
@@ -2409,11 +2446,16 @@ export class FinanceService implements OnModuleInit {
       throw new ForbiddenException(permission.reason);
     }
 
+    if (dto.reviewRevision !== undefined && dto.reviewRevision !== (existing.reviewRevision ?? 0)) {
+      throw new ConflictException('This entry changed. Refresh before editing.');
+    }
+    const customAnswers = await this.entryForm(FinanceFormKind.Expense, dto, existing.customAnswers ?? []);
+    await this.ensurePeriodOpen(String(existing.branchId), existing.expenseDate);
     const expenseDate =
       dto.expenseDate !== undefined
         ? this.validatePastOrTodayDate(dto.expenseDate, 'Expense date')
         : existing.expenseDate;
-    await this.ensurePeriodOpen(String(existing.branchId), expenseDate);
+    if (expenseDate !== existing.expenseDate) await this.ensurePeriodOpen(String(existing.branchId), expenseDate);
 
     const account = dto.accountId
       ? await this.resolveFinanceAccount(dto.accountId)
@@ -2440,6 +2482,7 @@ export class FinanceService implements OnModuleInit {
         },
         {
           $set: {
+            ...(customAnswers ? { customAnswers } : {}),
             expenseDate,
             accountId: account._id,
             accountKey: account.key,
@@ -2500,10 +2543,10 @@ export class FinanceService implements OnModuleInit {
           sourceId: id,
           serviceScheduleId: serviceInstance?.serviceScheduleId
             ? String(serviceInstance.serviceScheduleId)
-            : dto.serviceScheduleId,
+            : dto.serviceScheduleId ?? (existing.serviceScheduleId ? String(existing.serviceScheduleId) : undefined),
           serviceInstanceId: serviceInstance?._id
             ? String(serviceInstance._id)
-            : dto.serviceInstanceId,
+            : dto.serviceInstanceId ?? (existing.serviceInstanceId ? String(existing.serviceInstanceId) : undefined),
           serviceLabel:
             serviceInstance?.serviceScheduleName ?? existing.serviceLabel,
           amount: dto.amount ?? existing.amount,
@@ -2531,6 +2574,7 @@ export class FinanceService implements OnModuleInit {
       actor: currentUser,
       branchId: String(existing.branchId),
       metadata: {
+        ...(customAnswers ? { customFieldKeys: Object.keys(dto.customFields ?? {}) } : {}),
         amount: dto.amount ?? existing.amount,
         account: account.name,
         category: category.name,

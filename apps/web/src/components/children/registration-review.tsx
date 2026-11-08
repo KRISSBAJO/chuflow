@@ -8,6 +8,8 @@ import { useFormatter, useTranslations } from "next-intl";
 import { apiGet, apiPost } from "@/lib/api";
 import { ChildrenLocalTime } from "./local-time";
 import { ChildrenQr } from "./receipt";
+import { workspacePublicHref } from "@/lib/workspace-routing";
+import type { GuestCustomAnswer } from "@/lib/guest-fields";
 import {
   ageInMonths,
   initials,
@@ -15,6 +17,7 @@ import {
   splitMonths,
 } from "./records-utils";
 export type ParentSubmission = {
+  customAnswers?: GuestCustomAnswer[];
   _id: string;
   branchId: string;
   familyName: string;
@@ -35,6 +38,7 @@ export type ParentSubmission = {
     relationship: string;
   }[];
   children: {
+    customAnswers?: GuestCustomAnswer[];
     firstName: string;
     lastName: string;
     birthDate: string;
@@ -44,7 +48,7 @@ export type ParentSubmission = {
   possibleDuplicates: { _id: string; name: string }[];
 };
 
-export function ParentRegistrationLink({ branchId }: { branchId: string }) {
+export function ParentRegistrationLink({ branchId, workspace }: { branchId: string; workspace?: string }) {
   const actionToast = useActionToast();
 
   const t = useTranslations("childrenRecords");
@@ -91,7 +95,7 @@ export function ParentRegistrationLink({ branchId }: { branchId: string }) {
   }
   const url =
     data?.token && typeof window !== "undefined"
-      ? `${window.location.origin}/children-register/${data.token}`
+      ? window.location.origin + workspacePublicHref(`/children-register/${data.token}`, workspace)
       : "";
   return (
     <section className="children-panel space-y-4">

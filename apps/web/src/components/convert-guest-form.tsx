@@ -10,14 +10,19 @@ import { useTranslations } from "next-intl";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import type { GuestListItem } from "@/lib/types";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
 
 export function ConvertGuestForm({}: { guests: GuestListItem[] }) {
   const router = useRouter();
   const t = useTranslations("people.guests.convert");
 
   const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<string>();
+  const { form, failed } = useMemberFields(selected, Boolean(selected));
+  const tf = useTranslations("admin.settings.guestFields");
 
   async function handleSubmit(formData: FormData) {
+    if (!form) return;
     setLoading(true);
 
     try {
@@ -26,6 +31,8 @@ export function ConvertGuestForm({}: { guests: GuestListItem[] }) {
       const response = await fetch(`${API_URL}/members/convert/${guestId}`, {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(memberFieldPayload(form, formData)),
       });
 
       const result = await response.json();
@@ -48,10 +55,12 @@ export function ConvertGuestForm({}: { guests: GuestListItem[] }) {
   return (
     <form action={handleSubmit}>
       <Field label={t("guest")} required>
-        <GuestConversionPicker />
+        <GuestConversionPicker onSelect={setSelected} />
       </Field>
+      {failed ? <p role="alert">{tf("memberLoadFailed")}</p> : null}
+      {form?.fields.length ? <MemberCustomFields key={selected} fields={form.fields} values={form.values} /> : null}
       <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Button type="submit" variant="flame" disabled={loading}>
+        <Button type="submit" variant="flame" disabled={loading || !selected || !form}>
           {loading ? t("converting") : t("convertGuest")}
         </Button>
       </div>

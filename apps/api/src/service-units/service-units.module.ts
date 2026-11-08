@@ -1,3 +1,4 @@
+import { GuestsModule } from '../guests/guests.module';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccessScopeModule } from '../access-scope/access-scope.module';
@@ -8,6 +9,7 @@ import { ServiceUnitsService } from './service-units.service';
 
 @Module({
   imports: [
+    GuestsModule,
     AccessScopeModule,
     MongooseModule.forFeature([
       { name: ServiceUnit.name, schema: ServiceUnitSchema },

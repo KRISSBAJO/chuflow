@@ -1,14 +1,24 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
   IsEmail,
+  IsInt,
   IsMongoId,
+  IsObject,
   IsOptional,
   IsString,
 } from 'class-validator';
 
 export class CreateGuestDto {
+  @IsOptional()
+  @IsObject()
+  customFields?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsInt()
+  formRevision?: number;
+
   @ApiProperty()
   @IsMongoId()
   branchId!: string;
@@ -126,4 +136,4 @@ export class CreateGuestDto {
   assignedFollowUpUserId?: string;
 }
 
-export class UpdateGuestDto extends PartialType(CreateGuestDto) {}
+export class UpdateGuestDto extends PartialType(OmitType(CreateGuestDto, ['customFields', 'formRevision'] as const)) {}

@@ -1,4 +1,6 @@
 "use client";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
+
 import { savedToastId } from "@/lib/action-feedback";
 
 import { useMemo, useState } from "react";
@@ -39,6 +41,9 @@ export function ServiceUnitCreateForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
+  const { form: fieldDefinition, failed: fieldFailure } = useMemberFields(undefined, true, "/guests/ministry-form/service-unit");
+  const tf = useTranslations("admin.settings.guestFields");
+
   const t = useTranslations("org.serviceUnitForm");
   const tCommon = useTranslations("common");
   const labels = useMemberFormLabels();
@@ -56,6 +61,7 @@ export function ServiceUnitCreateForm({
   );
 
   async function handleSubmit(formData: FormData) {
+    if (!fieldDefinition) return;
     setLoading(true);
 
     try {
@@ -64,6 +70,7 @@ export function ServiceUnitCreateForm({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          ...memberFieldPayload(fieldDefinition, formData),
           branchId: (formData.get("branchId") as string) || defaultBranchId,
           name: formData.get("name"),
           leaderMemberId:
@@ -210,13 +217,13 @@ export function ServiceUnitCreateForm({
           </select>
         </Field>
 
-        <Field label={tCommon("notes")} className="md:col-span-2">
+        {!fieldDefinition?.hiddenStaff.includes("notes") ? <Field label={tCommon("notes")} className="md:col-span-2">
           <textarea
             name="notes"
             placeholder={t("notesPlaceholder")}
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
       </div>
 
       <p className="mt-4 rounded-xl bg-[#f6f5f1] px-4 py-3 text-[13px] leading-[1.6] text-[#6b6b6b]">
@@ -233,7 +240,9 @@ export function ServiceUnitCreateForm({
           />
           {t("activeUnit")}
         </label>
-        <Button type="submit" disabled={loading}>
+        {fieldFailure ? <p role="alert">{tf("extraLoadFailed")}</p> : null}
+      {fieldDefinition?.fields.length ? <MemberCustomFields fields={fieldDefinition.fields} /> : null}
+<Button type="submit" disabled={loading || !fieldDefinition}>
           {loading ? t("creating") : t("create")}
         </Button>
       </div>

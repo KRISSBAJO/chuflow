@@ -1,3 +1,4 @@
+import { GuestFieldsService, MinistryFormKind, type GuestAnswer } from '../guests/guest-fields.service';
 import {
   BadRequestException,
   ConflictException,
@@ -64,6 +65,7 @@ export class ChildrenService {
     @InjectModel(User.name)
     private readonly users?: Model<User>,
     @Optional() private readonly entitlements?: EntitlementsService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
   private id(v: string) {
     if (!Types.ObjectId.isValid(v))
@@ -477,16 +479,17 @@ export class ChildrenService {
       .lean();
   }
   async family(u: AuthUser, id: string) {
-    const f = await this.families.findById(this.id(id)).lean();
+    const f = await this.families.findById(this.id(id)).select('+customAnswers').lean();
     if (!f) throw new NotFoundException('Family not found.');
     await this.access(u, String(f.branchId), true);
     const children = await this.children
       .find({ familyId: f._id })
+      .select('+customAnswers')
       .sort({ firstName: 1 })
       .lean();
     return { ...f, children };
   }
-  async saveFamily(u: AuthUser, d: FamilyDto, id?: string) {
+  async saveFamily(u: AuthUser, d: FamilyDto, id?: string, publicAnswers?: GuestAnswer[]) {
     await this.access(u, d.branchId, true);
     const guardians = d.guardians.map((g) => ({
       ...g,
@@ -532,6 +535,7 @@ export class ChildrenService {
         requestKey: d.registrationKey,
         branchId: this.id(d.branchId),
         name: d.name.trim(),
+        customAnswers: publicAnswers ?? await this.forms?.prepare(MinistryFormKind.Family, d),
         guardians,
         events: [this.event(u.sub, 'family_registered', 'Family registered.')],
       });
@@ -549,11 +553,12 @@ export class ChildrenService {
       throw new BadRequestException(
         'Update each child’s guardian links before removing an adult.',
       );
+    const customAnswers = await this.forms?.prepare(MinistryFormKind.Family, d, f.customAnswers ?? []);
     const r = await this.families
       .findOneAndUpdate(
         { _id: f._id, revision: d.expectedRevision },
         {
-          $set: { name: d.name.trim(), guardians },
+          $set: { name: d.name.trim(), guardians, ...(customAnswers ? { customAnswers } : {}) },
           $inc: { revision: 1 },
           $push: {
             events: this.event(
@@ -591,7 +596,7 @@ export class ChildrenService {
         { $set: { membershipStatus: 'inactive' } },
       );
   }
-  async saveChild(u: AuthUser, d: ChildDto, id?: string) {
+  async saveChild(u: AuthUser, d: ChildDto, id?: string, publicAnswers?: GuestAnswer[]) {
     const f = await this.family(u, d.familyId);
     if (!id && this.entitlements) {
       await this.entitlements.assertQuota(
@@ -644,7 +649,7 @@ export class ChildrenService {
       throw new BadRequestException('Enter the child’s name.');
     let result: (ChildProfile & { _id: Types.ObjectId }) | null;
     if (id) {
-      const old = await this.children.findById(this.id(id)).lean();
+      const old = await this.children.findById(this.id(id)).select('+customAnswers').lean();
       if (!old || String(old.familyId) !== d.familyId)
         throw new BadRequestException('Child does not belong to this family.');
       if (
@@ -657,11 +662,12 @@ export class ChildrenService {
         throw new BadRequestException(
           'Check the child out before deactivating their record.',
         );
+      const customAnswers = await this.forms?.prepare(MinistryFormKind.Child, d, old.customAnswers ?? []);
       result = await this.children
         .findOneAndUpdate(
           { _id: old._id, revision: d.expectedRevision },
           {
-            $set: values,
+            $set: { ...values, ...(customAnswers ? { customAnswers } : {}) },
             ...(!d.photoUrl ? { $unset: { photoUrl: 1 } } : {}),
             $inc: { revision: 1 },
             $push: {
@@ -690,6 +696,7 @@ export class ChildrenService {
       } else {
         const created = await this.children.create({
           ...values,
+          customAnswers: publicAnswers ?? await this.forms?.prepare(MinistryFormKind.Child, d),
           requestKey: d.registrationKey,
           events: [this.event(u.sub, 'child_registered', 'Child registered.')],
         });

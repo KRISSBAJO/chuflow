@@ -43,6 +43,9 @@ const OutreachActivitySchema = SchemaFactory.createForClass(OutreachActivity);
 
 @Schema({ timestamps: true })
 export class OutreachContact {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Guest' }) guestId?: Types.ObjectId;
   @Prop({
     type: SchemaTypes.ObjectId,

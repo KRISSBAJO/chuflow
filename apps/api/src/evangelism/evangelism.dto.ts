@@ -1,3 +1,4 @@
+import { FormAnswersDto } from '../guests/form-answers.dto';
 import {
   IsBoolean,
   IsDateString,
@@ -43,7 +44,7 @@ export class CreateOutreachLinkDto {
   @IsIn(['personal', 'branch']) kind!: 'personal' | 'branch';
 }
 
-export class CaptureOutreachDto {
+export class CaptureOutreachDto extends FormAnswersDto {
   @IsString() @Length(1, 80) firstName!: string;
   @IsString() @Length(1, 80) lastName!: string;
   @IsString() @Length(7, 30) phone!: string;
@@ -69,7 +70,7 @@ export class CreateOutreachContactDto extends CaptureOutreachDto {
   @IsMongoId() branchId!: string;
 }
 
-export class UpdateOutreachDto {
+export class UpdateOutreachDto extends FormAnswersDto {
   @IsIn(OUTREACH_STAGES) stage!: string;
   @IsString() @IsNotEmpty() @MaxLength(2000) note!: string;
   @IsIn([...OUTREACH_METHODS, 'administrative']) contactMethod!: string;

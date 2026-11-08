@@ -1,3 +1,4 @@
+import { FormAnswersDto } from '../guests/form-answers.dto';
 import {
   Body,
   Controller,
@@ -14,6 +15,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { CreateMemberDto, UpdateMemberDto } from './dto/create-member.dto';
+import { GuestFieldsService } from '../guests/guest-fields.service';
 import { MembersService } from './members.service';
 import { MemberDirectoryDto } from './dto/member-directory.dto';
 
@@ -32,7 +34,29 @@ import { MemberDirectoryDto } from './dto/member-directory.dto';
 )
 @Controller('members')
 export class MembersController {
-  constructor(private readonly membersService: MembersService) {}
+  constructor(private readonly membersService: MembersService, private readonly forms: GuestFieldsService) {}
+
+  @Get('form-settings')
+  @Roles('super_admin')
+  formSettings() {
+    return this.forms.overview('member');
+  }
+
+  @Patch('form-settings')
+  @Roles('super_admin')
+  publishFormSettings(@Body() body: unknown, @CurrentUser() user: AuthUser) {
+    return this.forms.publish(body, user, 'member');
+  }
+
+  @Get('staff-form')
+  staffForm() {
+    return this.forms.staff('member');
+  }
+
+  @Get('convert/:guestId/form')
+  conversionForm(@CurrentUser() user: AuthUser, @Param('guestId') guestId: string) {
+    return this.membersService.conversionForm(guestId, user);
+  }
 
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateMemberDto) {
@@ -40,8 +64,8 @@ export class MembersController {
   }
 
   @Post('convert/:guestId')
-  convert(@CurrentUser() user: AuthUser, @Param('guestId') guestId: string) {
-    return this.membersService.convertGuest(guestId, user);
+  convert(@CurrentUser() user: AuthUser, @Param('guestId') guestId: string, @Body() dto: FormAnswersDto) {
+    return this.membersService.convertGuest(guestId, user, dto);
   }
 
   @Get()

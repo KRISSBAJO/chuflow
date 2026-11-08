@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import {
   BadRequestException,
   ForbiddenException,
@@ -26,6 +28,7 @@ export class ServiceUnitsService {
     @InjectModel(Member.name)
     private readonly memberModel: Model<MemberDocument>,
     private readonly accessScopeService: AccessScopeService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
 
   private escapeRegExp(value: string) {
@@ -78,6 +81,7 @@ export class ServiceUnitsService {
   ): Promise<Record<string, unknown>> {
     const unit = await this.serviceUnitModel
       .findById(unitId)
+      .select('+customAnswers')
       .populate('branchId')
       .populate('leaderMemberId')
       .populate('secretaryMemberId')
@@ -148,8 +152,11 @@ export class ServiceUnitsService {
       );
     }
 
+    const customAnswers = await this.forms?.prepare(MinistryFormKind.ServiceUnit, dto);
+    const { customFields, formRevision, ...values } = dto;
     const unit = await this.serviceUnitModel.create({
-      ...dto,
+      ...values,
+      customAnswers,
       branchId,
       name: dto.name.trim(),
       meetingDay: dto.meetingDay.trim(),
@@ -228,7 +235,7 @@ export class ServiceUnitsService {
     dto: UpdateServiceUnitDto,
     currentUser: AuthUser,
   ): Promise<Record<string, unknown>> {
-    const existing = await this.serviceUnitModel.findById(id).lean();
+    const existing = await this.serviceUnitModel.findById(id).select('+customAnswers').lean();
 
     if (!existing) {
       throw new NotFoundException('Service unit not found');
@@ -283,8 +290,11 @@ export class ServiceUnitsService {
       );
     }
 
+    const customAnswers = await this.forms?.prepare(MinistryFormKind.ServiceUnit, dto, existing.customAnswers ?? []);
+    const { customFields, formRevision, ...values } = dto;
     await this.serviceUnitModel.findByIdAndUpdate(id, {
-      ...dto,
+      ...values,
+      ...(customAnswers ? { customAnswers } : {}),
       branchId,
       ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
       ...(dto.meetingDay !== undefined

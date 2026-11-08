@@ -1,7 +1,8 @@
+import { FormAnswersDto } from '../../guests/form-answers.dto';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { IsBoolean, IsMongoId, IsOptional, IsString } from 'class-validator';
 
-export class CreateServiceUnitDto {
+export class CreateServiceUnitDto extends FormAnswersDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsMongoId()

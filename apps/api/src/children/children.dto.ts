@@ -1,3 +1,4 @@
+import { FormAnswersDto } from '../guests/form-answers.dto';
 import { Type } from 'class-transformer';
 import {
   IsString,
@@ -30,7 +31,7 @@ export class GuardianDto {
   @IsOptional() @IsMongoId() memberId?: string;
   @IsBoolean() canCheckIn!: boolean;
 }
-export class FamilyDto {
+export class FamilyDto extends FormAnswersDto {
   @IsOptional() @IsUUID() registrationKey?: string;
   @IsMongoId() branchId!: string;
   @IsString() @MinLength(2) @MaxLength(120) name!: string;
@@ -42,7 +43,7 @@ export class FamilyDto {
   guardians!: GuardianDto[];
   @IsOptional() @IsInt() @Min(0) expectedRevision?: number;
 }
-export class ChildDto {
+export class ChildDto extends FormAnswersDto {
   @IsOptional() @IsUUID() registrationKey?: string;
   @IsMongoId() familyId!: string;
   @IsString() @MinLength(1) @MaxLength(80) firstName!: string;

@@ -1,3 +1,4 @@
+import { ExtraAnswers } from "@/components/extra-answers";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
@@ -25,6 +26,7 @@ export default async function Page({
           {t("backToMeetings")}
         </Link>
       </div>
+      <ExtraAnswers answers={meeting.customAnswers} />
       <MeetingDetails initial={meeting} options={options} />
     </Shell>
   );

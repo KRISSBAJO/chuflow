@@ -21,11 +21,16 @@ import { VisitsModule } from '../visits/visits.module';
 import { GuestsController } from './guests.controller';
 import { GuestsService } from './guests.service';
 import { Guest, GuestSchema } from './schemas/guest.schema';
+import { GuestFieldsService } from './guest-fields.service';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { AppSetting, AppSettingSchema } from '../settings/schemas/app-setting.schema';
 
 @Module({
   imports: [
     AccessScopeModule,
+    AuditLogsModule,
     MongooseModule.forFeature([
+      { name: AppSetting.name, schema: AppSettingSchema },
       { name: Guest.name, schema: GuestSchema },
       { name: Visit.name, schema: VisitSchema },
       { name: FollowUp.name, schema: FollowUpSchema },
@@ -38,7 +43,7 @@ import { Guest, GuestSchema } from './schemas/guest.schema';
     PushModule,
   ],
   controllers: [GuestsController],
-  providers: [GuestsService],
-  exports: [GuestsService, MongooseModule],
+  providers: [GuestsService, GuestFieldsService],
+  exports: [GuestsService, GuestFieldsService, MongooseModule],
 })
 export class GuestsModule {}

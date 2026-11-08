@@ -1,3 +1,4 @@
+import { ExtraAnswers } from "@/components/extra-answers";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { serverGet } from "@/lib/server-api";
@@ -25,6 +26,8 @@ export default async function Page({
       >
         {t("back.queue")}
       </Link>
+      <ExtraAnswers answers={row.customAnswers} />
+      {row.children.map((child, index) => <ExtraAnswers key={index} answers={child.customAnswers} />)}
       <ParentRegistrationReview key={row.revision} row={row} />
     </>
   );

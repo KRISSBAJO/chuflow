@@ -13,6 +13,7 @@ import { AttendanceService } from '../attendance/attendance.service';
 import { AttendanceController } from '../attendance/attendance.controller';
 import { FinanceService } from '../finance/finance.service';
 import { FinanceController } from '../finance/finance.controller';
+import { GuestFieldsService } from '../guests/guest-fields.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -176,6 +177,7 @@ describe('Authenticated reporting routes', () => {
         { provide: AccessScopeService, useValue: makeScope().scope },
         { provide: AttendanceService, useValue: attendance },
         { provide: FinanceService, useValue: finance },
+        { provide: GuestFieldsService, useValue: {} },
       ],
     })
       .overrideGuard(JwtAuthGuard)

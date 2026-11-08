@@ -1,3 +1,4 @@
+import { workspaceApiContext } from "@/lib/workspace-routing";
 import { FilterPanel } from "@/components/filter-panel";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
@@ -119,6 +120,7 @@ export default async function GuestsPage({
     serverGet<ServiceTypeSummary[]>("/service-types").catch(() => []),
     publicServerGet<PublicConnectOption[]>(
       "/intake-templates/public/templates?kind=guest",
+      workspaceApiContext(user.workspace?.id === "winners-chapel-international" ? null : user.workspace?.id).base,
     ).catch(() => []),
   ]);
 
@@ -136,7 +138,11 @@ export default async function GuestsPage({
     selectedBranchId || !canChooseBranch
       ? scopedGuestTemplates.slice(0, 1)
       : scopedGuestTemplates;
-  const fallbackPublicGuestUrl = `${process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3001"}/connect`;
+  const guestWorkspace = user.workspace?.id;
+  const workspaceQuery = guestWorkspace && guestWorkspace !== "winners-chapel-international"
+    ? `?workspace=${encodeURIComponent(guestWorkspace)}`
+    : "";
+  const fallbackPublicGuestUrl = `${process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3001"}/connect${workspaceQuery}`;
   const publicGuestUrl =
     guestTemplateCards[0]?.shareUrl || fallbackPublicGuestUrl;
   const scopeLabel = selectedBranch

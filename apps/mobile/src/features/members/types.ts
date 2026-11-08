@@ -22,6 +22,7 @@ export type MemberListItem = {
 };
 
 export type MemberDetail = MemberListItem & {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   familyDetails?: string;
   believerFoundationClassStatus?: string;
   believerFoundationClassDate?: string;

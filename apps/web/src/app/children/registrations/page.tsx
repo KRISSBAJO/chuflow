@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { serverGet } from "@/lib/server-api";
+import { requireServerRole } from "@/lib/auth";
 import { ParentRegistrationLink } from "@/components/children/registration-review";
 import { initials } from "@/components/children/records-utils";
 import type { ChildrenOptions } from "@/lib/children";
@@ -20,6 +21,7 @@ export default async function Page({
   searchParams: Promise<{ branchId?: string; page?: string }>;
 }) {
   const q = await searchParams;
+  const user = await requireServerRole("/children");
   const params = new URLSearchParams();
   if (q.branchId) params.set("branchId", q.branchId);
   if (q.page) params.set("page", q.page);
@@ -91,7 +93,7 @@ export default async function Page({
         </div>
       </section>
 
-      <ParentRegistrationLink key={data.branchId} branchId={data.branchId} />
+      <ParentRegistrationLink key={data.branchId} branchId={data.branchId} workspace={user.workspace?.id} />
 
       <section className="children-panel">
         <h2 className="text-xl font-bold">{t("queue.listTitle")}</h2>

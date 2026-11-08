@@ -1,4 +1,7 @@
 import { AppSettingsForm } from "@/components/app-settings-form";
+import { GuestFieldsSettings } from "@/components/guest-fields-settings";
+import { ministryFormKinds, type GuestFormSettings } from "@/lib/guest-fields";
+import { hasFeature } from "@/lib/entitlements";
 import { BranchSettingsForm } from "@/components/branch-settings-form";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { LogoutButton } from "@/components/logout-button";
@@ -22,6 +25,23 @@ export default async function SettingsPage({
   const user = await requireServerRole("/settings");
   const t = await getTranslations("admin.settings");
   const isAdmin = canConfigureAppSettings(user.role);
+  const [guestForms, memberForms] = user.role === "super_admin"
+    ? await Promise.all([
+        serverGet<GuestFormSettings>("/guests/form-settings"),
+        serverGet<GuestFormSettings>("/members/form-settings"),
+      ])
+    : [null, null];
+  const [offeringForms, expenseForms] = user.role === "super_admin" && hasFeature(user.entitlements, "finance")
+    ? await Promise.all([
+        serverGet<GuestFormSettings>("/finance/form-settings/offering"),
+        serverGet<GuestFormSettings>("/finance/form-settings/expense"),
+      ])
+    : [null, null];
+  const ministryForms = user.role === "super_admin"
+    ? await Promise.all(ministryFormKinds.map(async (kind) => ({
+        kind, definition: await serverGet<GuestFormSettings>(`/guests/ministry-form-settings/${kind}`),
+      })))
+    : [];
   const resolvedSearchParams = (await searchParams) ?? {};
   const overview = await serverGet<SettingsOverview>("/settings/overview").catch(() => ({
     app: {
@@ -81,6 +101,43 @@ export default async function SettingsPage({
             <Divider />
           </>
         ) : null}
+
+        {guestForms ? (
+          <>
+            <SettingsSection title={t("guestFields.title")} description={t("guestFields.description")}>
+              <GuestFieldsSettings initial={guestForms} />
+            </SettingsSection>
+            <Divider />
+          </>
+        ) : null}
+        {memberForms ? (
+          <>
+            <SettingsSection title={t("guestFields.memberTitle")} description={t("guestFields.memberDescription")}>
+              <GuestFieldsSettings initial={memberForms} kind="members" />
+            </SettingsSection>
+            <Divider />
+          </>
+        ) : null}
+        {offeringForms && expenseForms ? (
+          <>
+            <SettingsSection title={t("guestFields.offeringTitle")} description={t("guestFields.financeDescription")}>
+              <GuestFieldsSettings initial={offeringForms} kind="offering" />
+            </SettingsSection>
+            <Divider />
+            <SettingsSection title={t("guestFields.expenseTitle")} description={t("guestFields.financeDescription")}>
+              <GuestFieldsSettings initial={expenseForms} kind="expense" />
+            </SettingsSection>
+            <Divider />
+          </>
+        ) : null}
+        {ministryForms.map(({ kind, definition }) => (
+          <div key={kind} className="space-y-8">
+            <SettingsSection title={t(`guestFields.ministry.${kind}`)} description={t("guestFields.ministryDescription")}>
+              <GuestFieldsSettings initial={definition} kind={kind} />
+            </SettingsSection>
+            <Divider />
+          </div>
+        ))}
 
         <SettingsSection
           title={t("sections.preferences")}

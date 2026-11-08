@@ -8,6 +8,7 @@ import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { MemberServiceGroups } from "@/components/member-service-groups";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
 import { API_URL } from "@/lib/api";
 import {
   MEMBER_COURSE_GROUPS,
@@ -51,6 +52,10 @@ export function MemberCreateForm({
   const tCommon = useTranslations("common");
   const labels = useMemberFormLabels();
   const [loading, setLoading] = useState(false);
+  const [guestId, setGuestId] = useState<string>();
+  const { form, failed } = useMemberFields(guestId);
+  const tf = useTranslations("admin.settings.guestFields");
+  const visible = (key: string) => !form?.hiddenStaff.includes(key);
   const [selectedBranchId, setSelectedBranchId] = useState(
     defaultBranchId || branches[0]?._id || "",
   );
@@ -74,10 +79,12 @@ export function MemberCreateForm({
   );
 
   async function handleSubmit(formData: FormData) {
+    if (!form) return;
     setLoading(true);
 
     try {
       const payload = {
+        ...memberFieldPayload(form, formData),
         branchId: (formData.get("branchId") as string) || defaultBranchId,
         guestId: (formData.get("guestId") as string) || undefined,
         title: formData.get("title") || undefined,
@@ -147,7 +154,7 @@ export function MemberCreateForm({
             <select
               name="branchId"
               value={selectedBranchId}
-              onChange={(event) => setSelectedBranchId(event.target.value)}
+              onChange={(event) => { setSelectedBranchId(event.target.value); setGuestId(undefined); }}
               className="ui-input"
               required
             >
@@ -176,7 +183,7 @@ export function MemberCreateForm({
         )}
 
         <Field label={t("linkedGuest")} hint={t("linkedGuestHint")}>
-          <select name="guestId" className="ui-input">
+          <select name="guestId" value={guestId ?? ""} onChange={(event) => setGuestId(event.target.value || undefined)} className="ui-input">
             <option value="">{t("noGuest")}</option>
             {scopedGuests.map((guest) => (
               <option key={guest._id} value={guest._id}>
@@ -186,7 +193,7 @@ export function MemberCreateForm({
           </select>
         </Field>
 
-        <Field label={t("title")}>
+        {visible("title") ? <Field label={t("title")}>
           <select name="title" defaultValue="" className="ui-input">
             <option value="">{t("noTitle")}</option>
             {MEMBER_TITLE_OPTIONS.map((option) => (
@@ -195,7 +202,7 @@ export function MemberCreateForm({
               </option>
             ))}
           </select>
-        </Field>
+        </Field> : null}
         <Field label={tCommon("firstName")} required>
           <input
             name="firstName"
@@ -212,15 +219,15 @@ export function MemberCreateForm({
             required
           />
         </Field>
-        <Field label={t("phoneNumber")} required>
+        {visible("phone") ? <Field label={t("phoneNumber")} required>
           <input
             name="phone"
             placeholder={t("phoneNumber")}
             className="ui-input"
             required
           />
-        </Field>
-        <Field label={tCommon("email")} required>
+        </Field> : null}
+        {visible("email") ? <Field label={tCommon("email")} required>
           <input
             name="email"
             type="email"
@@ -228,7 +235,7 @@ export function MemberCreateForm({
             className="ui-input"
             required
           />
-        </Field>
+        </Field> : null}
         <Field label={t("membershipStatus")}>
           <select
             name="membershipStatus"
@@ -242,14 +249,14 @@ export function MemberCreateForm({
             ))}
           </select>
         </Field>
-        <Field label={t("dateJoined")} hint={t("dateJoinedHint")}>
+        {visible("dateJoinedChurch") ? <Field label={t("dateJoined")} hint={t("dateJoinedHint")}>
           <input
             name="dateJoinedChurch"
             type="date"
             max={getTodayDateString()}
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
       </div>
 
       <section className="rounded-2xl bg-[#f6f5f1] p-5">
@@ -265,7 +272,8 @@ export function MemberCreateForm({
         />
       </section>
 
-      {MEMBER_COURSE_GROUPS.map((group) => {
+      {visible("formation") ? <>
+{MEMBER_COURSE_GROUPS.map((group) => {
         const course = labels.course(group);
         return (
           <section key={group.key} className="rounded-2xl bg-[#f6f5f1] p-5">
@@ -345,16 +353,19 @@ export function MemberCreateForm({
         </div>
       </section>
 
-      <Field label={t("familyDetails")}>
+      </> : null}
+      {visible("familyDetails") ? <Field label={t("familyDetails")}>
         <textarea
           name="familyDetails"
           placeholder={t("familyDetailsPlaceholder")}
           className="ui-input"
         />
-      </Field>
+      </Field> : null}
 
+      {failed ? <p role="alert">{tf("memberLoadFailed")}</p> : null}
+      {form?.fields.length ? <MemberCustomFields key={guestId ?? "new"} fields={form.fields} values={form.values} /> : null}
       <div className="flex justify-end border-t border-black/[0.06] pt-5">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || !form}>
           {loading ? tCommon("saving") : t("saveMember")}
         </Button>
       </div>

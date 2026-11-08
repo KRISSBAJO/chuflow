@@ -16,6 +16,7 @@ export type Guardian = {
 export type RecordEvent = { action: string; actorId: string; actorName?: string; at: string; note: string; childIds?: string[] };
 
 export type ChildProfile = {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   _id: string;
   familyId: string;
   branchId: string;
@@ -35,6 +36,7 @@ export type ChildProfile = {
 };
 
 export type Family = {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   _id: string;
   name: string;
   branchId: string;

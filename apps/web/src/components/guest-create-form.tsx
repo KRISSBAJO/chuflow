@@ -1,13 +1,14 @@
 "use client";
 import { savedToastId } from "@/lib/action-feedback";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
+import type { GuestStaffForm } from "@/lib/guest-fields";
 import type {
   BranchSummary,
   ServiceTypeSummary,
@@ -34,6 +35,21 @@ export function GuestCreateForm({
   const router = useRouter();
   const t = useTranslations("people.guests.create");
   const tc = useTranslations("common");
+  const tf = useTranslations("admin.settings.guestFields");
+  const locale = useLocale();
+  const [definition, setDefinition] = useState<GuestStaffForm>();
+  const [definitionError, setDefinitionError] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(API_URL + "/guests/staff-form", { credentials: "include", signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        setDefinition(await response.json() as GuestStaffForm);
+      })
+      .catch(() => { if (!controller.signal.aborted) setDefinitionError(true); });
+    return () => controller.abort();
+  }, []);
+  const visible = (key: string) => !definition?.hiddenStaff.includes(key);
   const [loading, setLoading] = useState(false);
   const branchMap = new Map(
     branches.map((branch) => [branch._id, branch.name]),
@@ -72,6 +88,7 @@ export function GuestCreateForm({
   );
 
   async function handleSubmit(formData: FormData) {
+    if (!definition) return;
     setLoading(true);
 
     try {
@@ -84,7 +101,7 @@ export function GuestCreateForm({
           firstName: formData.get("firstName"),
           lastName: formData.get("lastName"),
           phone: formData.get("phone"),
-          email: formData.get("email"),
+          email: formData.get("email") || undefined,
           invitedBy: formData.get("invitedBy"),
           heardAboutChurch: formData.get("heardAboutChurch"),
           prayerRequest: formData.get("prayerRequest"),
@@ -92,6 +109,13 @@ export function GuestCreateForm({
             formData.get("assignedFollowUpUserId") || undefined,
           serviceType: formData.get("serviceType"),
           visitDate: new Date().toISOString(),
+          formRevision: definition.revision,
+          customFields: Object.fromEntries(definition.fields.flatMap((field) => {
+            const value = formData.get(field.key);
+            return typeof value === "string" && value.trim() !== ""
+              ? [[field.key, field.type === "number" ? Number(value) : value]]
+              : [];
+          })),
         }),
       });
 
@@ -120,6 +144,7 @@ export function GuestCreateForm({
 
   return (
     <form action={handleSubmit}>
+      {definitionError ? <p role="alert" className="mb-4 text-sm text-red-700">{tf("loadFailed")}</p> : null}
       <div className="grid gap-4 md:grid-cols-2">
         {branches.length > 1 ? (
           <Field label={tc("branch")} required>
@@ -212,29 +237,29 @@ export function GuestCreateForm({
             required
           />
         </Field>
-        <Field label={tc("email")}>
+        {visible("email") ? <Field label={tc("email")}>
           <input
             name="email"
             placeholder="name@example.com"
             type="email"
             className="ui-input"
           />
-        </Field>
-        <Field label={t("invitedBy")}>
+        </Field> : null}
+        {visible("invitedBy") ? <Field label={t("invitedBy")}>
           <input
             name="invitedBy"
             placeholder={t("invitedByPlaceholder")}
             className="ui-input"
           />
-        </Field>
-        <Field label={t("heardAbout")}>
+        </Field> : null}
+        {visible("heardAboutChurch") ? <Field label={t("heardAbout")}>
           <input
             name="heardAboutChurch"
             placeholder={t("heardAboutPlaceholder")}
             className="ui-input"
           />
-        </Field>
-        {filteredAssignableUsers.length > 0 ? (
+        </Field> : null}
+        {visible("assignedFollowUpUserId") && filteredAssignableUsers.length > 0 ? (
           <Field label={t("followUpOwner")} className="md:col-span-2">
             <select name="assignedFollowUpUserId" className="ui-input">
               <option value="">{t("leaveUnassigned")}</option>
@@ -249,16 +274,30 @@ export function GuestCreateForm({
             </select>
           </Field>
         ) : null}
-        <Field label={t("prayerRequest")} className="md:col-span-2">
+        {visible("prayerRequest") ? <Field label={t("prayerRequest")} className="md:col-span-2">
           <textarea
             name="prayerRequest"
             placeholder={t("prayerRequestPlaceholder")}
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
+        {definition?.fields.map((field) => (
+          <Field key={field.key} label={((locale === "es" && field.labelEs) || (locale === "fr" && field.labelFr) || (locale === "pt" && field.labelPt)) || field.label} required={field.required}>
+            {field.type === "select" ? (
+              <select className="ui-input" name={field.key} required={field.required}>
+                <option value="" />
+                {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            ) : field.type === "textarea" ? (
+              <textarea className="ui-input" name={field.key} required={field.required} maxLength={2000} />
+            ) : (
+              <input className="ui-input" name={field.key} required={field.required} type={field.type} min={field.type === "number" ? 0 : undefined} step="any" maxLength={250} />
+            )}
+          </Field>
+        ))}
       </div>
       <div className="mt-6 flex justify-end">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || !definition}>
           {loading ? tc("saving") : t("saveGuest")}
         </Button>
       </div>

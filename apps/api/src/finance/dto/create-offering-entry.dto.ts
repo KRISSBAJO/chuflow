@@ -1,6 +1,8 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { FormAnswersDto } from '../../guests/form-answers.dto';
 import {
   IsDateString,
+  IsInt,
   IsMongoId,
   IsNumber,
   IsOptional,
@@ -8,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 
-export class CreateOfferingEntryDto {
+export class CreateOfferingEntryDto extends FormAnswersDto {
   @ApiProperty()
   @IsDateString()
   serviceDate!: string;
@@ -54,4 +56,9 @@ export class CreateOfferingEntryDto {
 
 export class UpdateOfferingEntryDto extends PartialType(
   CreateOfferingEntryDto,
-) {}
+) {
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  reviewRevision?: number;
+}

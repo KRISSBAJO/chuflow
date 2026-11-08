@@ -72,6 +72,9 @@ export class Guest {
 
   @Prop({ default: false })
   convertedToMember!: boolean;
+
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../guest-fields.service').GuestAnswer[];
 }
 
 export const GuestSchema = SchemaFactory.createForClass(Guest);

@@ -1,3 +1,4 @@
+import { GuestsModule } from '../guests/guests.module';
 import { MailModule } from '../mail/mail.module';
 import { MeetingInvitationsService } from './meeting-invitations.service';
 import { MeetingInvitation, MeetingInvitationSchema } from './meetings.schema';
@@ -23,6 +24,7 @@ import { MeetingsController } from './meetings.controller';
 import { MeetingsService } from './meetings.service';
 @Module({
   imports: [
+    GuestsModule,
     AccessScopeModule,
     MailModule,
     MongooseModule.forFeature([

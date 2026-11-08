@@ -1,3 +1,4 @@
+import { GuestsModule } from '../guests/guests.module';
 import {
   ChildrenRegistrationLink,
   ChildrenRegistrationLinkSchema,
@@ -32,6 +33,7 @@ import {
 } from './children.controller';
 @Module({
   imports: [
+    GuestsModule,
     AccessScopeModule,
     MongooseModule.forFeature([
       { name: Branch.name, schema: BranchSchema },

@@ -36,7 +36,10 @@
       "branches": "Iglesias locales",
       "users": "Usuarios",
       "templates": "Plantillas",
-      "structure": "Estructura"
+      "structure": "Estructura",
+      "outreach": "Evangelismo",
+      "serviceUnits": "Equipos de servicio",
+      "registerFamily": "Registrar una familia"
     },
     "signOut": "Cerrar sesión",
     "signOutTitle": "¿Cerrar sesión?",

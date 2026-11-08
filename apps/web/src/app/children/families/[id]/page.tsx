@@ -1,3 +1,4 @@
+import { ExtraAnswers } from "@/components/extra-answers";
 import { ActionNotice } from "@/components/action-notice";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
@@ -48,6 +49,7 @@ export default async function Page({
         <ActionNotice param="saved" message={t("familyPage.saved")} />
       )}
 
+      <ExtraAnswers answers={f.customAnswers} />
       <section className="children-panel">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">

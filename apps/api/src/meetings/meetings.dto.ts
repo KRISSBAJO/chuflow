@@ -1,3 +1,4 @@
+import { FormAnswersDto } from '../guests/form-answers.dto';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -38,7 +39,7 @@ export class GroupDto {
   reviewerUserIds!: string[];
   @IsOptional() @IsInt() @Min(0) expectedRevision?: number;
 }
-export class CreateMeetingDto {
+export class CreateMeetingDto extends FormAnswersDto {
   @IsOptional()
   @IsIn(['individuals', 'service_groups', 'church'])
   audienceMode?: 'individuals' | 'service_groups' | 'church';
@@ -80,7 +81,7 @@ export class ActionDto {
   @IsOptional() @IsDateString() dueAt?: string;
   @IsIn(['open', 'done']) status!: 'open' | 'done';
 }
-export class UpdateMeetingDto {
+export class UpdateMeetingDto extends FormAnswersDto {
   @IsOptional()
   @IsIn(['individuals', 'service_groups', 'church'])
   audienceMode?: 'individuals' | 'service_groups' | 'church';

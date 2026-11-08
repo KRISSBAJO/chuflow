@@ -11,6 +11,7 @@ import type { BranchSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { EMPTY_MEMBER_FORM, MemberFields, validateMember, type MemberFormErrors, type MemberFormValues } from './member-fields';
 import type { MemberDetail } from './types';
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from './custom-member-fields';
 
 /** Adds a member: POST /members with the CreateMemberDto basics. */
 export function NewMemberScreen() {
@@ -20,6 +21,8 @@ export function NewMemberScreen() {
   const allowed = can.members(user?.role);
   const pickBranch = allowed && can.pickBranch(user?.role);
   const branches = useApi<BranchSummary[]>(pickBranch ? '/branches' : null);
+  const definition = useApi<MemberFormDefinition>(allowed ? '/members/staff-form' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
 
   const [value, setValue] = useState<MemberFormValues>({ ...EMPTY_MEMBER_FORM, branchId: userBranchId(user) });
   const [errors, setErrors] = useState<MemberFormErrors>({});
@@ -30,6 +33,11 @@ export function NewMemberScreen() {
   const form: MemberFormValues = value.branchId || branches.data?.length !== 1 ? value : { ...value, branchId: branches.data[0]._id };
 
   async function save() {
+    if (!definition.data) {
+      setFormError(t('customLoadFailed'));
+      void definition.refresh();
+      return;
+    }
     const value = form;
     const nextErrors = validateMember(value, t, { identity: true, needsBranch: true });
     setErrors(nextErrors);
@@ -38,6 +46,7 @@ export function NewMemberScreen() {
     setFormError(null);
     try {
       const member = await api.post<MemberDetail>('/members', {
+        ...memberFormPayload(definition.data, custom),
         branchId: value.branchId,
         firstName: value.firstName.trim(),
         lastName: value.lastName.trim(),
@@ -72,7 +81,8 @@ export function NewMemberScreen() {
         <Stack.Screen options={{ title: t('newTitle') }} />
         <Caption>{t('intro')}</Caption>
         {formError ? <Notice tone="danger">{formError}</Notice> : null}
-        <MemberFields value={form} onChange={setValue} errors={errors} branches={pickBranch ? (branches.data ?? []) : null} />
+        <MemberFields value={form} onChange={setValue} errors={errors} branches={pickBranch ? (branches.data ?? []) : null} hidden={definition.data?.hiddenStaff} />
+        <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} />
       </Screen>
     </KeyboardAvoidingView>
   );

@@ -1,3 +1,4 @@
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from '@/features/members/custom-member-fields';
 import { router, Stack, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
@@ -22,6 +23,8 @@ export function NewOfferingScreen() {
   const format = useAppFormat();
   const { user } = useSession();
   const allowed = can.recordOfferings(user?.role);
+  const definition = useApi<MemberFormDefinition>(allowed ? '/finance/staff-form/offering' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
 
   const serviceTypes = useApi<ServiceType[]>(allowed ? '/service-types' : null);
   const offeringTypes = useApi<OfferingTypeSummary[]>(allowed ? '/finance/offering-types' : null);
@@ -51,10 +54,12 @@ export function NewOfferingScreen() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
+    if (!definition.data) { toast.error(t('customLoadFailed')); void definition.refresh(); return; }
     setSaving(true);
     setFormError(null);
     try {
       const entry = await api.post<OfferingEntrySummary>('/finance/offerings', {
+        ...memberFormPayload(definition.data, custom),
         serviceDate: isoDay(date),
         serviceTypeId,
         offeringTypeId,
@@ -141,7 +146,8 @@ export function NewOfferingScreen() {
           </View>
         </View>
 
-        <Field label={t('fields.notes')} value={notes} onChangeText={setNotes} placeholder={t('offeringForm.notesPlaceholder')} multiline />
+        {!definition.data?.hiddenStaff.includes('notes') ? <Field label={t('fields.notes')} value={notes} onChangeText={setNotes} placeholder={t('offeringForm.notesPlaceholder')} multiline /> : null}
+        <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} title={t('customAnswers')} />
       </Screen>
     </KeyboardAvoidingView>
   );

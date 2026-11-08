@@ -255,6 +255,8 @@ describe('supervisor review and recovery', () => {
         isMember: false,
         pickupGuardianIds: [registrationUuid(f.d.requestKey + ':adult:0')],
       }),
+      undefined,
+      [],
     );
   });
   it('rejecting never creates active records', async () => {

@@ -52,6 +52,7 @@ export type MeetingListItem = {
 };
 
 export type Meeting = MeetingListItem & {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   agenda: string;
   organizerUserId: string;
   audienceMode?: AudienceMode;

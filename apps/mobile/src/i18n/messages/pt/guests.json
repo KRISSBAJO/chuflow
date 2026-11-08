@@ -55,6 +55,11 @@
       "prayerRequest": "Pedido de oração",
       "phoneCopied": "Número de telefone copiado",
       "convertToMember": "Converter em membro"
+    },
+    "fields": {
+      "answers": "Respostas do visitante",
+      "loadFailed": "Não foi possível carregar o formulário. Atualize para tentar novamente.",
+      "required": "Obrigatório"
     }
   }
 }

@@ -1,3 +1,4 @@
+import { ExtraAnswers } from "@/components/extra-answers";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Shell } from "@/components/shell";
@@ -51,6 +52,7 @@ export default async function OutreachContactPage({
     !["do_not_contact", "closed"].includes(contact.stage);
   return (
     <Shell>
+      <ExtraAnswers answers={contact.customAnswers} />
       <Link href="/evangelism" className={buttonClass("secondary", "sm")}>
         <Icon name="arrowLeft" /> {t("back")}
       </Link>

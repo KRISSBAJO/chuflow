@@ -1,4 +1,6 @@
 "use client";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
+
 import { toast } from "sonner";
 import { useActionToast } from "@/lib/action-feedback";
 
@@ -24,6 +26,9 @@ export function OutreachFollowUpForm({
   const actionToast = useActionToast();
 
   const router = useRouter();
+  const { form: fieldDefinition, failed: fieldFailure } = useMemberFields(undefined, true, "/guests/ministry-form/outreach");
+  const tf = useTranslations("admin.settings.guestFields");
+
   const t = useTranslations("people.evangelism.followUpForm");
   const tLabels = useTranslations("people.evangelism.labels");
   const tsh = useTranslations("people.shared");
@@ -35,7 +40,7 @@ export function OutreachFollowUpForm({
   const closed = stage === "closed" || stage === "do_not_contact";
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || !fieldDefinition) return;
     const form = event.currentTarget;
     const data = new FormData(form);
     setBusy(true);
@@ -44,6 +49,7 @@ export function OutreachFollowUpForm({
     const next = String(data.get("nextActionDate") || "");
     try {
       await apiPatch(`/evangelism/contacts/${contact._id}`, {
+        ...memberFieldPayload(fieldDefinition, data),
         stage,
         note: data.get("note"),
         contactMethod: data.get("contactMethod"),
@@ -161,7 +167,9 @@ export function OutreachFollowUpForm({
           </p>
         )}
 
-        <Button type="submit" disabled={busy}>
+        {fieldFailure ? <p role="alert">{tf("extraLoadFailed")}</p> : null}
+      {fieldDefinition?.fields.length ? <MemberCustomFields fields={fieldDefinition.fields} values={Object.fromEntries((contact?.customAnswers ?? []).map(({ key, value }) => [key, value]))} /> : null}
+<Button type="submit" disabled={busy || !fieldDefinition}>
           {busy ? tsh("savingEllipsis") : t("save")}
         </Button>
       </form>

@@ -15,6 +15,7 @@ import {
 import { MemberServiceGroups } from "@/components/member-service-groups";
 import { memberGroupIds } from "@/lib/member-service-groups";
 import { memberSectionPayload } from "@/lib/member-section";
+import { useMemberFields } from "@/components/member-custom-fields";
 import { API_URL } from "@/lib/api";
 import {
   MEMBER_TITLE_OPTIONS,
@@ -81,6 +82,8 @@ export function MemberProfileForm({
   returnHref?: string;
 }) {
   const router = useRouter();
+  const { form: definition } = useMemberFields();
+  const visible = (key: string) => !definition?.hiddenStaff.includes(key);
   const tw = useTranslations("workspace");
   const t = useTranslations("org.memberForm");
   const tCommon = useTranslations("common");
@@ -148,7 +151,7 @@ export function MemberProfileForm({
       <form action={handleSubmit} className="mt-6 space-y-5">
         {(section === "all" || section === "profile") && (
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label={t("title")}>
+            {visible("title") ? <Field label={t("title")}>
               <select
                 name="title"
                 defaultValue={member.title || ""}
@@ -161,7 +164,7 @@ export function MemberProfileForm({
                   </option>
                 ))}
               </select>
-            </Field>
+            </Field> : null}
             <Field label={tCommon("firstName")} required>
               <input
                 name="firstName"
@@ -178,21 +181,21 @@ export function MemberProfileForm({
                 className="ui-input"
               />
             </Field>
-            <Field label={t("phoneNumber")}>
+            {visible("phone") ? <Field label={t("phoneNumber")}>
               <input
                 name="phone"
                 defaultValue={member.phone || ""}
                 className="ui-input"
               />
-            </Field>
-            <Field label={tCommon("email")}>
+            </Field> : null}
+            {visible("email") ? <Field label={tCommon("email")}>
               <input
                 name="email"
                 type="email"
                 defaultValue={member.email || ""}
                 className="ui-input"
               />
-            </Field>
+            </Field> : null}
             <Field
               label={t("membershipStatus")}
               hint={t("currentStatus", {
@@ -211,7 +214,7 @@ export function MemberProfileForm({
                 ))}
               </select>
             </Field>
-            <Field label={t("dateJoined")}>
+            {visible("dateJoinedChurch") ? <Field label={t("dateJoined")}>
               <input
                 name="dateJoinedChurch"
                 type="date"
@@ -219,7 +222,7 @@ export function MemberProfileForm({
                 defaultValue={member.dateJoinedChurch || ""}
                 className="ui-input"
               />
-            </Field>
+            </Field> : null}
           </div>
         )}
 
@@ -239,7 +242,7 @@ export function MemberProfileForm({
           </section>
         )}
 
-        {(section === "all" || section === "growth") && (
+        {visible("formation") && (section === "all" || section === "growth") && (
           <>
             {MEMBER_COURSE_GROUPS.map((group) => {
               const values = member as unknown as Record<
@@ -341,7 +344,7 @@ export function MemberProfileForm({
             </section>
           </>
         )}
-        {(section === "all" || section === "profile") && (
+        {visible("familyDetails") && (section === "all" || section === "profile") && (
           <Field label={t("familyDetails")}>
             <textarea
               name="familyDetails"

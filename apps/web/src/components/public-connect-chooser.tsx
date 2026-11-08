@@ -52,8 +52,10 @@ function scoreOption(option: PublicConnectOption, query: string) {
 
 export function PublicConnectChooser({
   options,
+  workspaceQuery = "",
 }: {
   options: PublicConnectOption[];
+  workspaceQuery?: string;
 }) {
   const [query, setQuery] = useState("");
 
@@ -117,7 +119,7 @@ export function PublicConnectChooser({
           {visibleOptions.map((option) => (
             <Link
               key={option._id}
-              href={`/intake/${option.slug}`}
+              href={`/intake/${option.slug}${workspaceQuery}`}
               className="lp-card group flex flex-col p-7"
             >
               <div className="flex flex-wrap items-center gap-2">

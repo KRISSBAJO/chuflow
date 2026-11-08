@@ -43,6 +43,7 @@ export type OutreachLink = {
   ownerId?: OutreachPerson;
 };
 export type OutreachContact = {
+  customAnswers?: import("./guest-fields").GuestCustomAnswer[];
   guestId?: {
     _id: string;
     firstName: string;

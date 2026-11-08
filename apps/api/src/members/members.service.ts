@@ -19,6 +19,8 @@ import { CreateMemberDto, UpdateMemberDto } from './dto/create-member.dto';
 import { Member, MemberDocument } from './schemas/member.schema';
 import { EntitlementsService } from '../platform/entitlements.service';
 import { MemberDirectoryDto } from './dto/member-directory.dto';
+import { GuestFieldsService, MEMBER_FORMATION_KEYS, type GuestAnswer } from '../guests/guest-fields.service';
+import type { FormAnswersDto } from '../guests/form-answers.dto';
 
 @Injectable()
 export class MembersService {
@@ -31,6 +33,7 @@ export class MembersService {
     private readonly guestsService: GuestsService,
     private readonly accessScopeService: AccessScopeService,
     @Optional() private readonly entitlements?: EntitlementsService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
 
   private escapeRegExp(value: string) {
@@ -124,6 +127,8 @@ export class MembersService {
         'bro',
         'sister',
         'pastor',
+        'resident_pastor',
+        'associate_pastor',
         'deacon',
         'deaconess',
         'apostle',
@@ -131,7 +136,7 @@ export class MembersService {
       ].includes(dto.title.toLowerCase())
     ) {
       throw new BadRequestException(
-        'Member title must be bro, sister, pastor, deacon, deaconess, apostle, or other',
+        'Select a valid member title.',
       );
     }
 
@@ -287,7 +292,18 @@ export class MembersService {
     };
   }
 
-  async create(dto: CreateMemberDto, currentUser?: AuthUser) {
+  private applyStaffVisibility(dto: Record<string, unknown>, hidden: string[]) {
+    for (const key of hidden) delete dto[key];
+    if (hidden.includes('formation')) for (const key of MEMBER_FORMATION_KEYS) delete dto[key];
+  }
+
+  async create(input: CreateMemberDto, currentUser?: AuthUser, publicAnswers?: GuestAnswer[]) {
+    const { customFields, formRevision, ...dto } = input;
+    const definition = currentUser ? await this.forms?.get('member') : undefined;
+    if (definition) {
+      this.forms?.checkRevision(definition, formRevision);
+      this.applyStaffVisibility(dto, definition.hiddenStaff);
+    }
     const normalizedDto = this.normalizeMemberPayload(dto);
     this.validateMemberPayload(normalizedDto);
     if (this.entitlements) {
@@ -301,6 +317,7 @@ export class MembersService {
       normalizedDto.branchId,
     );
 
+    let mapped = {};
     if (normalizedDto.guestId && currentUser) {
       const guest = await this.guestsService.findOne(
         normalizedDto.guestId,
@@ -314,6 +331,7 @@ export class MembersService {
           ? String((guest.branchId as { _id?: unknown })._id ?? '')
           : String(guest.branchId ?? ''),
       );
+      if (definition) mapped = this.forms?.mappedAnswers(definition, guest.customAnswers) ?? {};
     }
 
     await this.ensureUniqueIdentity(normalizedDto, branchId);
@@ -324,6 +342,8 @@ export class MembersService {
 
     return this.memberModel.create({
       ...normalizedDto,
+      ...(definition ? { customAnswers: this.forms?.collect(definition, 'staff', { ...mapped, ...customFields }) } :
+        publicAnswers?.length ? { customAnswers: publicAnswers } : {}),
       branchId,
       ...serviceUnitAssignment,
     });
@@ -445,6 +465,7 @@ export class MembersService {
   async findOne(id: string, currentUser: AuthUser) {
     const member = await this.memberModel
       .findById(id)
+      .select('+customAnswers')
       .populate('branchId')
       .populate('guestId')
       .populate('serviceUnitId')
@@ -463,12 +484,29 @@ export class MembersService {
     return member;
   }
 
-  async update(id: string, dto: UpdateMemberDto, currentUser: AuthUser) {
+  async update(id: string, input: UpdateMemberDto, currentUser: AuthUser) {
     const existing = await this.findOne(id, currentUser);
     if (existing.recordType === 'child')
       throw new BadRequestException(
         'Update this child through the children’s ministry workspace to keep guardian links and membership synchronized.',
       );
+    const { customFields, formRevision, ...dto } = input;
+    const definition = await this.forms?.get('member');
+    let customAnswers: GuestAnswer[] | undefined;
+    if (definition) {
+      this.forms?.checkRevision(definition, formRevision);
+      this.applyStaffVisibility(dto, definition.hiddenStaff);
+      if (customFields) {
+        const active = new Set(definition.fields.filter((field) => field.staff).map(({ key }) => key));
+        customAnswers = [
+          ...(existing.customAnswers ?? []).filter(({ key }) => !active.has(key)),
+          ...this.forms!.collect(definition, 'staff', {
+            ...Object.fromEntries((existing.customAnswers ?? []).map(({ key, value }) => [key, value])),
+            ...customFields,
+          }),
+        ];
+      }
+    }
     const normalizedDto = this.normalizeMemberPayload(dto);
     this.validateMemberPayload(normalizedDto);
     const branchId = await this.accessScopeService.resolveScopedBranchId(
@@ -540,6 +578,7 @@ export class MembersService {
         id,
         {
           ...normalizedDto,
+          ...(customAnswers ? { customAnswers } : {}),
           ...(branchId ? { branchId } : {}),
           ...(serviceUnitAssignment
             ? {
@@ -559,6 +598,7 @@ export class MembersService {
         },
         { new: true },
       )
+      .select('+customAnswers')
       .populate('branchId')
       .populate('guestId')
       .populate('serviceUnitId')
@@ -570,21 +610,44 @@ export class MembersService {
     return member;
   }
 
-  async convertGuest(guestId: string, currentUser: AuthUser) {
+  async conversionForm(guestId: string, currentUser: AuthUser) {
     const guest = await this.guestsService.findOne(guestId, currentUser);
+    const definition = await this.forms!.get('member');
+    return {
+      revision: definition.revision,
+      hiddenStaff: definition.hiddenStaff,
+      fields: definition.fields.filter((field) => field.staff).map(({ guestFieldKey, ...field }) => field),
+      values: this.forms!.mappedAnswers(definition, guest.customAnswers),
+    };
+  }
+
+  async convertGuest(guestId: string, currentUser: AuthUser, input?: FormAnswersDto) {
+    const guest = await this.guestsService.findOne(guestId, currentUser);
+    const definition = await this.forms?.get('member');
+    if (definition) this.forms?.checkRevision(definition, input?.formRevision);
     const branchId =
       typeof guest.branchId === 'object' &&
       guest.branchId !== null &&
       '_id' in guest.branchId
         ? String((guest.branchId as { _id?: unknown })._id)
         : String(guest.branchId);
+    const existing = await this.memberModel.findOne({ guestId }).select('_id').lean();
+    if (existing) {
+      const member = await this.findOne(String(existing._id), currentUser);
+      await this.guestModel.findByIdAndUpdate(guestId, { convertedToMember: true, visitStatus: 'member' });
+      return member;
+    }
+    if (this.entitlements) await this.entitlements.assertQuota('members', await this.memberModel.countDocuments({}));
     const member = await this.memberModel.create({
       guestId,
       branchId,
       firstName: guest.firstName,
       lastName: guest.lastName,
-      phone: guest.phone,
-      email: guest.email,
+      phone: definition?.hiddenStaff.includes('phone') ? undefined : guest.phone,
+      email: definition?.hiddenStaff.includes('email') ? undefined : guest.email,
+      ...(definition ? { customAnswers: this.forms?.collect(definition, 'staff', {
+        ...this.forms?.mappedAnswers(definition, guest.customAnswers), ...input?.customFields,
+      }) } : {}),
       membershipStatus: 'active',
       believerFoundationClassStatus: 'no',
       bccStatus: 'no',

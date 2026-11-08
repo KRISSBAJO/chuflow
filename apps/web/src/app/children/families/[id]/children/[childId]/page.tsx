@@ -1,3 +1,4 @@
+import { ExtraAnswers } from "@/components/extra-answers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -21,6 +22,7 @@ export default async function Page({
       <Link href={`/children/families/${id}`} className="kids-chip">
         {t("back.family")}
       </Link>
+      <ExtraAnswers answers={child.customAnswers} />
       <ChildForm family={family} child={child} />
     </>
   );

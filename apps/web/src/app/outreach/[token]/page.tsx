@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { API_URL } from "@/lib/api";
+import { workspaceApiContext, workspaceId } from "@/lib/workspace-routing";
 import {
   OutreachPublicView,
   type PublicOutreachInfo,
@@ -19,11 +19,15 @@ export default async function PublicOutreachPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; workspace?: string }>;
 }) {
   const { token } = await params;
   if (!/^[a-f0-9]{48}$/.test(token)) notFound();
-  const response = await fetch(`${API_URL}/evangelism/public/${token}`, {
+  const { lang, workspace } = await searchParams;
+  const scope = workspaceId(workspace);
+  if (workspace && !scope) notFound();
+  const apiBase = workspaceApiContext(scope).base;
+  const response = await fetch(`${apiBase}/evangelism/public/${token}`, {
     cache: "no-store",
   });
   if (response.status === 404) notFound();
@@ -32,6 +36,5 @@ export default async function PublicOutreachPage({
     throw new Error(t("unavailable"));
   }
   const info = (await response.json()) as PublicOutreachInfo;
-  const { lang } = await searchParams;
-  return <OutreachPublicView token={token} info={info} requestedLanguage={lang} />;
+  return <OutreachPublicView token={token} info={info} apiBase={apiBase} requestedLanguage={lang} />;
 }

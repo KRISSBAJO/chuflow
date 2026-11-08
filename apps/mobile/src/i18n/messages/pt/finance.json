@@ -147,6 +147,8 @@
       "approved": "Lançamento aprovado",
       "rejected": "Lançamento rejeitado",
       "failed": "Não foi possível revisar este lançamento"
-    }
+    },
+    "customAnswers": "Respostas do lançamento",
+    "customLoadFailed": "Não foi possível carregar os campos. Atualize para tentar novamente."
   }
 }

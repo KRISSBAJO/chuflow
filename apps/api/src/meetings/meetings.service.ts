@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import { MeetingInvitationsService } from './meeting-invitations.service';
 import { serviceAudienceFilter } from './meeting-recipients';
 import {
@@ -124,6 +126,7 @@ export class MeetingsService {
     @InjectModel(Branch.name) private readonly branches: Model<BranchDocument>,
     private readonly scope: AccessScopeService,
     private readonly invitations: MeetingInvitationsService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
   private id(id: string) {
     if (!Types.ObjectId.isValid(id))
@@ -144,7 +147,7 @@ export class MeetingsService {
     );
   }
   private async context(u: AuthUser, id: string) {
-    const m = await this.meetings.findById(this.id(id)).lean();
+    const m = await this.meetings.findById(this.id(id)).select('+customAnswers').lean();
     if (!m) throw new NotFoundException('Meeting not found');
     await this.scope.ensureBranchAccess(u, String(m.branchId));
     const g = await this.group(u, String(m.groupId));
@@ -464,8 +467,11 @@ export class MeetingsService {
     );
     if (dto.title.trim().length < 2)
       throw new BadRequestException('Meeting title is required.');
+    const customAnswers = await this.forms?.prepare(MinistryFormKind.Meeting, dto);
+    const { customFields, formRevision, ...values } = dto;
     return this.meetings.create({
-      ...dto,
+      ...values,
+      customAnswers,
       ...times,
       groupId: g._id,
       attendeeMemberIds,
@@ -644,6 +650,8 @@ export class MeetingsService {
     const data: Record<string, unknown> = {};
     let history: Record<string, unknown> | undefined;
     if (op === 'details') {
+      const customAnswers = await this.forms?.prepare(MinistryFormKind.Meeting, dto, m.customAnswers ?? []);
+      if (customAnswers) data.customAnswers = customAnswers;
       for (const key of [
         'title',
         'agenda',

@@ -5,6 +5,9 @@ export type ServiceUnitDocument = HydratedDocument<ServiceUnit>;
 
 @Schema({ timestamps: true })
 export class ServiceUnit {
+  @Prop({ type: [Object], select: false, default: undefined })
+  customAnswers?: import('../../guests/guest-fields.service').GuestAnswer[];
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'ImportBatch' }) importBatchId?: Types.ObjectId;
   @Prop() importedAt?: Date;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch', required: true })

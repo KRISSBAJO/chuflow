@@ -12,6 +12,7 @@ import { getWorkspaceWebUrl, api, errorMessage } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { minutesLabel, MINUTES_TONE, STATUS_TONE, statusLabel } from './shared';
 import { refName, type Meeting, type MeetingPerson } from './types';
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from '@/features/members/custom-member-fields';
 
 type Patch = Record<string, unknown> & { operation: 'details' | 'attendance' | 'minutes' | 'submit' | 'approve' | 'return' };
 
@@ -19,9 +20,13 @@ type Patch = Record<string, unknown> & { operation: 'details' | 'attendance' | '
 export function MeetingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useT('meetings');
+  const tf = useT('members.form');
   const format = useAppFormat();
   const meeting = useApi<Meeting>(`/meetings/${id}`);
   const m = meeting.data;
+  const form = useApi<MemberFormDefinition>(m?.canManage ? '/guests/ministry-form/meeting' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
+  const tc = useT('common.actions');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [minutes, setMinutes] = useState<string | null>(null);
@@ -142,6 +147,16 @@ export function MeetingDetail() {
         </View>
       ) : null}
 
+      {m.customAnswers?.length ? <View><Section title={tf('extraAnswers')} />{m.customAnswers.map(({ key, label, value }) => <Caption key={key}>{label} · {String(value)}</Caption>)}</View> : null}
+      {m.canManage && form.data?.fields.length ? (
+        <Card>
+          <CustomMemberFields form={form.data} values={{ ...Object.fromEntries((m.customAnswers ?? []).map(({ key, value }) => [key, value])), ...custom }} onChange={setCustom} title={tf('extraAnswers')} />
+          <Button label={tc('save')} disabled={busy} onPress={() => {
+            if (!form.data) return;
+            void patch({ operation: 'details', ...memberFormPayload(form.data, { ...Object.fromEntries((m.customAnswers ?? []).map(({ key, value }) => [key, value])), ...custom }) });
+          }} />
+        </Card>
+      ) : null}
       <Section title={t('details.agenda')} />
       {m.agenda?.trim() ? <Body>{m.agenda}</Body> : <Caption>{t('details.noAgenda')}</Caption>}
 

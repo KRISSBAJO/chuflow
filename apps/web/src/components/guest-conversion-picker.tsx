@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { API_URL } from "@/lib/api";
 import type { GuestListItem, GuestListResponse } from "@/lib/types";
-export function GuestConversionPicker() {
+export function GuestConversionPicker({ onSelect }: { onSelect?: (id?: string) => void }) {
   const t = useTranslations("workspace");
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<GuestListItem[]>([]);
@@ -53,7 +53,7 @@ export function GuestConversionPicker() {
           <button
             type="button"
             className="text-orange-700"
-            onClick={() => setSelected(null)}
+            onClick={() => { setSelected(null); onSelect?.(); }}
           >
             {t("remove")}
           </button>
@@ -86,6 +86,7 @@ export function GuestConversionPicker() {
               className="w-full rounded-xl border border-black/5 bg-white p-3 text-left text-sm hover:border-orange-300"
               onClick={() => {
                 setSelected(g);
+                onSelect?.(g._id);
                 setSearch("");
                 setItems([]);
               }}

@@ -61,6 +61,13 @@ export function getWorkspaceWebUrl() {
   return activeSession.webUrl;
 }
 
+export function workspaceBrowserHref(path: string) {
+  const { webUrl, storageScope } = activeSession;
+  return storageScope
+    ? `${webUrl}/login?workspace=${encodeURIComponent(storageScope)}&returnTo=${encodeURIComponent(path)}`
+    : webUrl + path;
+}
+
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }

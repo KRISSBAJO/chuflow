@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseEnumPipe,
   Patch,
   Post,
   Query,
@@ -40,6 +41,7 @@ import {
 import { FinanceService } from './finance.service';
 import { RequiresFeature } from '../platform/requires-feature.decorator';
 import { AccessScopeService } from '../access-scope/access-scope.service';
+import { FinanceFormKind, GuestFieldsService } from '../guests/guest-fields.service';
 
 @ApiTags('Finance')
 @ApiBearerAuth()
@@ -50,7 +52,26 @@ export class FinanceController {
   constructor(
     private readonly financeService: FinanceService,
     private readonly scope: AccessScopeService,
+    private readonly forms: GuestFieldsService,
   ) {}
+
+  @Get('form-settings/:kind')
+  @Roles('super_admin')
+  formSettings(@Param('kind', new ParseEnumPipe(FinanceFormKind)) kind: FinanceFormKind) {
+    return this.forms.overview(kind);
+  }
+
+  @Patch('form-settings/:kind')
+  @Roles('super_admin')
+  publishFormSettings(@Param('kind', new ParseEnumPipe(FinanceFormKind)) kind: FinanceFormKind, @Body() body: unknown, @CurrentUser() user: AuthUser) {
+    return this.forms.publish(body, user, kind);
+  }
+
+  @Get('staff-form/:kind')
+  @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'usher')
+  staffForm(@Param('kind', new ParseEnumPipe(FinanceFormKind)) kind: FinanceFormKind) {
+    return this.forms.staff(kind);
+  }
 
   @Get('accounts')
   @Roles(

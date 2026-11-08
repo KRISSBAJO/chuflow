@@ -21,6 +21,7 @@ export type ExpenseCategorySummary = {
 export type EntryPermissions = { canReview?: boolean; canEdit: boolean; reason: string };
 
 export type OfferingEntrySummary = {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   _id: string;
   branchId?: FinanceBranchRef;
   serviceDate: string;
@@ -45,6 +46,7 @@ export type OfferingEntrySummary = {
 };
 
 export type ExpenseEntrySummary = {
+  customAnswers?: { key: string; label: string; value: string | number }[];
   _id: string;
   branchId?: FinanceBranchRef;
   expenseDate: string;

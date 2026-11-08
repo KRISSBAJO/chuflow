@@ -1,5 +1,6 @@
 import { hasPermission, rolePermissionKeys } from "@/lib/capabilities";
 import type { ReactNode } from "react";
+import type { GuestCustomAnswer } from "@/lib/guest-fields";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Icon } from "@/components/app/icons";
 import { CommunicationPanel } from "@/components/communication-panel";
@@ -58,6 +59,7 @@ export default async function GuestDetailPage({
 }) {
   const user = await requireServerRole("/guests");
   const { id } = await params;
+  const tf = await getTranslations("admin.settings.guestFields");
   const [t, tc, ts, tsh, format] = await Promise.all([
     getTranslations("people.guests.detail"),
     getTranslations("common"),
@@ -89,6 +91,7 @@ export default async function GuestDetailPage({
       maritalStatus?: string;
       createdAt?: string;
       convertedToMember?: boolean;
+      customAnswers?: GuestCustomAnswer[];
     }>(`/guests/${id}`),
     canAccessRoute(user.role, "/follow-up", user.additionalPermissions)
       ? serverGet<FollowUpListResponse>(`/follow-ups?guestId=${id}`)
@@ -208,6 +211,15 @@ export default async function GuestDetailPage({
           </WorkSection>
         ) : null}
 
+        {guest.customAnswers?.length ? (
+          <WorkSection title={tf("answers")} defaultOpen>
+            <dl className="grid gap-4 sm:grid-cols-2">
+              {guest.customAnswers.map(({ key, label, value }) => (
+                <div key={key}><dt className="text-sm text-neutral-600">{label}</dt><dd className="whitespace-pre-wrap break-words">{value}</dd></div>
+              ))}
+            </dl>
+          </WorkSection>
+        ) : null}
         {hasPermission(user,"guests.edit") && <WorkSection title={t("profileTitle")} description={t("profileDescription")}>
           {hasPermission(user,"guests.edit") && <GuestProfileForm guest={guest} defaultBranchId={user.branchId} />}
         </WorkSection>}

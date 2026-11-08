@@ -1,4 +1,5 @@
 "use client";
+import { ServiceUnitAnswers } from "@/components/service-unit-answers";
 
 import { useSession } from "./session-context";
 import { hasPermission } from "@/lib/capabilities";
@@ -70,6 +71,7 @@ export function ServiceUnitManagementList({
   const labels = useMemberFormLabels();
   const statusLabel = useStatusLabel();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
 
   async function handleSubmit(unitId: string, formData: FormData) {
     setLoadingId(unitId);
@@ -139,6 +141,10 @@ export function ServiceUnitManagementList({
         return (
           <details
             key={unit._id}
+            onToggle={(event) => {
+              const open = event.currentTarget.open;
+              setOpened((current) => ({ ...current, [unit._id]: open }));
+            }}
             className="group rounded-2xl border border-black/[0.06] bg-white transition-colors open:border-black/[0.12] hover:border-black/[0.12]"
           >
             <summary className="cursor-pointer list-none px-4 py-4 sm:px-5 [&::-webkit-details-marker]:hidden">
@@ -260,6 +266,7 @@ export function ServiceUnitManagementList({
                 </div>
               </form>
             </div>}
+            {opened[unit._id] ? <ServiceUnitAnswers id={unit._id} editable={canEdit} /> : null}
           </details>
         );
       })}

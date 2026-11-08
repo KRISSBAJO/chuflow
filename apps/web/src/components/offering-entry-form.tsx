@@ -8,6 +8,7 @@ import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Icon } from "@/components/app/icons";
 import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
 import { API_URL } from "@/lib/api";
 import type {
   BranchSummary,
@@ -53,6 +54,8 @@ export function OfferingEntryForm({
   const t = useTranslations("admin.offeringForm");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { form, failed } = useMemberFields(undefined, true, "/finance/staff-form/offering");
+  const tf = useTranslations("admin.settings.guestFields");
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
   const defaultBranchName = branches.find(
     (branch) => branch._id === defaultBranchId,
@@ -89,6 +92,7 @@ export function OfferingEntryForm({
     ) || null;
 
   async function handleSubmit(formData: FormData) {
+    if (!form) return;
     setLoading(true);
 
     try {
@@ -97,6 +101,7 @@ export function OfferingEntryForm({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          ...memberFieldPayload(form, formData),
           serviceDate: formData.get("serviceDate"),
           serviceScheduleId: selectedScheduleId || undefined,
           serviceTypeId:
@@ -236,18 +241,20 @@ export function OfferingEntryForm({
           </select>
         </Field>
 
-        <Field label={t("notes")}>
+        {!form?.hiddenStaff.includes("notes") ? <Field label={t("notes")}>
           <textarea
             name="notes"
             placeholder={t("notesPlaceholder")}
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
 
+        {failed ? <p role="alert">{tf("financeLoadFailed")}</p> : null}
+        {form?.fields.length ? <MemberCustomFields fields={form.fields} /> : null}
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <Button
             type="submit"
-            disabled={loading || availableServiceTypes.length === 0}
+            disabled={!form || loading || availableServiceTypes.length === 0}
           >
             {loading ? t("recording") : t("record")}
           </Button>

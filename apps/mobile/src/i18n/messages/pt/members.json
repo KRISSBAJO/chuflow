@@ -89,7 +89,13 @@
         "email": "Esse e-mail não parece correto.",
         "date": "Use AAAA-MM-DD e uma data que não seja no futuro.",
         "branch": "Escolha a igreja do membro."
-      }
+      },
+      "customAnswers": "Respostas do membro",
+      "customLoadFailed": "Não foi possível carregar os campos. Atualize para tentar novamente.",
+      "extraAnswers": "Respostas adicionais",
+      "extraLoadFailed": "Não foi possível carregar o formulário. Atualize para tentar novamente.",
+      "editExtraFields": "Editar respostas adicionais",
+      "noExtraFields": "Nenhuma pergunta adicional está configurada."
     },
     "options": {
       "notRecorded": "Não registado",

@@ -147,6 +147,8 @@
       "approved": "Entry approved",
       "rejected": "Entry rejected",
       "failed": "Unable to review this entry"
-    }
+    },
+    "customAnswers": "Entry answers",
+    "customLoadFailed": "Unable to load entry fields. Refresh to try again."
   }
 }

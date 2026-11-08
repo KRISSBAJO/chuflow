@@ -47,6 +47,7 @@ export function MemberFields({
   identity = true,
   branches,
   knownUnits,
+  hidden = [],
 }: {
   value: MemberFormValues;
   onChange: (next: MemberFormValues) => void;
@@ -56,6 +57,7 @@ export function MemberFields({
   /** When set, a branch picker is shown (multi-branch roles). */
   branches?: BranchSummary[] | null;
   knownUnits?: ServiceUnitSummary[];
+  hidden?: string[];
 }) {
   const t = useT('members.form');
   const labels = useMemberLabels();
@@ -111,7 +113,7 @@ export function MemberFields({
               />
             </View>
           </View>
-          <Field
+          {!hidden.includes('phone') ? <Field
             ref={phoneRef}
             label={t('phone')}
             value={value.phone}
@@ -122,8 +124,8 @@ export function MemberFields({
             returnKeyType="next"
             onSubmitEditing={() => emailRef.current?.focus()}
             error={errors.phone}
-          />
-          <Field
+          /> : null}
+          {!hidden.includes('email') ? <Field
             ref={emailRef}
             label={t('email')}
             value={value.email}
@@ -133,11 +135,11 @@ export function MemberFields({
             autoComplete="email"
             placeholder="name@example.com"
             error={errors.email}
-          />
+          /> : null}
         </>
       ) : null}
 
-      <SheetPicker label={t('memberTitle')} value={value.title || 'none'} options={titleOptions} onChange={(title) => set('title', title === 'none' ? '' : title)} />
+      {!hidden.includes('title') ? <SheetPicker label={t('memberTitle')} value={value.title || 'none'} options={titleOptions} onChange={(title) => set('title', title === 'none' ? '' : title)} /> : null}
 
       <View style={styles.group}>
         <Section title={t('membershipStatus')} />
@@ -148,7 +150,7 @@ export function MemberFields({
         </View>
       </View>
 
-      <View style={{ gap: space.sm }}>
+      {!hidden.includes('dateJoinedChurch') ? <View style={{ gap: space.sm }}>
         <Field
           label={t('dateJoined')}
           value={value.dateJoinedChurch}
@@ -162,11 +164,11 @@ export function MemberFields({
         <View style={styles.chips}>
           <Chip label={t('today')} selected={value.dateJoinedChurch === isoDay(new Date())} onPress={() => set('dateJoinedChurch', isoDay(new Date()))} icon="calendar" />
         </View>
-      </View>
+      </View> : null}
 
       <ServiceUnitsPicker branchId={value.branchId} value={value.serviceUnitIds} onChange={(ids) => set('serviceUnitIds', ids)} known={knownUnits} />
 
-      <Field label={t('familyDetails')} value={value.familyDetails} onChangeText={(text) => set('familyDetails', text)} placeholder={t('familyPlaceholder')} multiline />
+      {!hidden.includes('familyDetails') ? <Field label={t('familyDetails')} value={value.familyDetails} onChangeText={(text) => set('familyDetails', text)} placeholder={t('familyPlaceholder')} multiline /> : null}
       {errors.branchId && !branches ? <Text style={[type.small, { color: colors.danger }]}>{errors.branchId}</Text> : null}
     </>
   );

@@ -90,7 +90,10 @@ function fixture() {
     revision: 4,
   };
   const meetings = {
-    findById: jest.fn(() => ({ lean: async () => meeting })),
+    findById: jest.fn(() => ({
+      lean: async () => meeting,
+      select: () => ({ lean: async () => meeting }),
+    })),
     updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
     create: jest.fn().mockImplementation((x: unknown) => Promise.resolve(x)),
   };

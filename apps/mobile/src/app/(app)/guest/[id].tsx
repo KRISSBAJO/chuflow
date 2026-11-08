@@ -48,6 +48,7 @@ export default function GuestScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useSession();
   const t = useT('guests.profile');
+  const fieldsText = useT('guests.fields');
   const common = useT('common');
   const format = useAppFormat();
   const guest = useApi<GuestDetail>(`/guests/${id}`);
@@ -132,6 +133,15 @@ export default function GuestScreen() {
                 detail.copy && person.phone ? () => void Clipboard.setStringAsync(person.phone).then(() => toast.success(t('phoneCopied'))) : undefined
               }
             />
+          ))}
+        </View>
+      ) : null}
+
+      {person.customAnswers?.length ? (
+        <View>
+          <Section title={fieldsText('answers')} />
+          {person.customAnswers.map(({ key, label, value }, index) => (
+            <Detail key={key} first={index === 0} label={label} value={String(value)} />
           ))}
         </View>
       ) : null}

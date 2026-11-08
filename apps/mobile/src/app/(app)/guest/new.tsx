@@ -4,7 +4,8 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Switch, Text, TextInput, Vi
 import { toast } from '@/components/toast';
 import { Button, Caption, Chip, Field, Notice, Screen, Section, tap } from '@/components/ui';
 import { colors, space, type } from '@/constants/theme';
-import { useT } from '@/i18n/provider';
+import { useI18n, useT } from '@/i18n/provider';
+import type { StaffGuestForm } from '@/features/guests/staff-guest-form';
 import { useAlerts } from '@/lib/alerts';
 import { api, errorMessage, NetworkError } from '@/lib/api';
 import { can } from '@/lib/permissions';
@@ -19,6 +20,11 @@ export default function NewGuestScreen() {
   const { refresh: refreshAlerts } = useAlerts();
   const t = useT('guests.new');
   const common = useT('common');
+  const fieldsText = useT('guests.fields');
+  const { locale } = useI18n();
+  const definition = useApi<StaffGuestForm>('/guests/staff-form');
+  const [custom, setCustom] = useState<Record<string, string>>({});
+  const visible = (key: string) => !definition.data?.hiddenStaff.includes(key);
   const pickBranch = can.pickBranch(user?.role);
   const branches = useApi<BranchSummary[]>(pickBranch ? '/branches' : null);
 
@@ -43,11 +49,19 @@ export default function NewGuestScreen() {
   const effectiveBranchId = branchId || (branchList.length === 1 ? branchList[0]._id : '');
 
   async function save() {
+    if (!definition.data) {
+      setFormError(fieldsText('loadFailed'));
+      void definition.refresh();
+      return;
+    }
     const nextErrors: Record<string, string> = {};
     if (!firstName.trim()) nextErrors.firstName = t('firstNameRequired');
     if (!lastName.trim()) nextErrors.lastName = t('lastNameRequired');
     if (phone.replace(/\D/g, '').length < 7) nextErrors.phone = t('phoneRequired');
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = t('emailInvalid');
+    if (visible('email') && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = t('emailInvalid');
+    for (const field of definition.data.fields) {
+      if (field.required && !custom[field.key]?.trim()) nextErrors[field.key] = fieldsText('required');
+    }
     if (pickBranch && !effectiveBranchId) nextErrors.branch = t('branchRequired');
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -59,10 +73,15 @@ export default function NewGuestScreen() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phone: phone.trim(),
-        ...(email.trim() ? { email: email.trim().toLowerCase() } : {}),
-        ...(invitedBy.trim() ? { invitedBy: invitedBy.trim() } : {}),
-        ...(prayerRequest.trim() ? { prayerRequest: prayerRequest.trim() } : {}),
-        wantsPastoralCall,
+        ...(visible('email') && email.trim() ? { email: email.trim().toLowerCase() } : {}),
+        ...(visible('invitedBy') && invitedBy.trim() ? { invitedBy: invitedBy.trim() } : {}),
+        ...(visible('prayerRequest') && prayerRequest.trim() ? { prayerRequest: prayerRequest.trim() } : {}),
+        ...(visible('wantsPastoralCall') ? { wantsPastoralCall } : {}),
+        formRevision: definition.data.revision,
+        customFields: Object.fromEntries(definition.data.fields.flatMap((field) => {
+          const value = custom[field.key]?.trim();
+          return value ? [[field.key, field.type === 'number' ? Number(value) : value]] : [];
+        })),
         visitStatus,
         ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
       });
@@ -132,7 +151,7 @@ export default function NewGuestScreen() {
           error={errors.phone}
           hint={t('phoneHint')}
         />
-        <Field
+        {visible('email') ? <Field
           ref={emailRef}
           label={common('fields.email')}
           value={email}
@@ -141,7 +160,7 @@ export default function NewGuestScreen() {
           autoCapitalize="none"
           autoComplete="email"
           error={errors.email}
-        />
+        /> : null}
 
         {pickBranch ? (
           <View style={{ gap: space.sm }}>
@@ -156,10 +175,28 @@ export default function NewGuestScreen() {
           </View>
         ) : null}
 
-        <Field label={t('invitedBy')} value={invitedBy} onChangeText={setInvitedBy} placeholder={t('invitedByPlaceholder')} autoCapitalize="words" />
-        <Field label={t('prayerRequest')} value={prayerRequest} onChangeText={setPrayerRequest} placeholder={t('prayerRequestPlaceholder')} multiline />
+        {visible('invitedBy') ? <Field label={t('invitedBy')} value={invitedBy} onChangeText={setInvitedBy} placeholder={t('invitedByPlaceholder')} autoCapitalize="words" /> : null}
+        {visible('prayerRequest') ? <Field label={t('prayerRequest')} value={prayerRequest} onChangeText={setPrayerRequest} placeholder={t('prayerRequestPlaceholder')} multiline /> : null}
+        {definition.data?.fields.map((field) => {
+          const label = (locale === 'es' && field.labelEs) || (locale === 'fr' && field.labelFr) || (locale === 'pt' && field.labelPt) || field.label;
+          const value = custom[field.key] ?? '';
+          const change = (answer: string) => setCustom((current) => ({ ...current, [field.key]: answer }));
+          return field.type === 'select' ? (
+            <View key={field.key} style={{ gap: space.sm }}>
+              <Text style={type.label}>{label}{field.required ? ' *' : ''}</Text>
+              {errors[field.key] ? <Text style={[type.small, { color: colors.danger }]}>{errors[field.key]}</Text> : null}
+              <View style={styles.chips}>
+                {field.options.map((option) => <Chip key={option} label={option} selected={value === option} onPress={() => change(value === option ? '' : option)} />)}
+              </View>
+            </View>
+          ) : (
+            <Field key={field.key} label={label} required={field.required} value={value} onChangeText={change}
+              error={errors[field.key]} multiline={field.type === 'textarea'} maxLength={field.type === 'textarea' ? 2000 : 250}
+              keyboardType={field.type === 'number' ? 'decimal-pad' : field.type === 'tel' ? 'phone-pad' : field.type === 'email' ? 'email-address' : 'default'} />
+          );
+        })}
 
-        <View style={styles.switchRow}>
+        {visible('wantsPastoralCall') ? <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
             <Text style={type.label}>{t('wantsCall')}</Text>
             <Caption>{t('wantsCallHint')}</Caption>
@@ -173,7 +210,7 @@ export default function NewGuestScreen() {
             trackColor={{ true: colors.flame, false: '#dedbd4' }}
             thumbColor="#ffffff"
           />
-        </View>
+        </View> : null}
       </Screen>
     </KeyboardAvoidingView>
   );

@@ -36,7 +36,10 @@
       "branches": "Églises locales",
       "users": "Utilisateurs",
       "templates": "Modèles",
-      "structure": "Structure"
+      "structure": "Structure",
+      "outreach": "Proximité",
+      "serviceUnits": "Équipes de service",
+      "registerFamily": "Inscrire une famille"
     },
     "signOut": "Se déconnecter",
     "signOutTitle": "Se déconnecter ?",

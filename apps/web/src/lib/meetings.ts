@@ -33,6 +33,7 @@ export type MeetingAction = {
   status: "open" | "done";
 };
 export type Meeting = {
+  customAnswers?: import("./guest-fields").GuestCustomAnswer[];
   audienceMode?: string;
   audienceServiceUnitIds?: string[];
   additionalMemberIds?: string[];

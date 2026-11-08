@@ -1,4 +1,6 @@
 "use client";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
+import type { GuestStaffForm } from "@/lib/guest-fields";
 import { toast } from "sonner";
 import { useActionToast } from "@/lib/action-feedback";
 
@@ -26,6 +28,8 @@ export function OutreachContactForm({
   defaultBranchId,
   buttonColor,
   buttonTextColor,
+  publicForm,
+  publicApiBase,
 }: {
   token?: string;
   branchName?: string;
@@ -33,10 +37,16 @@ export function OutreachContactForm({
   defaultBranchId?: string;
   buttonColor?: string;
   buttonTextColor?: string;
+  publicForm?: GuestStaffForm;
+  publicApiBase?: string;
 }) {
   const actionToast = useActionToast();
 
   const router = useRouter();
+  const staffForm = useMemberFields(undefined, !token, "/guests/ministry-form/outreach");
+  const fieldDefinition = token ? publicForm : staffForm.form;
+  const fieldFailure = !token && staffForm.failed;
+  const tf = useTranslations("admin.settings.guestFields");
   const t = useTranslations("people.evangelism.contactForm");
   const tLabels = useTranslations("people.evangelism.labels");
   const tc = useTranslations("common");
@@ -54,7 +64,7 @@ export function OutreachContactForm({
   const [method, setMethod] = useState("phone_call");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || !fieldDefinition) return;
     const form = event.currentTarget;
     const activeFields = form.querySelector<HTMLFieldSetElement>(
       `fieldset[data-step="${step}"]`,
@@ -95,6 +105,7 @@ export function OutreachContactForm({
       String(data.get(key) || "").trim() || undefined;
     try {
       const body = {
+        ...memberFieldPayload(fieldDefinition, data),
         firstName: data.get("firstName"),
         lastName: data.get("lastName"),
         phone: data.get("phone"),
@@ -108,10 +119,16 @@ export function OutreachContactForm({
         website: optional("website"),
         ...(!token ? { branchId: data.get("branchId") } : {}),
       };
-      const result = await apiPost<{ id?: string }>(
-        token ? `/evangelism/public/${token}` : "/evangelism/contacts",
-        body,
-      );
+      const result = token && publicApiBase
+        ? await fetch(`${publicApiBase}/evangelism/public/${token}`, {
+            method: "POST", credentials: "omit", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          }).then(async (response) => {
+            const result = await response.json() as { id?: string; message?: string | string[] };
+            if (!response.ok) throw new Error(Array.isArray(result.message) ? result.message.join(", ") : result.message || t("errorSave"));
+            return result;
+          })
+        : await apiPost<{ id?: string }>("/evangelism/contacts", body);
       if (token) setDone(true);
       else {
         router.push(`/evangelism/${result.id}`);
@@ -238,14 +255,14 @@ export function OutreachContactForm({
                 maxLength={150}
               />
             </Field>
-            <Field label={t("cityArea")}>
+            {!fieldDefinition?.hiddenStaff.includes("city") ? <Field label={t("cityArea")}>
               <input
                 name="city"
                 autoComplete="address-level2"
                 className="ui-input"
                 maxLength={150}
               />
-            </Field>
+            </Field> : null}
             <Field label={t("preferredWay")} required>
               <select
                 className="ui-input"
@@ -274,23 +291,23 @@ export function OutreachContactForm({
                 ))}
               </select>
             </Field>
-            <Field label={t("bestTime")} hint={t("bestTimeHint")}>
+            {!fieldDefinition?.hiddenStaff.includes("preferredContactTime") ? <Field label={t("bestTime")} hint={t("bestTimeHint")}>
               <input
                 name="preferredContactTime"
                 className="ui-input"
                 maxLength={150}
                 placeholder={t("bestTimePlaceholder")}
               />
-            </Field>
+            </Field> : null}
           </div>
-          <Field label={t("prayFor")} hint={t("prayHint")}>
+          {!fieldDefinition?.hiddenStaff.includes("prayerRequest") ? <Field label={t("prayFor")} hint={t("prayHint")}>
             <textarea
               name="prayerRequest"
               rows={3}
               className="ui-input"
               maxLength={1000}
             />
-          </Field>
+          </Field> : null}
           <div className="hidden" aria-hidden="true">
             <label>
               Website
@@ -305,7 +322,9 @@ export function OutreachContactForm({
                 : t("consentStaff")}
             </span>
           </label>
-        </fieldset>
+        {fieldFailure ? <p role="alert">{tf("extraLoadFailed")}</p> : null}
+      {fieldDefinition?.fields.length ? <MemberCustomFields fields={fieldDefinition.fields} /> : null}
+</fieldset>
         {error && (
           <p role="alert" className="text-sm text-red-700">
             {error in API_ERROR_KEYS

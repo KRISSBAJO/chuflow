@@ -260,7 +260,7 @@ function starterFields(kind: IntakeTemplate["kind"]): IntakeTemplateField[] {
 
 function sanitizeField(field: IntakeTemplateField): IntakeTemplateField {
   return {
-    key: slugify(field.key || field.label),
+    key: field.key.trim() || slugify(field.label),
     label: field.label.trim() || "Untitled field",
     labelEs: field.labelEs?.trim() || undefined,
     optionsEs: field.optionsEs?.map((option) => option.trim()),

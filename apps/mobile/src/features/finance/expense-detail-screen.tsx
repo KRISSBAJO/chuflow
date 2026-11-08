@@ -1,3 +1,4 @@
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from '@/features/members/custom-member-fields';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
@@ -28,6 +29,8 @@ export function ExpenseDetailScreen() {
   const { refresh: refreshAlerts } = useAlerts();
   const role = user?.role;
   const entry = useApi<ExpenseEntrySummary>(can.finance(role) && id ? `/finance/expenses/${id}` : null);
+  const definition = useApi<MemberFormDefinition>(entry.data?.permissions?.canEdit ? '/finance/staff-form/expense' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<Decision | null>(null);
@@ -40,9 +43,10 @@ export function ExpenseDetailScreen() {
 
   async function save(next: { amount: number; notes?: string }) {
     if (!item) return;
+    if (!definition.data) { toast.error(t('customLoadFailed')); void definition.refresh(); return; }
     setSaving(true);
     try {
-      await api.patch(`/finance/expenses/${item._id}`, { amount: next.amount, notes: next.notes ?? '' });
+      await api.patch(`/finance/expenses/${item._id}`, { amount: next.amount, notes: next.notes ?? '', reviewRevision: item.reviewRevision, ...memberFormPayload(definition.data, custom) });
       entry.setData((current) => current && { ...current, amount: next.amount, notes: next.notes });
       toast.success(t('expense.saved'));
       setEditing(false);
@@ -97,13 +101,16 @@ export function ExpenseDetailScreen() {
             <View style={{ flex: 1, minWidth: 0 }}>
               <BigAmount caption={[item.payee, format.date(item.expenseDate)].filter(Boolean).join(' · ')}>{money(item.amount, item.currency)}</BigAmount>
             </View>
-            <Badge label={format.status(item.status)} tone={statusTone(item.status)} />
+            {!editing && item.customAnswers?.length ? <View><Section title={t('customAnswers')} /><KeyValue rows={item.customAnswers.map(({ label, value }) => ({ label, value: String(value) }))} /></View> : null}
+          <Badge label={format.status(item.status)} tone={statusTone(item.status)} />
           </View>
 
           {item.status === 'submitted' ? <Notice tone="warning" icon="clock">{t('expense.pendingHint')}</Notice> : null}
 
           {editing ? (
-            <AmountNotesEditor amount={item.amount} notes={item.notes} saving={saving} saveLabel={t('expense.save')} onSave={(next) => void save(next)} onCancel={() => setEditing(false)} />
+            <AmountNotesEditor amount={item.amount} notes={item.notes} saving={saving} saveLabel={t('expense.save')} onSave={(next) => void save(next)} showNotes={!definition.data?.hiddenStaff.includes('notes')} onCancel={() => setEditing(false)}>
+              <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} title={t('customAnswers')} />
+            </AmountNotesEditor>
           ) : (
             <View>
               <Section title={t('expense.title')} />
@@ -132,7 +139,7 @@ export function ExpenseDetailScreen() {
             <Field label={t('expense.reviewNote')} value={reviewNote} onChangeText={setReviewNote} placeholder={t('expense.reviewNotePlaceholder')} multiline />
           ) : null}
 
-          {!editing && canEdit ? <Button label={t('expense.edit')} variant="secondary" icon="edit" onPress={() => setEditing(true)} /> : null}
+          {!editing && canEdit ? <Button label={t('expense.edit')} variant="secondary" icon="edit" onPress={() => { setCustom(Object.fromEntries((item.customAnswers ?? []).map(({ key, value }) => [key, value]))); setEditing(true); }} /> : null}
           {!editing && item.permissions?.reason ? <Caption>{item.permissions.reason}</Caption> : null}
         </>
       ) : null}

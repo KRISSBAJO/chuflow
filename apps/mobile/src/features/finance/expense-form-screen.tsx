@@ -1,3 +1,4 @@
+import { CustomMemberFields, memberFormPayload, type MemberFormDefinition } from '@/features/members/custom-member-fields';
 import { router, Stack, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
@@ -22,6 +23,8 @@ export function NewExpenseScreen() {
   const format = useAppFormat();
   const { user } = useSession();
   const allowed = can.recordExpenses(user?.role);
+  const definition = useApi<MemberFormDefinition>(allowed ? '/finance/staff-form/expense' : null);
+  const [custom, setCustom] = useState<Record<string, string | number>>({});
   const pickBranch = can.pickBranch(user?.role);
 
   const branches = useApi<BranchSummary[]>(allowed && pickBranch ? '/branches' : null);
@@ -65,10 +68,12 @@ export function NewExpenseScreen() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
+    if (!definition.data) { toast.error(t('customLoadFailed')); void definition.refresh(); return; }
     setSaving(true);
     setFormError(null);
     try {
       const entry = await api.post<ExpenseEntrySummary>('/finance/expenses', {
+        ...memberFormPayload(definition.data, custom),
         ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
         expenseDate: isoDay(date),
         accountId,
@@ -140,7 +145,7 @@ export function NewExpenseScreen() {
           error={errors.account}
         />
 
-        <Field label={t('fields.payee')} value={payee} onChangeText={setPayee} placeholder={t('expenseForm.payeePlaceholder')} autoCapitalize="words" />
+        {!definition.data?.hiddenStaff.includes('payee') ? <Field label={t('fields.payee')} value={payee} onChangeText={setPayee} placeholder={t('expenseForm.payeePlaceholder')} autoCapitalize="words" /> : null}
         <Field
           label={t('fields.description')}
           required
@@ -172,7 +177,8 @@ export function NewExpenseScreen() {
           </View>
         </View>
 
-        <Field label={t('fields.notes')} value={notes} onChangeText={setNotes} placeholder={t('expenseForm.notesPlaceholder')} multiline />
+        {!definition.data?.hiddenStaff.includes('notes') ? <Field label={t('fields.notes')} value={notes} onChangeText={setNotes} placeholder={t('expenseForm.notesPlaceholder')} multiline /> : null}
+        <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} title={t('customAnswers')} />
       </Screen>
     </KeyboardAvoidingView>
   );

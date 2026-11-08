@@ -36,7 +36,10 @@
       "branches": "Igrejas locais",
       "users": "Usuários",
       "templates": "Modelos",
-      "structure": "Estrutura"
+      "structure": "Estrutura",
+      "outreach": "Evangelismo",
+      "serviceUnits": "Equipes de serviço",
+      "registerFamily": "Cadastrar uma família"
     },
     "signOut": "Sair",
     "signOutTitle": "Sair?",

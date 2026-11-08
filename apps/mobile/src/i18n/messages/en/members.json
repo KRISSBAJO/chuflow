@@ -89,7 +89,13 @@
         "email": "That email doesn’t look right.",
         "date": "Use YYYY-MM-DD and a date that isn’t in the future.",
         "branch": "Choose the member’s branch."
-      }
+      },
+      "customAnswers": "Member answers",
+      "customLoadFailed": "Unable to load member fields. Refresh to try again.",
+      "extraAnswers": "Extra answers",
+      "extraLoadFailed": "Could not load the form. Refresh to try again.",
+      "editExtraFields": "Edit extra answers",
+      "noExtraFields": "No extra questions are configured."
     },
     "options": {
       "notRecorded": "Not recorded",

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Field } from "@/components/ui/ui";
+import { MemberCustomFields, memberFieldPayload, useMemberFields } from "@/components/member-custom-fields";
 import { API_URL } from "@/lib/api";
 import type {
   BranchSummary,
@@ -42,6 +43,8 @@ export function ExpenseEntryForm({
   const tc = useTranslations("common");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { form, failed } = useMemberFields(undefined, true, "/finance/staff-form/expense");
+  const tf = useTranslations("admin.settings.guestFields");
   const [selectedBranchId, setSelectedBranchId] = useState(
     defaultBranchId || branches[0]?._id || "",
   );
@@ -68,6 +71,7 @@ export function ExpenseEntryForm({
   );
 
   async function handleSubmit(formData: FormData) {
+    if (!form) return;
     setLoading(true);
 
     try {
@@ -76,6 +80,7 @@ export function ExpenseEntryForm({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          ...memberFieldPayload(form, formData),
           branchId: canChooseBranch
             ? formData.get("branchId") || undefined
             : defaultBranchId,
@@ -235,13 +240,13 @@ export function ExpenseEntryForm({
           </Field>
         </div>
 
-        <Field label={t("payeeOrVendor")}>
+        {!form?.hiddenStaff.includes("payee") ? <Field label={t("payeeOrVendor")}>
           <input
             name="payee"
             placeholder={t("payeePlaceholder")}
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
 
         <Field label={t("descriptionLabel")} required>
           <input
@@ -252,24 +257,26 @@ export function ExpenseEntryForm({
           />
         </Field>
 
-        <Field label={t("receiptLink")} hint={t("receiptHint")}>
+        {!form?.hiddenStaff.includes("receiptUrl") ? <Field label={t("receiptLink")} hint={t("receiptHint")}>
           <input
             name="receiptUrl"
             placeholder="https://"
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
 
-        <Field label={t("notes")}>
+        {!form?.hiddenStaff.includes("notes") ? <Field label={t("notes")}>
           <textarea
             name="notes"
             placeholder={t("notesPlaceholder")}
             className="ui-input"
           />
-        </Field>
+        </Field> : null}
 
+        {failed ? <p role="alert">{tf("financeLoadFailed")}</p> : null}
+        {form?.fields.length ? <MemberCustomFields fields={form.fields} /> : null}
         <div className="pt-1">
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={!form || loading}>
             {loading ? t("recording") : t("record")}
           </Button>
         </div>

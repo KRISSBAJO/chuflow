@@ -531,6 +531,7 @@ function buildTemplateSteps(template: IntakeTemplate): IntakeStep[] {
 
 export function PublicIntakeForm({
   template,
+  publicApiBase,
   initialLanguage = "en",
   branchId,
   branchOptions = [],
@@ -538,6 +539,7 @@ export function PublicIntakeForm({
   defaultDistrict,
 }: {
   template: IntakeTemplate;
+  publicApiBase?: string;
   initialLanguage?: FormLanguage;
   branchId?: string;
   branchOptions?: PublicBranchOption[];
@@ -739,11 +741,12 @@ export function PublicIntakeForm({
         ? `?branchId=${encodeURIComponent(submissionBranchId)}`
         : "";
       const response = await fetch(
-        `${API_URL}/intake-templates/public/${template.slug}/submit${submissionQuery}`,
+        `${publicApiBase || API_URL}/intake-templates/public/${template.slug}/submit${submissionQuery}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ answers: nextAnswers }),
+          ...(publicApiBase ? { credentials: "omit" } : {}),
+          body: JSON.stringify({ answers: nextAnswers, formRevision: template.formRevision }),
         },
       );
 

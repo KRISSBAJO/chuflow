@@ -14,6 +14,8 @@ import {
   Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
+import { FIRST_WORKSPACE_ID, getWorkspace } from '../workspaces/workspace-boundary';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
@@ -26,7 +28,8 @@ import {
 } from '../common/constants/roles.constants';
 import { Branch, BranchDocument } from '../branches/schemas/branch.schema';
 import { AttendanceService } from '../attendance/attendance.service';
-import { GuestsService } from '../guests/guests.service';
+import { DuplicateGuestError, GuestsService } from '../guests/guests.service';
+import { GuestFieldsService, type GuestAnswer } from '../guests/guest-fields.service';
 import { MembersService } from '../members/members.service';
 import { PushService } from '../push/push.service';
 import { ServiceTypesService } from '../service-types/service-types.service';
@@ -65,6 +68,8 @@ export class IntakeTemplatesService implements OnModuleInit {
     private readonly accessScopeService: AccessScopeService,
     private readonly auditLogsService: AuditLogsService,
     private readonly pushService: PushService,
+    private readonly guestFields: GuestFieldsService,
+    private readonly config: ConfigService,
     @Optional() private readonly weeklyWorkflow?: WeeklyWorkflowService,
   ) {}
 
@@ -113,14 +118,10 @@ export class IntakeTemplatesService implements OnModuleInit {
         if (exists.isSeeded) {
           const shouldRefreshSeedContent =
             [
-              'member-growth-record',
               'service-attendance-summary',
               'weekly-spiritual-indices',
               'maag-monthly-report',
-            ].includes(template.slug) ||
-            (template.slug === 'winners-first-timer' &&
-              !exists.fields?.some((field) => field.key === 'firstName') &&
-              !exists.fields?.some((field) => field.key === 'lastName'));
+            ].includes(template.slug);
 
           await this.templateModel.updateOne(
             { _id: exists._id },
@@ -307,10 +308,15 @@ export class IntakeTemplatesService implements OnModuleInit {
       branchId?: unknown;
       oversightRegion?: unknown;
       district?: unknown;
+      kind?: unknown;
     },
   ) {
     const baseUrl = (webUrl || 'http://localhost:3001').replace(/\/$/, '');
     const url = new URL(`${baseUrl}/intake/${slug}`);
+    const workspace = getWorkspace(this.config).id;
+    if ((scope?.kind === 'guest' || scope?.kind === 'member') && workspace && workspace !== FIRST_WORKSPACE_ID) {
+      url.searchParams.set('workspace', workspace);
+    }
     const branchId = this.toString(scope?.branchId);
     const oversightRegion = this.toString(scope?.oversightRegion);
     const district = this.toString(scope?.district);
@@ -474,6 +480,7 @@ export class IntakeTemplatesService implements OnModuleInit {
           ? String(template.baseTemplateId)
           : undefined,
       shareUrl: this.buildShareUrl(template.slug, webUrl, {
+        kind: 'kind' in template ? template.kind : undefined,
         branchId: template.branchId,
         oversightRegion:
           'oversightRegion' in template ? template.oversightRegion : undefined,
@@ -965,6 +972,7 @@ export class IntakeTemplatesService implements OnModuleInit {
   }
 
   async getActivePublicTemplate(kind: string, webUrl?: string) {
+    if (kind === 'guest') await this.guestFields.assertPublicEnabled();
     const template =
       (await this.templateModel
         .findOne({ kind, isActive: true, branchId: { $exists: false } })
@@ -980,13 +988,15 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
 
     const hydratedTemplate = await this.hydrateDynamicFields(template);
-    return this.toResponse(hydratedTemplate, webUrl);
+    const definition = kind === 'guest' || kind === 'member' ? await this.guestFields.get(kind) : undefined;
+    return this.toResponse(this.withConfiguredFields(hydratedTemplate, definition), webUrl);
   }
 
   async listActivePublicTemplates(
     kind: string,
     webUrl?: string,
   ): Promise<Record<string, unknown>[]> {
+    if (kind === 'guest') await this.guestFields.assertPublicEnabled();
     const templates = await this.templateModel
       .find({ kind, isActive: true })
       .sort({ updatedAt: -1 })
@@ -1064,7 +1074,18 @@ export class IntakeTemplatesService implements OnModuleInit {
     slug: string,
     webUrl?: string,
     requestedBranchId?: string,
-  ) {
+  ): Promise<Record<string, unknown>> {
+    const template = await this.resolvePublicTemplate(slug, requestedBranchId);
+    if (template.kind === 'guest') await this.guestFields.assertPublicEnabled();
+    const hydratedTemplate = await this.hydrateDynamicFields(template);
+    const definition = template.kind === 'guest' || template.kind === 'member' ? await this.guestFields.get(template.kind) : undefined;
+    return {
+      ...this.toResponse(this.withConfiguredFields(hydratedTemplate, definition), webUrl),
+      ...(definition ? { formRevision: definition.revision } : {}),
+    };
+  }
+
+  private async resolvePublicTemplate(slug: string, requestedBranchId?: string) {
     let template = await this.templateModel
       .findOne({ slug, isActive: true })
       .lean();
@@ -1072,8 +1093,10 @@ export class IntakeTemplatesService implements OnModuleInit {
     if (!template) {
       throw new NotFoundException('Public template not found');
     }
-
     const requestedBranch = this.toString(requestedBranchId);
+    if (requestedBranch && !Types.ObjectId.isValid(requestedBranch)) {
+      throw new NotFoundException('Branch not found');
+    }
 
     if (requestedBranch && !template.branchId) {
       const branchOverride = await this.templateModel
@@ -1110,10 +1133,23 @@ export class IntakeTemplatesService implements OnModuleInit {
       }
     }
 
-    const hydratedTemplate = await this.hydrateDynamicFields(
-      await this.applyPublicBranchContext(template, requestedBranchId),
-    );
-    return this.toResponse(hydratedTemplate, webUrl);
+    return this.applyPublicBranchContext(template, requestedBranchId);
+  }
+
+  private withConfiguredFields<T extends Pick<IntakeTemplate, 'fields' | 'kind'>>(
+    template: T,
+    definition?: Awaited<ReturnType<GuestFieldsService['get']>>,
+  ): T {
+    if (!definition) return template;
+    return {
+      ...template,
+      fields: [
+        ...template.fields.filter(({ key }) => !definition.hiddenPublic.some((hidden) =>
+          this.normalizeLookupValue(hidden) === this.normalizeLookupValue(key)) && !key.startsWith('custom_')),
+        ...definition.fields.filter((field) => field.public).map(({ key, label, labelEs, type, required, options }) =>
+          ({ key, label, labelEs, type, required, options, width: type === 'textarea' ? 'full' : 'half' })),
+      ],
+    };
   }
 
   private getFieldMap(
@@ -1261,7 +1297,18 @@ export class IntakeTemplatesService implements OnModuleInit {
     const normalized: Record<string, unknown> = {};
 
     for (const [key, field] of fieldMap.entries()) {
-      const rawValue = this.findAnswerValue(template, answers, [key], []);
+      const rawValue = template.kind === 'guest' || template.kind === 'member'
+        ? Object.hasOwn(answers, key) ? answers[key] : undefined
+        : this.findAnswerValue(template, answers, [key], []);
+      if ((template.kind === 'guest' || template.kind === 'member') && rawValue !== undefined) {
+        const values = Array.isArray(rawValue) && field.type === 'checkbox' ? rawValue : [rawValue];
+        if (values.length > 20 || values.some((entry) =>
+          typeof entry !== 'string' && typeof entry !== 'number' ||
+          typeof entry === 'string' && entry.length > (field.type === 'textarea' ? 2000 : 250) ||
+          typeof entry === 'number' && !Number.isFinite(entry))) {
+          throw new BadRequestException(`${field.label} has an invalid answer`);
+        }
+      }
       const value =
         field.type === 'checkbox'
           ? Array.isArray(rawValue)
@@ -1316,30 +1363,33 @@ export class IntakeTemplatesService implements OnModuleInit {
     keys: string[],
     labelTerms: string[] = [],
   ) {
+    const useExactKey = template.kind === 'guest' || template.kind === 'member';
     const normalizedCandidates = keys.map((key) =>
       this.normalizeLookupValue(key),
     );
 
     for (const [key, value] of Object.entries(answers)) {
+      if (key.startsWith('custom_')) continue;
       const normalizedKey = this.normalizeLookupValue(key);
 
       if (
         normalizedCandidates.includes(normalizedKey) ||
-        normalizedCandidates.some(
+        (!useExactKey && normalizedCandidates.some(
           (candidate) =>
             normalizedKey.includes(candidate) ||
             candidate.includes(normalizedKey),
-        )
+        ))
       ) {
         return value;
       }
     }
 
-    if (labelTerms.length === 0) {
+    if (useExactKey || labelTerms.length === 0) {
       return undefined;
     }
 
     const matchingField = (template.fields ?? []).find((field) => {
+      if (field.key.startsWith('custom_')) return false;
       const normalizedFieldText = this.normalizeLookupValue(
         `${field.key} ${field.label}`,
       );
@@ -1420,8 +1470,9 @@ export class IntakeTemplatesService implements OnModuleInit {
       }
     }
 
-    if (!firstName || !lastName) {
+    if (template.kind !== 'guest' && template.kind !== 'member' && (!firstName || !lastName)) {
       const candidateFields = (template.fields ?? []).filter((field) => {
+        if (field.key.startsWith('custom_')) return false;
         const normalizedFieldText = this.normalizeLookupValue(
           `${field.key} ${field.label}`,
         );
@@ -1863,6 +1914,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       | IntakeTemplateDocument
       | (IntakeTemplate & { _id?: unknown; branchId?: unknown }),
     answers: Record<string, unknown>,
+    guestAnswers?: GuestAnswer[],
   ) {
     const branchId =
       this.toString(template.branchId) || this.toString(answers.branchId);
@@ -1876,16 +1928,15 @@ export class IntakeTemplatesService implements OnModuleInit {
 
       const { firstName, lastName } = this.extractPersonName(template, answers);
 
+      const phone = this.getAnswerString(template, answers, ['phone', 'phoneNumber', 'mobile']);
+      if (!firstName || !lastName || !phone) {
+        throw new BadRequestException('First name, last name and phone are required.');
+      }
       const guest = await this.guestsService.create({
         branchId,
         firstName,
         lastName,
-        phone: this.getAnswerString(
-          template,
-          answers,
-          ['phone', 'phoneNumber', 'mobile'],
-          ['phone'],
-        )!,
+        phone,
         email: this.getAnswerString(template, answers, ['email'], ['email']),
         address: this.getAnswerString(
           template,
@@ -1933,7 +1984,7 @@ export class IntakeTemplatesService implements OnModuleInit {
           ['visitDate', 'serviceDate'],
           ['date'],
         ),
-      });
+      }, undefined, guestAnswers);
 
       return { guestId: guest._id };
     }
@@ -2017,7 +2068,7 @@ export class IntakeTemplatesService implements OnModuleInit {
         waterBaptismStatus: this.getAnswerString(template, answers, [
           'waterBaptismStatus',
         ]),
-      });
+      }, undefined, guestAnswers);
 
       return { memberId: member._id };
     }
@@ -3261,28 +3312,30 @@ export class IntakeTemplatesService implements OnModuleInit {
     dto: PublicTemplateSubmitDto,
     webUrl?: string,
     requestedBranchId?: string,
+    ip?: string,
   ) {
-    const templateDocument = await this.templateModel.findOne({
-      slug,
-      isActive: true,
-    });
+    const templateDocument = await this.resolvePublicTemplate(slug, requestedBranchId);
 
-    if (!templateDocument) {
-      throw new NotFoundException('Public template not found');
+    const isGuest = templateDocument.kind === 'guest';
+    const formKind = isGuest ? 'guest' : templateDocument.kind === 'member' ? 'member' : undefined;
+    if (formKind) this.guestFields.limitPublicSubmission(ip ?? 'unknown');
+    if (isGuest) {
+      await this.guestFields.assertPublicEnabled();
     }
-
-    const template = await this.hydrateDynamicFields(
-      await this.applyPublicBranchContext(
-        templateDocument.toObject(),
-        requestedBranchId,
-      ),
-    );
+    const definition = formKind ? await this.guestFields.get(formKind) : undefined;
+    if (definition) this.guestFields.checkRevision(definition, dto.formRevision);
+    const hydrated = await this.hydrateDynamicFields(templateDocument);
+    const template = this.withConfiguredFields(hydrated, definition);
     const answers = this.normalizeAnswers(template, dto.answers);
+    const guestAnswers = definition ? this.guestFields.collect(definition, 'public', answers) : undefined;
     let domainRecord: Record<string, unknown>;
 
     try {
-      domainRecord = await this.createDomainRecord(template, answers);
+      domainRecord = await this.createDomainRecord(template, answers, guestAnswers);
     } catch (error) {
+      if (isGuest && error instanceof DuplicateGuestError) {
+        return { successTitle: template.successTitle, successMessage: template.successMessage };
+      }
       if (
         typeof error === 'object' &&
         error !== null &&
@@ -3314,7 +3367,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       templateName: template.name,
       templateKind: template.kind,
       branchId: template.branchId,
-      answers,
+      answers: formKind ? Object.fromEntries(Object.entries(answers).filter(([key]) => !key.startsWith('custom_'))) : answers,
       status: ['attendance', 'weekly_report', 'maag_report'].includes(
         template.kind,
       )
@@ -3348,6 +3401,7 @@ export class IntakeTemplatesService implements OnModuleInit {
             ? 'This monthly MAAG report has been submitted and is awaiting district review.'
             : template.successMessage;
 
+    if (isGuest) return { successTitle, successMessage };
     return {
       successTitle,
       successMessage,

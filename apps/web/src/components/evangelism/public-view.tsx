@@ -1,4 +1,5 @@
 "use client";
+import type { GuestStaffForm } from "@/lib/guest-fields";
 import { useEffect, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -10,6 +11,7 @@ import { OutreachContactForm } from "./contact-form";
 import { validFormColor, formTextColor } from "@/lib/form-colors";
 
 export type PublicOutreachInfo = {
+  form?: GuestStaffForm;
   branchName: string;
   churchName?: string;
   headerColor?: string;
@@ -20,10 +22,12 @@ export type PublicOutreachInfo = {
 export function OutreachPublicView({
   token,
   info,
+  apiBase,
   requestedLanguage,
 }: {
   token: string;
   info: PublicOutreachInfo;
+  apiBase: string;
   /** `?lang=` from a shared or QR link; applied once to the language cookie, then dropped from the URL. */
   requestedLanguage?: string;
 }) {
@@ -90,6 +94,8 @@ export function OutreachPublicView({
         </header>
         <OutreachContactForm
           token={token}
+          publicForm={info.form}
+          publicApiBase={apiBase}
           branchName={churchName}
           buttonColor={info.buttonColor}
           buttonTextColor={info.buttonTextColor}

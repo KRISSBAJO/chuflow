@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import {
   BadRequestException,
   ConflictException,
@@ -68,6 +70,7 @@ export class ChildrenRegistrationService {
     private readonly families: Model<ChildFamily>,
     @InjectModel(Branch.name) private readonly branches: Model<Branch>,
     private readonly ministry: ChildrenService,
+    @Optional() private readonly forms?: GuestFieldsService,
   ) {}
   private id(v: string) {
     if (!Types.ObjectId.isValid(v))
@@ -154,7 +157,7 @@ export class ChildrenRegistrationService {
       .findById(link.branchId)
       .select('name')
       .lean();
-    return { churchName: branch?.name || 'Children’s ministry' };
+    return { churchName: branch?.name || 'Children’s ministry', familyForm: await this.forms?.publicForm(MinistryFormKind.Family), childForm: await this.forms?.publicForm(MinistryFormKind.Child) };
   }
   async submit(token: string, d: ParentRegistrationDto) {
     const link = await this.link(token, true);
@@ -181,15 +184,16 @@ export class ChildrenRegistrationService {
       branchId: link.branchId,
       requestKey: d.requestKey,
       familyName: d.familyName.trim(),
+      customAnswers: await this.forms?.prepare(MinistryFormKind.Family, d, undefined, 'public'),
       adults: d.adults.map((a) => ({
         ...a,
         firstName: a.firstName.trim(),
         lastName: a.lastName.trim(),
       })),
-      children: d.children.map((c) => ({
-        ...c,
-        firstName: c.firstName.trim(),
-        lastName: c.lastName.trim(),
+      children: await Promise.all(d.children.map(async (child) => {
+        const customAnswers = await this.forms?.prepare(MinistryFormKind.Child, child, undefined, 'public');
+        const { customFields, formRevision, ...values } = child;
+        return { ...values, firstName: child.firstName.trim(), lastName: child.lastName.trim(), customAnswers };
       })),
       consentAt: new Date(),
     });
@@ -351,7 +355,7 @@ export class ChildrenRegistrationService {
           name: row.familyName,
           registrationKey: row.requestKey,
           guardians,
-        });
+        }, undefined, row.customAnswers ?? []);
         familyId = String(family._id);
         for (const [i, c] of row.children.entries()) {
           const pickupGuardianIds = c.pickupAdults.map((i) => guardians[i].id);
@@ -367,7 +371,7 @@ export class ChildrenRegistrationService {
             pickupNotes: '',
             photoConsent: false,
             isMember: d.registerAsMembers,
-          });
+          }, undefined, c.customAnswers ?? []);
         }
       }
       const result = await this.registrations
