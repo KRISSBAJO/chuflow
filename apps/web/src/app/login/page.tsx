@@ -34,14 +34,14 @@ export default async function LoginPage({
         body: t("login.asideBody"),
       }}
     >
-      <p className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="font-medium">
-          {resolved === "missing" ? null : (workspace?.name ?? process.env.NEXT_PUBLIC_CHUFLOW_WORKSPACE_NAME?.trim() ?? "Winners Chapel International")}
-        </span>
-        <Link href="/workspaces" className="text-[var(--lp-muted)] underline underline-offset-4">
-          {t("workspacePicker.title")}
-        </Link>
-      </p>
+      {params.workspace ? (
+        <p className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span className="font-medium">{workspace?.name}</span>
+          <Link href="/login" className="text-[var(--lp-muted)] underline underline-offset-4">
+            {tc("signIn")}
+          </Link>
+        </p>
+      ) : null}
       {resolved === "missing" ? (
         <Alert tone="error">{t("workspacePicker.notFound")}</Alert>
       ) : (

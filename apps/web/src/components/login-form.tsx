@@ -42,10 +42,11 @@ export function LoginForm({ notice, returnTo, workspace }: LoginFormProps) {
     setIsSuccess(false);
 
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 20000);
+    const generalLogin = SHARED_WORKSPACES && !workspace;
+    const timeout = window.setTimeout(() => controller.abort(), generalLogin ? 47000 : 20000);
     try {
       const authBase = SHARED_WORKSPACES ? workspaceProxyUrl(workspace?.id) : API_URL;
-      const response = await fetch(`${authBase}/auth/login`, {
+      const response = await fetch(`${authBase}/auth/${generalLogin ? "workspace-login" : "login"}`, {
         method: "POST",
         signal: controller.signal,
         headers: { "Content-Type": "application/json" },
@@ -65,7 +66,11 @@ export function LoginForm({ notice, returnTo, workspace }: LoginFormProps) {
         return;
       }
 
-      const result = (await response.json()) as { user?: { role?: string; passwordChangeRequired?: boolean } };
+      const result = (await response.json()) as {
+        user?: { role?: string; passwordChangeRequired?: boolean };
+        activeWorkspace?: string | null;
+        workspaces?: string[];
+      };
       const homeHref = result.user?.role
         ? roleHomeHref(result.user.role)
         : "/dashboard";
@@ -76,7 +81,12 @@ export function LoginForm({ notice, returnTo, workspace }: LoginFormProps) {
       const destination = result.user?.passwordChangeRequired
         ? `/change-password?returnTo=${encodeURIComponent(home)}`
         : home;
-      if (workspace) {
+      const chooser = returnTo ? `/workspaces?returnTo=${encodeURIComponent(home)}` : "/workspaces";
+      if ((result.workspaces?.length ?? 0) > 1) {
+        window.location.replace(chooser);
+        return;
+      }
+      if (workspace || result.activeWorkspace) {
         // A full load: this tab's API scope now points at the workspace.
         window.location.replace(destination);
         return;
@@ -91,7 +101,6 @@ export function LoginForm({ notice, returnTo, workspace }: LoginFormProps) {
           if (workspaces.ok) {
             const memberships = (await workspaces.json()) as WorkspaceMembership[];
             if (linkedWorkspaceOptions(memberships).some((workspace) => workspace.destination)) {
-              const chooser = `/workspaces?returnTo=${encodeURIComponent(destination)}`;
               if (SHARED_WORKSPACES) window.location.replace(chooser);
               else router.replace(chooser);
               return;

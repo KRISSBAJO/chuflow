@@ -10,7 +10,7 @@ import { DIRECTORY_COOKIE, SHARED_WORKSPACES, workspaceApiContext, workspaceId }
 /** Endpoints a workspace serves to people who are not signed in to it yet. */
 export const SIGN_IN_ENDPOINT = /^\/auth\/(?:workspace|login|forgot-password|reset-password(?:\/verify)?)$/;
 
-const DIRECTORY_ENDPOINT = /^\/auth\/(?:login|forgot-password|reset-password|workspaces)(?:\/|$)/;
+const DIRECTORY_ENDPOINT = /^\/auth\/(?:login|workspace-login|forgot-password|reset-password|workspaces)(?:\/|$)/;
 
 export type ProxyTarget =
   | { status: 404 | 409 }

@@ -2,7 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { NextRequest, NextResponse } from "next/server";
 import { proxyTarget } from "@/lib/workspace-proxy";
 import {
-  ACTIVE_WORKSPACE_COOKIE, DIRECTORY_COOKIE, PRIMARY_API_URL, SHARED_WEB_ORIGIN, WORKSPACE_TAB_HINT,
+  ACTIVE_WORKSPACE_COOKIE, DIRECTORY_COOKIE, PRIMARY_API_URL, SHARED_WEB_ORIGIN, VERIFIED_WORKSPACES_COOKIE,
+  WORKSPACE_TAB_HINT, verifiedWorkspaceIds, workspaceApiContext, workspaceId,
 } from "@/lib/workspace-routing";
 
 export const runtime = "nodejs";
@@ -22,6 +23,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     return new Response(null, { status: 404 });
   }
   const { base, cookieName, endpoint, signInWorkspace } = target;
+  const generalLogin = endpoint === "/auth/workspace-login" && request.method === "POST";
   const token = request.cookies.get(cookieName)?.value;
   const upstreamHeaders = new Headers();
   for (const name of ["accept", "content-type"]) {
@@ -37,8 +39,35 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       body: request.method === "GET" ? undefined : await request.arrayBuffer(),
       cache: "no-store",
       redirect: "error",
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(generalLogin ? 45000 : 20000),
     });
+    if (generalLogin && upstream.ok) {
+      const result = await upstream.json() as { user?: unknown; activeWorkspace?: string | null; workspaces?: string[] };
+      const ids = verifiedWorkspaceIds(result.workspaces?.join(","));
+      const active = workspaceId(result.activeWorkspace);
+      const sessionCookies = upstream.headers.getSetCookie();
+      if (!ids.length || !ids.includes(active ?? "directory") ||
+          ids.some((id) => !sessionCookies.some((cookie) =>
+            cookie.startsWith(workspaceApiContext(id === "directory" ? null : id).cookieName + "=")))) {
+        return new Response(null, { status: 502 });
+      }
+      const response = NextResponse.json({ ...result, workspaces: ids }, { headers: { "Cache-Control": "no-store" } });
+      const attributes = { secure: SHARED_WEB_ORIGIN?.startsWith("https:") ?? false, sameSite: "lax" as const, path: "/", maxAge: 86400 };
+      response.cookies.set(VERIFIED_WORKSPACES_COOKIE, ids.join(","), { ...attributes, httpOnly: true });
+      if (active) {
+        response.cookies.set(ACTIVE_WORKSPACE_COOKIE, active, { ...attributes, httpOnly: true });
+        response.cookies.set(WORKSPACE_TAB_HINT, active, attributes);
+      } else {
+        response.cookies.delete(ACTIVE_WORKSPACE_COOKIE);
+        response.cookies.delete(WORKSPACE_TAB_HINT);
+      }
+      for (const id of verifiedWorkspaceIds(request.cookies.get(VERIFIED_WORKSPACES_COOKIE)?.value)) {
+        if (!ids.includes(id)) response.cookies.delete(workspaceApiContext(id === "directory" ? null : id).cookieName);
+      }
+      if (!ids.includes("directory")) response.cookies.delete(DIRECTORY_COOKIE);
+      for (const cookie of sessionCookies) response.headers.append("Set-Cookie", cookie);
+      return response;
+    }
     const response = new NextResponse(upstream.body, { status: upstream.status });
     for (const name of ["content-type", "content-disposition"]) {
       const value = upstream.headers.get(name);
@@ -71,6 +100,14 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
           response.headers.append("Set-Cookie", `${DIRECTORY_COOKIE}=; Max-Age=0; Path=/; HttpOnly`);
         }
       }
+    }
+    if (upstream.ok && (endpoint === "/auth/logout" || endpoint === "/auth/login")) {
+      const previous = verifiedWorkspaceIds(request.cookies.get(VERIFIED_WORKSPACES_COOKIE)?.value);
+      for (const id of previous) {
+        const name = workspaceApiContext(id === "directory" ? null : id).cookieName;
+        if (name !== cookieName) response.headers.append("Set-Cookie", `${name}=; Max-Age=0; Path=/; HttpOnly`);
+      }
+      response.headers.append("Set-Cookie", `${VERIFIED_WORKSPACES_COOKIE}=; Max-Age=0; Path=/; HttpOnly`);
     }
     return response;
   } catch {

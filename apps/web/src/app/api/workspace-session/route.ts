@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { roleHomeHref } from "@/lib/permissions";
-import { ACTIVE_WORKSPACE_COOKIE, DIRECTORY_COOKIE, PRIMARY_API_URL, SHARED_WEB_ORIGIN, SHARED_WORKSPACES, WORKSPACE_TAB_HINT, workspaceApiContext, workspaceId } from "@/lib/workspace-routing";
+import { safeReturnTo } from "@/lib/return-to";
+import { ACTIVE_WORKSPACE_COOKIE, SHARED_WEB_ORIGIN, SHARED_WORKSPACES, WORKSPACE_TAB_HINT, workspaceApiContext, workspaceId } from "@/lib/workspace-routing";
 
 export async function POST(request: NextRequest) {
   const sourceOrigin = SHARED_WORKSPACES
@@ -16,27 +17,38 @@ export async function POST(request: NextRequest) {
   try {
     const form = await request.formData();
     const requested = form.get("workspace");
-    if (SHARED_WORKSPACES && requested === "directory") {
-      const token = request.cookies.get(DIRECTORY_COOKIE)?.value;
+    const selected = workspaceId(typeof requested === "string" ? requested : null);
+    const handoff = form.get("handoff");
+    if (SHARED_WORKSPACES && !handoff && (requested === "directory" || selected)) {
+      const { base, cookieName } = workspaceApiContext(selected);
+      const token = request.cookies.get(cookieName)?.value;
       if (!token) return failure();
-      const session = await fetch(PRIMARY_API_URL + "/auth/me", {
-        headers: { Cookie: `${DIRECTORY_COOKIE}=${token}` },
+      const session = await fetch(base + "/auth/me", {
+        headers: { Cookie: `${cookieName}=${token}` },
         cache: "no-store",
         redirect: "error",
         signal: AbortSignal.timeout(8000),
       });
       if (!session.ok) return failure();
-      const user = await session.json() as { role?: string };
-      const response = NextResponse.redirect(new URL(roleHomeHref(user.role), destinationOrigin), 303);
-      response.cookies.delete(ACTIVE_WORKSPACE_COOKIE);
-      response.cookies.delete(WORKSPACE_TAB_HINT);
+      const user = await session.json() as { role?: string; passwordChangeRequired?: boolean; workspace?: { id?: string } };
+      if (selected && user.workspace?.id !== selected) return failure();
+      const returnTo = form.get("returnTo");
+      const home = safeReturnTo(typeof returnTo === "string" ? returnTo : null, roleHomeHref(user.role));
+      const destination = user.passwordChangeRequired ? `/change-password?returnTo=${encodeURIComponent(home)}` : home;
+      const response = NextResponse.redirect(new URL(destination, destinationOrigin), 303);
+      if (selected) {
+        const attributes = { secure: sourceOrigin.startsWith("https:"), sameSite: "lax" as const, path: "/", maxAge: 86400 };
+        response.cookies.set(ACTIVE_WORKSPACE_COOKIE, selected, { ...attributes, httpOnly: true });
+        response.cookies.set(WORKSPACE_TAB_HINT, selected, attributes);
+      } else {
+        response.cookies.delete(ACTIVE_WORKSPACE_COOKIE);
+        response.cookies.delete(WORKSPACE_TAB_HINT);
+      }
       response.headers.set("Cache-Control", "no-store");
       return response;
     }
 
-    const selected = workspaceId(typeof requested === "string" ? requested : null);
     if (SHARED_WORKSPACES && !selected) return failure();
-    const handoff = form.get("handoff");
     if (typeof handoff !== "string" || !handoff || handoff.length > 4096) return failure();
     const { base, cookieName } = workspaceApiContext(selected);
     const response = await fetch(base + "/auth/workspace/exchange", {
