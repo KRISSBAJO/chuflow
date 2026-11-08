@@ -68,9 +68,10 @@ export function localTimeValue(d: Date) {
   return `${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-/** "HH:MM" → minutes since midnight, or null when not a valid time. */
+/** Accepts clock notation or four digits from a numeric keyboard. */
 export function parseTime(value: string): number | null {
-  const m = value.trim().match(/^(\d{1,2})[:.hH](\d{2})$/);
+  const time = value.trim();
+  const m = time.match(/^(\d{1,2})[:.hH](\d{2})$/) ?? time.match(/^(\d{2})(\d{2})$/);
   if (!m) return null;
   const h = Number(m[1]);
   const min = Number(m[2]);

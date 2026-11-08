@@ -39,6 +39,9 @@ function quickPick(kind: Quick) {
     start.setSeconds(0, 0);
     start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15);
     const end = new Date(start.getTime() + 3 * 3600_000);
+    const lastMinute = new Date(start);
+    lastMinute.setHours(23, 59, 0, 0);
+    if (end > lastMinute) end.setTime(lastMinute.getTime());
     return { date: new Date(start), start: localTimeValue(start), end: localTimeValue(end) };
   }
   const spec = {
@@ -77,6 +80,7 @@ export function NewSessionScreen() {
     }),
   );
   const [submitted, setSubmitted] = useState(false);
+  const [timeTouched, setTimeTouched] = useState({ start: false, end: false });
   const [busy, setBusy] = useState(false);
   const [reusing, setReusing] = useState(false);
   const [error, setError] = useState('');
@@ -91,8 +95,26 @@ export function NewSessionScreen() {
   const startsAt = startMin === null ? null : new Date(when.date.getFullYear(), when.date.getMonth(), when.date.getDate(), Math.floor(startMin / 60), startMin % 60);
   const endsAt = endMin === null ? null : new Date(when.date.getFullYear(), when.date.getMonth(), when.date.getDate(), Math.floor(endMin / 60), endMin % 60);
   const durationMin = startsAt && endsAt ? Math.round((endsAt.getTime() - startsAt.getTime()) / 60_000) : 0;
-  const timeError =
-    startMin === null || endMin === null ? t('invalidTime') : startsAt && endsAt ? (durationMin <= 0 ? t('endBeforeStart') : endsAt <= new Date() ? t('endInPast') : '') : '';
+  const startError = startMin === null ? t('invalidTime', { example: '09:30' }) : '';
+  const endError = endMin === null
+    ? t('invalidTime', { example: '12:30' })
+    : startMin !== null && (endMin <= startMin || durationMin <= 0)
+      ? t('endBeforeStart')
+      : endsAt && endsAt <= new Date()
+        ? t('endInPast')
+        : '';
+  const timeError = startError || endError;
+
+  function finishTime(field: 'start' | 'end') {
+    setTimeTouched((previous) => ({ ...previous, [field]: true }));
+    setWhen((previous) => {
+      const minutes = parseTime(previous[field]);
+      if (minutes === null) return previous;
+      const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
+      const remainder = String(minutes % 60).padStart(2, '0');
+      return { ...previous, [field]: `${hours}:${remainder}` };
+    });
+  }
 
   const roomErrors = rooms.map((r) => {
     const errs: RoomError[] = [];
@@ -252,10 +274,10 @@ export function NewSessionScreen() {
         </View>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Field label={t('starts')} value={when.start} onChangeText={(start) => setWhen({ ...when, start })} placeholder="09:00" keyboardType="numbers-and-punctuation" maxLength={5} hint={t('timeHint')} />
+            <Field label={t('starts')} accessibilityLabel={t('starts')} value={when.start} onChangeText={(start) => setWhen((previous) => ({ ...previous, start }))} onBlur={() => finishTime('start')} placeholder="09:30" keyboardType="numbers-and-punctuation" hint={t('timeHint', { example: '09:30', digits: '0930' })} error={submitted || timeTouched.start ? startError : undefined} />
           </View>
           <View style={{ flex: 1 }}>
-            <Field label={t('ends')} value={when.end} onChangeText={(end) => setWhen({ ...when, end })} placeholder="12:30" keyboardType="numbers-and-punctuation" maxLength={5} error={timeError || undefined} />
+            <Field label={t('ends')} accessibilityLabel={t('ends')} value={when.end} onChangeText={(end) => setWhen((previous) => ({ ...previous, end }))} onBlur={() => finishTime('end')} placeholder="12:30" keyboardType="numbers-and-punctuation" hint={t('timeHint', { example: '12:30', digits: '1230' })} error={submitted || timeTouched.end || (timeTouched.start && endMin !== null) ? endError : undefined} />
           </View>
         </View>
         <View style={styles.chips}>

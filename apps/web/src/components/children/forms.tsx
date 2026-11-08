@@ -38,11 +38,15 @@ type T = ReturnType<typeof useTranslations<"childrenRecords">>;
 function Field({
   label,
   hint,
+  error,
+  descriptionId,
   children,
   className = "",
 }: {
   label: string;
   hint?: string;
+  error?: string;
+  descriptionId?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -50,8 +54,10 @@ function Field({
     <label className={`block ${className}`}>
       <span className="children-label">{label}</span>
       {children}
-      {hint && (
-        <span className="children-muted mt-1 block text-xs">{hint}</span>
+      {(error || hint) && (
+        <span id={descriptionId} className={`mt-1 block text-xs ${error ? "text-[#953c2e]" : "children-muted"}`}>
+          {error || hint}
+        </span>
       )}
     </label>
   );
@@ -921,6 +927,9 @@ function quickPick(
     start.setSeconds(0, 0);
     start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15);
     const end = new Date(start.getTime() + 3 * 3600_000);
+    const lastMinute = new Date(start);
+    lastMinute.setHours(23, 59, 0, 0);
+    if (end > lastMinute) end.setTime(lastMinute.getTime());
     return {
       date: localDateValue(start),
       start: localTimeValue(start),
@@ -1062,6 +1071,7 @@ export function ChildSessionForm({
   );
   const when = edited ?? defaultWhen;
   const setWhen = setEdited;
+  const [timeTouched, setTimeTouched] = useState({ start: false, end: false });
   const [rooms, setRooms] = useState<RoomDraft[]>(() =>
     (["nursery", "preschool", "kids"] as const).map((k) => {
       const tpl = ROOM_TEMPLATES.find((r) => r.key === k)!;
@@ -1075,30 +1085,36 @@ export function ChildSessionForm({
     }),
   );
 
+  const startValid = /^([01]\d|2[0-3]):[0-5]\d$/.test(when.start);
+  const endValid = /^([01]\d|2[0-3]):[0-5]\d$/.test(when.end);
   const startsAt = useMemo(
     () =>
-      when.date && when.start
+      when.date && startValid
         ? new Date(`${when.date}T${when.start}:00`)
         : null,
-    [when.date, when.start],
+    [when.date, when.start, startValid],
   );
   const endsAt = useMemo(
     () =>
-      when.date && when.end ? new Date(`${when.date}T${when.end}:00`) : null,
-    [when.date, when.end],
+      when.date && endValid ? new Date(`${when.date}T${when.end}:00`) : null,
+    [when.date, when.end, endValid],
   );
   const durationMin =
     startsAt && endsAt
       ? Math.round((endsAt.getTime() - startsAt.getTime()) / 60_000)
       : 0;
-  const timeError =
-    startsAt && endsAt
-      ? durationMin <= 0
+  const startError = startValid ? "" : t("session.invalidTime");
+  const endError =
+    !endValid ? t("session.invalidTime") : startsAt && endsAt
+      ? when.end <= when.start || durationMin <= 0
         ? t("session.endBeforeStart")
         : endsAt <= new Date()
           ? t("session.endInPast")
           : ""
       : "";
+  const timeError = startError || endError;
+  const shownStartError = submitted || timeTouched.start ? startError : "";
+  const shownEndError = submitted || timeTouched.end || endValid ? endError : "";
 
   /* per-room validation */
   type RoomError =
@@ -1364,21 +1380,27 @@ export function ChildSessionForm({
                   required
                 />
               </Field>
-              <Field label={t("session.starts")} hint={t("session.localTime")}>
+              <Field label={t("session.starts")} hint={t("session.timeHint", { example: format.dateTime(new Date(2000, 0, 1, 9, 30), { hour: "numeric", minute: "2-digit" }) })} error={shownStartError} descriptionId="session-start-description">
                 <input
                   type="time"
-                  className="children-input"
+                  className={`children-input ${shownStartError ? "!border-[#d97a6a]" : ""}`}
                   value={when.start}
                   onChange={(e) => setWhen({ ...when, start: e.target.value })}
+                  onBlur={() => setTimeTouched((previous) => ({ ...previous, start: true }))}
+                  aria-invalid={!!shownStartError}
+                  aria-describedby="session-start-description"
                   required
                 />
               </Field>
-              <Field label={t("session.ends")} hint={t("session.localTime")}>
+              <Field label={t("session.ends")} hint={t("session.timeHint", { example: format.dateTime(new Date(2000, 0, 1, 12, 30), { hour: "numeric", minute: "2-digit" }) })} error={shownEndError} descriptionId="session-end-description">
                 <input
                   type="time"
-                  className={`children-input ${timeError ? "!border-[#d97a6a]" : ""}`}
+                  className={`children-input ${shownEndError ? "!border-[#d97a6a]" : ""}`}
                   value={when.end}
                   onChange={(e) => setWhen({ ...when, end: e.target.value })}
+                  onBlur={() => setTimeTouched((previous) => ({ ...previous, end: true }))}
+                  aria-invalid={!!shownEndError}
+                  aria-describedby="session-end-description"
                   required
                 />
               </Field>
@@ -1394,11 +1416,6 @@ export function ChildSessionForm({
                     day: "numeric",
                     month: "long",
                   })}
-                </span>
-              )}
-              {timeError && (
-                <span className="children-badge rose" role="alert">
-                  {timeError}
                 </span>
               )}
             </div>

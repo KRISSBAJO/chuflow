@@ -134,7 +134,8 @@
       "date": "Date",
       "starts": "Ouverture",
       "ends": "Fermeture",
-      "localTime": "Votre heure locale",
+      "timeHint": "Utilisez votre heure locale, par ex. {example}.",
+      "invalidTime": "Choisissez une heure valide.",
       "quick": {
         "now": "Maintenant → +3 h",
         "sunday": "Dimanche 9h00–12h30",
