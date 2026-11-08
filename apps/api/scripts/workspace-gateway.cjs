@@ -35,7 +35,7 @@ function readRegistry(env) {
   if (!Array.isArray(entries)) throw new Error('The workspace registry must be a JSON array.');
 
   const workspaces = new Map();
-  const databases = new Set([primary.name]);
+  const databases = new Set([primary.name.toLowerCase(), 'admin', 'config', 'local']);
   const keys = new Set([env.JWT_SECRET]);
   for (const entry of entries) {
     if (
@@ -47,13 +47,21 @@ function readRegistry(env) {
       typeof entry.adminPassword !== 'string' || entry.adminPassword.length < 12
     ) throw new Error('A workspace registry entry is invalid or duplicated.');
 
-    const location = databaseLocation(entry.mongodbUri);
-    if (location.host !== primary.host || databases.has(location.name)) {
+    const shared = entry.databaseName !== undefined;
+    if (shared && (entry.mongodbUri !== undefined ||
+        typeof entry.databaseName !== 'string' || !/^[\w-]{1,63}$/.test(entry.databaseName))) {
+      throw new Error('A workspace needs either a separate URI or a valid database name.');
+    }
+    const location = shared
+      ? { host: primary.host, name: entry.databaseName }
+      : databaseLocation(entry.mongodbUri);
+    const databaseKey = location.name.toLowerCase();
+    if (location.host !== primary.host || databases.has(databaseKey)) {
       throw new Error('Each workspace needs a distinct database on the approved MongoDB cluster.');
     }
-    databases.add(location.name);
+    databases.add(databaseKey);
     keys.add(entry.jwtSecret);
-    workspaces.set(entry.id, entry);
+    workspaces.set(entry.id, shared ? { ...entry, mongodbUri: env.MONGODB_URI } : entry);
   }
   return workspaces;
 }
@@ -92,6 +100,7 @@ function workerEnvironment(env, entry) {
     WORKSPACE_ID: entry.id,
     WORKSPACE_NAME: entry.name,
     MONGODB_URI: entry.mongodbUri,
+    ...(entry.databaseName ? { WORKSPACE_DATABASE_NAME: entry.databaseName } : {}),
     JWT_SECRET: entry.jwtSecret,
     ADMIN_EMAIL: entry.adminEmail,
     ADMIN_PASSWORD: entry.adminPassword,

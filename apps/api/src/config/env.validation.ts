@@ -10,6 +10,10 @@ export const envValidationSchema = Joi.object({
   }),
   PORT: Joi.number().default(4000),
   MONGODB_URI: Joi.string().required(),
+  WORKSPACE_DATABASE_NAME: Joi.string().pattern(/^[\w-]{1,63}$/).when('WORKSPACE_ID', {
+    is: FIRST_WORKSPACE_ID,
+    then: Joi.forbidden(),
+  }),
   JWT_SECRET: Joi.string().min(12).required(),
   JWT_EXPIRES_IN: Joi.string().default('1d'),
   // Sign-ins from the mobile app last longer; the API still rejects deactivated users on every call.

@@ -62,7 +62,13 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
         uri: configService.get<string>('mongodbUri'),
         connectionFactory: async (connection: Connection) => {
           try {
-            return await bindWorkspaceDatabase(connection, getWorkspace(configService).id);
+              const databaseName = configService.get<string>('WORKSPACE_DATABASE_NAME');
+              const workspace = getWorkspace(configService);
+              if (databaseName && databaseName.toLowerCase() === connection.name.toLowerCase()) {
+                throw new Error('A workspace must use a distinct database.');
+              }
+              const workspaceConnection = databaseName ? connection.useDb(databaseName) : connection;
+              return await bindWorkspaceDatabase(workspaceConnection, workspace.id);
           } catch (error) {
             await connection.close();
             throw error;
