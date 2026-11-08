@@ -31,17 +31,17 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
     }
   }));
   const direct = verified.filter((workspace) => workspace !== null);
-  if (SHARED_WORKSPACES && !user && !direct.length) redirect("/login?reason=session-expired");
   let linked: ReturnType<typeof linkedWorkspaceOptions> = [];
-  if (user && token) {
+  if (token) {
     try {
       const response = await serverRead("/auth/workspaces", { Cookie: `cms_access_token=${token}` });
       if (response.ok) linked = linkedWorkspaceOptions((await response.json()) as WorkspaceMembership[]);
     } catch {
       // The current workspace remains available if the directory cannot be reached.
     }
-    if (linked.length === 0 && user.workspace) linked = [{ ...user.workspace, current: true, destination: null }];
+    if (linked.length === 0 && !selected && user?.workspace) linked = [{ ...user.workspace, current: true, destination: null }];
   }
+  if (SHARED_WORKSPACES && !user && !direct.length && !linked.length) redirect("/login?reason=session-expired");
   linked = linked.filter(({ id }) => !direct.some((workspace) => workspace.id === id));
   const currentHref = safeReturnTo(params.returnTo, roleHomeHref(user?.role));
   const [t, tc] = await Promise.all([getTranslations("auth"), getTranslations("common")]);
@@ -60,7 +60,7 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
         body: t("login.asideBody"),
       }}
     >
-      <AuthHeading title={t("workspacePicker.title")} body={t(user ? "workspacePicker.linkedBody" : "workspacePicker.body")} />
+      <AuthHeading title={t("workspacePicker.title")} body={t(user || direct.length || linked.length ? "workspacePicker.linkedBody" : "workspacePicker.body")} />
       <ul className="space-y-3">
         {direct.map(({ id, name, selection }) => (
           <li key={id}>
@@ -71,12 +71,13 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
             </form>
           </li>
         ))}
-        {user ? linked.map(({ id, name, destination }) => (
+        {linked.length ? linked.map(({ id, name, destination }) => (
           <li key={id}>
-            {destination && id !== selected ? <WorkspaceHandoffButton id={id} name={name} destination={destination} /> :
+            {destination && id !== selected ? <WorkspaceHandoffButton id={id} name={name} destination={destination} returnTo={params.returnTo} /> :
              !destination && selected && id !== selected ? (
               <form action="/api/workspace-session" method="post">
                 <input type="hidden" name="workspace" value="directory" />
+                {params.returnTo ? <input type="hidden" name="returnTo" value={params.returnTo} /> : null}
                 <button className="w-full rounded-xl border border-black/10 px-4 py-4 text-left font-medium hover:bg-[var(--lp-panel)]">{name}</button>
               </form>
             ) : (
@@ -85,7 +86,7 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
               </Link>
             )}
           </li>
-        )) : !SHARED_WORKSPACES && workspaces.map(({ name, href }) => {
+        )) : !user && !SHARED_WORKSPACES && workspaces.map(({ name, href }) => {
           const content = (
             <>
               <span className="min-w-0 flex-1 break-words font-medium">{name}</span>

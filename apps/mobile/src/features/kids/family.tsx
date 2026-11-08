@@ -1,5 +1,4 @@
 import { KidsExtraFields } from './extra-fields';
-import * as WebBrowser from 'expo-web-browser';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { StatGrid, StatTile, Timeline, type TimelineItem } from '@/components/kit';
@@ -7,7 +6,8 @@ import { Badge, Button, Caption, Card, Chip, EmptyState, ErrorState, Heading, Lo
 import { colors, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
-import { workspaceBrowserHref } from '@/lib/api';
+import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
+import { useSession } from '@/lib/session';
 import { dialable } from '@/lib/format';
 import { useApi } from '@/lib/use-api';
 import { ageInMonths, familyInitials } from './age';
@@ -16,6 +16,7 @@ import type { Family, RecordEvent } from './types';
 
 /** Family record: guardians, children with ages and care notes, pickup permissions and activity. */
 export function FamilyScreen() {
+  const { user } = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useT('kids.family');
   const tf = useT('members.form');
@@ -36,7 +37,7 @@ export function FamilyScreen() {
   }
 
   const pickupAdults = new Set(f.children.flatMap((c) => c.pickupGuardianIds));
-  const website = (path: string) => void WebBrowser.openBrowserAsync(workspaceBrowserHref(path));
+  const website = (path: string) => void openWorkspaceBrowser(path, user?.workspace);
   const events: TimelineItem[] = [...(f.events ?? []), ...f.children.flatMap((c) => (c.events ?? []).map((e) => ({ ...e, note: e.note || `${c.firstName} ${c.lastName}` })))]
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
     .slice(0, 10)

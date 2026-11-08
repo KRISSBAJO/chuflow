@@ -4,7 +4,7 @@ import { safeReturnTo } from "./lib/return-to";
 import { ACTIVE_WORKSPACE_COOKIE, workspaceApiContext, workspaceId } from "./lib/workspace-routing";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
 // `/ops` is the operator console: it keeps its own session and guards itself.
-const publicPages = ["/", "/service-unavailable", "/request-workspace", "/workspaces", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register", "/ops"];
+const publicPages = ["/", "/service-unavailable", "/request-workspace", "/workspaces", "/open-in-browser", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register", "/ops"];
 
 function matchesRoute(pathname: string, route: string) {
   if (route === "/") {

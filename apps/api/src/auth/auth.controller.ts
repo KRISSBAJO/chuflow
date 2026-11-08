@@ -141,6 +141,29 @@ export class AuthController {
     return { accessToken, tokenType: 'Bearer', user };
   }
 
+  @Post('browser-handoff')
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @UseGuards(JsonSubmissionGuard)
+  createBrowserHandoff(@CurrentUser() user: { sub: string }) {
+    return this.workspaceAccess.createBrowserHandoff(user.sub);
+  }
+
+  @Public()
+  @Post('browser-handoff/exchange')
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @UseGuards(JsonSubmissionGuard)
+  async exchangeBrowserHandoff(
+    @Body() dto: WorkspaceHandoffDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const userId = await this.workspaceAccess.redeem(dto.handoff, true);
+    const { accessToken, user, cookieName } = await this.authService.startWorkspaceSession(userId);
+    response.cookie(cookieName, accessToken, this.getAuthCookieOptions());
+    return { user };
+  }
+
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('logout')

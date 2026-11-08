@@ -8,10 +8,12 @@ export function WorkspaceHandoffButton({
   id,
   name,
   destination,
+  returnTo,
 }: {
   id: string;
   name: string;
   destination: string;
+  returnTo?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -46,6 +48,13 @@ export function WorkspaceHandoffButton({
         workspace.name = "workspace";
         workspace.value = id;
         form.append(workspace);
+        if (returnTo) {
+          const target = document.createElement("input");
+          target.type = "hidden";
+          target.name = "returnTo";
+          target.value = returnTo;
+          form.append(target);
+        }
       }
       document.body.append(form);
       form.submit();

@@ -63,6 +63,7 @@ describe('workspace handoffs', () => {
         connection,
         new ConfigService({
           workspaceId,
+          jwtSecret: 'separate-local-session-secret',
           workspaceDirectoryVerificationKey: encode(keys.publicKey),
         }),
         jwt,
@@ -112,5 +113,16 @@ describe('workspace handoffs', () => {
     await expect(tenant.redeem(expired)).rejects.toHaveProperty('status', 401);
     await expect(tenant.redeem(handoff)).resolves.toBe(target);
     await expect(tenant.redeem(handoff)).rejects.toHaveProperty('status', 401);
+  });
+
+  it('redeems a mobile browser ticket only once in its issuing workspace', async () => {
+    const { receiver, jwt } = setup();
+    const tenant = receiver('test-church');
+    const { handoff } = await tenant.createBrowserHandoff(target);
+    expect(() => jwt.verify(handoff)).toThrow();
+    await expect(tenant.redeem(handoff)).rejects.toHaveProperty('status', 401);
+    await expect(receiver('other-church').redeem(handoff, true)).rejects.toHaveProperty('status', 401);
+    await expect(tenant.redeem(handoff, true)).resolves.toBe(target);
+    await expect(tenant.redeem(handoff, true)).rejects.toHaveProperty('status', 401);
   });
 });

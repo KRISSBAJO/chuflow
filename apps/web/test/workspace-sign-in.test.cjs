@@ -53,6 +53,16 @@ test("the shared directory still signs in at the primary API", () => {
   assert.equal(target.directory, true);
 });
 
+test("Winners Chapel uses the same session cookie through its explicit workspace route", () => {
+  const id = "winners-chapel-international";
+  const signIn = proxyTarget(["w", id, "auth", "login"], "POST", "test-church");
+  const settings = proxyTarget(["w", id, "settings", "overview"], "GET", id);
+  assert.equal(signIn.status, 200);
+  assert.equal(signIn.cookieName, "cms_access_token");
+  assert.equal(settings.cookieName, signIn.cookieName);
+  assert.equal(proxyTarget(["w", id, "settings", "overview"], "GET", "test-church").status, 409);
+});
+
 test("signed-in traffic stays pinned to the active workspace", () => {
   assert.equal(proxyTarget(["w", "grace-chapel", "guests"], "GET", "grace-chapel").base, "https://api.chuflow.com/api/w/grace-chapel");
   assert.equal(proxyTarget(["w", "grace-chapel", "guests"], "GET", "other-church").status, 409);

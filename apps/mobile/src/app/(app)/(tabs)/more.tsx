@@ -1,5 +1,4 @@
 import * as Updates from 'expo-updates';
-import * as WebBrowser from 'expo-web-browser';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,7 +14,8 @@ import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useAlerts } from '@/lib/alerts';
 import { usePlan } from '@/lib/entitlements';
-import { workspaceBrowserHref, api, errorMessage } from '@/lib/api';
+import { api, errorMessage } from '@/lib/api';
+import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
 import { disablePush, enablePush, pushStatus, type PushStatus } from '@/lib/notifications';
 import { can } from '@/lib/permissions';
 import type { FeatureKey } from '@/lib/types';
@@ -252,7 +252,7 @@ export default function MoreScreen() {
               left={<RowIcon name={link.icon} />}
               right={<Icon name="arrowUpRight" size={14} color={colors.faint} />}
               chevron={false}
-              onPress={() => void WebBrowser.openBrowserAsync(workspaceBrowserHref(link.path))}
+              onPress={() => void openWorkspaceBrowser(link.path, user?.workspace)}
             />
           ))}
         </View>

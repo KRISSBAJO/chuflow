@@ -8,11 +8,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectConnection } from '@nestjs/mongoose';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import type { Connection } from 'mongoose';
 import { getWorkspace } from './workspace-boundary';
 
 const ISSUER = 'chuflow-workspace-directory';
+const BROWSER_ISSUER = 'chuflow-mobile-browser';
 const LIFETIME_SECONDS = 60;
 const OBJECT_ID = /^[a-f0-9]{24}$/i;
 
@@ -52,12 +53,10 @@ export class WorkspaceAccessService implements OnModuleInit {
     if (this.key('workspaceDirectorySigningKey')) {
       await this.memberships.createIndex({ accountId: 1, enabled: 1 });
     }
-    if (this.key('workspaceDirectoryVerificationKey')) {
-      await this.redemptions.createIndex(
-        { expiresAt: 1 },
-        { expireAfterSeconds: 0 },
-      );
-    }
+    await this.redemptions.createIndex(
+      { expiresAt: 1 },
+      { expireAfterSeconds: 0 },
+    );
   }
 
   async list(accountId: string) {
@@ -112,15 +111,28 @@ export class WorkspaceAccessService implements OnModuleInit {
     return { handoff, expiresIn: LIFETIME_SECONDS };
   }
 
-  async redeem(handoff: string) {
-    const key = this.key('workspaceDirectoryVerificationKey');
+  async createBrowserHandoff(userId: string) {
+    const handoff = await this.jwt.signAsync({}, {
+      secret: this.browserKey(),
+      algorithm: 'HS256',
+      issuer: BROWSER_ISSUER,
+      audience: getWorkspace(this.config).id,
+      subject: userId,
+      jwtid: randomUUID(),
+      expiresIn: LIFETIME_SECONDS,
+    });
+    return { handoff };
+  }
+
+  async redeem(handoff: string, browser = false) {
+    const key = browser ? this.browserKey() : this.key('workspaceDirectoryVerificationKey');
     if (!key) throw new NotFoundException();
     let claims: { sub?: string; jti?: string; exp?: number };
     try {
       claims = await this.jwt.verifyAsync(handoff, {
         secret: key,
-        algorithms: ['RS256'],
-        issuer: ISSUER,
+        algorithms: [browser ? 'HS256' : 'RS256'],
+        issuer: browser ? BROWSER_ISSUER : ISSUER,
         audience: getWorkspace(this.config).id,
         maxAge: LIFETIME_SECONDS,
       });
@@ -157,5 +169,11 @@ export class WorkspaceAccessService implements OnModuleInit {
       throw error;
     }
     return sub;
+  }
+
+  private browserKey() {
+    return createHmac('sha256', this.config.getOrThrow<string>('jwtSecret'))
+      .update(BROWSER_ISSUER)
+      .digest('hex');
   }
 }
