@@ -15,6 +15,12 @@ export class CreateWorkspaceRequestDto {
   @MaxLength(120)
   organizationName!: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  workspaceHandle?: string;
+
   @ApiProperty()
   @IsString()
   @MaxLength(120)

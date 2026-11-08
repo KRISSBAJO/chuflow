@@ -8,6 +8,12 @@ export class WorkspaceRequest {
   @Prop({ required: true })
   organizationName!: string;
 
+  @Prop()
+  workspaceHandle?: string;
+
+  @Prop()
+  workspaceHandleClaimed?: boolean;
+
   @Prop({ required: true })
   contactName!: string;
 
@@ -53,3 +59,8 @@ export class WorkspaceRequest {
 
 export const WorkspaceRequestSchema =
   SchemaFactory.createForClass(WorkspaceRequest);
+
+WorkspaceRequestSchema.index(
+  { workspaceHandle: 1 },
+  { unique: true, partialFilterExpression: { workspaceHandleClaimed: true } },
+);

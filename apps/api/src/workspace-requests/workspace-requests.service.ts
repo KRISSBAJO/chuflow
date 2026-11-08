@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { MailService } from '../mail/mail.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { FIRST_WORKSPACE_ID, getWorkspace } from '../workspaces/workspace-boundary';
 import { CreateWorkspaceRequestDto } from './dto/create-workspace-request.dto';
 import { UpdateWorkspaceRequestDto } from './dto/update-workspace-request.dto';
 import {
@@ -13,7 +14,7 @@ import {
 } from './schemas/workspace-request.schema';
 
 @Injectable()
-export class WorkspaceRequestsService {
+export class WorkspaceRequestsService implements OnModuleInit {
   private readonly logger = new Logger(WorkspaceRequestsService.name);
 
   constructor(
@@ -23,6 +24,25 @@ export class WorkspaceRequestsService {
     private readonly mailService: MailService,
     private readonly auditLogsService: AuditLogsService,
   ) {}
+
+  async onModuleInit() {
+    await this.workspaceRequestModel.init();
+  }
+
+  async checkHandle(raw?: string) {
+    if (getWorkspace(this.configService).id !== FIRST_WORKSPACE_ID) {
+      throw new NotFoundException();
+    }
+    const handle = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+    if (!/^(?=.{3,64}$)[a-z0-9]+(?:-[a-z0-9]+)*$/.test(handle)) {
+      return { handle, status: 'invalid' as const };
+    }
+    const taken = this.isReservedHandle(handle) || await this.workspaceRequestModel.exists({
+      workspaceHandle: handle,
+      workspaceHandleClaimed: true,
+    });
+    return { handle, status: taken ? 'taken' as const : 'available' as const };
+  }
 
   private normalizeText(value?: string) {
     const normalized = value?.trim();
@@ -48,8 +68,12 @@ export class WorkspaceRequestsService {
   async create(
     dto: CreateWorkspaceRequestDto,
   ): Promise<Record<string, unknown>> {
+    const handle = dto.workspaceHandle === undefined ? undefined : await this.checkHandle(dto.workspaceHandle);
+    if (handle?.status === 'invalid') throw new BadRequestException({ code: 'workspace_handle_invalid', message: 'Enter a valid workspace handle.' });
+    if (handle?.status === 'taken') throw this.handleTaken();
     const payload = {
       organizationName: dto.organizationName.trim(),
+      workspaceHandle: handle?.handle,
       contactName: dto.contactName.trim(),
       email: dto.email.trim().toLowerCase(),
       phone: this.normalizeText(dto.phone),
@@ -258,13 +282,25 @@ export class WorkspaceRequestsService {
     }
 
     const nextStatus = dto.status;
-
-    await this.workspaceRequestModel.findByIdAndUpdate(id, {
-      status: nextStatus,
-      decisionNotes: this.normalizeText(dto.decisionNotes),
-      reviewedBy: new Types.ObjectId(currentUser.sub),
-      reviewedAt: new Date(),
-    });
+    const claim = !!existing.workspaceHandle && !existing.workspaceHandleClaimed &&
+      (nextStatus === 'approved' || nextStatus === 'provisioned');
+    if (claim && this.isReservedHandle(existing.workspaceHandle!)) {
+      throw this.handleTaken();
+    }
+    try {
+      await this.workspaceRequestModel.findByIdAndUpdate(id, {
+        status: nextStatus,
+        decisionNotes: this.normalizeText(dto.decisionNotes),
+        reviewedBy: new Types.ObjectId(currentUser.sub),
+        reviewedAt: new Date(),
+        ...(claim ? { workspaceHandleClaimed: true } : {}),
+      });
+    } catch (error) {
+      if (claim && typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
+        throw this.handleTaken();
+      }
+      throw error;
+    }
 
     await this.auditLogsService.record({
       entityType: 'workspace_request',
@@ -303,5 +339,16 @@ export class WorkspaceRequestsService {
             }
           : undefined,
     };
+  }
+
+  private handleTaken() {
+    return new ConflictException({ code: 'workspace_handle_taken', message: 'This workspace handle is already in use.' });
+  }
+
+  private isReservedHandle(handle: string) {
+    return [
+      FIRST_WORKSPACE_ID, 'admin', 'api', 'app', 'login', 'www', 'support',
+      ...(process.env.CHUFLOW_RESERVED_WORKSPACE_HANDLES?.split(',') ?? []),
+    ].includes(handle);
   }
 }

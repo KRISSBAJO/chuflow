@@ -26,6 +26,12 @@ export class WorkspaceRequestsController {
   ) {}
 
   @Public()
+  @Get('public/handle')
+  checkHandle(@Query('handle') handle?: string) {
+    return this.workspaceRequestsService.checkHandle(handle);
+  }
+
+  @Public()
   @Post()
   create(
     @Body() dto: CreateWorkspaceRequestDto,

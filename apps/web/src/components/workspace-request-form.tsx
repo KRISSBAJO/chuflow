@@ -4,7 +4,7 @@ import { useActionToast } from "@/lib/action-feedback";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   Alert,
   AuthHeading,
@@ -34,8 +34,39 @@ export function WorkspaceRequestForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [handleEdited, setHandleEdited] = useState(false);
+  const [availability, setAvailability] = useState<{ handle: string; status: "available" | "taken" | "invalid" }>();
+  const validHandle = /^(?=.{3,64}$)[a-z0-9]+(?:-[a-z0-9]+)*$/.test(handle);
+  const status = availability?.handle === handle ? availability.status : undefined;
 
-  async function handleSubmit(formData: FormData) {
+  useEffect(() => {
+    if (!validHandle) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`${API_URL}/workspace-requests/public/handle?handle=${encodeURIComponent(handle)}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (!controller.signal.aborted) setAvailability(result);
+        }
+      } catch {
+        // The server still validates the handle on submission.
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [handle, validHandle]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loading) return;
+    const formData = new FormData(event.currentTarget);
     setLoading(true);
     setMessage(null);
     setIsSuccess(false);
@@ -46,6 +77,7 @@ export function WorkspaceRequestForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organizationName: formData.get("organizationName"),
+          workspaceHandle: handle,
           contactName: formData.get("contactName"),
           email: formData.get("email"),
           phone: formData.get("phone"),
@@ -60,7 +92,9 @@ export function WorkspaceRequestForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        const reason = Array.isArray(result.message)
+        const reason = result.code === "workspace_handle_taken" ? t("handleTaken")
+          : result.code === "workspace_handle_invalid" ? t("handleInvalid")
+          : Array.isArray(result.message)
           ? result.message.join(", ")
           : result.message;
         throw new Error(reason || t("failed"));
@@ -116,7 +150,7 @@ export function WorkspaceRequestForm() {
     <div>
       <AuthHeading title={t("title")} body={t("body")} />
 
-      <form action={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <SectionTitle step={1} title={t("yourChurch")} />
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -125,9 +159,43 @@ export function WorkspaceRequestForm() {
                 name="organizationName"
                 placeholder={t("organizationPlaceholder")}
                 className="lp-input"
+                onChange={(event) => {
+                  if (!handleEdited) {
+                    setHandle(event.target.value.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 64).replace(/-+$/, ""));
+                  }
+                }}
                 required
               />
             </Field>
+          </div>
+          <div className="sm:col-span-2">
+            <Field label={t("workspaceHandle")}>
+              <input
+                name="workspaceHandle"
+                value={handle}
+                onChange={(event) => {
+                  setHandleEdited(true);
+                  setHandle(event.target.value.toLowerCase());
+                }}
+                className="lp-input"
+                placeholder="grace-church-atlanta"
+                required
+                maxLength={64}
+                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                minLength={3}
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby="workspace-handle-feedback"
+                aria-invalid={status === "taken" || (!!handle && !validHandle)}
+              />
+            </Field>
+            <p id="workspace-handle-feedback" role="status" className="mt-2 text-sm text-[var(--lp-muted)]">
+              {status === "taken" ? t("handleTaken")
+                : handle && !validHandle ? t("handleInvalid")
+                : status === "available" ? t("handleAvailable")
+                : t("handleHint")}
+            </p>
           </div>
           <Field label={t("city")}>
             <input

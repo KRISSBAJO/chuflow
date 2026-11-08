@@ -120,7 +120,10 @@ function start(env = process.env) {
     const current = workers.get(id);
     if (current) return current.ready;
     const child = fork(path.join(__dirname, '..', 'dist', 'main.js'), [], {
-      env: workerEnvironment(env, registry.get(id)),
+      env: workerEnvironment({
+        ...env,
+        CHUFLOW_RESERVED_WORKSPACE_HANDLES: [...registry.keys()].join(','),
+      }, registry.get(id)),
       execArgv: [],
       windowsHide: true,
     });

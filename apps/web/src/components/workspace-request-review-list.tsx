@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { apiPatch } from "@/lib/api";
+import { API_URL } from "@/lib/api";
 import { Badge, Button, buttonClass, EmptyState, statusTone } from "@/components/ui/ui";
 import { useAppFormat, useStatusLabel } from "@/i18n/labels";
 import type { WorkspaceRequestItem } from "@/lib/types";
@@ -16,6 +16,7 @@ export function WorkspaceRequestReviewList({
 }) {
   const router = useRouter();
   const t = useTranslations("org.workspaceRequests");
+  const signup = useTranslations("auth.request");
   const statusLabel = useStatusLabel();
   const { dateTime } = useAppFormat();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -26,10 +27,14 @@ export function WorkspaceRequestReviewList({
     setLoadingId(id);
 
     try {
-      await apiPatch(`/workspace-requests/${id}`, {
-        status,
-        decisionNotes: decisionNotes[id] || undefined,
+      const response = await fetch(`${API_URL}/workspace-requests/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, decisionNotes: decisionNotes[id] || undefined }),
       });
+      if (response.status === 409) throw new Error(signup("handleTaken"));
+      if (!response.ok) throw new Error(t("updateFailed"));
       toast.success(t("marked", { status: statusLabel(status) }));
       startTransition(() => {
         router.refresh();
@@ -65,6 +70,7 @@ export function WorkspaceRequestReviewList({
               <div className="min-w-0 flex-1 space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="lp-heading text-[18px]">{item.organizationName}</h3>
+                  {item.workspaceHandle ? <Badge>@{item.workspaceHandle}</Badge> : null}
                   <Badge tone={statusTone(item.status)} dot>
                     {statusLabel(item.status)}
                   </Badge>

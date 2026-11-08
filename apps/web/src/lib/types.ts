@@ -1067,6 +1067,7 @@ export type UserDirectoryResponse = {
 };
 
 export type WorkspaceRequestItem = {
+  workspaceHandle?: string;
   _id: string;
   organizationName: string;
   contactName: string;
