@@ -1,5 +1,17 @@
 {
   "more": {
+    "menu": {
+      "account": "Compte",
+      "switchWorkspace": "Changer d’espace de travail",
+      "workspaceFallback": "Espace de travail",
+      "attention": "À traiter",
+      "ministry": "Ministère",
+      "tools": "Outils du ministère",
+      "manage": "Gestion",
+      "admin": "Administration de l’église",
+      "preferences": "Préférences de l’application",
+      "back": "Retour à Plus"
+    },
     "approvalsWaiting": "{count, plural, one {# en attente de votre décision} other {# en attente de votre décision}}",
     "nothingWaiting": "Rien en attente",
     "hints": {
@@ -33,6 +45,7 @@
     },
     "website": "Sur le site web",
     "links": {
+      "forms": "Formulaires et champs",
       "branches": "Églises locales",
       "users": "Utilisateurs",
       "templates": "Modèles",

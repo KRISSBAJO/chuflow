@@ -7,6 +7,6 @@ export function childrenApiAllowed(
   if (controller === 'children') return true;
   return (
     controller === 'auth' &&
-    ['me', 'logout', 'change-password', 'workspaces', 'workspaces/:workspaceId/handoff'].includes(String(handler))
+    ['me', 'logout', 'change-password', 'workspaces', 'workspaces/:workspaceId/handoff', 'browser-handoff'].includes(String(handler))
   );
 }

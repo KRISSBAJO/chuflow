@@ -1,5 +1,17 @@
 {
   "more": {
+    "menu": {
+      "account": "Account",
+      "switchWorkspace": "Switch workspace",
+      "workspaceFallback": "Workspace",
+      "attention": "Needs attention",
+      "ministry": "Ministry",
+      "tools": "Ministry tools",
+      "manage": "Manage",
+      "admin": "Church administration",
+      "preferences": "App preferences",
+      "back": "Back to More"
+    },
     "approvalsWaiting": "{count, plural, one {# waiting for you} other {# waiting for you}}",
     "nothingWaiting": "Nothing waiting",
     "hints": {
@@ -33,6 +45,7 @@
     },
     "website": "On the website",
     "links": {
+      "forms": "Forms & fields",
       "branches": "Branches",
       "users": "Users",
       "templates": "Templates",
