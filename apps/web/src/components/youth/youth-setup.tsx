@@ -1,9 +1,11 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Button, Field } from "@/components/ui/ui";
 import type { YouthGroup, YouthOverview } from "@/lib/youth";
 import { useYouthAction } from "./use-youth-action";
+import { campMinorAmount } from "@/lib/youth-camp-money";
 
 export function youthGroupValues(form: FormData) {
   return {
@@ -29,7 +31,7 @@ export function YouthGroupFields({ group, event = false }: { group?: YouthGroup;
   </>;
 }
 
-export function YouthSetup({ overview, defaultBranch, events = false }: { overview: YouthOverview; defaultBranch?: string; events?: boolean }) {
+export function YouthSetup({ overview, defaultBranch, events = false, camps = false }: { overview: YouthOverview; defaultBranch?: string; events?: boolean; camps?: boolean }) {
   const t = useTranslations("youth");
   const { run, busy } = useYouthAction();
   function branchPicker() {
@@ -38,16 +40,24 @@ export function YouthSetup({ overview, defaultBranch, events = false }: { overvi
       {overview.branches.map(branch => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
     </select></Field>;
   }
-  if (events) return <details className="app-card p-5">
-    <summary className="cursor-pointer font-semibold">{t("createEvent")}</summary>
+  if (events || camps) return <details className="app-card p-5">
+    <summary className="cursor-pointer font-semibold">{t(camps ? "createCamp" : "createEvent")}</summary>
     <form className="mt-4 space-y-4" onSubmit={event => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       const { program, name, minAge, maxAge, guardianUnderAge } = youthGroupValues(form);
-      void run("/youth/events", "POST", {
+      const currency = String(form.get("currency") ?? "USD").toUpperCase();
+      const feeMinor = campMinorAmount(form.get("fee"), currency);
+      const depositMinor = campMinorAmount(form.get("deposit"), currency);
+      if (camps && (feeMinor === null || depositMinor === null || depositMinor > feeMinor)) {
+        toast.error(t("campAmountInvalid"));
+        return;
+      }
+      void run(camps ? "/youth/camps" : "/youth/events", "POST", {
         program, name, minAge, maxAge, guardianUnderAge, branchId: form.get("branchId"),
         venue: form.get("venue"), eventDate: form.get("eventDate"), registrationDeadline: form.get("registrationDeadline"),
         capacity: Number(form.get("capacity")),
+        ...(camps ? { campEndDate: form.get("campEndDate"), currency, feeMinor, depositMinor } : {}),
       });
     }}>
       <p className="text-sm text-neutral-600">{t("eventSetupHint")}</p>
@@ -58,8 +68,14 @@ export function YouthSetup({ overview, defaultBranch, events = false }: { overvi
         <Field label={t("eventDate")}><input name="eventDate" type="date" className="ui-input" required /></Field>
         <Field label={t("registrationDeadline")}><input name="registrationDeadline" type="date" className="ui-input" required /></Field>
         <Field label={t("capacity")}><input name="capacity" type="number" min={1} max={2000} className="ui-input" required /></Field>
+        {camps ? <>
+          <Field label={t("campEndDate")}><input name="campEndDate" type="date" className="ui-input" required /></Field>
+          <Field label={t("campCurrency")}><input name="currency" pattern="[A-Za-z]{3}" placeholder="USD" maxLength={3} className="ui-input" required /></Field>
+          <Field label={t("campFee")}><input name="fee" type="number" min={0} step="any" defaultValue={0} className="ui-input" required /></Field>
+          <Field label={t("campDeposit")}><input name="deposit" type="number" min={0} step="any" defaultValue={0} className="ui-input" required /></Field>
+        </> : null}
       </div>
-      <Button type="submit" disabled={busy}>{t("createEvent")}</Button>
+      <Button type="submit" disabled={busy}>{t(camps ? "createCamp" : "createEvent")}</Button>
     </form>
   </details>;
   return <section className="space-y-4">

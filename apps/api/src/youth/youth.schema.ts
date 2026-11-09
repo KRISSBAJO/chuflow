@@ -11,6 +11,10 @@ export class YouthGroup {
   @Prop({ required: true }) maxAge!: number;
   @Prop({ required: true }) meetingDay!: number;
   @Prop() eventDate?: string;
+  @Prop() campEndDate?: string;
+  @Prop() currency?: string;
+  @Prop() feeMinor?: number;
+  @Prop() depositMinor?: number;
   @Prop() districtManaged?: boolean;
   @Prop() registrationDeadline?: string;
   @Prop() venue?: string;
@@ -44,6 +48,13 @@ export class YouthEnrollment {
   @Prop({ type: Date, required: true }) consentAt!: Date;
   @Prop({ default: 'pending' }) state!: 'pending' | 'active' | 'declined' | 'withdrawn';
   @Prop({ select: false }) eventSeat?: number;
+  @Prop({ select: false }) transportConsent?: boolean;
+  @Prop({ select: false }) campTransport?: string;
+  @Prop({ select: false }) campRoom?: string;
+  @Prop({ select: false }) campPaid?: number;
+  @Prop({ select: false }) campScholarship?: number;
+  @Prop({ select: false }) campFinanceRevision?: number;
+  @Prop({ type: [Object], select: false, default: undefined }) campLedger?: { requestId: string; kind: string; amount: number; at: Date; actorId: string }[];
   @Prop({ type: SchemaTypes.ObjectId }) memberId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId }) childId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId, select: false }) linkedEnrollmentId?: Types.ObjectId;
@@ -71,3 +82,13 @@ export class YouthSession {
 }
 export const YouthSessionSchema = SchemaFactory.createForClass(YouthSession);
 YouthSessionSchema.index({ groupId: 1, date: 1 }, { unique: true });
+
+@Schema()
+export class YouthCampDelegation {
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) groupId!: Types.ObjectId;
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) branchId!: Types.ObjectId;
+  @Prop({ select: false }) token?: string;
+}
+export const YouthCampDelegationSchema = SchemaFactory.createForClass(YouthCampDelegation);
+YouthCampDelegationSchema.index({ groupId: 1, branchId: 1 }, { unique: true });
+YouthCampDelegationSchema.index({ token: 1 }, { unique: true, sparse: true });

@@ -5,8 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { MemberCustomFields, memberFieldPayload } from "@/components/member-custom-fields";
 import { Button, Field } from "@/components/ui/ui";
 import type { GuestStaffForm } from "@/lib/guest-fields";
+import { campMajorUnit } from "@/lib/youth-camp-money";
 
-type Registration = { name: string; program: string; minAge: number; maxAge: number; guardianUnderAge: number; eventDate?: string; venue?: string; consentVersion: number; form: GuestStaffForm };
+type Registration = { name: string; program: string; minAge: number; maxAge: number; guardianUnderAge: number; eventDate?: string; venue?: string; consentVersion: number; form: GuestStaffForm;
+  campEndDate?: string; currency?: string; feeMinor?: number; depositMinor?: number; branchName?: string };
 
 export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBase: string }) {
   const t = useTranslations("youth");
@@ -36,9 +38,16 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
   const eventAge = ageAt(form.eventDate ?? today);
   const guardian = age !== null && age < form.guardianUnderAge;
   const ageValid = eventAge !== null && birthDate <= today && eventAge >= form.minAge && eventAge <= form.maxAge;
+  const dateLabel = (date: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(date));
+  const currency = form.currency;
+  const money = currency ? new Intl.NumberFormat(locale, { style: "currency", currency }) : undefined;
   return <section className="app-card space-y-5 p-5 sm:p-8">
     <header><p className="text-sm font-semibold text-orange-800">{form.program}</p><h1 className="text-3xl font-semibold">{form.name}</h1>
-      {form.eventDate ? <p className="mt-2 text-sm">{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(form.eventDate))} · {form.venue}</p> : null}
+      {form.eventDate ? <p className="mt-2 text-sm">{dateLabel(form.eventDate)}{form.campEndDate && form.campEndDate !== form.eventDate ? ` – ${dateLabel(form.campEndDate)}` : ""} · {form.venue}</p> : null}
+      {form.branchName ? <p className="mt-2 text-sm">{t("branch")} · {form.branchName}</p> : null}
+      {money && currency && form.feeMinor ? <p className="mt-2 text-sm">{t("campPublicFees", {
+        fee: money.format(form.feeMinor / campMajorUnit(currency)), deposit: money.format((form.depositMinor ?? 0) / campMajorUnit(currency)),
+      })}</p> : null}
       <p className="mt-2 text-sm text-neutral-600">{t("ages", { from: form.minAge, to: form.maxAge })}</p></header>
     <form className="space-y-4" onSubmit={async event => {
       event.preventDefault();
@@ -53,6 +62,7 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
             firstName: data.get("firstName"), lastName: data.get("lastName"), birthDate,
             contact: data.get("contact"), ...(guardian ? { guardianName: data.get("guardianName") } : {}),
             consent: true, consentVersion: form.consentVersion, locale, ...memberFieldPayload(form.form, data),
+            ...(form.campEndDate ? { transportConsent: data.has("transportConsent") } : {}),
           }),
         });
         if (response.ok) setReceived(true);
@@ -76,6 +86,9 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
         {guardian ? <Field label={t("guardianName")}><input name="guardianName" className="ui-input" maxLength={160} required /></Field> : null}
         <Field label={t(guardian ? "guardianContact" : "contact")}><input name="contact" className="ui-input" maxLength={120} required /></Field>
         {form.form.fields.length ? <MemberCustomFields fields={form.form.fields} /> : null}
+        {form.campEndDate ? <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="transportConsent" />{t(guardian ? "campGuardianTransport" : "campAdultTransport")}
+        </label> : null}
         <label className="flex items-start gap-2 rounded-xl bg-orange-50 p-4 text-sm text-orange-950">
           <input type="checkbox" required checked={accepted} onChange={event => setAccepted(event.target.checked)} />
           {form.eventDate ? t(guardian ? "eventGuardianConsent" : "eventAdultConsent") : t(guardian ? "guardianConsent" : "adultConsent")}

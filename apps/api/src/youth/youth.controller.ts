@@ -4,7 +4,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { YouthAttendanceDto, YouthBranchDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
 import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
@@ -52,6 +52,49 @@ export class YouthController {
 
   @Post('events')
   event(@CurrentUser() user: AuthUser, @Body() dto: YouthEventDto) { return this.youth.createEvent(user, dto); }
+
+  @Post('camps')
+  createCamp(@CurrentUser() user: AuthUser, @Body() dto: YouthCampDto) { return this.youth.createCamp(user, dto); }
+
+  @Get('camps/:id') @Header('Cache-Control', 'no-store')
+  campOverview(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query('branch') branch?: string, @Query('date') date?: string) {
+    return this.youth.campOverview(user, id, branch, date);
+  }
+
+  @Post('camps/:id/branches')
+  addCampBranch(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthBranchDto) {
+    return this.youth.addCampBranch(user, id, dto.branchId);
+  }
+
+  @Patch('camps/:id/branches/:branch/link')
+  campLink(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Body() dto: YouthCampLinkDto) {
+    return this.youth.campLink(user, id, branch, dto.enabled);
+  }
+
+  @Patch('camps/:id/branches/:branch/attendance')
+  campAttendance(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Body() dto: YouthAttendanceDto) {
+    return this.youth.campAttendance(user, id, branch, dto);
+  }
+
+  @Patch('camps/:id/branches/:branch/people/:person/review')
+  campReview(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string, @Body() dto: YouthReviewDto) {
+    return this.youth.campReview(user, id, branch, person, dto);
+  }
+
+  @Patch('camps/:id/branches/:branch/people/:person/withdraw')
+  campWithdraw(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string) {
+    return this.youth.campWithdraw(user, id, branch, person);
+  }
+
+  @Patch('camps/:id/branches/:branch/people/:person/logistics')
+  campLogistics(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string, @Body() dto: YouthCampLogisticsDto) {
+    return this.youth.campLogistics(user, id, branch, person, dto);
+  }
+
+  @Post('camps/:id/branches/:branch/people/:person/ledger')
+  campFinance(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string, @Body() dto: YouthCampFinanceDto) {
+    return this.youth.campFinance(user, id, branch, person, dto);
+  }
 
   @Get('groups/:id') @Header('Cache-Control', 'no-store')
   details(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query('date') date?: string, @Query('view') view?: string) {

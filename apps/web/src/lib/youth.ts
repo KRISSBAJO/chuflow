@@ -9,6 +9,7 @@ export type YouthGroup = {
   maxAge: number;
   meetingDay: number;
   eventDate?: string;
+  campEndDate?: string;
   registrationDeadline?: string;
   venue?: string;
   capacity?: number;
@@ -21,7 +22,7 @@ export type YouthOverview = {
   canManageEvents: boolean;
   pilotAvailable: boolean;
   branches: { _id: string; name: string }[];
-  groups: (Pick<YouthGroup, "_id" | "program" | "name" | "eventDate" | "venue" | "capacity"> & { branchName: string; canOpen: boolean; active: number; pending: number; sessions: number; visits: number })[];
+  groups: (Pick<YouthGroup, "_id" | "program" | "name" | "eventDate" | "campEndDate" | "venue" | "capacity"> & { branchName: string; canOpen: boolean; active: number; pending: number; sessions: number; visits: number })[];
 };
 export type YouthPerson = {
   _id: string;

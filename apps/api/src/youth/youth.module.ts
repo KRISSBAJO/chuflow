@@ -7,7 +7,7 @@ import { GuestsModule } from '../guests/guests.module';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { YouthController, YouthRegistrationController } from './youth.controller';
-import { YouthEnrollment, YouthEnrollmentSchema, YouthGroup, YouthGroupSchema, YouthSession, YouthSessionSchema } from './youth.schema';
+import { YouthCampDelegation, YouthCampDelegationSchema, YouthEnrollment, YouthEnrollmentSchema, YouthGroup, YouthGroupSchema, YouthSession, YouthSessionSchema } from './youth.schema';
 import { YouthService } from './youth.service';
 import { YouthDevelopment, YouthDevelopmentProgress, YouthDevelopmentProgressSchema, YouthDevelopmentSchema } from './youth-development.schema';
 import { YouthDevelopmentService } from './youth-development.service';
@@ -19,6 +19,7 @@ import { YouthDevelopmentService } from './youth-development.service';
       { name: YouthGroup.name, schema: YouthGroupSchema },
       { name: YouthEnrollment.name, schema: YouthEnrollmentSchema },
       { name: YouthSession.name, schema: YouthSessionSchema },
+      { name: YouthCampDelegation.name, schema: YouthCampDelegationSchema },
       { name: YouthDevelopment.name, schema: YouthDevelopmentSchema },
       { name: YouthDevelopmentProgress.name, schema: YouthDevelopmentProgressSchema },
       { name: Branch.name, schema: BranchSchema },

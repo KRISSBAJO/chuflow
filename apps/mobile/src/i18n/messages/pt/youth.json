@@ -1,5 +1,7 @@
 {
   "youth": {
+    "camps": "Acampamentos e convenções",
+    "noCamps": "Ainda não há acampamentos nem convenções no seu âmbito.",
     "development": "Discipulado e serviço",
     "events": "Eventos",
     "noEvents": "Ainda não há eventos juvenis no seu âmbito.",

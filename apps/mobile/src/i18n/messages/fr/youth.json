@@ -1,5 +1,7 @@
 {
   "youth": {
+    "camps": "Camps et conventions",
+    "noCamps": "Aucun camp ni convention dans votre périmètre.",
     "development": "Formation et service",
     "events": "Événements",
     "noEvents": "Aucun événement jeunesse dans votre périmètre.",

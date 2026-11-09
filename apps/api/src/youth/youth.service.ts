@@ -12,8 +12,8 @@ import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.ser
 import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
 import { getWorkspace } from '../workspaces/workspace-boundary';
-import { YouthAttendanceDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
-import { YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
+import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 
 const day = () => new Date().toISOString().slice(0, 10);
 const duplicate = (error: unknown) => (error as { code?: number })?.code === 11000;
@@ -29,6 +29,7 @@ export class YouthService {
     @InjectModel(YouthGroup.name) private readonly groups: Model<YouthGroup>,
     @InjectModel(YouthEnrollment.name) private readonly enrollments: Model<YouthEnrollment>,
     @InjectModel(YouthSession.name) private readonly sessions: Model<YouthSession>,
+    @InjectModel(YouthCampDelegation.name) private readonly delegations: Model<YouthCampDelegation>,
     @InjectModel(Branch.name) private readonly branches: Model<Branch>,
     @InjectModel(User.name) private readonly users: Model<User>,
     @InjectModel(Member.name) private readonly members: Model<Member>,
@@ -81,7 +82,9 @@ export class YouthService {
   async overview(user: AuthUser) {
     const scope = await this.access.buildBranchObjectIdFilter(user);
     const query = LEADERSHIP_ROLES.includes(user.role) || user.role === 'youth_pastor' ? scope : { ...scope, leaderId: id(user.sub) };
-    const groups = await this.groups.find(query).sort({ program: 1, name: 1 }).lean();
+    const own = this.canManage(user) && user.branchId ? await this.access.resolveScopedBranchId(user) : undefined;
+    const delegated = own ? await this.delegations.distinct('groupId', { branchId: own }) : [];
+    const groups = await this.groups.find({ $or: [query, { _id: { $in: delegated } }] }).sort({ program: 1, name: 1 }).lean();
     const groupIds = groups.map(({ _id }) => _id);
     const [counts, sessionCounts, visibleBranches] = await Promise.all([
       this.enrollments.aggregate<{ _id: { group: Types.ObjectId; state: string }; count: number }>([
@@ -103,8 +106,9 @@ export class YouthService {
       groups: groups.map(group => ({
         _id: group._id, program: group.program, name: group.name,
         branchName: branchNames.get(String(group.branchId)),
-        canOpen: this.managesGroup(user, group) || (String(group.leaderId) === user.sub && Boolean(group.clearanceUntil && group.clearanceUntil >= day())),
+        canOpen: this.managesGroup(user, group) || (!group.campEndDate && String(group.leaderId) === user.sub && Boolean(group.clearanceUntil && group.clearanceUntil >= day())),
         eventDate: group.eventDate, venue: group.venue, capacity: group.capacity,
+        campEndDate: group.campEndDate,
         active: counts.find(row => String(row._id.group) === String(group._id) && row._id.state === 'active')?.count ?? 0,
         pending: counts.find(row => String(row._id.group) === String(group._id) && row._id.state === 'pending')?.count ?? 0,
         sessions: sessionCounts.find(row => String(row._id) === String(group._id))?.sessions ?? 0,
@@ -126,7 +130,15 @@ export class YouthService {
     return this.saveGroup(branchId, { ...dto, districtManaged: !this.canManage(user), venue: dto.venue.trim(), meetingDay: new Date(dto.eventDate).getUTCDay() });
   }
 
-  private async saveGroup(branchId: Types.ObjectId, dto: YouthGroupDto & Partial<Pick<YouthGroup, 'eventDate' | 'registrationDeadline' | 'venue' | 'capacity' | 'districtManaged'>>) {
+  async createCamp(user: AuthUser, dto: YouthCampDto) {
+    const branchId = await this.manageBranch(user, dto.branchId, true);
+    if (dto.registrationDeadline < day() || dto.registrationDeadline > dto.eventDate || dto.campEndDate < dto.eventDate ||
+        Date.parse(dto.campEndDate) - Date.parse(dto.eventDate) > 30 * 86400000 ||
+        dto.depositMinor > dto.feeMinor || !Intl.supportedValuesOf('currency').includes(dto.currency)) throw new BadRequestException();
+    return this.saveGroup(branchId, { ...dto, districtManaged: !this.canManage(user), venue: dto.venue.trim(), meetingDay: new Date(dto.eventDate).getUTCDay() });
+  }
+
+  private async saveGroup(branchId: Types.ObjectId, dto: YouthGroupDto & Partial<Pick<YouthGroup, 'eventDate' | 'registrationDeadline' | 'venue' | 'capacity' | 'districtManaged' | 'campEndDate' | 'currency' | 'feeMinor' | 'depositMinor'>>) {
     if (dto.maxAge < dto.minAge) throw new BadRequestException('Check the program age range.');
     const { program, name } = dto;
     const key = createHash('sha256').update(JSON.stringify([program.trim().toLowerCase(), name.trim().toLowerCase(), ...(dto.eventDate ? [dto.eventDate] : [])])).digest('hex');
@@ -175,6 +187,7 @@ export class YouthService {
   async details(user: AuthUser, groupId: string, date = day(), attendanceOnly = false) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException();
     const group = await this.scopedGroup(user, groupId);
+    if (group.campEndDate) throw new NotFoundException();
     date = group.eventDate ?? date;
     const manager = this.managesGroup(user, group);
     const showRegistration = manager && !attendanceOnly;
@@ -214,6 +227,7 @@ export class YouthService {
 
   async registrationLink(user: AuthUser, groupId: string, enable: boolean) {
     const group = await this.scopedGroup(user, groupId, true);
+    if (group.campEndDate) throw new NotFoundException();
     if (enable && !await this.cleared(group)) throw new ForbiddenException('Assign a screened group leader with current clearance first.');
     if (enable && !this.registrationInTime(group)) throw new BadRequestException('Registration has closed or screening expires before the event.');
     await this.groups.updateOne({ _id: group._id, ...(enable ? { registrationToken: { $exists: false } } : {}) }, enable
@@ -224,29 +238,34 @@ export class YouthService {
 
   private registrationInTime(group: YouthGroup) {
     return !group.eventDate || Boolean(group.registrationDeadline && group.registrationDeadline >= day() &&
-      group.clearanceUntil && group.clearanceUntil >= group.eventDate);
+      group.clearanceUntil && group.clearanceUntil >= (group.campEndDate ?? group.eventDate));
   }
 
   private async publicGroup(token: string) {
     await this.forms.assertPublicEnabled();
     if (!/^[a-f0-9]{48}$/.test(token ?? '')) throw new NotFoundException();
-    const group = await this.groups.findOne({ registrationToken: token }).lean();
+    const delegation = await this.delegations.findOne({ token }).lean();
+    const group = await this.groups.findOne(delegation ? { _id: delegation.groupId, campEndDate: { $exists: true } } :
+      { registrationToken: token, campEndDate: { $exists: false } }).lean();
     if (!group || !this.registrationInTime(group) || !await this.cleared(group)) throw new NotFoundException();
-    return group;
+    return { group, branchId: delegation?.branchId ?? group.branchId };
   }
 
   async publicInfo(token: string) {
-    const { name, program, minAge, maxAge, guardianUnderAge, eventDate, venue, registrationDeadline } = await this.publicGroup(token);
-    return { name, program, minAge, maxAge, guardianUnderAge, eventDate, venue, registrationDeadline, consentVersion: 1, form: await this.forms.publicForm(MinistryFormKind.Youth) };
+    const { group: { name, program, minAge, maxAge, guardianUnderAge, eventDate, venue, registrationDeadline, campEndDate, currency, feeMinor, depositMinor }, branchId } = await this.publicGroup(token);
+    const branch = campEndDate ? await this.branches.findById(branchId).select('name').lean() : null;
+    return { name, program, minAge, maxAge, guardianUnderAge, eventDate, venue, registrationDeadline, campEndDate, currency, feeMinor,
+      depositMinor, branchName: branch?.name, consentVersion: 1, form: await this.forms.publicForm(MinistryFormKind.Youth) };
   }
 
   async register(token: string, dto: YouthRegistrationDto, ip: string) {
     this.forms.limitPublicSubmission(ip);
-    const group = await this.publicGroup(token);
+    const { group, branchId } = await this.publicGroup(token);
     const customAnswers = await this.forms.prepare(MinistryFormKind.Youth, dto, undefined, 'public');
     const enrollment = this.enrollmentData(group, dto);
     try {
-      await this.enrollments.create({ ...enrollment, customAnswers });
+      await this.enrollments.create({ ...enrollment, branchId, customAnswers,
+        ...(group.campEndDate ? { transportConsent: dto.transportConsent === true } : {}) });
     } catch (error) {
       if (!duplicate(error)) throw error;
     }
@@ -303,6 +322,7 @@ export class YouthService {
 
   async matches(user: AuthUser, groupId: string, enrollmentId: string) {
     const group = await this.scopedGroup(user, groupId, true);
+    if (group.campEndDate) throw new NotFoundException();
     const record = await this.enrollments.findOne({ _id: id(enrollmentId), groupId: group._id, state: 'pending' }).select('+birthDate').lean();
     if (!record) throw new NotFoundException();
     const query = { branchId: group.branchId, firstName: record.firstName, lastName: record.lastName };
@@ -315,18 +335,25 @@ export class YouthService {
 
   async review(user: AuthUser, groupId: string, enrollmentId: string, dto: YouthReviewDto) {
     const group = await this.scopedGroup(user, groupId, true);
-    const query = { _id: id(enrollmentId), groupId: group._id, state: 'pending' };
+    if (group.campEndDate) throw new NotFoundException();
+    return this.reviewEnrollment(user, group, enrollmentId, dto);
+  }
+
+  private async reviewEnrollment(user: AuthUser, group: YouthGroup & { _id: Types.ObjectId }, enrollmentId: string, dto: YouthReviewDto, branchId?: Types.ObjectId) {
+    const query = { _id: id(enrollmentId), groupId: group._id, state: 'pending', ...(branchId ? { branchId } : {}) };
     const record = await this.enrollments.findOne(query).select('+birthDate').lean();
     if (!record) throw new NotFoundException();
     if (dto.state === 'active' && record.needsGuardian && dto.guardianVerified !== true) {
       throw new BadRequestException('Confirm the guardian’s permission before approving.');
     }
-    if (dto.state === 'active' && group.eventDate && (group.eventDate < day() || !group.clearanceUntil || group.clearanceUntil < group.eventDate || !await this.cleared(group))) {
+    const end = group.campEndDate ?? group.eventDate;
+    if (dto.state === 'active' && end && (end < day() || !group.clearanceUntil || group.clearanceUntil < end || !await this.cleared(group))) {
       throw new ForbiddenException('Event approval requires an upcoming event and a screened leader.');
     }
     if (dto.memberId && dto.childId) throw new BadRequestException('Choose one existing record.');
     if (dto.memberId || dto.childId) {
-      const options = await this.matches(user, groupId, enrollmentId);
+      if (group.campEndDate) throw new BadRequestException();
+      const options = await this.matches(user, String(group._id), enrollmentId);
       const choices = dto.memberId ? options.members : options.children;
       if (!choices.some(option => String(option._id) === (dto.memberId ?? dto.childId))) throw new BadRequestException('Choose a matching record in this branch.');
     }
@@ -359,11 +386,16 @@ export class YouthService {
 
   async attendance(user: AuthUser, groupId: string, dto: YouthAttendanceDto) {
     const group = await this.scopedGroup(user, groupId);
+    if (group.campEndDate) throw new NotFoundException();
+    return this.recordAttendance(group, dto);
+  }
+
+  private async recordAttendance(group: YouthGroup & { _id: Types.ObjectId }, dto: YouthAttendanceDto, branchId?: Types.ObjectId) {
     if (!await this.cleared(group)) throw new ForbiddenException('Assign a screened group leader with current clearance first.');
-    if (group.eventDate && dto.date !== group.eventDate) throw new BadRequestException('Use the event date for attendance.');
+    if (group.eventDate && (dto.date < group.eventDate || dto.date > (group.campEndDate ?? group.eventDate))) throw new BadRequestException('Use the event dates for attendance.');
     if (dto.date > day()) throw new BadRequestException('Attendance cannot be entered for a future date.');
     const enrollmentId = id(dto.enrollmentId);
-    if (!await this.enrollments.exists({ _id: enrollmentId, groupId: group._id, state: 'active' })) throw new NotFoundException();
+    if (!await this.enrollments.exists({ _id: enrollmentId, groupId: group._id, state: 'active', ...(branchId ? { branchId } : {}) })) throw new NotFoundException();
     const query = { groupId: group._id, date: dto.date };
     if (!dto.present) await this.sessions.updateOne(query, { $pull: { present: enrollmentId } });
     else {
@@ -379,6 +411,7 @@ export class YouthService {
 
   async withdraw(user: AuthUser, groupId: string, enrollmentId: string) {
     const group = await this.scopedGroup(user, groupId, true);
+    if (group.campEndDate) throw new NotFoundException();
     const saved = await this.enrollments.updateOne({ _id: id(enrollmentId), groupId: group._id, state: 'active' },
       { $set: { state: 'withdrawn', withdrawnBy: user.sub, withdrawnAt: new Date() } });
     if (!saved.modifiedCount) throw new NotFoundException();
@@ -387,8 +420,157 @@ export class YouthService {
 
   async welcome(user: AuthUser, groupId: string, enrollmentId: string) {
     const group = await this.scopedGroup(user, groupId);
+    if (group.campEndDate) throw new NotFoundException();
     const saved = await this.enrollments.updateOne({ _id: id(enrollmentId), groupId: group._id, state: 'active', welcomedAt: { $exists: false } },
       { $set: { welcomedAt: new Date() } });
     return { saved: saved.modifiedCount === 1 };
+  }
+
+  private async campScope(user: AuthUser, groupId: string) {
+    const group = await this.groups.findOne({ _id: id(groupId), campEndDate: { $exists: true } }).lean();
+    if (!group) throw new NotFoundException();
+    const branches = await this.access.getAccessibleBranchObjectIds(user);
+    const canReach = (branchId: Types.ObjectId) => branches === null || branches.some(branch => String(branch) === String(branchId));
+    const coordinator = this.managesGroup(user, group) && canReach(group.branchId);
+    const delegations = await this.delegations.find({ groupId: group._id }).lean();
+    const local = this.canManage(user) ? delegations.filter(row => canReach(row.branchId)) : [];
+    if (!coordinator && !local.length) throw new ForbiddenException();
+    return { group, coordinator, delegations, local };
+  }
+
+  private async campBranch(user: AuthUser, groupId: string, branchId: string) {
+    const scope = await this.campScope(user, groupId);
+    const branch = scope.local.find(row => String(row.branchId) === branchId);
+    if (!branch) throw new ForbiddenException();
+    return { ...scope, branch };
+  }
+
+  private async campBranchOptions(user: AuthUser, group: YouthGroup) {
+    const host = await this.branches.findById(group.branchId).select('district oversightRegion').lean();
+    const scope = await this.access.getBranchDocumentQuery(user);
+    const district = host?.district && host?.oversightRegion ?
+      { district: host.district, oversightRegion: host.oversightRegion } : { _id: group.branchId };
+    return this.branches.find({ $and: [scope, district] }).select('name').sort({ name: 1 }).lean();
+  }
+
+  async campOverview(user: AuthUser, groupId: string, requested?: string, selectedDate?: string) {
+    const { group, coordinator, delegations, local } = await this.campScope(user, groupId);
+    const available = coordinator ? delegations : local;
+    const selected = requested ? local.find(row => String(row.branchId) === requested) : local.length === 1 && !coordinator ? local[0] : undefined;
+    if (requested && !selected) throw new ForbiddenException();
+    const date = selectedDate ?? group.eventDate!;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < group.eventDate! || date > group.campEndDate!) throw new BadRequestException();
+    const finance = Boolean(selected && this.campFinanceRole(user));
+    const [branches, options, totals, people, session, link, leaders, screened] = await Promise.all([
+      this.branches.find({ _id: { $in: available.map(row => row.branchId) } }).select('name').lean(),
+      coordinator ? this.campBranchOptions(user, group) : [],
+      this.enrollments.aggregate<{ _id: { branch: Types.ObjectId; state: string }; count: number; guardians: number }>([
+        { $match: { groupId: group._id, branchId: { $in: available.map(row => row.branchId) } } },
+        { $group: { _id: { branch: '$branchId', state: '$state' }, count: { $sum: 1 }, guardians: { $sum: { $cond: ['$needsGuardian', 1, 0] } } } },
+      ]),
+      selected ? this.enrollments.find({ groupId: group._id, branchId: selected.branchId })
+        .select('+guardianName +contact +transportConsent +campTransport +campRoom' + (finance ? ' +campPaid +campScholarship +campFinanceRevision +campLedger' : ''))
+        .sort({ firstName: 1, lastName: 1 }).lean() : [],
+      selected ? this.sessions.findOne({ groupId: group._id, date }).lean() : null,
+      selected ? this.delegations.findById(selected._id).select('+token').lean() : null,
+      coordinator ? this.users.find({ branchId: group.branchId, isActive: true, role: { $in: leaderRoles } }).select('firstName lastName').sort({ firstName: 1 }).lean() : [],
+      this.cleared(group),
+    ]);
+    const ownIds = new Set(people.map(person => String(person._id)));
+    const localBranches = new Set(local.map(row => String(row.branchId)));
+    return {
+      group, coordinator, options, leaders, date, people, finance, screened,
+      registrationAvailable: screened && this.registrationInTime(group),
+      token: link?.token ?? null, selectedBranch: selected?.branchId,
+      present: (session?.present ?? []).filter(person => ownIds.has(String(person))),
+      branches: branches.map(branch => {
+        const rows = totals.filter(row => String(row._id.branch) === String(branch._id));
+        return { _id: branch._id, name: branch.name, local: localBranches.has(String(branch._id)),
+          approved: rows.find(row => row._id.state === 'active')?.count ?? 0,
+          pending: rows.find(row => row._id.state === 'pending')?.count ?? 0,
+          guardianPending: rows.find(row => row._id.state === 'pending')?.guardians ?? 0 };
+      }),
+    };
+  }
+
+  async addCampBranch(user: AuthUser, groupId: string, branchId: string) {
+    const { group, coordinator } = await this.campScope(user, groupId);
+    if (!coordinator) throw new ForbiddenException();
+    const branch = (await this.campBranchOptions(user, group)).find(option => String(option._id) === branchId);
+    if (!branch) throw new ForbiddenException();
+    const query = { groupId: group._id, branchId: branch._id };
+    await this.delegations.init();
+    try { await this.delegations.updateOne(query, { $setOnInsert: query }, { upsert: true }); }
+    catch (error) { if (!duplicate(error)) throw error; }
+    return { saved: true };
+  }
+
+  async campLink(user: AuthUser, groupId: string, branchId: string, enabled: boolean) {
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    if (enabled && (!this.registrationInTime(group) || !await this.cleared(group))) throw new ForbiddenException();
+    await this.delegations.updateOne({ _id: branch._id, ...(enabled ? { token: { $exists: false } } : {}) },
+      enabled ? { $set: { token: randomBytes(24).toString('hex') } } : { $unset: { token: 1 } });
+    return { saved: true };
+  }
+
+  async campReview(user: AuthUser, groupId: string, branchId: string, personId: string, dto: YouthReviewDto) {
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    return this.reviewEnrollment(user, group, personId, dto, branch.branchId);
+  }
+
+  async campAttendance(user: AuthUser, groupId: string, branchId: string, dto: YouthAttendanceDto) {
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    return this.recordAttendance(group, dto, branch.branchId);
+  }
+
+  async campWithdraw(user: AuthUser, groupId: string, branchId: string, personId: string) {
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    const result = await this.enrollments.updateOne({ _id: id(personId), groupId: group._id, branchId: branch.branchId, state: 'active' },
+      { $set: { state: 'withdrawn', withdrawnBy: user.sub, withdrawnAt: new Date() } });
+    if (!result.modifiedCount) throw new NotFoundException();
+    return { saved: true };
+  }
+
+  async campLogistics(user: AuthUser, groupId: string, branchId: string, personId: string, dto: YouthCampLogisticsDto) {
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    const transport = dto.transport.trim();
+    const query = { _id: id(personId), groupId: group._id, branchId: branch.branchId, state: 'active',
+      ...(transport ? { transportConsent: true } : {}) };
+    const result = await this.enrollments.updateOne(query, { $set: { campTransport: transport, campRoom: dto.room.trim() } });
+    if (!result.matchedCount) throw new BadRequestException('Transport requires consent and an approved enrollment.');
+    return { saved: true };
+  }
+
+  private campFinanceRole(user: AuthUser) {
+    return user.role === 'super_admin' || user.role === 'branch_admin';
+  }
+
+  async campFinance(user: AuthUser, groupId: string, branchId: string, personId: string, dto: YouthCampFinanceDto) {
+    if (!this.campFinanceRole(user)) throw new ForbiddenException();
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    const query = { _id: id(personId), groupId: group._id, branchId: branch.branchId };
+    const record = await this.enrollments.findOne(query).select('+campPaid +campScholarship +campFinanceRevision +campLedger').lean();
+    if (!record) throw new NotFoundException();
+    const existing = record.campLedger?.find(entry => entry.requestId === dto.requestId);
+    if (existing) {
+      if (existing.amount !== dto.amount || existing.kind !== dto.kind) throw new ConflictException();
+      return { saved: true };
+    }
+    if ((record.campFinanceRevision ?? 0) !== dto.revision) throw new ConflictException();
+    if ((record.campLedger?.length ?? 0) >= 200) throw new ConflictException('This ledger has reached its entry limit.');
+    if (record.state !== 'active' && record.state !== 'pending' && ['payment', 'scholarship'].includes(dto.kind)) throw new BadRequestException();
+    const paid = (record.campPaid ?? 0) + (dto.kind === 'payment' ? dto.amount : dto.kind === 'refund' ? -dto.amount : 0);
+    const scholarship = (record.campScholarship ?? 0) + (dto.kind === 'scholarship' ? dto.amount : dto.kind === 'scholarship_reversal' ? -dto.amount : 0);
+    if (paid < 0 || scholarship < 0 || paid + scholarship > (group.feeMinor ?? 0)) throw new BadRequestException();
+    const saved = await this.enrollments.updateOne({
+      ...query, state: record.state,
+      ...(dto.revision ? { campFinanceRevision: dto.revision } : { $or: [{ campFinanceRevision: 0 }, { campFinanceRevision: { $exists: false } }] }),
+    }, {
+      $set: { campPaid: paid, campScholarship: scholarship },
+      $inc: { campFinanceRevision: 1 },
+      $push: { campLedger: { requestId: dto.requestId, kind: dto.kind, amount: dto.amount, at: new Date(), actorId: user.sub } },
+    });
+    if (!saved.modifiedCount) throw new ConflictException();
+    return { saved: true };
   }
 }

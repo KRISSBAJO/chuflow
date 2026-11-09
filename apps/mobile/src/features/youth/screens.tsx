@@ -12,7 +12,7 @@ import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
 import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
 
-type Group = { _id: string; name: string; program: string; branchName: string; active: number; pending: number; canOpen: boolean; eventDate?: string };
+type Group = { _id: string; name: string; program: string; branchName: string; active: number; pending: number; canOpen: boolean; eventDate?: string; campEndDate?: string };
 type Overview = { groups: Group[]; canManage: boolean; canManageEvents?: boolean };
 type Detail = {
   group: { name: string; eventDate?: string };
@@ -33,13 +33,20 @@ export function YouthOverview({ embedded = false }: { embedded?: boolean } = {})
       {embedded ? <ScreenHeader title={t('title')} /> : <Stack.Screen options={{ title: t('title') }} />}
       {data.loading ? <Loading /> : data.error ? <ErrorState message={data.error} onRetry={() => void data.refresh()} /> : (
         <View>
-          {([false, true] as const).map(events => <View key={String(events)}>
-          <Section title={t(events ? 'events' : 'groups')} />
-          {groups.some(group => Boolean(group.eventDate) === events) ? groups.filter(group => Boolean(group.eventDate) === events).map(group => (
-            <ListRow key={group._id} title={group.name} subtitle={`${group.branchName} · ${t('counts', { active: group.active, pending: group.pending })}`}
-              onPress={group.canOpen ? () => router.push(('/youth/' + group._id) as Href) : undefined} divider />
-          )) : <EmptyState title={t(events ? 'noEvents' : 'noGroups')} />}
-          </View>)}
+          {(['groups', 'events', 'camps'] as const).map(section => {
+            const rows = groups.filter(group => (group.campEndDate ? 'camps' : group.eventDate ? 'events' : 'groups') === section);
+            return (
+              <View key={section}>
+                <Section title={t(section)} />
+                {rows.length ? rows.map(group => (
+                  <ListRow key={group._id} title={group.name} subtitle={`${group.branchName} · ${t('counts', { active: group.active, pending: group.pending })}`}
+                    onPress={group.canOpen ? () => group.campEndDate ?
+                      void openWorkspaceBrowser('/youth/camps/' + group._id, user?.workspace) :
+                      router.push(('/youth/' + group._id) as Href) : undefined} divider />
+                )) : <EmptyState title={t(section === 'camps' ? 'noCamps' : section === 'events' ? 'noEvents' : 'noGroups')} />}
+              </View>
+            );
+          })}
         </View>
       )}
       {data.data?.canManage || data.data?.canManageEvents ? <Button variant="secondary" label={t('manageWeb')}

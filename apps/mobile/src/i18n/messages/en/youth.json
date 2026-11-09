@@ -1,5 +1,7 @@
 {
   "youth": {
+    "camps": "Camps & conventions",
+    "noCamps": "No camps or conventions in your scope yet.",
     "development": "Discipleship & service",
     "events": "Events",
     "noEvents": "No youth events in your scope yet.",

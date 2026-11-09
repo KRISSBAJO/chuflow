@@ -35,6 +35,7 @@ export class YouthRegistrationDto {
   @IsIn(['en', 'es', 'fr', 'pt']) locale!: string;
   @IsOptional() @IsInt() @Min(0) formRevision?: number;
   @IsOptional() @IsObject() customFields?: Record<string, unknown>;
+  @IsOptional() @IsBoolean() transportConsent?: boolean;
 }
 export class YouthReviewDto {
   @IsIn(['active', 'declined']) state!: 'active' | 'declined';
@@ -49,4 +50,24 @@ export class YouthAttendanceDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date!: string;
   @IsMongoId() enrollmentId!: string;
   @IsBoolean() present!: boolean;
+}
+
+export class YouthCampDto extends YouthEventDto {
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) campEndDate!: string;
+  @Matches(/^[A-Z]{3}$/) currency!: string;
+  @IsInt() @Min(0) @Max(100000000) feeMinor!: number;
+  @IsInt() @Min(0) @Max(100000000) depositMinor!: number;
+}
+export class YouthCampLinkDto {
+  @IsBoolean() enabled!: boolean;
+}
+export class YouthCampLogisticsDto {
+  @IsString() @MaxLength(120) transport!: string;
+  @IsString() @MaxLength(120) room!: string;
+}
+export class YouthCampFinanceDto {
+  @Matches(/^[a-f0-9-]{36}$/i) requestId!: string;
+  @IsIn(['payment', 'scholarship', 'refund', 'scholarship_reversal']) kind!: 'payment' | 'scholarship' | 'refund' | 'scholarship_reversal';
+  @IsInt() @Min(1) @Max(100000000) amount!: number;
+  @IsInt() @Min(0) revision!: number;
 }
