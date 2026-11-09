@@ -347,6 +347,7 @@ export const routePermissions: Record<string, AppRole[]> = {
   "/permissions": ["super_admin", "national_admin", "national_pastor", "district_admin", "district_pastor", "branch_admin", "resident_pastor"],
   "/imports": [...LEADERSHIP_ROLES],
   "/children": [...LEADERSHIP_ROLES, "children_worker", "children_supervisor"],
+  "/youth": [...LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES],
   "/hierarchy": [...LEADERSHIP_ROLES],
   "/care/settings": [...LEADERSHIP_ROLES],
   "/meetings/groups": [...LEADERSHIP_ROLES],

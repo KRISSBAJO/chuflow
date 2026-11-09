@@ -15,6 +15,7 @@
     "approvalsWaiting": "{count, plural, one {# aguardando sua decisão} other {# aguardando sua decisão}}",
     "nothingWaiting": "Nada pendente",
     "hints": {
+      "youth": "Grupos e presenças semanais",
       "members": "Diretório e perfis",
       "kids": "Check-in e turmas",
       "finance": "Ofertas e despesas",

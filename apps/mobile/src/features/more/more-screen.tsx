@@ -16,17 +16,18 @@ import type { BranchSummary, FeatureKey } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { AppPreferences } from './app-preferences';
 
-type AreaKey = 'members' | 'kids' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports';
+type AreaKey = 'members' | 'kids' | 'youth' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports';
 type MoreSection = 'account' | 'tools' | 'admin' | 'preferences';
 
 function openSection(section: MoreSection) {
   router.push(('/more/' + section) as Href);
 }
-const AREAS: { key: AreaKey; icon: IconName; href: Href; feature: FeatureKey; show: (role?: string) => boolean }[] = [
+const AREAS: { key: AreaKey; icon: IconName; href: Href; feature?: FeatureKey; show: (role?: string) => boolean }[] = [
   { key: 'members', icon: 'members', href: '/members', feature: 'members', show: can.members },
   { key: 'kids', icon: 'smile', href: '/kids', feature: 'kids', show: (role) => can.kids(role) && !can.kidsOnly(role) },
   { key: 'finance', icon: 'finance', href: '/finance', feature: 'finance', show: can.finance },
   { key: 'meetings', icon: 'calendar', href: '/meetings', feature: 'meetings', show: can.meetings },
+  { key: 'youth', icon: 'members', href: '/youth' as Href, show: can.meetings },
   { key: 'careCases', icon: 'care', href: '/care-cases', feature: 'care', show: can.careCases },
   { key: 'attendanceHistory', icon: 'history', href: '/attendance-history', feature: 'attendance', show: can.attendance },
   { key: 'reports', icon: 'reports', href: '/reports', feature: 'reporting', show: can.reports },
@@ -92,7 +93,7 @@ function AreaRows({ areas }: { areas: typeof AREAS }) {
   const t = useT('more');
   const { allows } = usePlan();
   return <>{areas.map((area, index) => {
-    const locked = !allows(area.feature);
+    const locked = !!area.feature && !allows(area.feature);
     return (
       <ListRow key={area.key} divider={index > 0} title={common(`areas.${area.key}`)}
         subtitle={locked ? common('plan.notInPlan') : t(`hints.${area.key}`)}

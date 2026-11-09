@@ -23,6 +23,7 @@ export const MESSAGE_PARTS = [
   "childrenRecords",
   "recording",
   "permissions",
+  "youth",
 ] as const;
 
 export type MessagePart = (typeof MESSAGE_PARTS)[number];

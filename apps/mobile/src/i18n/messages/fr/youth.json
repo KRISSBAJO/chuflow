@@ -1,0 +1,17 @@
+{
+  "youth": {
+    "title": "Ministère jeunesse",
+    "groups": "Groupes",
+    "counts": "{active} inscrits · {pending} en attente",
+    "noGroups": "Aucun groupe jeunesse dans votre périmètre.",
+    "failed": "Impossible de terminer cette action. Vérifiez les informations et réessayez.",
+    "attendance": "Présences",
+    "sessionDate": "Date de la rencontre",
+    "presentCount": "{count, plural, one {# présent} other {# présents}}",
+    "needsLeader": "Désignez un responsable dont l’habilitation est valide avant de saisir les présences.",
+    "present": "Présent",
+    "markPresent": "Marquer présent",
+    "noPeople": "Aucun participant approuvé pour le moment.",
+    "manageWeb": "Gérer sur le site web"
+  }
+}

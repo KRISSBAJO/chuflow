@@ -1014,6 +1014,7 @@
           "child": "Child fields",
           "family": "Family fields",
           "outreach": "Outreach fields",
+          "youth": "Youth registration fields",
           "service-unit": "Service unit fields",
           "meeting": "Meeting fields"
         },

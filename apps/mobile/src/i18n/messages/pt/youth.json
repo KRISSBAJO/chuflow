@@ -1,0 +1,17 @@
+{
+  "youth": {
+    "title": "Ministério juvenil",
+    "groups": "Grupos",
+    "counts": "{active} inscritos · {pending} pendentes",
+    "noGroups": "Ainda não há grupos juvenis no seu âmbito.",
+    "failed": "Não foi possível concluir a ação. Verifique os dados e tente novamente.",
+    "attendance": "Presenças",
+    "sessionDate": "Data do encontro",
+    "presentCount": "{count, plural, one {# presente} other {# presentes}}",
+    "needsLeader": "Designe um líder com habilitação válida antes de registar as presenças.",
+    "present": "Presente",
+    "markPresent": "Marcar presença",
+    "noPeople": "Ainda não há participantes aprovados.",
+    "manageWeb": "Gerir no site"
+  }
+}

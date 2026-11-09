@@ -27,6 +27,7 @@ export enum MinistryFormKind {
   Outreach = 'outreach',
   ServiceUnit = 'service-unit',
   Meeting = 'meeting',
+  Youth = 'youth',
 }
 type FormKind = 'guest' | 'member' | FinanceFormKind | MinistryFormKind;
 const defaultFields: Record<FormKind, { public: { key: string; label: string; labelEs?: string }[]; staff: string[] }> = {
@@ -42,6 +43,7 @@ const defaultFields: Record<FormKind, { public: { key: string; label: string; la
   ], staff: ['city', 'prayerRequest', 'preferredContactTime'] },
   'service-unit': { public: [], staff: ['notes'] },
   meeting: { public: [], staff: ['agenda', 'location', 'joinUrl'] },
+  youth: { public: [], staff: [] },
 };
 const TYPES = ['text', 'textarea', 'number', 'select', 'email', 'tel'] as const;
 type Surface = 'public' | 'staff';

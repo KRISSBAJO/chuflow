@@ -15,6 +15,7 @@
     "approvalsWaiting": "{count, plural, one {# waiting for you} other {# waiting for you}}",
     "nothingWaiting": "Nothing waiting",
     "hints": {
+      "youth": "Groups and weekly attendance",
       "members": "Directory and profiles",
       "kids": "Check-in and classes",
       "finance": "Offerings and expenses",

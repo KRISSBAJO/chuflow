@@ -216,6 +216,85 @@ async function run() {
     await expect(await updatePrayer(followUpQueue.items[0], { status: 'closed', assigneeId: null }), 200);
     await expect(await request(timeline, 'GET', undefined, team), 404);
 
+    const youth = (path = '', method = 'GET', body, auth = branchAdmin) => request('/youth' + path, method, body, auth);
+    await expect(await youth('/pilot', 'POST', { branchId: String(branch) }, team), 403);
+    await expect(await youth('/pilot', 'POST', { branchId: String(branch) }), 201);
+    await expect(await youth('/pilot', 'POST', { branchId: String(branch) }), 201);
+    const overview = await expect(await youth(), 200);
+    assert.equal(overview.groups.length, 2);
+    assert.equal((await expect(await youth('', 'GET', undefined, otherPastor), 200)).groups.length, 0);
+    const teens = '/groups/' + overview.groups.find(group => group.program === 'Teens Church')._id;
+    const adults = '/groups/' + overview.groups.find(group => group.program === 'Youth Alive')._id;
+    await expect(await youth(teens, 'GET', undefined, otherPastor), 403);
+    await expect(await youth(teens + '/link', 'POST'), 403);
+    for (const group of [teens, adults]) {
+      await expect(await youth(group + '/leader', 'PATCH', { leaderId: String(outsideId), clearanceUntil: '2099-01-01', screeningVerified: true }), 400);
+      await expect(await youth(group + '/leader', 'PATCH', { leaderId: String(staffId), clearanceUntil: '2099-01-01', screeningVerified: true }), 200);
+      await expect(await youth(group + '/link', 'POST'), 201);
+    }
+    const teenLink = (await expect(await youth(teens), 200)).registrationToken;
+    const adultLink = (await expect(await youth(adults), 200)).registrationToken;
+    const registration = (registrationToken, body, workspace = '') => fetch(base + workspace + '/youth-registration', {
+      method: body ? 'POST' : 'GET',
+      headers: { 'x-youth-registration': registrationToken, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    await expect(await registration(teenLink, undefined, '/w/test-church'), 404);
+    const birthDate = (years) => (new Date().getUTCFullYear() - years) + '-01-01';
+    const commonYouth = { firstName: 'Local', lastName: 'Youth', contact: 'local@example.com', consentVersion: 1, consent: true, locale: 'en', formRevision: 0 };
+    const teen = { ...commonYouth, birthDate: birthDate(15), guardianName: 'Local Guardian' };
+    const adult = { ...commonYouth, firstName: 'Adult', birthDate: birthDate(21) };
+    await expect(await registration(teenLink, { ...teen, guardianName: undefined }), 400);
+    await expect(await registration(adultLink, teen), 400);
+    await expect(await registration(teenLink, teen), 201);
+    await expect(await registration(teenLink, teen), 201);
+    await expect(await registration(adultLink, adult), 201);
+    const roster = await expect(await youth(teens), 200);
+    assert.equal(roster.people.length, 1);
+    const teenId = roster.people[0]._id;
+    assert.equal(roster.people[0].guardianName, teen.guardianName);
+    assert.equal((await expect(await youth(teens, 'GET', undefined, team), 200)).people.length, 0);
+    const date = new Date().toISOString().slice(0, 10);
+    const mark = { date, enrollmentId: teenId, present: true };
+    await expect(await youth(teens + '/attendance', 'PATCH', mark, team), 404);
+    await expect(await youth(teens + '/people/' + teenId, 'PATCH', { state: 'active' }), 400);
+    const existingChild = await mongo.db(database).collection('childprofiles').insertOne({
+      branchId: branch, firstName: teen.firstName, lastName: teen.lastName, birthDate: teen.birthDate, isActive: true,
+    });
+    const matches = await expect(await youth(teens + '/people/' + teenId + '/matches'), 200);
+    assert.equal(matches.children[0]._id, String(existingChild.insertedId));
+    await expect(await youth(teens + '/people/' + teenId, 'PATCH', { state: 'active', guardianVerified: true, childId: String(existingChild.insertedId) }), 200);
+    const leaderRoster = await expect(await youth(teens, 'GET', undefined, team), 200);
+    assert.equal(leaderRoster.people[0]._id, teenId);
+    assert.equal(leaderRoster.people[0].guardianName, undefined);
+    assert.equal(leaderRoster.registrationToken, null);
+    assert.equal((await expect(await youth(teens + '?view=attendance'), 200)).people[0].contact, undefined);
+    await expect(await youth(teens + '/attendance', 'PATCH', mark, team), 200);
+    await expect(await youth(teens + '/attendance', 'PATCH', mark, team), 200);
+    assert.deepEqual((await expect(await youth(teens), 200)).present, [teenId]);
+    const adultRoster = await expect(await youth(adults), 200);
+    const adultId = adultRoster.people[0]._id;
+    await expect(await youth(adults + '/people/' + adultId, 'PATCH', { state: 'active' }), 200);
+    const extraGroup = await expect(await youth('/groups', 'POST', {
+      branchId: String(branch), name: 'Young Adult Leaders', program: 'Youth Alive', minAge: 18, maxAge: 35, meetingDay: 1, guardianUnderAge: 18,
+    }), 201);
+    await expect(await youth('/groups/' + extraGroup.id + '/leader', 'PATCH', {
+      leaderId: String(staffId), clearanceUntil: '2099-01-01', screeningVerified: true,
+    }), 200);
+    const move = { destinationId: extraGroup.id, consent: true, consentVersion: 1, locale: 'en', contact: 'new-contact@example.com' };
+    const transfer = adults + '/people/' + adultId + '/transition';
+    await expect(await youth(transfer, 'POST', move, team), 403);
+    await expect(await youth(transfer, 'POST', move), 201);
+    await expect(await youth(transfer, 'POST', { ...move, contact: 'another@example.com' }), 409);
+    const linked = await mongo.db(database).collection('youthenrollments').findOne({ groupId: new ObjectId(extraGroup.id) });
+    assert.equal(String(linked.linkedEnrollmentId), adultId);
+    assert.equal(linked.consentSource, 'staff');
+    await expect(await youth(teens + '/people/' + teenId + '/withdraw', 'POST'), 201);
+    await expect(await youth(teens + '/attendance', 'PATCH', mark, team), 404);
+    assert.deepEqual((await expect(await youth(teens), 200)).present, [teenId]);
+    await expect(await youth(teens + '/link', 'DELETE'), 200);
+    await expect(await registration(teenLink), 404);
+
     await mongo.db(database).collection('appsettings').updateOne({ scopeKey: 'global' }, { $set: { publicConnectEnabled: false } }, { upsert: true });
     await expect(await publicForm(), 404);
     await expect(await submit({ ...core, phone: '555-111-1414' }, 2), 404);

@@ -1,4 +1,5 @@
 import { ChildrenModule } from './children/children.module';
+import { YouthModule } from './youth/youth.module';
 import { ImportModule } from './imports/import.module';
 import { ApprovalWorkflowsModule } from './approval-workflows/approval.module';
 import { CareModule } from './care/care.module';
@@ -55,6 +56,7 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
   imports: [
     HierarchyModule,
     ChildrenModule,
+    YouthModule,
     ImportModule,
     ApprovalWorkflowsModule,
     ConfigModule.forRoot({

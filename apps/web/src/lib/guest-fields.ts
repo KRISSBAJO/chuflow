@@ -1,4 +1,4 @@
-export const ministryFormKinds = ["child", "family", "outreach", "service-unit", "meeting"] as const;
+export const ministryFormKinds = ["child", "family", "outreach", "service-unit", "meeting", "youth"] as const;
 export type MinistryFormKind = (typeof ministryFormKinds)[number];
 
 export type GuestField = {

@@ -1,0 +1,92 @@
+import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
+import { useState } from 'react';
+import { View } from 'react-native';
+import { DateStepper } from '@/components/kit';
+import { toast } from '@/components/toast';
+import { Button, Caption, EmptyState, ErrorState, ListRow, Loading, Notice, Screen, Section } from '@/components/ui';
+import { useAppFormat } from '@/i18n/format';
+import { useT } from '@/i18n/provider';
+import { api } from '@/lib/api';
+import { isoDay } from '@/lib/format';
+import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
+import { useSession } from '@/lib/session';
+import { useApi } from '@/lib/use-api';
+
+type Group = { _id: string; name: string; program: string; branchName: string; active: number; pending: number; canOpen: boolean };
+type Overview = { groups: Group[]; canManage: boolean };
+type Detail = {
+  group: { name: string };
+  date: string;
+  people: { _id: string; firstName: string; lastName: string; state: string }[];
+  present: string[];
+  canRecord: boolean;
+  manager: boolean;
+};
+
+export function YouthOverview() {
+  const t = useT('youth');
+  const { user } = useSession();
+  const data = useApi<Overview>('/youth');
+  return (
+    <Screen safeTop={false} refreshing={data.refreshing} onRefresh={() => void data.refresh()}>
+      <Stack.Screen options={{ title: t('title') }} />
+      {data.loading ? <Loading /> : data.error ? <ErrorState message={data.error} onRetry={() => void data.refresh()} /> : (
+        <View>
+          <Section title={t('groups')} />
+          {data.data?.groups.length ? data.data.groups.map(group => (
+            <ListRow key={group._id} title={group.name} subtitle={`${group.branchName} · ${t('counts', { active: group.active, pending: group.pending })}`}
+              onPress={group.canOpen ? () => router.push(('/youth/' + group._id) as Href) : undefined} divider />
+          )) : <EmptyState title={t('noGroups')} />}
+        </View>
+      )}
+      {data.data?.canManage ? <Button variant="secondary" label={t('manageWeb')} onPress={() => void openWorkspaceBrowser('/youth', user?.workspace)} /> : null}
+    </Screen>
+  );
+}
+
+export function YouthAttendance() {
+  const t = useT('youth');
+  const format = useAppFormat();
+  const { user } = useSession();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [date, setDate] = useState(() => new Date());
+  const [busy, setBusy] = useState<string | null>(null);
+  const day = isoDay(date);
+  const path = '/youth/groups/' + encodeURIComponent(id ?? '');
+  const result = useApi<Detail>(id ? path + '?view=attendance&date=' + day : null);
+  const detail = result.data?.date === day ? result.data : undefined;
+  const present = new Set(detail?.present);
+
+  async function mark(enrollmentId: string, attended: boolean) {
+    if (busy) return;
+    setBusy(enrollmentId);
+    try {
+      await api.patch(path + '/attendance', { date: day, enrollmentId, present: attended });
+      await result.reload();
+    } catch {
+      toast.error(t('failed'));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Screen safeTop={false} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
+      <Stack.Screen options={{ title: result.data?.group.name ?? t('attendance') }} />
+      <DateStepper label={t('sessionDate')} value={date} max={new Date()} onChange={setDate} />
+      {result.error ? <ErrorState message={result.error} onRetry={() => void result.refresh()} /> : !detail ? <Loading /> : (
+        <View>
+          <Section title={t('attendance')} />
+          <Caption>{t('presentCount', { count: detail.present.length })}</Caption>
+          {!detail.canRecord ? <Notice tone="warning">{t('needsLeader')}</Notice> : null}
+          {detail.people.some(person => person.state === 'active') ? detail.people.filter(person => person.state === 'active').map(person => (
+            <ListRow key={person._id} title={format.fullName(person)} divider
+              right={<Button size="sm" variant={present.has(person._id) ? 'primary' : 'secondary'} label={t(present.has(person._id) ? 'present' : 'markPresent')}
+                disabled={!!busy || !detail.canRecord} loading={busy === person._id} onPress={() => void mark(person._id, !present.has(person._id))} />} />
+          )) : <EmptyState title={t('noPeople')} />}
+        </View>
+      )}
+      {detail?.manager ? <Button variant="secondary" label={t('manageWeb')} onPress={() => void openWorkspaceBrowser('/youth/' + id, user?.workspace)} /> : null}
+    </Screen>
+  );
+}

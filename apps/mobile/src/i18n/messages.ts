@@ -21,6 +21,7 @@ import en_meetings from './messages/en/meetings.json';
 import en_kids from './messages/en/kids.json';
 import en_reports from './messages/en/reports.json';
 import en_search from './messages/en/search.json';
+import en_youth from './messages/en/youth.json';
 import en_attendanceHistory from './messages/en/attendanceHistory.json';
 import fr_common from './messages/fr/common.json';
 import fr_auth from './messages/fr/auth.json';
@@ -37,6 +38,7 @@ import fr_meetings from './messages/fr/meetings.json';
 import fr_kids from './messages/fr/kids.json';
 import fr_reports from './messages/fr/reports.json';
 import fr_search from './messages/fr/search.json';
+import fr_youth from './messages/fr/youth.json';
 import fr_attendanceHistory from './messages/fr/attendanceHistory.json';
 import es_common from './messages/es/common.json';
 import es_auth from './messages/es/auth.json';
@@ -53,6 +55,7 @@ import es_meetings from './messages/es/meetings.json';
 import es_kids from './messages/es/kids.json';
 import es_reports from './messages/es/reports.json';
 import es_search from './messages/es/search.json';
+import es_youth from './messages/es/youth.json';
 import es_attendanceHistory from './messages/es/attendanceHistory.json';
 import pt_common from './messages/pt/common.json';
 import pt_auth from './messages/pt/auth.json';
@@ -69,14 +72,15 @@ import pt_meetings from './messages/pt/meetings.json';
 import pt_kids from './messages/pt/kids.json';
 import pt_reports from './messages/pt/reports.json';
 import pt_search from './messages/pt/search.json';
+import pt_youth from './messages/pt/youth.json';
 import pt_attendanceHistory from './messages/pt/attendanceHistory.json';
 
-export const MESSAGE_PARTS = ['common', 'auth', 'home', 'guests', 'followUp', 'attendance', 'approvals', 'more', 'members', 'care', 'finance', 'meetings', 'kids', 'reports', 'search', 'attendanceHistory'] as const;
+export const MESSAGE_PARTS = ['common', 'auth', 'home', 'guests', 'followUp', 'attendance', 'approvals', 'more', 'members', 'care', 'finance', 'meetings', 'kids', 'reports', 'search', 'attendanceHistory', 'youth'] as const;
 export type MessagePart = (typeof MESSAGE_PARTS)[number];
 
 export const MESSAGES: Record<Locale, Record<string, unknown>> = {
-  en: { ...en_common, ...en_auth, ...en_home, ...en_guests, ...en_followUp, ...en_attendance, ...en_approvals, ...en_more, ...en_members, ...en_care, ...en_finance, ...en_meetings, ...en_kids, ...en_reports, ...en_search, ...en_attendanceHistory },
-  fr: { ...fr_common, ...fr_auth, ...fr_home, ...fr_guests, ...fr_followUp, ...fr_attendance, ...fr_approvals, ...fr_more, ...fr_members, ...fr_care, ...fr_finance, ...fr_meetings, ...fr_kids, ...fr_reports, ...fr_search, ...fr_attendanceHistory },
-  es: { ...es_common, ...es_auth, ...es_home, ...es_guests, ...es_followUp, ...es_attendance, ...es_approvals, ...es_more, ...es_members, ...es_care, ...es_finance, ...es_meetings, ...es_kids, ...es_reports, ...es_search, ...es_attendanceHistory },
-  pt: { ...pt_common, ...pt_auth, ...pt_home, ...pt_guests, ...pt_followUp, ...pt_attendance, ...pt_approvals, ...pt_more, ...pt_members, ...pt_care, ...pt_finance, ...pt_meetings, ...pt_kids, ...pt_reports, ...pt_search, ...pt_attendanceHistory },
+  en: { ...en_common, ...en_auth, ...en_home, ...en_guests, ...en_followUp, ...en_attendance, ...en_approvals, ...en_more, ...en_members, ...en_care, ...en_finance, ...en_meetings, ...en_kids, ...en_reports, ...en_search, ...en_attendanceHistory, ...en_youth },
+  fr: { ...fr_common, ...fr_auth, ...fr_home, ...fr_guests, ...fr_followUp, ...fr_attendance, ...fr_approvals, ...fr_more, ...fr_members, ...fr_care, ...fr_finance, ...fr_meetings, ...fr_kids, ...fr_reports, ...fr_search, ...fr_attendanceHistory, ...fr_youth },
+  es: { ...es_common, ...es_auth, ...es_home, ...es_guests, ...es_followUp, ...es_attendance, ...es_approvals, ...es_more, ...es_members, ...es_care, ...es_finance, ...es_meetings, ...es_kids, ...es_reports, ...es_search, ...es_attendanceHistory, ...es_youth },
+  pt: { ...pt_common, ...pt_auth, ...pt_home, ...pt_guests, ...pt_followUp, ...pt_attendance, ...pt_approvals, ...pt_more, ...pt_members, ...pt_care, ...pt_finance, ...pt_meetings, ...pt_kids, ...pt_reports, ...pt_search, ...pt_attendanceHistory, ...pt_youth },
 };

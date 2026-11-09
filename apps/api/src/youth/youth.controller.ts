@@ -1,0 +1,85 @@
+import { Body, Controller, Delete, Get, Header, Headers, Ip, Param, Patch, Post, Query } from '@nestjs/common';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { APP_ROLES } from '../common/constants/roles.constants';
+import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { YouthAttendanceDto, YouthBranchDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthService } from './youth.service';
+
+@Controller('youth')
+@Roles(...APP_ROLES)
+export class YouthController {
+  constructor(private readonly youth: YouthService) {}
+
+  @Get() @Header('Cache-Control', 'no-store')
+  overview(@CurrentUser() user: AuthUser) { return this.youth.overview(user); }
+
+  @Post('pilot')
+  seed(@CurrentUser() user: AuthUser, @Body() dto: YouthBranchDto) { return this.youth.seedPilot(user, dto.branchId); }
+
+  @Post('groups')
+  create(@CurrentUser() user: AuthUser, @Body() dto: YouthGroupDto) { return this.youth.createGroup(user, dto); }
+
+  @Get('groups/:id') @Header('Cache-Control', 'no-store')
+  details(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query('date') date?: string, @Query('view') view?: string) {
+    return this.youth.details(user, id, date, view === 'attendance');
+  }
+
+  @Patch('groups/:id/leader')
+  assign(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthLeaderDto) { return this.youth.assign(user, id, dto); }
+
+  @Patch('groups/:id/settings')
+  settings(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthGroupSettingsDto) {
+    return this.youth.groupSettings(user, id, dto);
+  }
+
+  @Post('groups/:id/link')
+  open(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.youth.registrationLink(user, id, true); }
+
+  @Delete('groups/:id/link')
+  close(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.youth.registrationLink(user, id, false); }
+
+  @Get('groups/:id/people/:person/matches') @Header('Cache-Control', 'no-store')
+  matches(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
+    return this.youth.matches(user, id, person);
+  }
+
+  @Patch('groups/:id/people/:person')
+  review(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string, @Body() dto: YouthReviewDto) {
+    return this.youth.review(user, id, person, dto);
+  }
+
+  @Post('groups/:id/people/:person/welcome')
+  welcome(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
+    return this.youth.welcome(user, id, person);
+  }
+
+  @Post('groups/:id/people/:person/withdraw')
+  withdraw(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
+    return this.youth.withdraw(user, id, person);
+  }
+
+  @Post('groups/:id/people/:person/transition')
+  transition(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string, @Body() dto: YouthTransitionDto) {
+    return this.youth.transition(user, id, person, dto);
+  }
+
+  @Patch('groups/:id/attendance')
+  attendance(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthAttendanceDto) {
+    return this.youth.attendance(user, id, dto);
+  }
+}
+
+@Controller('youth-registration')
+export class YouthRegistrationController {
+  constructor(private readonly youth: YouthService) {}
+
+  @Public() @Get() @Header('Cache-Control', 'no-store')
+  info(@Headers('x-youth-registration') token: string) { return this.youth.publicInfo(token); }
+
+  @Public() @Post() @Header('Cache-Control', 'no-store')
+  register(@Headers('x-youth-registration') token: string, @Body() dto: YouthRegistrationDto, @Ip() ip: string) {
+    return this.youth.register(token, dto, ip);
+  }
+}
