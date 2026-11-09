@@ -55,6 +55,7 @@ export function UserCreateForm({
   const tWelcome = useTranslations("org.userList");
   const t = useTranslations("org.userForm");
   const tCommon = useTranslations("common");
+  const tYouth = useTranslations("youth");
   const roleLabel = useRoleLabel();
   const READ_ONLY_HINT = t("readOnlyHint");
 
@@ -242,7 +243,8 @@ export function UserCreateForm({
                 required
               />
             </Field>
-            <Field label={t("role")} required hint={t("roleHint")}>
+            <Field label={t("role")} required hint={selectedRole === "youth_leader" ? tYouth("leaderRoleHint") :
+              selectedRole === "youth_pastor" ? tYouth("pastorRoleHint") : t("roleHint")}>
               <select
                 name="role"
                 value={selectedRole}

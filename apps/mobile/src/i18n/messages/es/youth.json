@@ -1,5 +1,7 @@
 {
   "youth": {
+    "events": "Eventos",
+    "noEvents": "Aún no hay eventos juveniles en tu ámbito.",
     "title": "Ministerio juvenil",
     "groups": "Grupos",
     "counts": "{active} inscritos · {pending} pendientes",

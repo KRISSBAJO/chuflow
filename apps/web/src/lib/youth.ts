@@ -8,15 +8,20 @@ export type YouthGroup = {
   minAge: number;
   maxAge: number;
   meetingDay: number;
+  eventDate?: string;
+  registrationDeadline?: string;
+  venue?: string;
+  capacity?: number;
   guardianUnderAge: number;
   leaderId?: string;
   clearanceUntil?: string;
 };
 export type YouthOverview = {
   canManage: boolean;
+  canManageEvents: boolean;
   pilotAvailable: boolean;
   branches: { _id: string; name: string }[];
-  groups: (Pick<YouthGroup, "_id" | "program" | "name"> & { branchName: string; canOpen: boolean; active: number; pending: number; sessions: number; visits: number })[];
+  groups: (Pick<YouthGroup, "_id" | "program" | "name" | "eventDate" | "venue" | "capacity"> & { branchName: string; canOpen: boolean; active: number; pending: number; sessions: number; visits: number })[];
 };
 export type YouthPerson = {
   _id: string;
@@ -40,6 +45,7 @@ export type YouthDetail = {
   leaders: { _id: string; firstName: string; lastName: string }[];
   destinations: Pick<YouthGroup, "_id" | "name" | "minAge" | "maxAge" | "guardianUnderAge">[];
   canRecord: boolean;
+  registrationAvailable?: boolean;
   registrationToken: string | null;
   present: string[];
   recentSessions: { date: string; count: number }[];

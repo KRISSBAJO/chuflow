@@ -177,6 +177,8 @@
     }
   },
   "roles": {
+    "youth_leader": "Líder juvenil",
+    "youth_pastor": "Pastor juvenil",
     "super_admin": "Administrador da supervisão geral",
     "national_admin": "Administrador nacional",
     "national_pastor": "Pastor nacional",

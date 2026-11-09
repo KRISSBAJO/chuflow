@@ -10,6 +10,11 @@ export class YouthGroup {
   @Prop({ required: true }) minAge!: number;
   @Prop({ required: true }) maxAge!: number;
   @Prop({ required: true }) meetingDay!: number;
+  @Prop() eventDate?: string;
+  @Prop() districtManaged?: boolean;
+  @Prop() registrationDeadline?: string;
+  @Prop() venue?: string;
+  @Prop() capacity?: number;
   @Prop({ default: 18 }) guardianUnderAge!: number;
   @Prop({ type: SchemaTypes.ObjectId }) leaderId?: Types.ObjectId;
   @Prop() clearanceUntil?: string;
@@ -38,6 +43,7 @@ export class YouthEnrollment {
   @Prop({ required: true, default: 'public' }) consentSource!: 'public' | 'staff';
   @Prop({ type: Date, required: true }) consentAt!: Date;
   @Prop({ default: 'pending' }) state!: 'pending' | 'active' | 'declined' | 'withdrawn';
+  @Prop({ select: false }) eventSeat?: number;
   @Prop({ type: SchemaTypes.ObjectId }) memberId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId }) childId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId, select: false }) linkedEnrollmentId?: Types.ObjectId;
@@ -52,6 +58,10 @@ YouthEnrollmentSchema.index({ groupId: 1, registrationKey: 1 }, { unique: true }
 YouthEnrollmentSchema.index({ groupId: 1, memberId: 1 }, { unique: true, partialFilterExpression: { memberId: { $type: 'objectId' } } });
 YouthEnrollmentSchema.index({ groupId: 1, childId: 1 }, { unique: true, partialFilterExpression: { childId: { $type: 'objectId' } } });
 YouthEnrollmentSchema.index({ groupId: 1, linkedEnrollmentId: 1 }, { unique: true, partialFilterExpression: { linkedEnrollmentId: { $type: 'objectId' } } });
+YouthEnrollmentSchema.index({ groupId: 1, eventSeat: 1 }, {
+  unique: true,
+  partialFilterExpression: { state: 'active', eventSeat: { $type: 'number' } },
+});
 
 @Schema()
 export class YouthSession {

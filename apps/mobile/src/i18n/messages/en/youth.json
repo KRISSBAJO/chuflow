@@ -1,5 +1,7 @@
 {
   "youth": {
+    "events": "Events",
+    "noEvents": "No youth events in your scope yet.",
     "title": "Youth Ministry",
     "groups": "Groups",
     "counts": "{active} enrolled · {pending} pending",

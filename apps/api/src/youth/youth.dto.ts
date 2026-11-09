@@ -18,6 +18,12 @@ export class YouthLeaderDto {
   @Equals(true) screeningVerified!: true;
 }
 export class YouthGroupSettingsDto extends OmitType(YouthGroupDto, ['branchId'] as const) {}
+export class YouthEventDto extends OmitType(YouthGroupDto, ['meetingDay'] as const) {
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) eventDate!: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) registrationDeadline!: string;
+  @IsString() @Matches(/\S/) @MaxLength(160) venue!: string;
+  @IsInt() @Min(1) @Max(2000) capacity!: number;
+}
 export class YouthRegistrationDto {
   @IsString() @Matches(/\S/) @MaxLength(80) firstName!: string;
   @IsString() @Matches(/\S/) @MaxLength(80) lastName!: string;

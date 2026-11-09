@@ -11,6 +11,8 @@ export const APP_ROLES = [
   'usher',
   'children_worker',
   'children_supervisor',
+  'youth_leader',
+  'youth_pastor',
 ] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
@@ -24,11 +26,13 @@ export const BRANCH_LEADERSHIP_ROLES: AppRole[] = [
   'associate_pastor',
 ];
 export const CHILDREN_ROLES: AppRole[] = ['children_worker', 'children_supervisor'];
+export const YOUTH_ROLES: AppRole[] = ['youth_leader', 'youth_pastor'];
 export const BRANCH_SUPPORT_ROLES: AppRole[] = ['follow_up', 'usher'];
 export const BRANCH_SCOPED_ROLES: AppRole[] = [
   ...BRANCH_LEADERSHIP_ROLES,
   ...BRANCH_SUPPORT_ROLES,
   ...CHILDREN_ROLES,
+  ...YOUTH_ROLES,
 ];
 export const LEADERSHIP_ROLES: AppRole[] = [
   ...GLOBAL_ROLES,

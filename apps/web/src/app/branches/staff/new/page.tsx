@@ -3,12 +3,12 @@ import { CreatePage } from "@/components/create-page";
 import { UserCreateForm } from "@/components/user-create-form";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
-import { getManageableUserRoleOptions } from "@/lib/permissions";
+import { getManageableUserRoleOptions, YOUTH_ROLES } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import type { BranchSummary, OversightRegionOption, DistrictOption } from "@/lib/types";
 export default async function NewPage() {
  const user = await requireServerRole("/branches");
- const branchScopedCreateRoles = ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher"];
+ const branchScopedCreateRoles = ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", ...YOUTH_ROLES];
  if (!getManageableUserRoleOptions(user.role).some(role => branchScopedCreateRoles.includes(role))) redirect("/unauthorized");
  const [branches, oversightRegions, districts] = await Promise.all([serverGet<BranchSummary[]>("/branches"), serverGet<OversightRegionOption[]>("/oversight-regions"), serverGet<DistrictOption[]>("/districts")]);
  const defaultStaffBranchId = user.branchId;

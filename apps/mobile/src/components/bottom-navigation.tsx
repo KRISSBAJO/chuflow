@@ -80,7 +80,7 @@ export function BottomNavigation({ state, descriptors, emitter, navigateToTab }:
     <>
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
         {routes.slice(0, split).map(destination)}
-        <Pressable
+        {!can.youthOnly(role) ? <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('title')}
           accessibilityState={{ expanded: open, disabled: !actions.length }}
@@ -97,7 +97,7 @@ export function BottomNavigation({ state, descriptors, emitter, navigateToTab }:
             </View>
           </View>
           <Text style={styles.newLabel}>{tabs('new')}</Text>
-        </Pressable>
+        </Pressable> : null}
         {routes.slice(split).map(destination)}
       </View>
       <Sheet visible={open} onClose={() => setOpen(false)} title={t('title')}>

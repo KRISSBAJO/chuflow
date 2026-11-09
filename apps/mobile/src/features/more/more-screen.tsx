@@ -27,7 +27,7 @@ const AREAS: { key: AreaKey; icon: IconName; href: Href; feature?: FeatureKey; s
   { key: 'kids', icon: 'smile', href: '/kids', feature: 'kids', show: (role) => can.kids(role) && !can.kidsOnly(role) },
   { key: 'finance', icon: 'finance', href: '/finance', feature: 'finance', show: can.finance },
   { key: 'meetings', icon: 'calendar', href: '/meetings', feature: 'meetings', show: can.meetings },
-  { key: 'youth', icon: 'members', href: '/youth' as Href, show: can.meetings },
+  { key: 'youth', icon: 'members', href: '/youth' as Href, show: (role) => can.youth(role) && !can.youthOnly(role) },
   { key: 'careCases', icon: 'care', href: '/care-cases', feature: 'care', show: can.careCases },
   { key: 'attendanceHistory', icon: 'history', href: '/attendance-history', feature: 'attendance', show: can.attendance },
   { key: 'reports', icon: 'reports', href: '/reports', feature: 'reporting', show: can.reports },
@@ -62,7 +62,7 @@ function AccountCard({ details = false }: { details?: boolean }) {
   const populated = branchName(user?.branchId);
   const lookup = Boolean(branchId && !populated);
   const kidsOnly = can.kidsOnly(user?.role);
-  const branches = useApi<BranchSummary[]>(lookup && !kidsOnly ? '/branches/options' : null);
+  const branches = useApi<BranchSummary[]>(lookup && !kidsOnly && !can.youthOnly(user?.role) ? '/branches/options' : null);
   const kids = useApi<{ branches: { _id: string; name: string }[] }>(lookup && kidsOnly ? `/children?branchId=${encodeURIComponent(branchId)}` : null);
   const branch = populated || (kidsOnly ? kids.data?.branches : branches.data)?.find(({ _id }) => _id === branchId)?.name;
   return (

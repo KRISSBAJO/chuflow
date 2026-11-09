@@ -18,7 +18,15 @@ export function useYouthAction() {
         method, credentials: "include",
         ...(data ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {}),
       });
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        if (error?.code === "youth_event_full") {
+          toast.error(t("eventFull"));
+          router.refresh();
+          return;
+        }
+        throw new Error();
+      }
       toast.success(t("saved"));
       router.refresh();
     } catch {

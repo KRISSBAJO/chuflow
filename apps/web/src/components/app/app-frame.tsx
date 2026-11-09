@@ -393,8 +393,10 @@ export function AppFrame({
   const quickActions = QUICK_ACTIONS.filter(
     (action) => canAccessRoute(user?.role, action.href, user?.additionalPermissions) && !planLocksRoute(user?.entitlements, action.href),
   );
+  const showSearch = canAccessRoute(user?.role, "/search", user?.additionalPermissions);
 
   useEffect(() => {
+    if (!showSearch) return;
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -403,7 +405,7 @@ export function AppFrame({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [showSearch]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -484,7 +486,7 @@ export function AppFrame({
               </button>
             ) : null}
 
-            <form onSubmit={handleSearch} className="relative min-w-0 max-w-[520px] flex-1">
+            {showSearch ? <form onSubmit={handleSearch} className="relative min-w-0 max-w-[520px] flex-1">
               <Icon name="search" className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#8a8780]" />
               <input
                 ref={searchRef}
@@ -497,7 +499,7 @@ export function AppFrame({
               <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-black/[0.08] bg-[#f6f5f1] px-1.5 py-0.5 text-[11px] font-medium text-[#8a8780] sm:block">
                 Ctrl K
               </kbd>
-            </form>
+            </form> : null}
 
             <div className="ml-auto flex shrink-0 items-center gap-2">
               {quickActions.length > 0 ? (

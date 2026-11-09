@@ -177,6 +177,8 @@
     }
   },
   "roles": {
+    "youth_leader": "Youth Leader",
+    "youth_pastor": "Youth Pastor",
     "super_admin": "Overall oversight admin",
     "national_admin": "National admin",
     "national_pastor": "National pastor",

@@ -13,7 +13,9 @@ export type AppRole =
   | "follow_up"
   | "usher"
   | "children_worker"
-  | "children_supervisor";
+  | "children_supervisor"
+  | "youth_leader"
+  | "youth_pastor";
 
 export const GLOBAL_ROLES: AppRole[] = ["super_admin"];
 export const NATIONAL_ROLES: AppRole[] = ["national_admin", "national_pastor"];
@@ -24,11 +26,13 @@ export const BRANCH_LEADERSHIP_ROLES: AppRole[] = [
   "associate_pastor",
 ];
 export const CHILDREN_ROLES: AppRole[] = ["children_worker", "children_supervisor"];
+export const YOUTH_ROLES: AppRole[] = ["youth_leader", "youth_pastor"];
 export const BRANCH_SUPPORT_ROLES: AppRole[] = ["follow_up", "usher"];
 export const BRANCH_SCOPED_ROLES: AppRole[] = [
   ...BRANCH_LEADERSHIP_ROLES,
   ...BRANCH_SUPPORT_ROLES,
   ...CHILDREN_ROLES,
+  ...YOUTH_ROLES,
 ];
 export const LEADERSHIP_ROLES: AppRole[] = [
   ...GLOBAL_ROLES,
@@ -44,6 +48,7 @@ export const APP_SETTINGS_ROLES: AppRole[] = [
 ];
 
 export function roleHomeHref(role?: string) {
+  if (includesRole(YOUTH_ROLES, role)) return "/youth";
   if (role === "children_worker" || role === "children_supervisor") return "/children";
   if (role === "follow_up") return "/care";
   if (role === "usher") return "/attendance";
@@ -201,6 +206,8 @@ export function formatRoleLabel(role?: string) {
     usher: "Usher",
     children_worker: "Children’s worker",
     children_supervisor: "Children’s supervisor",
+    youth_leader: "Youth Leader",
+    youth_pastor: "Youth Pastor",
   };
 
   return role && role in labels
@@ -223,6 +230,7 @@ export function getManageableUserRoleOptions(role?: string): AppRole[] {
       "usher",
       "children_worker",
       "children_supervisor",
+      ...YOUTH_ROLES,
     ];
   }
 
@@ -239,6 +247,7 @@ export function getManageableUserRoleOptions(role?: string): AppRole[] {
       "usher",
       "children_worker",
       "children_supervisor",
+      ...YOUTH_ROLES,
     ];
   }
 
@@ -253,11 +262,12 @@ export function getManageableUserRoleOptions(role?: string): AppRole[] {
       "usher",
       "children_worker",
       "children_supervisor",
+      ...YOUTH_ROLES,
     ];
   }
 
   if (role === "branch_admin") {
-    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", "children_worker", "children_supervisor"];
+    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", "children_worker", "children_supervisor", ...YOUTH_ROLES];
   }
 
   return [];
@@ -278,6 +288,7 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
       "usher",
       "children_worker",
       "children_supervisor",
+      ...YOUTH_ROLES,
     ];
   }
 
@@ -294,6 +305,7 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
       "usher",
       "children_worker",
       "children_supervisor",
+      ...YOUTH_ROLES,
     ];
   }
 
@@ -308,11 +320,12 @@ export function getVisibleUserRoleOptions(role?: string): AppRole[] {
       "usher",
       "children_worker",
       "children_supervisor",
+      ...YOUTH_ROLES,
     ];
   }
 
   if (isBranchLeadershipRole(role)) {
-    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", "children_worker", "children_supervisor"];
+    return ["branch_admin", "resident_pastor", "associate_pastor", "follow_up", "usher", "children_worker", "children_supervisor", ...YOUTH_ROLES];
   }
 
   return role ? [role as AppRole] : [];
@@ -347,7 +360,7 @@ export const routePermissions: Record<string, AppRole[]> = {
   "/permissions": ["super_admin", "national_admin", "national_pastor", "district_admin", "district_pastor", "branch_admin", "resident_pastor"],
   "/imports": [...LEADERSHIP_ROLES],
   "/children": [...LEADERSHIP_ROLES, "children_worker", "children_supervisor"],
-  "/youth": [...LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES],
+  "/youth": [...LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES, ...YOUTH_ROLES],
   "/hierarchy": [...LEADERSHIP_ROLES],
   "/care/settings": [...LEADERSHIP_ROLES],
   "/meetings/groups": [...LEADERSHIP_ROLES],
@@ -389,6 +402,7 @@ export const routePermissions: Record<string, AppRole[]> = {
 };
 
 export function canAccessRoute(role: string | undefined, pathname: string, additionalPermissions?: readonly string[]) {
+  if (includesRole(YOUTH_ROLES, role)) return pathname === "/youth" || pathname.startsWith("/youth/");
   if (pathname === "/permissions" || pathname.startsWith("/permissions/")) return canDelegatePermissions(role);
   const extra = (key: string) => hasAdditionalPermission({ role, additionalPermissions }, key);
   const feature = [

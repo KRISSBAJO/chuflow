@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { DateStepper } from '@/components/kit';
 import { toast } from '@/components/toast';
-import { Button, Caption, EmptyState, ErrorState, ListRow, Loading, Notice, Screen, Section } from '@/components/ui';
+import { Button, Caption, EmptyState, ErrorState, ListRow, Loading, Notice, Screen, ScreenHeader, Section } from '@/components/ui';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { api } from '@/lib/api';
@@ -12,10 +12,10 @@ import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
 import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
 
-type Group = { _id: string; name: string; program: string; branchName: string; active: number; pending: number; canOpen: boolean };
-type Overview = { groups: Group[]; canManage: boolean };
+type Group = { _id: string; name: string; program: string; branchName: string; active: number; pending: number; canOpen: boolean; eventDate?: string };
+type Overview = { groups: Group[]; canManage: boolean; canManageEvents?: boolean };
 type Detail = {
-  group: { name: string };
+  group: { name: string; eventDate?: string };
   date: string;
   people: { _id: string; firstName: string; lastName: string; state: string }[];
   present: string[];
@@ -23,23 +23,27 @@ type Detail = {
   manager: boolean;
 };
 
-export function YouthOverview() {
+export function YouthOverview({ embedded = false }: { embedded?: boolean } = {}) {
   const t = useT('youth');
   const { user } = useSession();
   const data = useApi<Overview>('/youth');
+  const groups = data.data?.groups ?? [];
   return (
-    <Screen safeTop={false} refreshing={data.refreshing} onRefresh={() => void data.refresh()}>
-      <Stack.Screen options={{ title: t('title') }} />
+    <Screen safeTop={embedded} refreshing={data.refreshing} onRefresh={() => void data.refresh()}>
+      {embedded ? <ScreenHeader title={t('title')} /> : <Stack.Screen options={{ title: t('title') }} />}
       {data.loading ? <Loading /> : data.error ? <ErrorState message={data.error} onRetry={() => void data.refresh()} /> : (
         <View>
-          <Section title={t('groups')} />
-          {data.data?.groups.length ? data.data.groups.map(group => (
+          {([false, true] as const).map(events => <View key={String(events)}>
+          <Section title={t(events ? 'events' : 'groups')} />
+          {groups.some(group => Boolean(group.eventDate) === events) ? groups.filter(group => Boolean(group.eventDate) === events).map(group => (
             <ListRow key={group._id} title={group.name} subtitle={`${group.branchName} · ${t('counts', { active: group.active, pending: group.pending })}`}
               onPress={group.canOpen ? () => router.push(('/youth/' + group._id) as Href) : undefined} divider />
-          )) : <EmptyState title={t('noGroups')} />}
+          )) : <EmptyState title={t(events ? 'noEvents' : 'noGroups')} />}
+          </View>)}
         </View>
       )}
-      {data.data?.canManage ? <Button variant="secondary" label={t('manageWeb')} onPress={() => void openWorkspaceBrowser('/youth', user?.workspace)} /> : null}
+      {data.data?.canManage || data.data?.canManageEvents ? <Button variant="secondary" label={t('manageWeb')}
+        onPress={() => void openWorkspaceBrowser(data.data?.canManage ? '/youth' : '/youth?view=events', user?.workspace)} /> : null}
     </Screen>
   );
 }
@@ -54,14 +58,14 @@ export function YouthAttendance() {
   const day = isoDay(date);
   const path = '/youth/groups/' + encodeURIComponent(id ?? '');
   const result = useApi<Detail>(id ? path + '?view=attendance&date=' + day : null);
-  const detail = result.data?.date === day ? result.data : undefined;
+  const detail = result.data && (result.data.group.eventDate || result.data.date === day) ? result.data : undefined;
   const present = new Set(detail?.present);
 
   async function mark(enrollmentId: string, attended: boolean) {
-    if (busy) return;
+    if (busy || !detail) return;
     setBusy(enrollmentId);
     try {
-      await api.patch(path + '/attendance', { date: day, enrollmentId, present: attended });
+      await api.patch(path + '/attendance', { date: detail.date, enrollmentId, present: attended });
       await result.reload();
     } catch {
       toast.error(t('failed'));
@@ -73,7 +77,8 @@ export function YouthAttendance() {
   return (
     <Screen safeTop={false} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
       <Stack.Screen options={{ title: result.data?.group.name ?? t('attendance') }} />
-      <DateStepper label={t('sessionDate')} value={date} max={new Date()} onChange={setDate} />
+      {detail?.group.eventDate ? <Caption>{format.shortDate(new Date(detail.group.eventDate + 'T12:00:00'))}</Caption> :
+        <DateStepper label={t('sessionDate')} value={date} max={new Date()} onChange={setDate} />}
       {result.error ? <ErrorState message={result.error} onRetry={() => void result.refresh()} /> : !detail ? <Loading /> : (
         <View>
           <Section title={t('attendance')} />
@@ -82,7 +87,7 @@ export function YouthAttendance() {
           {detail.people.some(person => person.state === 'active') ? detail.people.filter(person => person.state === 'active').map(person => (
             <ListRow key={person._id} title={format.fullName(person)} divider
               right={<Button size="sm" variant={present.has(person._id) ? 'primary' : 'secondary'} label={t(present.has(person._id) ? 'present' : 'markPresent')}
-                disabled={!!busy || !detail.canRecord} loading={busy === person._id} onPress={() => void mark(person._id, !present.has(person._id))} />} />
+                disabled={!!busy || !detail.canRecord || Boolean(detail.group.eventDate && detail.date > day)} loading={busy === person._id} onPress={() => void mark(person._id, !present.has(person._id))} />} />
           )) : <EmptyState title={t('noPeople')} />}
         </View>
       )}

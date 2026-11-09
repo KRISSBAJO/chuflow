@@ -13,23 +13,23 @@ export function youthGroupValues(form: FormData) {
   };
 }
 
-export function YouthGroupFields({ group }: { group?: YouthGroup }) {
+export function YouthGroupFields({ group, event = false }: { group?: YouthGroup; event?: boolean }) {
   const t = useTranslations("youth");
   const locale = useLocale();
   const weekdays = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" });
   return <>
     <Field label={t("program")}><input name="program" className="ui-input" required maxLength={80} defaultValue={group?.program} /></Field>
-    <Field label={t("groupName")}><input name="name" className="ui-input" required maxLength={80} defaultValue={group?.name} /></Field>
-    <Field label={t("meetingDay")}><select name="meetingDay" className="ui-input" defaultValue={group?.meetingDay ?? 0}>{Array.from({ length: 7 }, (_, index) =>
+    <Field label={t(event ? "eventName" : "groupName")}><input name="name" className="ui-input" required maxLength={80} defaultValue={group?.name} /></Field>
+    {!event ? <Field label={t("meetingDay")}><select name="meetingDay" className="ui-input" defaultValue={group?.meetingDay ?? 0}>{Array.from({ length: 7 }, (_, index) =>
       <option key={index} value={index}>{weekdays.format(Date.UTC(2026, 10, 8 + index))}</option>
-    )}</select></Field>
+    )}</select></Field> : null}
     <Field label={t("minAge")}><input name="minAge" className="ui-input" type="number" min={10} max={99} required defaultValue={group?.minAge} /></Field>
     <Field label={t("maxAge")}><input name="maxAge" className="ui-input" type="number" min={10} max={99} required defaultValue={group?.maxAge} /></Field>
     <Field label={t("guardianUnderAge")}><input name="guardianUnderAge" className="ui-input" type="number" min={18} max={25} defaultValue={group?.guardianUnderAge ?? 18} required /></Field>
   </>;
 }
 
-export function YouthSetup({ overview, defaultBranch }: { overview: YouthOverview; defaultBranch?: string }) {
+export function YouthSetup({ overview, defaultBranch, events = false }: { overview: YouthOverview; defaultBranch?: string; events?: boolean }) {
   const t = useTranslations("youth");
   const { run, busy } = useYouthAction();
   function branchPicker() {
@@ -38,6 +38,30 @@ export function YouthSetup({ overview, defaultBranch }: { overview: YouthOvervie
       {overview.branches.map(branch => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
     </select></Field>;
   }
+  if (events) return <details className="app-card p-5">
+    <summary className="cursor-pointer font-semibold">{t("createEvent")}</summary>
+    <form className="mt-4 space-y-4" onSubmit={event => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const { program, name, minAge, maxAge, guardianUnderAge } = youthGroupValues(form);
+      void run("/youth/events", "POST", {
+        program, name, minAge, maxAge, guardianUnderAge, branchId: form.get("branchId"),
+        venue: form.get("venue"), eventDate: form.get("eventDate"), registrationDeadline: form.get("registrationDeadline"),
+        capacity: Number(form.get("capacity")),
+      });
+    }}>
+      <p className="text-sm text-neutral-600">{t("eventSetupHint")}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {branchPicker()}
+        <YouthGroupFields event />
+        <Field label={t("venue")}><input name="venue" className="ui-input" required maxLength={160} /></Field>
+        <Field label={t("eventDate")}><input name="eventDate" type="date" className="ui-input" required /></Field>
+        <Field label={t("registrationDeadline")}><input name="registrationDeadline" type="date" className="ui-input" required /></Field>
+        <Field label={t("capacity")}><input name="capacity" type="number" min={1} max={2000} className="ui-input" required /></Field>
+      </div>
+      <Button type="submit" disabled={busy}>{t("createEvent")}</Button>
+    </form>
+  </details>;
   return <section className="space-y-4">
     {overview.pilotAvailable ? <form className="app-card space-y-4 p-5" onSubmit={event => {
       event.preventDefault();

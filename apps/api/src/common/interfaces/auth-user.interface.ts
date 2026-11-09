@@ -16,7 +16,9 @@ export interface AuthUser {
     | 'follow_up'
     | 'usher'
     | 'children_worker'
-    | 'children_supervisor';
+    | 'children_supervisor'
+    | 'youth_leader'
+    | 'youth_pastor';
   oversightRegion?: string;
   district?: string;
   branchId?: string;

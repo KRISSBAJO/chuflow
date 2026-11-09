@@ -1,5 +1,7 @@
 {
   "youth": {
+    "events": "Événements",
+    "noEvents": "Aucun événement jeunesse dans votre périmètre.",
     "title": "Ministère jeunesse",
     "groups": "Groupes",
     "counts": "{active} inscrits · {pending} en attente",

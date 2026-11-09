@@ -106,23 +106,31 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
   const { run, busy } = useYouthAction();
   const path = "/youth/groups/" + group._id;
   const [qrLink, setQrLink] = useState<string>();
-  const href = registrationToken ? workspacePublicHref("/youth-register/" + registrationToken, workspace) : null;
+  const registrationAvailable = data.registrationAvailable ?? canRecord;
+  const href = registrationToken && registrationAvailable ? workspacePublicHref("/youth-register/" + registrationToken, workspace) : null;
   const pending = people.filter(person => person.state === "pending");
   const active = people.filter(person => person.state === "active");
   const current = new Set(present);
+  const eventFull = group.capacity !== undefined && active.length >= group.capacity;
   return <div className="space-y-5">
+    {group.eventDate && group.registrationDeadline ? <section className="app-card space-y-1 p-5 text-sm">
+      <p><strong>{t("eventDate")}</strong> · {format.dateTime(new Date(group.eventDate), { dateStyle: "medium", timeZone: "UTC" })} · {group.venue}</p>
+      <p><strong>{t("registrationDeadline")}</strong> · {format.dateTime(new Date(group.registrationDeadline), { dateStyle: "medium", timeZone: "UTC" })}</p>
+      {group.capacity ? <p>{t("eventCapacity", { count: active.length, total: group.capacity })}</p> : null}
+      {eventFull ? <p role="status">{t("eventFull")}</p> : null}
+    </section> : null}
     <section className="app-card space-y-4 p-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div><h2 className="text-lg font-semibold">{t("attendance")}</h2><p className="text-sm text-neutral-600">{t("presentCount", { count: present.length })}</p></div>
-        <Field label={t("sessionDate")}><input type="date" className="ui-input" value={date} onChange={event => {
+        {!group.eventDate ? <Field label={t("sessionDate")}><input type="date" className="ui-input" value={date} onChange={event => {
           if (event.target.value) router.replace("?date=" + event.target.value, { scroll: false });
-        }} /></Field>
+        }} /></Field> : null}
       </header>
       {!canRecord ? <p className="rounded-xl bg-orange-50 p-3 text-sm text-orange-950">{t("needsLeader")}</p> : null}
       {active.length ? <ul className="divide-y divide-black/10">
         {active.map(person => <li key={person._id} className="flex flex-wrap items-center justify-between gap-2 py-3">
           <span className="font-medium">{person.firstName} {person.lastName}</span>
-          <Button type="button" variant="secondary" aria-pressed={current.has(person._id)} disabled={busy || !canRecord}
+          <Button type="button" variant="secondary" aria-pressed={current.has(person._id)} disabled={busy || !canRecord || (Boolean(group.eventDate) && date > new Date().toISOString().slice(0, 10))}
             onClick={() => void run(path + "/attendance", "PATCH", { date, enrollmentId: person._id, present: !current.has(person._id) })}>
             {t(current.has(person._id) ? "present" : "markPresent")}
           </Button>
@@ -142,7 +150,7 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
         </div>) : <p className="text-sm text-neutral-600">{t("noWelcome")}</p>}
     </section>
     {manager ? <>
-      <details className="app-card p-5">
+      {!group.eventDate ? <details className="app-card p-5">
         <summary className="cursor-pointer font-semibold">{t("groupSettings")}</summary>
         <form className="mt-4 space-y-4" onSubmit={event => {
           event.preventDefault();
@@ -152,15 +160,17 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
           <div className="grid gap-4 sm:grid-cols-2"><YouthGroupFields group={group} /></div>
           <Button type="submit" disabled={busy}>{t("saveGroup")}</Button>
         </form>
-      </details>
+      </details> : null}
       <section className="app-card space-y-4 p-5">
         <h2 className="text-lg font-semibold">{t("registration")}</h2>
         <p className="text-sm text-neutral-600">{t("registrationHint")}</p>
-        {href ? <div className="flex flex-wrap gap-2">
-          <a href={href} className="inline-flex min-h-11 items-center text-sm font-semibold underline">{t("openRegistration")}</a>
-          <Button type="button" variant="secondary" onClick={() => setQrLink(new URL(href, window.location.origin).href)}>{t("showQr")}</Button>
+        {registrationToken ? <div className="flex flex-wrap gap-2">
+          {href ? <>
+            <a href={href} className="inline-flex min-h-11 items-center text-sm font-semibold underline">{t("openRegistration")}</a>
+            <Button type="button" variant="secondary" onClick={() => setQrLink(new URL(href, window.location.origin).href)}>{t("showQr")}</Button>
+          </> : null}
           <Button type="button" variant="secondary" disabled={busy} onClick={() => void run(path + "/link", "DELETE")}>{t("disableLink")}</Button>
-        </div> : <Button type="button" disabled={busy || !canRecord} onClick={() => void run(path + "/link", "POST")}>{t("enableLink")}</Button>}
+        </div> : <Button type="button" disabled={busy || !registrationAvailable} onClick={() => void run(path + "/link", "POST")}>{t("enableLink")}</Button>}
         {href && qrLink && new URL(qrLink).pathname + new URL(qrLink).search === href ? <TemplateQrCard url={qrLink} title={group.name} /> : null}
         <h3 className="font-semibold">{t("reviewQueue")}</h3>
         {pending.length ? pending.map(person => <PendingRegistration key={person._id} path={path + "/people/" + person._id} person={person} />)

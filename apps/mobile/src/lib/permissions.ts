@@ -12,16 +12,19 @@ export type AppRole =
   | 'follow_up'
   | 'usher'
   | 'children_worker'
-  | 'children_supervisor';
+  | 'children_supervisor'
+  | 'youth_leader'
+  | 'youth_pastor';
 
 const GLOBAL = ['super_admin'];
 const NATIONAL = ['national_admin', 'national_pastor'];
 const DISTRICT = ['district_admin', 'district_pastor'];
 const BRANCH_LEADERSHIP = ['branch_admin', 'resident_pastor', 'associate_pastor'];
 const CHILDREN = ['children_worker', 'children_supervisor'];
+const YOUTH = ['youth_leader', 'youth_pastor'];
 const SUPPORT = ['follow_up', 'usher'];
 const LEADERSHIP = [...GLOBAL, ...NATIONAL, ...DISTRICT, ...BRANCH_LEADERSHIP];
-const BRANCH_SCOPED = [...BRANCH_LEADERSHIP, ...SUPPORT, ...CHILDREN];
+const BRANCH_SCOPED = [...BRANCH_LEADERSHIP, ...SUPPORT, ...CHILDREN, ...YOUTH];
 const FINANCE = [...LEADERSHIP, 'usher'];
 
 const has = (roles: string[], role?: string) => !!role && roles.includes(role);
@@ -31,6 +34,8 @@ export const can = {
   lead: (role?: string) => has(LEADERSHIP, role),
   /** Children's ministry staff whose whole app is the Kids workspace. */
   kidsOnly: (role?: string) => has(CHILDREN, role),
+  youthOnly: (role?: string) => has(YOUTH, role),
+  youth: (role?: string) => has([...LEADERSHIP, ...SUPPORT, ...YOUTH], role),
   guests: (role?: string) => has([...LEADERSHIP, ...SUPPORT], role),
   followUp: (role?: string) => has([...LEADERSHIP, 'follow_up'], role),
   careCases: (role?: string) => has([...LEADERSHIP, 'follow_up'], role),
@@ -71,6 +76,8 @@ const ROLE_LABELS: Record<string, string> = {
   usher: 'Usher',
   children_worker: "Children's worker",
   children_supervisor: "Children's supervisor",
+  youth_leader: 'Youth Leader',
+  youth_pastor: 'Youth Pastor',
 };
 
 export function roleLabel(role?: string) {

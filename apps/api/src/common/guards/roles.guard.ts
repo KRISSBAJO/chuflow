@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { childrenApiAllowed } from '../children-access';
+import { YOUTH_ROLES, type AppRole } from '../constants/roles.constants';
 import {
   additionalPermissionKeys,
   hasAdditionalPermission,
@@ -25,6 +26,12 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     );
     const handler = context.getHandler().name;
+    const role = request.user?.role as AppRole | undefined;
+    const endpoint = this.reflector.get(PATH_METADATA, context.getHandler());
+    if (role && YOUTH_ROLES.includes(role) && controller !== 'youth' &&
+        !(controller === 'auth' && ['me', 'logout', 'change-password', 'workspaces', 'workspaces/:workspaceId/handoff', 'browser-handoff'].includes(String(endpoint)))) {
+      return false;
+    }
     const permission = endpointPermission(controller, handler);
     const extra =
       (!!permission && hasAdditionalPermission(request.user, permission)) ||
@@ -37,7 +44,7 @@ export class RolesGuard implements CanActivate {
       !childrenApiAllowed(
         request.user?.role,
         controller,
-        this.reflector.get(PATH_METADATA, context.getHandler()),
+        endpoint,
       ) &&
       !extra
     )

@@ -1,5 +1,6 @@
 import { HomeScreen } from '@/features/home/home-screen';
 import { KidsHome } from '@/features/kids/home';
+import { YouthOverview } from '@/features/youth/screens';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
 
@@ -7,5 +8,6 @@ import { useSession } from '@/lib/session';
 export default function HomeRoute() {
   const { user } = useSession();
   if (can.kidsOnly(user?.role)) return <KidsHome />;
+  if (can.youthOnly(user?.role)) return <YouthOverview embedded />;
   return <HomeScreen />;
 }

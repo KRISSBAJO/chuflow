@@ -6,7 +6,7 @@ import { MemberCustomFields, memberFieldPayload } from "@/components/member-cust
 import { Button, Field } from "@/components/ui/ui";
 import type { GuestStaffForm } from "@/lib/guest-fields";
 
-type Registration = { name: string; program: string; minAge: number; maxAge: number; guardianUnderAge: number; consentVersion: number; form: GuestStaffForm };
+type Registration = { name: string; program: string; minAge: number; maxAge: number; guardianUnderAge: number; eventDate?: string; venue?: string; consentVersion: number; form: GuestStaffForm };
 
 export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBase: string }) {
   const t = useTranslations("youth");
@@ -31,11 +31,14 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
   if (received) return <section className="app-card space-y-2 p-6"><h1 className="text-2xl font-semibold">{t("received")}</h1><p>{t("receivedHint")}</p></section>;
   if (!form) return <p role="status">{t(form === null ? "unavailable" : "loading")}</p>;
   const today = new Date().toISOString().slice(0, 10);
-  const age = birthDate ? Number(today.slice(0, 4)) - Number(birthDate.slice(0, 4)) - (today.slice(5) < birthDate.slice(5) ? 1 : 0) : null;
+  const ageAt = (date: string) => birthDate ? Number(date.slice(0, 4)) - Number(birthDate.slice(0, 4)) - (date.slice(5) < birthDate.slice(5) ? 1 : 0) : null;
+  const age = ageAt(today);
+  const eventAge = ageAt(form.eventDate ?? today);
   const guardian = age !== null && age < form.guardianUnderAge;
-  const ageValid = age !== null && age >= form.minAge && age <= form.maxAge;
+  const ageValid = eventAge !== null && birthDate <= today && eventAge >= form.minAge && eventAge <= form.maxAge;
   return <section className="app-card space-y-5 p-5 sm:p-8">
     <header><p className="text-sm font-semibold text-orange-800">{form.program}</p><h1 className="text-3xl font-semibold">{form.name}</h1>
+      {form.eventDate ? <p className="mt-2 text-sm">{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(form.eventDate))} · {form.venue}</p> : null}
       <p className="mt-2 text-sm text-neutral-600">{t("ages", { from: form.minAge, to: form.maxAge })}</p></header>
     <form className="space-y-4" onSubmit={async event => {
       event.preventDefault();
@@ -75,7 +78,7 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
         {form.form.fields.length ? <MemberCustomFields fields={form.form.fields} /> : null}
         <label className="flex items-start gap-2 rounded-xl bg-orange-50 p-4 text-sm text-orange-950">
           <input type="checkbox" required checked={accepted} onChange={event => setAccepted(event.target.checked)} />
-          {t(guardian ? "guardianConsent" : "adultConsent")}
+          {form.eventDate ? t(guardian ? "eventGuardianConsent" : "eventAdultConsent") : t(guardian ? "guardianConsent" : "adultConsent")}
         </label>
       </> : null}
       {error ? <p role="alert" className="text-sm text-red-800">{t(error)}</p> : null}

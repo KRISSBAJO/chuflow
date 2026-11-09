@@ -6,18 +6,18 @@ import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { Branch } from '../branches/schemas/branch.schema';
 import { ChildProfile } from '../children/children.schema';
-import { BRANCH_LEADERSHIP_ROLES, BRANCH_SUPPORT_ROLES, LEADERSHIP_ROLES } from '../common/constants/roles.constants';
+import { BRANCH_LEADERSHIP_ROLES, BRANCH_SUPPORT_ROLES, LEADERSHIP_ROLES, YOUTH_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
 import { getWorkspace } from '../workspaces/workspace-boundary';
-import { YouthAttendanceDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthAttendanceDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 
 const day = () => new Date().toISOString().slice(0, 10);
 const duplicate = (error: unknown) => (error as { code?: number })?.code === 11000;
-const leaderRoles = [...BRANCH_LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES];
+const leaderRoles = [...BRANCH_LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES, ...YOUTH_ROLES];
 const id = (value: string) => {
   if (!Types.ObjectId.isValid(value)) throw new NotFoundException();
   return new Types.ObjectId(value);
@@ -39,15 +39,23 @@ export class YouthService {
   ) {}
 
   private canManage(user: AuthUser) {
-    return user.role === 'super_admin' || BRANCH_LEADERSHIP_ROLES.includes(user.role);
+    return user.role === 'super_admin' || user.role === 'youth_pastor' || BRANCH_LEADERSHIP_ROLES.includes(user.role);
+  }
+
+  private canManageEvents(user: AuthUser) {
+    return this.canManage(user) || user.role === 'district_admin' || user.role === 'district_pastor';
+  }
+
+  private managesGroup(user: AuthUser, group: YouthGroup) {
+    return this.canManage(user) || Boolean(group.eventDate && group.districtManaged && this.canManageEvents(user));
   }
 
   private get pilotAvailable() {
     return getWorkspace(this.config).id === 'winners-chapel-international';
   }
 
-  private async manageBranch(user: AuthUser, branchId: string) {
-    if (!this.canManage(user)) throw new ForbiddenException();
+  private async manageBranch(user: AuthUser, branchId: string, event = false) {
+    if (!(event ? this.canManageEvents(user) : this.canManage(user))) throw new ForbiddenException();
     const branch = id(branchId);
     await this.access.ensureBranchAccess(user, branchId);
     if (!await this.branches.exists({ _id: branch })) throw new NotFoundException();
@@ -58,16 +66,15 @@ export class YouthService {
     const group = await this.groups.findById(id(groupId)).lean();
     if (!group) throw new NotFoundException();
     await this.access.ensureBranchAccess(user, String(group.branchId));
-    if (management ? !this.canManage(user) : !this.canManage(user) && String(group.leaderId) !== user.sub) {
+    if (!this.managesGroup(user, group) && (management || String(group.leaderId) !== user.sub || !await this.cleared(group))) {
       throw new ForbiddenException();
     }
-    if (!this.canManage(user) && !await this.cleared(group)) throw new ForbiddenException();
     return group;
   }
 
   async overview(user: AuthUser) {
     const scope = await this.access.buildBranchObjectIdFilter(user);
-    const query = LEADERSHIP_ROLES.includes(user.role) ? scope : { ...scope, leaderId: id(user.sub) };
+    const query = LEADERSHIP_ROLES.includes(user.role) || user.role === 'youth_pastor' ? scope : { ...scope, leaderId: id(user.sub) };
     const groups = await this.groups.find(query).sort({ program: 1, name: 1 }).lean();
     const groupIds = groups.map(({ _id }) => _id);
     const [counts, sessionCounts, visibleBranches] = await Promise.all([
@@ -84,12 +91,14 @@ export class YouthService {
     const branchNames = new Map(visibleBranches.map(branch => [String(branch._id), branch.name]));
     return {
       canManage: this.canManage(user),
+      canManageEvents: this.canManageEvents(user),
       pilotAvailable: this.canManage(user) && this.pilotAvailable,
-      branches: this.canManage(user) ? visibleBranches : [],
+      branches: this.canManageEvents(user) ? visibleBranches : [],
       groups: groups.map(group => ({
         _id: group._id, program: group.program, name: group.name,
         branchName: branchNames.get(String(group.branchId)),
-        canOpen: this.canManage(user) || (String(group.leaderId) === user.sub && Boolean(group.clearanceUntil && group.clearanceUntil >= day())),
+        canOpen: this.managesGroup(user, group) || (String(group.leaderId) === user.sub && Boolean(group.clearanceUntil && group.clearanceUntil >= day())),
+        eventDate: group.eventDate, venue: group.venue, capacity: group.capacity,
         active: counts.find(row => String(row._id.group) === String(group._id) && row._id.state === 'active')?.count ?? 0,
         pending: counts.find(row => String(row._id.group) === String(group._id) && row._id.state === 'pending')?.count ?? 0,
         sessions: sessionCounts.find(row => String(row._id) === String(group._id))?.sessions ?? 0,
@@ -100,9 +109,21 @@ export class YouthService {
 
   async createGroup(user: AuthUser, dto: YouthGroupDto) {
     const branchId = await this.manageBranch(user, dto.branchId);
+    return this.saveGroup(branchId, dto);
+  }
+
+  async createEvent(user: AuthUser, dto: YouthEventDto) {
+    const branchId = await this.manageBranch(user, dto.branchId, true);
+    if (dto.registrationDeadline < day() || dto.registrationDeadline > dto.eventDate) {
+      throw new BadRequestException('Choose a registration deadline between today and the event date.');
+    }
+    return this.saveGroup(branchId, { ...dto, districtManaged: !this.canManage(user), venue: dto.venue.trim(), meetingDay: new Date(dto.eventDate).getUTCDay() });
+  }
+
+  private async saveGroup(branchId: Types.ObjectId, dto: YouthGroupDto & Partial<Pick<YouthGroup, 'eventDate' | 'registrationDeadline' | 'venue' | 'capacity' | 'districtManaged'>>) {
     if (dto.maxAge < dto.minAge) throw new BadRequestException('Check the program age range.');
     const { program, name } = dto;
-    const key = createHash('sha256').update(JSON.stringify([program.trim().toLowerCase(), name.trim().toLowerCase()])).digest('hex');
+    const key = createHash('sha256').update(JSON.stringify([program.trim().toLowerCase(), name.trim().toLowerCase(), ...(dto.eventDate ? [dto.eventDate] : [])])).digest('hex');
     try {
       const group = await this.groups.create({ ...dto, branchId, key, program: program.trim(), name: name.trim() });
       return { id: group.id };
@@ -132,6 +153,7 @@ export class YouthService {
 
   async groupSettings(user: AuthUser, groupId: string, dto: YouthGroupSettingsDto) {
     const group = await this.scopedGroup(user, groupId, true);
+    if (group.eventDate) throw new BadRequestException('Event settings are fixed after creation.');
     if (dto.maxAge < dto.minAge) throw new BadRequestException('Check the program age range.');
     const eligibilityChanged = dto.minAge !== group.minAge || dto.maxAge !== group.maxAge || dto.guardianUnderAge !== group.guardianUnderAge;
     if (eligibilityChanged && await this.enrollments.exists({ groupId: group._id })) {
@@ -147,7 +169,8 @@ export class YouthService {
   async details(user: AuthUser, groupId: string, date = day(), attendanceOnly = false) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException();
     const group = await this.scopedGroup(user, groupId);
-    const manager = this.canManage(user);
+    date = group.eventDate ?? date;
+    const manager = this.managesGroup(user, group);
     const showRegistration = manager && !attendanceOnly;
     const [people, session, leaders, link, recentSessions, cleared, destinations] = await Promise.all([
       this.enrollments.find({ groupId: group._id, state: showRegistration ? { $in: ['active', 'pending'] } : 'active' })
@@ -157,10 +180,11 @@ export class YouthService {
       showRegistration ? this.groups.findById(group._id).select('+registrationToken').lean() : null,
       this.sessions.find({ groupId: group._id }).sort({ date: -1 }).limit(12).lean(),
       this.cleared(group),
-      showRegistration ? this.groups.find({ branchId: group.branchId, _id: { $ne: group._id } }).select('name minAge maxAge guardianUnderAge').sort({ name: 1 }).lean() : [],
+      showRegistration && !group.eventDate ? this.groups.find({ branchId: group.branchId, eventDate: { $exists: false }, _id: { $ne: group._id } }).select('name minAge maxAge guardianUnderAge').sort({ name: 1 }).lean() : [],
     ]);
     return {
       group, manager, date, people, leaders, destinations, canRecord: cleared,
+      registrationAvailable: cleared && this.registrationInTime(group),
       registrationToken: link?.registrationToken ?? null,
       present: session?.present ?? [],
       recentSessions: recentSessions.map(({ date, present }) => ({ date, count: present.length })),
@@ -185,23 +209,29 @@ export class YouthService {
   async registrationLink(user: AuthUser, groupId: string, enable: boolean) {
     const group = await this.scopedGroup(user, groupId, true);
     if (enable && !await this.cleared(group)) throw new ForbiddenException('Assign a screened group leader with current clearance first.');
+    if (enable && !this.registrationInTime(group)) throw new BadRequestException('Registration has closed or screening expires before the event.');
     await this.groups.updateOne({ _id: group._id, ...(enable ? { registrationToken: { $exists: false } } : {}) }, enable
       ? { $set: { registrationToken: randomBytes(24).toString('hex') } }
       : { $unset: { registrationToken: 1 } });
     return { saved: true };
   }
 
+  private registrationInTime(group: YouthGroup) {
+    return !group.eventDate || Boolean(group.registrationDeadline && group.registrationDeadline >= day() &&
+      group.clearanceUntil && group.clearanceUntil >= group.eventDate);
+  }
+
   private async publicGroup(token: string) {
     await this.forms.assertPublicEnabled();
     if (!/^[a-f0-9]{48}$/.test(token ?? '')) throw new NotFoundException();
     const group = await this.groups.findOne({ registrationToken: token }).lean();
-    if (!group || !await this.cleared(group)) throw new NotFoundException();
+    if (!group || !this.registrationInTime(group) || !await this.cleared(group)) throw new NotFoundException();
     return group;
   }
 
   async publicInfo(token: string) {
-    const { name, program, minAge, maxAge, guardianUnderAge } = await this.publicGroup(token);
-    return { name, program, minAge, maxAge, guardianUnderAge, consentVersion: 1, form: await this.forms.publicForm(MinistryFormKind.Youth) };
+    const { name, program, minAge, maxAge, guardianUnderAge, eventDate, venue, registrationDeadline } = await this.publicGroup(token);
+    return { name, program, minAge, maxAge, guardianUnderAge, eventDate, venue, registrationDeadline, consentVersion: 1, form: await this.forms.publicForm(MinistryFormKind.Youth) };
   }
 
   async register(token: string, dto: YouthRegistrationDto, ip: string) {
@@ -219,9 +249,10 @@ export class YouthService {
 
   private enrollmentData(group: YouthGroup & { _id: Types.ObjectId }, dto: Pick<YouthRegistrationDto, 'firstName' | 'lastName' | 'birthDate' | 'contact' | 'guardianName' | 'consentVersion' | 'locale'>) {
     const today = day();
-    const age = Number(today.slice(0, 4)) - Number(dto.birthDate.slice(0, 4)) - (today.slice(5) < dto.birthDate.slice(5) ? 1 : 0);
-    if (age < group.minAge || age > group.maxAge) throw new BadRequestException('The participant is outside this group’s age range.');
-    const needsGuardian = age < group.guardianUnderAge;
+    const ageAt = (date: string) => Number(date.slice(0, 4)) - Number(dto.birthDate.slice(0, 4)) - (date.slice(5) < dto.birthDate.slice(5) ? 1 : 0);
+    const ageAtEvent = ageAt(group.eventDate ?? today);
+    if (dto.birthDate > today || ageAtEvent < group.minAge || ageAtEvent > group.maxAge) throw new BadRequestException('The participant is outside this group’s age range.');
+    const needsGuardian = ageAt(today) < group.guardianUnderAge;
     if (needsGuardian && !dto.guardianName) throw new BadRequestException('A guardian must complete this registration.');
     const firstName = dto.firstName.trim();
     const lastName = dto.lastName.trim();
@@ -242,8 +273,9 @@ export class YouthService {
 
   async transition(user: AuthUser, groupId: string, enrollmentId: string, dto: YouthTransitionDto) {
     const sourceGroup = await this.scopedGroup(user, groupId, true);
+    if (sourceGroup.eventDate) throw new BadRequestException('Use the regular group roster for transitions.');
     const destination = await this.groups.findOne({
-      $and: [{ _id: id(dto.destinationId) }, { _id: { $ne: sourceGroup._id } }], branchId: sourceGroup.branchId,
+      $and: [{ _id: id(dto.destinationId) }, { _id: { $ne: sourceGroup._id } }], branchId: sourceGroup.branchId, eventDate: { $exists: false },
     }).lean();
     if (!destination) throw new NotFoundException();
     if (!await this.cleared(destination)) throw new ForbiddenException('Assign a screened leader to the receiving group first.');
@@ -283,6 +315,9 @@ export class YouthService {
     if (dto.state === 'active' && record.needsGuardian && dto.guardianVerified !== true) {
       throw new BadRequestException('Confirm the guardian’s permission before approving.');
     }
+    if (dto.state === 'active' && group.eventDate && (group.eventDate < day() || !group.clearanceUntil || group.clearanceUntil < group.eventDate || !await this.cleared(group))) {
+      throw new ForbiddenException('Event approval requires an upcoming event and a screened leader.');
+    }
     if (dto.memberId && dto.childId) throw new BadRequestException('Choose one existing record.');
     if (dto.memberId || dto.childId) {
       const options = await this.matches(user, groupId, enrollmentId);
@@ -290,10 +325,9 @@ export class YouthService {
       if (!choices.some(option => String(option._id) === (dto.memberId ?? dto.childId))) throw new BadRequestException('Choose a matching record in this branch.');
     }
     try {
-      const saved = await this.enrollments.updateOne(query, {
-        $set: { state: dto.state, memberId: dto.memberId, childId: dto.childId, reviewedBy: user.sub, reviewedAt: new Date() },
-      });
-      if (!saved.modifiedCount) throw new ConflictException();
+      const change = { state: dto.state, memberId: dto.memberId, childId: dto.childId, reviewedBy: user.sub, reviewedAt: new Date() };
+      if (dto.state === 'active' && group.capacity) await this.approveEventSeat(query, change, group.capacity);
+      else if (!(await this.enrollments.updateOne(query, { $set: change })).modifiedCount) throw new ConflictException();
     } catch (error) {
       if (duplicate(error)) throw new ConflictException('This person already has a place in the group.');
       throw error;
@@ -301,9 +335,26 @@ export class YouthService {
     return { saved: true };
   }
 
+  private async approveEventSeat(query: { _id: Types.ObjectId; groupId: Types.ObjectId; state: string }, change: object, capacity: number) {
+    await this.enrollments.init();
+    const occupied = new Set(await this.enrollments.distinct('eventSeat', { groupId: query.groupId, state: 'active' }));
+    for (let seat = 1; seat <= capacity; seat++) {
+      if (occupied.has(seat)) continue;
+      try {
+        const saved = await this.enrollments.updateOne(query, { $set: { ...change, eventSeat: seat } });
+        if (!saved.modifiedCount) throw new ConflictException();
+        return;
+      } catch (error) {
+        if (!duplicate(error) || !(error as { keyPattern?: { eventSeat?: number } }).keyPattern?.eventSeat) throw error;
+      }
+    }
+    throw new ConflictException({ code: 'youth_event_full', message: 'This event is full. The registration remains pending.' });
+  }
+
   async attendance(user: AuthUser, groupId: string, dto: YouthAttendanceDto) {
     const group = await this.scopedGroup(user, groupId);
     if (!await this.cleared(group)) throw new ForbiddenException('Assign a screened group leader with current clearance first.');
+    if (group.eventDate && dto.date !== group.eventDate) throw new BadRequestException('Use the event date for attendance.');
     if (dto.date > day()) throw new BadRequestException('Attendance cannot be entered for a future date.');
     const enrollmentId = id(dto.enrollmentId);
     if (!await this.enrollments.exists({ _id: enrollmentId, groupId: group._id, state: 'active' })) throw new NotFoundException();

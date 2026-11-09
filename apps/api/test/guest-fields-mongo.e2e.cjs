@@ -119,11 +119,11 @@ async function run() {
     const otherBranch = new ObjectId();
     const branchDocument = await mongo.db(database).collection('branches').findOne({ _id: branch });
     await mongo.db(database).collection('branches').insertOne({ ...branchDocument, _id: otherBranch, name: 'Other QA Station' });
-    async function signInAs(role, branchId) {
+    async function signInAs(role, branchId, scope = {}) {
       const email = `${role}@example.com`;
       await mongo.db(database).collection('users').insertOne({
         firstName: 'Branch', lastName: 'Tester', email, role, branchId,
-        password: await bcrypt.hash(adminPassword, 4), isActive: true,
+        password: await bcrypt.hash(adminPassword, 4), isActive: true, ...scope,
       });
       return (await expect(await request('/auth/mobile/login', 'POST', { email, password: adminPassword }), 200)).accessToken;
     }
@@ -218,6 +218,22 @@ async function run() {
 
     const youth = (path = '', method = 'GET', body, auth = branchAdmin) => request('/youth' + path, method, body, auth);
     await expect(await youth('/pilot', 'POST', { branchId: String(branch) }, team), 403);
+    const youthAccounts = {};
+    for (const role of ['youth_leader', 'youth_pastor']) {
+      const payload = { firstName: 'Youth', lastName: 'Tester', email: role + '@example.com', password: adminPassword, role, isActive: true };
+      const created = await expect(await request('/users', 'POST', payload, branchAdmin), 201);
+      assert.equal(created.role, role);
+      const login = await expect(await request('/auth/mobile/login', 'POST', { email: payload.email, password: adminPassword }), 200);
+      youthAccounts[role] = { token: login.accessToken, id: created._id };
+      await expect(await request('/auth/me', 'GET', undefined, login.accessToken), 200);
+      for (const path of ['/users', '/members', '/guests', '/children', '/meetings', '/finance/offerings']) {
+        await expect(await request(path, 'GET', undefined, login.accessToken), 403);
+      }
+    }
+    const youthLeader = youthAccounts.youth_leader;
+    const youthPastor = youthAccounts.youth_pastor;
+    assert.equal((await expect(await youth('', 'GET', undefined, youthLeader.token), 200)).groups.length, 0);
+    await expect(await youth('/pilot', 'POST', { branchId: String(otherBranch) }, youthPastor.token), 403);
     await expect(await youth('/pilot', 'POST', { branchId: String(branch) }), 201);
     await expect(await youth('/pilot', 'POST', { branchId: String(branch) }), 201);
     const overview = await expect(await youth(), 200);
@@ -225,6 +241,9 @@ async function run() {
     assert.equal((await expect(await youth('', 'GET', undefined, otherPastor), 200)).groups.length, 0);
     const teens = '/groups/' + overview.groups.find(group => group.program === 'Teens Church')._id;
     const adults = '/groups/' + overview.groups.find(group => group.program === 'Youth Alive')._id;
+    await expect(await youth(teens, 'GET', undefined, youthPastor.token), 200);
+    await expect(await youth(teens, 'GET', undefined, youthLeader.token), 403);
+    await expect(await youth('/pilot', 'POST', { branchId: String(branch) }, youthLeader.token), 403);
     await expect(await youth(teens, 'GET', undefined, otherPastor), 403);
     await expect(await youth(teens + '/link', 'POST'), 403);
     for (const group of [teens, adults]) {
@@ -294,6 +313,42 @@ async function run() {
     assert.deepEqual((await expect(await youth(teens), 200)).present, [teenId]);
     await expect(await youth(teens + '/link', 'DELETE'), 200);
     await expect(await registration(teenLink), 404);
+
+    const eventInput = { branchId: String(branch), name: 'Youth Rally', program: 'Teens Church', minAge: 13, maxAge: 17,
+      guardianUnderAge: 18, venue: 'Local Hall', eventDate: date, registrationDeadline: date, capacity: 1 };
+    await expect(await youth('/events', 'POST', eventInput, otherPastor), 403);
+    await expect(await youth('/events', 'POST', { ...eventInput, registrationDeadline: '2099-01-01' }), 400);
+    const district = await signInAs('district_admin', undefined, { district: 'QA', oversightRegion: 'United States' });
+    await expect(await youth(teens, 'GET', undefined, district), 403);
+    const event = await expect(await youth('/events', 'POST', eventInput, district), 201);
+    const eventPath = '/groups/' + event.id;
+    await expect(await youth(eventPath + '/link', 'POST'), 403);
+    await expect(await youth(eventPath + '/leader', 'PATCH', { leaderId: String(staffId), clearanceUntil: '2099-01-01', screeningVerified: true }), 200);
+    await expect(await youth(eventPath + '/link', 'POST'), 201);
+    const eventLink = (await expect(await youth(eventPath), 200)).registrationToken;
+    const form = await expect(await registration(eventLink), 200);
+    assert.equal(form.eventDate, date);
+    assert.equal(form.venue, 'Local Hall');
+    await expect(await registration(eventLink, teen), 201);
+    await expect(await registration(eventLink, { ...teen, firstName: 'Second' }), 201);
+    const eventRoster = await expect(await youth(eventPath), 200);
+    const approveSeat = (person) => youth(eventPath + '/people/' + person._id, 'PATCH', { state: 'active', guardianVerified: true });
+    const results = await Promise.all(eventRoster.people.map(approveSeat));
+    assert.deepEqual(results.map(response => response.status).sort(), [200, 409]);
+    assert.equal((await results.find(response => response.status === 409).json()).code, 'youth_event_full');
+    const confirmed = eventRoster.people.find((_, index) => results[index].status === 200);
+    const waiting = eventRoster.people.find((_, index) => results[index].status === 409);
+    const eventMark = { date, enrollmentId: confirmed._id, present: true };
+    await expect(await youth(eventPath + '/attendance', 'PATCH', { ...eventMark, date: '2000-01-01' }, team), 400);
+    await expect(await youth(eventPath + '/attendance', 'PATCH', eventMark, team), 200);
+    await expect(await youth(eventPath + '/leader', 'PATCH', { leaderId: youthLeader.id, clearanceUntil: '2099-01-01', screeningVerified: true }, youthPastor.token), 200);
+    await expect(await youth(eventPath + '/attendance', 'PATCH', eventMark, youthLeader.token), 200);
+    await expect(await youth(eventPath + '/link', 'DELETE', undefined, youthLeader.token), 403);
+    assert.equal((await expect(await youth(eventPath, 'GET', undefined, youthLeader.token), 200)).people[0].guardianName, undefined);
+    assert.equal((await expect(await youth('', 'GET', undefined, youthLeader.token), 200)).groups.length, 1);
+    await expect(await youth(eventPath + '/people/' + confirmed._id + '/withdraw', 'POST'), 201);
+    await expect(await approveSeat(waiting), 200);
+    assert.deepEqual((await expect(await youth(eventPath + '?date=2000-01-01'), 200)).present, [confirmed._id]);
 
     await mongo.db(database).collection('appsettings').updateOne({ scopeKey: 'global' }, { $set: { publicConnectEnabled: false } }, { upsert: true });
     await expect(await publicForm(), 404);

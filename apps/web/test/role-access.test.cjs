@@ -355,7 +355,7 @@ for (const role of allRoles) {
       "@/components/shell": {},
     }).default;
     if (
-      ["follow_up", "usher", "children_worker", "children_supervisor"].includes(
+      ["follow_up", "usher", "children_worker", "children_supervisor", "youth_leader", "youth_pastor"].includes(
         role,
       )
     ) {
@@ -376,8 +376,9 @@ for (const role of allRoles) {
   test(
     role + ": guest forms and details only load authorized data",
     async () => {
-      if (role.startsWith("children_")) {
+      if (role.startsWith("children_") || role.startsWith("youth_")) {
         assert.equal(permissions.canAccessRoute(role, "/guests/new"), false);
+        assert.equal(permissions.canAccessRoute(role, "/guests/test-id"), false);
         return;
       }
       const requests = [];
@@ -433,6 +434,17 @@ for (const role of allRoles) {
         );
     },
   );
+}
+
+for (const role of ["youth_leader", "youth_pastor"]) {
+  test(role + ": youth workspace and account creation scope", () => {
+    assert.equal(permissions.roleHomeHref(role), "/youth");
+    assert.ok(permissions.canAccessRoute(role, "/youth/group"));
+    assert.equal(permissions.canAccessRoute(role, "/finance", ["finance.view"]), false);
+    assert.equal(permissions.canAccessRoute(role, "/users/new"), false);
+    assert.ok(permissions.getManageableUserRoleOptions("branch_admin").includes(role));
+    assert.equal(permissions.getManageableUserRoleOptions(role).length, 0);
+  });
 }
 test("support staff get limited lookup options without gaining directory access", () => {
   for (const role of ["follow_up", "usher"]) {

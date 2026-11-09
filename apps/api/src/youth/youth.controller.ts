@@ -4,7 +4,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { YouthAttendanceDto, YouthBranchDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthAttendanceDto, YouthBranchDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
 
 @Controller('youth')
@@ -20,6 +20,9 @@ export class YouthController {
 
   @Post('groups')
   create(@CurrentUser() user: AuthUser, @Body() dto: YouthGroupDto) { return this.youth.createGroup(user, dto); }
+
+  @Post('events')
+  event(@CurrentUser() user: AuthUser, @Body() dto: YouthEventDto) { return this.youth.createEvent(user, dto); }
 
   @Get('groups/:id') @Header('Cache-Control', 'no-store')
   details(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query('date') date?: string, @Query('view') view?: string) {
