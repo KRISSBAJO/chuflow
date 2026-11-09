@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { Image } from 'expo-image';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +13,12 @@ import { useApi } from '@/lib/use-api';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
 
-const tabs = ['home', 'events', 'journey', 'serve'] as const;
+const tabs = [
+  { key: 'home', icon: 'home' },
+  { key: 'events', icon: 'calendar' },
+  { key: 'journey', icon: 'book' },
+  { key: 'serve', icon: 'care' },
+] as const;
 type Event = { id: string; name: string; date: string; endDate?: string; venue?: string; registrationUrl?: string;
   state?: 'active' | 'pending' | 'declined' | 'withdrawn' };
 type Preview = {
@@ -26,7 +32,7 @@ type Preview = {
 export function YouthHomePreview({ participant = false }: { participant?: boolean } = {}) {
   const t = useT('youth.participantHome');
   const format = useAppFormat();
-  const [tab, setTab] = useState<(typeof tabs)[number]>('home');
+  const [tab, setTab] = useState<(typeof tabs)[number]['key']>('home');
   const { signOut } = useSession();
   const [busy, setBusy] = useState<string>();
   const result = useApi<Preview>(participant ? '/youth-participant/home' : '/youth/home-preview');
@@ -50,32 +56,38 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
   const featured = next ? { tab: 'events', icon: 'calendar', title: next.name, detail: eventDetails(next) } as const :
     track ? { tab: 'journey', icon: 'book', title: track.title, detail: t('tracks') } as const :
     project ? { tab: 'serve', icon: 'care', title: project.title, detail: [format.date(project.date), project.location].filter(Boolean).join(' · ') } as const : null;
+  const navigation = preview ? <View style={styles.tabs}>
+    {tabs.map(({ key, icon }) => {
+      const selected = tab === key;
+      const label = t(key);
+      return <Pressable key={key} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected }}
+        onPress={() => setTab(key)} style={({ pressed }) => [styles.tab, pressed && styles.pressed]}>
+        <View style={[styles.tabIcon, selected && styles.selectedTab]}>
+          <Icon name={icon} size={20} color={selected ? '#974020' : colors.muted} />
+        </View>
+        <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label}</Text>
+      </Pressable>;
+    })}
+  </View> : undefined;
 
   return (
-    <Screen safeTop={participant} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
+    <Screen safeTop={participant} footer={navigation} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
       <Stack.Screen options={{ title: t('title') }} />
       {result.loading ? <Loading /> : result.error ? <ErrorState message={result.error} onRetry={() => void result.refresh()} /> : preview ? <>
-        <View style={styles.masthead}>
-          <View style={styles.mastheadCopy}>
-            <View style={styles.meta}>
-              <Icon name="mapPin" size={15} color="#974020" />
-              <Text style={styles.branch}>{preview.branch}</Text>
-              {!participant ? <Text style={styles.preview} accessibilityLabel={t('previewNote')}>{t('previewBadge')}</Text> : null}
-            </View>
-            <Text accessibilityRole="header" style={styles.title}>{t('welcomeTitle')}</Text>
-            <Text style={styles.subhead}>{t('welcomeSubtitle')}</Text>
-          </View>
-          <View style={styles.mark} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-            <Icon name="sparkle" size={29} color="#974020" />
-          </View>
-        </View>
-        <View style={styles.tabs}>
-          {tabs.map(value => <Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }}
-            onPress={() => setTab(value)} style={[styles.tab, tab === value && styles.selectedTab]}>
-            <Text style={[styles.tabLabel, tab === value && styles.selectedLabel]}>{t(value)}</Text>
-          </Pressable>)}
+        <View style={styles.meta}>
+          <Icon name="mapPin" size={15} color="#974020" />
+          <Text style={styles.branch}>{preview.branch}</Text>
+          {!participant ? <Text style={styles.preview} accessibilityLabel={t('previewNote')}>{t('previewBadge')}</Text> : null}
         </View>
         {tab === 'home' ? <View style={styles.sections}>
+          <View style={styles.hero}>
+            <Image source={require('../../../assets/images/youth-belonging.webp')} style={styles.art} contentFit="cover"
+              accessible={false} />
+            <View style={styles.heroCopy}>
+              <Text accessibilityRole="header" style={styles.title}>{t('welcomeTitle')}</Text>
+              <Text style={type.body}>{t('welcomeSubtitle')}</Text>
+            </View>
+          </View>
           {featured ? <Pressable accessibilityRole="button" onPress={() => setTab(featured.tab)}
             style={({ pressed }) => [styles.feature, pressed && styles.pressed]}>
             <View style={styles.featureCopy}>
@@ -149,19 +161,19 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
 }
 
 const styles = StyleSheet.create({
-  masthead: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 8 },
-  mastheadCopy: { flex: 1, gap: 5 },
   meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5 },
   branch: { ...type.label, color: '#974020' },
   preview: { ...type.small, backgroundColor: colors.surfaceStrong, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
-  title: { color: colors.ink, fontFamily: fonts.bold, fontSize: 32, lineHeight: 37, letterSpacing: -0.9 },
-  subhead: type.body,
-  mark: { width: 55, height: 55, borderRadius: 20, backgroundColor: colors.flameSoft, alignItems: 'center', justifyContent: 'center' },
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, padding: 5, backgroundColor: colors.surface, borderRadius: 17 },
-  tab: { flexGrow: 1, minHeight: 44, paddingHorizontal: 8, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
-  selectedTab: { backgroundColor: colors.ink },
-  tabLabel: type.label,
-  selectedLabel: { color: colors.page },
+  title: { color: colors.ink, fontFamily: fonts.bold, fontSize: 30, lineHeight: 35, letterSpacing: -0.8 },
+  hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#fff7ec', marginBottom: 6 },
+  art: { width: '100%', aspectRatio: 2 },
+  heroCopy: { padding: 16, gap: 4 },
+  tabs: { flexDirection: 'row', gap: 4, width: '100%', maxWidth: 520, alignSelf: 'center' },
+  tab: { flex: 1, minHeight: 52, alignItems: 'center', gap: 3, justifyContent: 'center' },
+  tabIcon: { width: 42, height: 29, alignItems: 'center', justifyContent: 'center', borderRadius: 15 },
+  selectedTab: { backgroundColor: colors.flameSoft },
+  tabLabel: { ...type.small, textAlign: 'center', fontSize: 12, lineHeight: 16 },
+  selectedLabel: { color: '#974020', fontFamily: fonts.semibold },
   sections: { gap: 10 },
   sectionTitle: { ...type.title, fontSize: 18, lineHeight: 24 },
   feature: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.flameSoft, borderRadius: 20, padding: 17, marginBottom: 6 },
