@@ -17,11 +17,15 @@ export type GuestField = {
 
 export type GuestStaffForm = {
   revision: number;
+  branchId?: string | null;
   hiddenStaff: string[];
   fields: GuestField[];
 };
 
 export type GuestFormSettings = GuestStaffForm & {
+  inheritedHiddenPublic?: string[];
+  inheritedHiddenStaff?: string[];
+  inheritedFields?: GuestField[];
   hiddenPublic: string[];
   defaultPublic: Array<{ key: string; label: string; labelEs?: string }>;
   defaultStaff: Array<"email" | "invitedBy" | "heardAboutChurch" | "prayerRequest" | "assignedFollowUpUserId" | "wantsPastoralCall" | "phone" | "title" | "familyDetails" | "dateJoinedChurch" | "formation" | "notes" | "payee" | "receiptUrl" | "city" | "preferredContactTime" | "agenda" | "location" | "joinUrl">;

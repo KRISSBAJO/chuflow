@@ -932,6 +932,11 @@
         "update": "Mettre à jour le mot de passe"
       },
       "guestFields": {
+        "branchTitle": "Formulaires visiteurs de la branche",
+        "branchDescription": "Personnalisez le lien visiteur et le formulaire interne de votre branche.",
+        "inheritedFields": "Questions de l’espace de travail",
+        "branchReset": "Rétablir les valeurs de l’espace de travail",
+        "branchResetConfirm": "Réinitialiser les formulaires de cette branche ? Les réponses recueillies resteront dans les dossiers visiteurs.",
         "title": "Formulaires et champs",
         "description": "Gérez les questions du lien invité et du formulaire de l’équipe.",
         "locked": "Le nom et le téléphone restent requis pour l’inscription et le suivi.",

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Ip,
   Param,
@@ -21,15 +22,35 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
+import { AccessScopeService } from '../access-scope/access-scope.service';
 
 class LegacyPublicGuestDto extends PickType(CreateGuestDto, [
-  'branchId', 'firstName', 'lastName', 'phone', 'email', 'prayerRequest', 'heardAboutChurch', 'serviceType',
+  'branchId', 'firstName', 'lastName', 'phone', 'email', 'prayerRequest', 'heardAboutChurch', 'serviceType', 'customFields', 'formRevision',
 ] as const) {}
 
 @ApiTags('Guests')
 @Controller('guests')
 export class GuestsController {
-  constructor(private readonly guestsService: GuestsService, private readonly guestFields: GuestFieldsService) {}
+  constructor(private readonly guestsService: GuestsService, private readonly guestFields: GuestFieldsService, private readonly accessScope: AccessScopeService) {}
+
+  private async ownBranch(user: AuthUser) {
+    if (user.role !== 'branch_admin' && user.role !== 'resident_pastor') throw new ForbiddenException();
+    const branchId = await this.accessScope.resolveScopedBranchId(user);
+    if (!branchId) throw new ForbiddenException();
+    return branchId;
+  }
+
+  @Get('branch-form-settings')
+  @Roles('branch_admin', 'resident_pastor')
+  async branchFormSettings(@CurrentUser() user: AuthUser) {
+    return this.guestFields.overview('guest', await this.ownBranch(user));
+  }
+
+  @Patch('branch-form-settings')
+  @Roles('branch_admin', 'resident_pastor')
+  async publishBranchFormSettings(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+    return this.guestFields.publish(body, user, 'guest', await this.ownBranch(user));
+  }
 
   @UseGuards(JwtAuthGuard)
   @Roles('super_admin')
@@ -68,9 +89,9 @@ export class GuestsController {
   @UseGuards(JwtAuthGuard)
   @Roles('super_admin', 'national_admin', 'national_pastor', 'district_admin', 'district_pastor', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up', 'usher')
   @Get('staff-form')
-  async staffForm() {
-    const { revision, hiddenStaff, fields } = await this.guestFields.get();
-    return { revision, hiddenStaff, fields: fields.filter((field) => field.staff) };
+  async staffForm(@CurrentUser() user: AuthUser, @Query('branchId') requestedBranchId?: string) {
+    const branchId = await this.accessScope.resolveScopedBranchId(user, requestedBranchId);
+    return { ...await this.guestFields.staff('guest', branchId), branchId: branchId?.toLowerCase() ?? null };
   }
 
   @Public()
@@ -78,14 +99,15 @@ export class GuestsController {
   async createPublic(@Body() dto: LegacyPublicGuestDto, @Ip() ip: string) {
     this.guestFields.limitPublicSubmission(ip);
     await this.guestFields.assertPublicEnabled();
-    const definition = await this.guestFields.get();
+    const definition = await this.guestFields.get('guest', dto.branchId);
+    this.guestFields.checkRevision(definition, dto.formRevision);
     if (!dto.firstName.trim() || !dto.lastName.trim() || !/^\d{7,15}$/.test(dto.phone.replace(/\D/g, '')) ||
         Object.entries(dto).some(([key, value]) => typeof value === 'string' && value.length > (key === 'prayerRequest' ? 2000 : 250))) {
       throw new BadRequestException('Please check your guest registration details.');
     }
     const data = { ...dto } as LegacyPublicGuestDto & Record<string, unknown>;
     for (const key of definition.hiddenPublic) delete data[key];
-    const answers = this.guestFields.collect(definition, 'public');
+    const answers = this.guestFields.collect(definition, 'public', dto.customFields);
     try {
       await this.guestsService.create(data, undefined, answers);
     } catch (error) {

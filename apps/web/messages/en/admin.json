@@ -932,6 +932,11 @@
         "update": "Update password"
       },
       "guestFields": {
+        "branchTitle": "Branch guest forms",
+        "branchDescription": "Customize the guest link and staff guest form for your branch.",
+        "inheritedFields": "Workspace questions",
+        "branchReset": "Reset to workspace defaults",
+        "branchResetConfirm": "Reset this branch’s form setup? Previously collected answers will stay on guest records.",
         "title": "Forms & fields",
         "description": "Manage questions on your guest link and staff registration form.",
         "locked": "Name and phone stay on for registration and follow-up.",

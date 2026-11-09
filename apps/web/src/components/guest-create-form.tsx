@@ -37,25 +37,31 @@ export function GuestCreateForm({
   const tc = useTranslations("common");
   const tf = useTranslations("admin.settings.guestFields");
   const locale = useLocale();
-  const [definition, setDefinition] = useState<GuestStaffForm>();
+  const [selectedBranchId, setSelectedBranchId] = useState(
+    defaultBranchId || (branches.length === 1 ? branches[0]?._id : "") || "",
+  );
+  const [loaded, setLoaded] = useState<{ branchId: string; definition: GuestStaffForm }>();
+  const definition = loaded?.branchId === selectedBranchId ? loaded.definition : undefined;
   const [definitionError, setDefinitionError] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(API_URL + "/guests/staff-form", { credentials: "include", signal: controller.signal, cache: "no-store" })
+    const query = selectedBranchId ? `?branchId=${encodeURIComponent(selectedBranchId)}` : "";
+    fetch(API_URL + "/guests/staff-form" + query, { credentials: "include", signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error();
-        setDefinition(await response.json() as GuestStaffForm);
+        const definition = await response.json() as GuestStaffForm;
+        if (!controller.signal.aborted) {
+          setLoaded({ branchId: selectedBranchId, definition });
+          setDefinitionError(false);
+        }
       })
       .catch(() => { if (!controller.signal.aborted) setDefinitionError(true); });
     return () => controller.abort();
-  }, []);
+  }, [selectedBranchId]);
   const visible = (key: string) => !definition?.hiddenStaff.includes(key);
   const [loading, setLoading] = useState(false);
   const branchMap = new Map(
     branches.map((branch) => [branch._id, branch.name]),
-  );
-  const [selectedBranchId, setSelectedBranchId] = useState(
-    defaultBranchId || (branches.length === 1 ? branches[0]?._id : "") || "",
   );
   const selectedBranch =
     branches.find((branch) => branch._id === selectedBranchId) ||
@@ -151,7 +157,7 @@ export function GuestCreateForm({
             <select
               name="branchId"
               value={selectedBranchId}
-              onChange={(event) => setSelectedBranchId(event.target.value)}
+              onChange={(event) => { setLoaded(undefined); setDefinitionError(false); setSelectedBranchId(event.target.value); }}
               className="ui-input"
               required
             >

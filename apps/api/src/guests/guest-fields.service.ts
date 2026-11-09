@@ -69,6 +69,7 @@ type Definition = {
 export type GuestAnswer = { key: string; label: string; value: string | number };
 
 const DEFAULTS: Definition = { revision: 0, hiddenPublic: [], hiddenStaff: [], fields: [] };
+const BRANCH_REVISION_RANGE = 2 ** 20;
 
 function invalid() {
   return new BadRequestException('Invalid form settings.');
@@ -90,29 +91,58 @@ export class GuestFieldsService {
     return this.connection.db!.collection<Definition & { _id: string }>('guest_form_settings');
   }
 
-  async get(kind: FormKind = 'guest') {
-    const stored = await this.definitions.findOne({ _id: kind });
+  private async readDefinition(id: string) {
+    const stored = await this.definitions.findOne({ _id: id });
     const { revision, hiddenPublic, hiddenStaff, fields } = stored ?? DEFAULTS;
     return { revision, hiddenPublic, hiddenStaff, fields };
   }
 
-  async overview(kind: FormKind = 'guest') {
-    const defaults = defaultFields[kind];
+  private branchRevision(workspace: Definition, branch: Definition) {
+    return branch.revision === 0 ? workspace.revision :
+      2 ** 40 + workspace.revision * BRANCH_REVISION_RANGE + branch.revision;
+  }
+
+  async get(kind: FormKind = 'guest', branchId?: string) {
+    const workspace = await this.readDefinition(kind);
+    if (!branchId) return workspace;
+    const branch = await this.readDefinition(`${kind}:${branchId.toLowerCase()}`);
     return {
-      ...await this.get(kind),
+      revision: this.branchRevision(workspace, branch),
+      hiddenPublic: [...new Set([...workspace.hiddenPublic, ...branch.hiddenPublic])],
+      hiddenStaff: [...new Set([...workspace.hiddenStaff, ...branch.hiddenStaff])],
+      fields: [...workspace.fields, ...branch.fields],
+    };
+  }
+
+  async overview(kind: FormKind = 'guest', branchId?: string) {
+    const defaults = defaultFields[kind];
+    const workspace = await this.readDefinition(kind);
+    const branch = branchId ? await this.readDefinition(`${kind}:${branchId.toLowerCase()}`) : null;
+    return {
+      ...(branch ?? workspace),
+      ...(branch ? {
+        revision: this.branchRevision(workspace, branch),
+        inheritedHiddenPublic: workspace.hiddenPublic,
+        inheritedHiddenStaff: workspace.hiddenStaff,
+        inheritedFields: workspace.fields,
+      } : {}),
       defaultPublic: defaults.public.map(({ key, label, labelEs }) => ({ key, label, labelEs })),
       defaultStaff: defaults.staff,
       ...(kind === 'member' ? { guestFields: (await this.get()).fields.map(({ key, label, type }) => ({ key, label, type })) } : {}),
     };
   }
 
-  async publish(input: unknown, actor: AuthUser, kind: FormKind = 'guest') {
+  async publish(input: unknown, actor: AuthUser, kind: FormKind = 'guest', branchId?: string) {
     if (!input || typeof input !== 'object') throw invalid();
     const dto = input as Partial<Definition>;
-    const current = await this.get(kind);
+    const id = branchId ? `${kind}:${branchId.toLowerCase()}` : kind;
+    const current = await this.readDefinition(id);
+    const revision = branchId ? this.branchRevision(await this.readDefinition(kind), current) : current.revision;
     const defaults = defaultFields[kind];
     const sources = kind === 'member' ? (await this.get()).fields : [];
-    if (dto.revision !== current.revision) throw new ConflictException('Form settings changed. Reload settings before publishing.');
+    if (dto.revision !== revision || (branchId && current.revision >= BRANCH_REVISION_RANGE - 1)) {
+      throw new ConflictException('Form settings changed. Reload settings before publishing.');
+    }
     const hidden = (values: unknown, allowed: string[]) => {
       if (!Array.isArray(values) || values.some((value) => !allowed.includes(value))) throw invalid();
       return [...new Set<string>(values)];
@@ -157,7 +187,7 @@ export class GuestFieldsService {
     };
     try {
       const saved = await this.definitions.updateOne(
-        { _id: kind, revision: current.revision }, { $set: next },
+        { _id: id, revision: current.revision }, { $set: next },
         { upsert: current.revision === 0 },
       );
       if (!saved.matchedCount && !saved.upsertedCount) throw new ConflictException('Form settings changed. Reload settings before publishing.');
@@ -166,14 +196,14 @@ export class GuestFieldsService {
       throw error;
     }
     await this.audit.record({
-      entityType: `${kind}_form_settings`, entityId: kind, action: 'publish',
-      summary: `Published ${kind} form settings`, actor, metadata: { before: current, after: next },
+      entityType: `${kind}_form_settings`, entityId: id, action: 'publish',
+      summary: `Published ${kind} form settings`, actor, metadata: { branchId, before: current, after: next },
     });
-    return this.overview(kind);
+    return this.overview(kind, branchId);
   }
 
-  async staff(kind: FormKind) {
-    const { revision, hiddenStaff, fields } = await this.get(kind);
+  async staff(kind: FormKind, branchId?: string) {
+    const { revision, hiddenStaff, fields } = await this.get(kind, branchId);
     return {
       revision, hiddenStaff,
       fields: fields.filter((field) => field.staff).map(({ guestFieldKey, ...field }) => field),

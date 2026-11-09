@@ -28,8 +28,10 @@ export default async function SettingsDetailPage({
 
   let content;
   if (item.form) {
-    const settings = await serverGet<GuestFormSettings>(formSettingsPath(item.form));
-    content = <GuestFieldsSettings initial={settings} kind={item.form} />;
+    const branch = section === "branch-guest-forms";
+    const path = branch ? "/guests/branch-form-settings" : formSettingsPath(item.form);
+    const settings = await serverGet<GuestFormSettings>(path);
+    content = <GuestFieldsSettings initial={settings} kind={item.form} branch={branch} />;
   } else if (section === "organisation" || section === "preferences") {
     const overview = await serverGet<SettingsOverview>("/settings/overview");
     content = section === "organisation"

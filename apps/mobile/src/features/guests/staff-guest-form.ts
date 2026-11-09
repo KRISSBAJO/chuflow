@@ -1,5 +1,6 @@
 export type StaffGuestForm = {
   revision: number;
+  branchId?: string | null;
   hiddenStaff: string[];
   fields: {
     key: string;

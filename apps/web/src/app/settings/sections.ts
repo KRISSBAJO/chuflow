@@ -22,6 +22,9 @@ export function settingsGroups(user: SessionUser) {
     { id: "device", icon: "device", title: "sections.device", description: "sections.deviceDescription" },
   ];
   const forms: SettingsItem[] = [];
+  if (user.role === "branch_admin" || user.role === "resident_pastor") {
+    forms.push({ id: "branch-guest-forms", icon: "guests", title: "guestFields.branchTitle", description: "guestFields.branchDescription", form: "guests" });
+  }
   if (user.role === "super_admin") {
     forms.push(
       { id: "guest-forms", icon: "guests", title: "navigation.guestForms", description: "guestFields.description", form: "guests" },

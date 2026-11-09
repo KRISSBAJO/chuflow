@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { randomBytes } = require('node:crypto');
+const bcrypt = require('bcryptjs');
 const { MongoClient, ObjectId } = require('mongoose').mongo;
 const { start } = require('../scripts/workspace-gateway.cjs');
 
@@ -114,6 +115,52 @@ async function run() {
     }), 200);
     assert.ok(!(await expect(await publicForm(), 200)).fields.some((item) => item.key === key));
     assert.deepEqual((await expect(await request(profile, 'GET', undefined, token), 200)).customAnswers, detail.customAnswers);
+
+    const otherBranch = new ObjectId();
+    const branchDocument = await mongo.db(database).collection('branches').findOne({ _id: branch });
+    await mongo.db(database).collection('branches').insertOne({ ...branchDocument, _id: otherBranch, name: 'Other QA Station' });
+    async function signInAs(role, branchId) {
+      const email = `${role}@example.com`;
+      await mongo.db(database).collection('users').insertOne({
+        firstName: 'Branch', lastName: 'Tester', email, role, branchId,
+        password: await bcrypt.hash(adminPassword, 4), isActive: true,
+      });
+      return (await expect(await request('/auth/mobile/login', 'POST', { email, password: adminPassword }), 200)).accessToken;
+    }
+    const branchAdmin = await signInAs('branch_admin', branch);
+    const otherPastor = await signInAs('resident_pastor', otherBranch);
+    const branchSettings = '/guests/branch-form-settings';
+    await expect(await request(settings, 'GET', undefined, branchAdmin), 403);
+    const local = await expect(await request(branchSettings, 'GET', undefined, branchAdmin), 200);
+    assert.deepEqual(local.inheritedHiddenPublic, ['email', 'city']);
+    const localChange = { revision: local.revision, hiddenPublic: [], hiddenStaff: ['email'], fields: [{ ...field, label: 'Which service did you attend?' }] };
+    const savedLocal = await expect(await request(branchSettings + '?branchId=' + otherBranch, 'PATCH', localChange, branchAdmin), 200);
+    await expect(await request(branchSettings, 'PATCH', localChange, branchAdmin), 409);
+    const localKey = savedLocal.fields[0].key;
+    const localPublic = await expect(await publicForm(), 200);
+    assert.ok(localPublic.fields.some((item) => item.key === localKey));
+    const otherPublic = await expect(await request(link + '?branchId=' + otherBranch), 200);
+    assert.ok(!otherPublic.fields.some((item) => item.key === localKey));
+    const otherSettings = await expect(await request(branchSettings, 'GET', undefined, otherPastor), 200);
+    assert.deepEqual(otherSettings.fields, []);
+    const localStaff = await expect(await request('/guests/staff-form', 'GET', undefined, branchAdmin), 200);
+    assert.equal(localStaff.revision, localPublic.formRevision);
+    assert.ok(localStaff.hiddenStaff.includes('email'));
+    await expect(await request('/guests/staff-form?branchId=' + branch, 'GET', undefined, otherPastor), 403);
+    await expect(await submit({ ...core, phone: '555-111-1616' }, localPublic.formRevision), 400);
+    await expect(await submit({ ...core, phone: '555-111-1616', [localKey]: 'First service' }, localPublic.formRevision), 201);
+    const localGuest = await mongo.db(database).collection('guests').findOne({ phone: '555-111-1616' });
+    const localDeskGuest = await expect(await request('/guests', 'POST', {
+      branchId: String(branch), firstName: 'Branch', lastName: 'Desk', phone: '555-111-1717',
+      customFields: { [localKey]: 'Second service' }, formRevision: localStaff.revision,
+    }, branchAdmin), 201);
+    assert.equal(localDeskGuest.customAnswers[0].value, 'Second service');
+    await expect(await request(branchSettings, 'PATCH', {
+      revision: savedLocal.revision, hiddenPublic: [], hiddenStaff: [], fields: [],
+    }, branchAdmin), 200);
+    assert.ok(!(await expect(await publicForm(), 200)).fields.some((item) => item.key === localKey));
+    assert.equal((await expect(await request('/guests/' + localGuest._id, 'GET', undefined, token), 200)).customAnswers[0].value, 'First service');
+
     await mongo.db(database).collection('appsettings').updateOne({ scopeKey: 'global' }, { $set: { publicConnectEnabled: false } }, { upsert: true });
     await expect(await publicForm(), 404);
     await expect(await submit({ ...core, phone: '555-111-1414' }, 2), 404);

@@ -988,7 +988,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     }
 
     const hydratedTemplate = await this.hydrateDynamicFields(template);
-    const definition = kind === 'guest' || kind === 'member' ? await this.guestFields.get(kind) : undefined;
+    const definition = kind === 'guest' || kind === 'member' ? await this.guestFields.get(kind, this.toString(template.branchId)) : undefined;
     return this.toResponse(this.withConfiguredFields(hydratedTemplate, definition), webUrl);
   }
 
@@ -1078,7 +1078,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     const template = await this.resolvePublicTemplate(slug, requestedBranchId);
     if (template.kind === 'guest') await this.guestFields.assertPublicEnabled();
     const hydratedTemplate = await this.hydrateDynamicFields(template);
-    const definition = template.kind === 'guest' || template.kind === 'member' ? await this.guestFields.get(template.kind) : undefined;
+    const definition = template.kind === 'guest' || template.kind === 'member' ? await this.guestFields.get(template.kind, this.toString(template.branchId)) : undefined;
     return {
       ...this.toResponse(this.withConfiguredFields(hydratedTemplate, definition), webUrl),
       ...(definition ? { formRevision: definition.revision } : {}),
@@ -3322,7 +3322,7 @@ export class IntakeTemplatesService implements OnModuleInit {
     if (isGuest) {
       await this.guestFields.assertPublicEnabled();
     }
-    const definition = formKind ? await this.guestFields.get(formKind) : undefined;
+    const definition = formKind ? await this.guestFields.get(formKind, this.toString(templateDocument.branchId)) : undefined;
     if (definition) this.guestFields.checkRevision(definition, dto.formRevision);
     const hydrated = await this.hydrateDynamicFields(templateDocument);
     const template = this.withConfiguredFields(hydrated, definition);

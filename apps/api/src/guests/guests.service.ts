@@ -171,18 +171,15 @@ export class GuestsService {
 
   async create(input: CreateGuestDto, currentUser?: AuthUser, publicAnswers?: GuestAnswer[]) {
     const { customFields, formRevision, ...dto } = input;
+    const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
     let customAnswers = publicAnswers;
     if (currentUser) {
-      const definition = await this.guestFields.get();
+      const definition = await this.guestFields.get('guest', branchId);
       this.guestFields.checkRevision(definition, formRevision);
       const data = dto as Record<string, unknown>;
       for (const key of definition.hiddenStaff) delete data[key];
       customAnswers = this.guestFields.collect(definition, 'staff', customFields);
     }
-    const branchId = await this.accessScopeService.resolveScopedBranchId(
-      currentUser,
-      dto.branchId,
-    );
     const duplicate = await this.guestModel.findOne({
       $or: [{ phone: dto.phone }, ...(dto.email ? [{ email: dto.email }] : [])],
     });

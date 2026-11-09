@@ -932,6 +932,11 @@
         "update": "Atualizar palavra-passe"
       },
       "guestFields": {
+        "branchTitle": "Formulários de visitantes da filial",
+        "branchDescription": "Personalize o link de visitantes e o formulário interno da sua filial.",
+        "inheritedFields": "Perguntas do espaço de trabalho",
+        "branchReset": "Restaurar os padrões do espaço de trabalho",
+        "branchResetConfirm": "Restaurar os formulários desta filial? As respostas coletadas serão mantidas nos registros dos visitantes.",
         "title": "Formulários e campos",
         "description": "Gerencie as perguntas do link de visitantes e do formulário da equipe.",
         "locked": "Nome e telefone permanecem para o cadastro e acompanhamento.",

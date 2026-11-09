@@ -9,7 +9,7 @@ import { ministryFormKinds, type MinistryFormKind, type GuestField, type GuestFo
 
 const kinds: GuestField["type"][] = ["text", "textarea", "number", "select", "email", "tel"];
 
-export function GuestFieldsSettings({ initial, kind = "guests" }: { initial: GuestFormSettings; kind?: "guests" | "members" | "offering" | "expense" | MinistryFormKind }) {
+export function GuestFieldsSettings({ initial, kind = "guests", branch = false }: { initial: GuestFormSettings; kind?: "guests" | "members" | "offering" | "expense" | MinistryFormKind; branch?: boolean }) {
   const ministry = (ministryFormKinds as readonly string[]).includes(kind);
   const staffOnly = !["guests", "members", "outreach", "child", "family"].includes(kind);
   const finance = kind === "offering" || kind === "expense";
@@ -35,18 +35,18 @@ export function GuestFieldsSettings({ initial, kind = "guests" }: { initial: Gue
     }));
   }
 
-  async function publish() {
+  async function publish(reset = false) {
     setSaving(true);
     try {
-      const response = await fetch(API_URL + (finance ? `/finance/form-settings/${kind}` : ministry ? `/guests/ministry-form-settings/${kind}` : `/${kind}/form-settings`), {
+      const response = await fetch(API_URL + (branch ? "/guests/branch-form-settings" : finance ? `/finance/form-settings/${kind}` : ministry ? `/guests/ministry-form-settings/${kind}` : `/${kind}/form-settings`), {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           revision: settings.revision,
-          hiddenPublic: settings.hiddenPublic,
-          hiddenStaff: settings.hiddenStaff,
-          fields: settings.fields.map((field, index) => ({
+          hiddenPublic: reset ? [] : settings.hiddenPublic,
+          hiddenStaff: reset ? [] : settings.hiddenStaff,
+          fields: reset ? [] : settings.fields.map((field, index) => ({
             ...field,
             options: field.type === "select"
               ? (choices[index] ?? field.options.join("\n")).split("\n").map((option) => option.trim()).filter(Boolean)
@@ -77,7 +77,7 @@ export function GuestFieldsSettings({ initial, kind = "guests" }: { initial: Gue
             <legend className="px-2 font-medium">{t(kind === "guests" ? "public" : kind === "outreach" ? "outreachPublic" : kind === "child" || kind === "family" ? "parentPublic" : "memberPublic")}</legend>
             {settings.defaultPublic.map(({ key, label, labelEs }) => (
               <label className="flex items-center gap-2 text-sm" key={key}>
-                <input type="checkbox" checked={!settings.hiddenPublic.includes(key)} onChange={() => toggleDefault("hiddenPublic", key)} />
+                <input type="checkbox" disabled={settings.inheritedHiddenPublic?.includes(key)} checked={!settings.hiddenPublic.includes(key) && !settings.inheritedHiddenPublic?.includes(key)} onChange={() => toggleDefault("hiddenPublic", key)} />
                 {locale === "es" ? labelEs || label : label}
               </label>
             ))}
@@ -86,12 +86,22 @@ export function GuestFieldsSettings({ initial, kind = "guests" }: { initial: Gue
             <legend className="px-2 font-medium">{t("staff")}</legend>
             {settings.defaultStaff.map((key) => (
               <label className="flex items-center gap-2 text-sm" key={key}>
-                <input type="checkbox" checked={!settings.hiddenStaff.includes(key)} onChange={() => toggleDefault("hiddenStaff", key)} />
+                <input type="checkbox" disabled={settings.inheritedHiddenStaff?.includes(key)} checked={!settings.hiddenStaff.includes(key) && !settings.inheritedHiddenStaff?.includes(key)} onChange={() => toggleDefault("hiddenStaff", key)} />
                 {t(`defaults.${key}`)}
               </label>
             ))}
           </fieldset>
         </div>
+        {settings.inheritedFields?.some((field) => field.public || field.staff) ? (
+          <section className="space-y-2 rounded-xl border border-black/10 p-4">
+            <h3 className="font-semibold">{t("inheritedFields")}</h3>
+            <ul className="space-y-1 text-sm text-neutral-600">
+              {settings.inheritedFields.filter((field) => field.public || field.staff).map((field) => (
+                <li key={field.key}>{field.label} · {[field.public && t("public"), field.staff && t("staff"), field.required && t("required")].filter(Boolean).join(" · ")}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <h3 className="font-semibold">{t("custom", { count: settings.fields.length })}</h3>
         <p className="text-sm text-neutral-600">{t(ministry ? "ministryArchive" : finance ? "financeArchive" : kind === "members" ? "memberArchive" : "archive")}</p>
         {settings.fields.map((field, index) => (
@@ -152,6 +162,9 @@ export function GuestFieldsSettings({ initial, kind = "guests" }: { initial: Gue
             fields: [...settings.fields, { key: "", label: "", type: "text", options: [], public: !staffOnly && kind !== "child" && kind !== "family", staff: true, required: false }],
           })}>{t("add")}</button>
           <Button type="submit" disabled={saving}>{t(saving ? "publishing" : "publish")}</Button>
+          {branch ? <button type="button" className="ui-input w-auto" onClick={() => {
+            if (window.confirm(t("branchResetConfirm"))) void publish(true);
+          }}>{t("branchReset")}</button> : null}
         </div>
       </fieldset>
     </form>

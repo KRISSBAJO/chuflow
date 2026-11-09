@@ -7,7 +7,7 @@ import { colors, space, type } from '@/constants/theme';
 import { useI18n, useT } from '@/i18n/provider';
 import type { StaffGuestForm } from '@/features/guests/staff-guest-form';
 import { useAlerts } from '@/lib/alerts';
-import { api, errorMessage, NetworkError } from '@/lib/api';
+import { api, errorMessage, NetworkError, query } from '@/lib/api';
 import { can } from '@/lib/permissions';
 import { useSession, userBranchId } from '@/lib/session';
 import type { BranchSummary, GuestDetail } from '@/lib/types';
@@ -22,9 +22,7 @@ export default function NewGuestScreen() {
   const common = useT('common');
   const fieldsText = useT('guests.fields');
   const { locale } = useI18n();
-  const definition = useApi<StaffGuestForm>('/guests/staff-form');
   const [custom, setCustom] = useState<Record<string, string>>({});
-  const visible = (key: string) => !definition.data?.hiddenStaff.includes(key);
   const pickBranch = can.pickBranch(user?.role);
   const branches = useApi<BranchSummary[]>(pickBranch ? '/branches' : null);
 
@@ -47,9 +45,12 @@ export default function NewGuestScreen() {
 
   const branchList = branches.data ?? [];
   const effectiveBranchId = branchId || (branchList.length === 1 ? branchList[0]._id : '');
+  const definition = useApi<StaffGuestForm>(`/guests/staff-form${query({ branchId: effectiveBranchId })}`);
+  const form = !effectiveBranchId || definition.data?.branchId === effectiveBranchId.toLowerCase() ? definition.data : undefined;
+  const visible = (key: string) => !form?.hiddenStaff.includes(key);
 
   async function save() {
-    if (!definition.data) {
+    if (!form) {
       setFormError(fieldsText('loadFailed'));
       void definition.refresh();
       return;
@@ -59,7 +60,7 @@ export default function NewGuestScreen() {
     if (!lastName.trim()) nextErrors.lastName = t('lastNameRequired');
     if (phone.replace(/\D/g, '').length < 7) nextErrors.phone = t('phoneRequired');
     if (visible('email') && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = t('emailInvalid');
-    for (const field of definition.data.fields) {
+    for (const field of form.fields) {
       if (field.required && !custom[field.key]?.trim()) nextErrors[field.key] = fieldsText('required');
     }
     if (pickBranch && !effectiveBranchId) nextErrors.branch = t('branchRequired');
@@ -77,8 +78,8 @@ export default function NewGuestScreen() {
         ...(visible('invitedBy') && invitedBy.trim() ? { invitedBy: invitedBy.trim() } : {}),
         ...(visible('prayerRequest') && prayerRequest.trim() ? { prayerRequest: prayerRequest.trim() } : {}),
         ...(visible('wantsPastoralCall') ? { wantsPastoralCall } : {}),
-        formRevision: definition.data.revision,
-        customFields: Object.fromEntries(definition.data.fields.flatMap((field) => {
+        formRevision: form.revision,
+        customFields: Object.fromEntries(form.fields.flatMap((field) => {
           const value = custom[field.key]?.trim();
           return value ? [[field.key, field.type === 'number' ? Number(value) : value]] : [];
         })),
@@ -177,7 +178,7 @@ export default function NewGuestScreen() {
 
         {visible('invitedBy') ? <Field label={t('invitedBy')} value={invitedBy} onChangeText={setInvitedBy} placeholder={t('invitedByPlaceholder')} autoCapitalize="words" /> : null}
         {visible('prayerRequest') ? <Field label={t('prayerRequest')} value={prayerRequest} onChangeText={setPrayerRequest} placeholder={t('prayerRequestPlaceholder')} multiline /> : null}
-        {definition.data?.fields.map((field) => {
+        {form?.fields.map((field) => {
           const label = (locale === 'es' && field.labelEs) || (locale === 'fr' && field.labelFr) || (locale === 'pt' && field.labelPt) || field.label;
           const value = custom[field.key] ?? '';
           const change = (answer: string) => setCustom((current) => ({ ...current, [field.key]: answer }));

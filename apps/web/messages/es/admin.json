@@ -932,6 +932,11 @@
         "update": "Actualizar contraseña"
       },
       "guestFields": {
+        "branchTitle": "Formularios de visitantes de la sede",
+        "branchDescription": "Personaliza el enlace de visitantes y el formulario interno de tu sede.",
+        "inheritedFields": "Preguntas del espacio de trabajo",
+        "branchReset": "Restablecer los valores del espacio de trabajo",
+        "branchResetConfirm": "¿Restablecer los formularios de esta sede? Las respuestas recopiladas se conservarán en los registros de visitantes.",
         "title": "Formularios y campos",
         "description": "Gestiona las preguntas del enlace de invitados y del formulario del equipo.",
         "locked": "El nombre y el teléfono se mantienen para el registro y seguimiento.",
