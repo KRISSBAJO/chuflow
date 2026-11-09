@@ -98,9 +98,18 @@ export function routeForAlert(url?: unknown): Href {
   const path = typeof url === 'string' ? url : '';
   const guest = path.match(/^\/guests\/([a-f0-9]{24})/);
   if (guest) return `/guest/${guest[1]}`;
+  const [pathname, search] = path.split('?');
+  if (pathname === '/care') {
+    const view = new URLSearchParams(search).get('view');
+    return view === 'overdue' || view === 'unassigned'
+      ? { pathname: '/care-cases', params: { view } }
+      : '/care-cases';
+  }
   if (path.startsWith('/guests')) return '/guests';
   if (path.startsWith('/follow-up')) return '/follow-up';
   if (path.startsWith('/approvals')) return '/approvals';
   if (path.startsWith('/attendance')) return '/attendance';
-  return '/';
+  if (pathname === '/dashboard') return '/';
+  if (pathname === '/meetings') return '/meetings';
+  return '/more';
 }

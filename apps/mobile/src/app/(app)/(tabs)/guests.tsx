@@ -138,11 +138,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    height: 40,
+    minHeight: 44,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     paddingHorizontal: 12,
   },
-  searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 14.5, color: colors.ink, height: '100%' },
+  searchInput: { flex: 1, alignSelf: 'stretch', fontFamily: fonts.regular, fontSize: 15, color: colors.ink, paddingVertical: 8 },
   end: { textAlign: 'center', paddingVertical: space.lg },
 });

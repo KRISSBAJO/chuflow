@@ -296,5 +296,5 @@ const styles = StyleSheet.create({
   searchIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   searchText: { flex: 1, fontFamily: fonts.medium, fontSize: 15, color: colors.muted },
   footer: { alignItems: 'center', gap: space.sm, paddingVertical: space.lg },
-  footerText: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.faint },
+  footerText: { ...type.small, textAlign: 'center' },
 });

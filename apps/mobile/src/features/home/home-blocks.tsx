@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   greeting: { fontFamily: fonts.medium, fontSize: 16, color: '#e8ddd3' },
   name: { fontFamily: fonts.semibold, fontSize: 36, lineHeight: 42, letterSpacing: -0.9, color: '#ffffff' },
   workspaceRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', maxWidth: '100%', gap: 5 },
-  workspaceName: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 19, color: '#f6bb88', flexShrink: 1 },
+  workspaceName: { ...type.small, fontFamily: fonts.medium, color: '#f6bb88', flexShrink: 1 },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     borderColor: colors.page,
   },
   actionBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: '#ffffff' },
-  actionLabel: { fontFamily: fonts.medium, fontSize: 11.5, lineHeight: 14, color: colors.ink, textAlign: 'center' },
+  actionLabel: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 17, color: colors.ink, textAlign: 'center' },
 
   actionsWrap: { paddingTop: 10, paddingLeft: 10 },
   actionsCard: {
@@ -516,9 +516,9 @@ const styles = StyleSheet.create({
     minHeight: 96,
   },
   actionsCardCalm: { backgroundColor: colors.surface },
-  actionsKicker: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.text },
+  actionsKicker: { ...type.micro, textTransform: 'uppercase', color: colors.text },
   actionsTitle: { fontFamily: fonts.semibold, fontSize: 18, lineHeight: 23, color: colors.ink },
-  actionsDetail: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.text },
+  actionsDetail: type.body,
   forward: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.flame, alignItems: 'center', justifyContent: 'center' },
   alertBadge: {
     position: 'absolute',
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   pulseTitle: { ...type.micro, textTransform: 'uppercase' },
   pulseHead: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   pulseValue: { fontFamily: fonts.semibold, fontSize: 40, lineHeight: 46, letterSpacing: -1.4, color: colors.ink, fontVariant: ['tabular-nums'] },
-  pulseCaption: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted },
+  pulseCaption: type.small,
   deltaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
   delta: { fontFamily: fonts.medium, fontSize: 13 },
   pulseControls: { gap: space.sm },
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   pulseMetric: { flex: 1, paddingHorizontal: 6 },
   pulseMetricDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.hairlineStrong },
   pulseMetricValue: { fontFamily: fonts.semibold, fontSize: 18, letterSpacing: -0.4, color: colors.ink, fontVariant: ['tabular-nums'] },
-  pulseMetricLabel: { fontFamily: fonts.regular, fontSize: 10.5, color: colors.muted, marginTop: 1 },
+  pulseMetricLabel: { ...type.micro, fontFamily: fonts.regular, letterSpacing: 0, color: colors.muted, marginTop: 1 },
 
   storyRow: { paddingHorizontal: space.page, gap: 14, paddingVertical: 4 },
   story: { width: 72, alignItems: 'center', gap: 6 },

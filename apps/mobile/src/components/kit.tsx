@@ -224,7 +224,7 @@ export function SwitchRow({
       {icon ? <Icon name={icon} size={18} color={colors.muted} /> : null}
       <View style={{ flex: 1 }}>
         <Text style={type.label}>{title}</Text>
-        {body ? <Caption>{body}</Caption> : null}
+        {body ? <Text style={[type.body, { color: colors.muted }]}>{body}</Text> : null}
       </View>
       <Switch
         value={value}
@@ -446,8 +446,8 @@ export function ActionTile({ icon, label, hint, onPress, badge, tone = 'neutral'
 const styles = StyleSheet.create({
   stat: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.surface, borderRadius: radius.lg, paddingVertical: 12, paddingHorizontal: 14, minWidth: 0 },
   statValue: { fontFamily: fonts.semibold, fontSize: 22, lineHeight: 26, letterSpacing: -0.5, color: colors.ink, fontVariant: ['tabular-nums'] },
-  statLabel: { fontFamily: fonts.medium, fontSize: 12, color: colors.text, marginTop: 2 },
-  statHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.faint, marginTop: 1 },
+  statLabel: { ...type.small, fontFamily: fonts.medium, color: colors.text, marginTop: 2 },
+  statHint: { ...type.small, marginTop: 1 },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   meter: { height: 5, borderRadius: 3, backgroundColor: colors.surfaceStrong, overflow: 'hidden' },
   meterFill: { height: '100%', borderRadius: 3 },
@@ -459,14 +459,14 @@ const styles = StyleSheet.create({
   timelineTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   kv: { paddingVertical: 10 },
   kvDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairlineStrong },
-  search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, height: 40, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 12 },
-  searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 14.5, color: colors.ink, height: '100%' },
+  search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 12 },
+  searchInput: { ...type.body, flex: 1, alignSelf: 'stretch', color: colors.ink, paddingVertical: 8 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 11 },
   scrim: { flex: 1, backgroundColor: 'rgba(17,17,17,0.35)' },
   sheet: { backgroundColor: colors.page, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: space.page, paddingTop: 8 },
   grabber: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.hairlineStrong, marginBottom: 10 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginBottom: 4 },
-  fieldLabel: { fontFamily: fonts.medium, fontSize: 12.5, color: colors.text },
+  fieldLabel: { ...type.label, color: colors.text },
   pickerField: {
     flexDirection: 'row',
     alignItems: 'center',

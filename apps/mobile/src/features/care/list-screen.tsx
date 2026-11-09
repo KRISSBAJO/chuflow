@@ -19,7 +19,7 @@ const ALL = 'all';
 
 /** The care hub: overview tiles from GET /care/overview and the queue from GET /care/cases. */
 export function CareListScreen() {
-  const { q: initialQuery } = useLocalSearchParams<{ q?: string }>();
+  const { q: initialQuery, view: requestedView } = useLocalSearchParams<{ q?: string; view?: string }>();
   const t = useT('care.list');
   const tcare = useT('care');
   const tc = useT('common');
@@ -31,7 +31,8 @@ export function CareListScreen() {
 
   const [search, setSearch] = useState(initialQuery ?? '');
   const [debounced, setDebounced] = useState(initialQuery?.trim() ?? '');
-  const [view, setView] = useState<CareView>('all');
+  const view = CARE_VIEWS.find((option) => option === requestedView) ?? 'all';
+  const setView = (next: CareView) => router.setParams({ view: next });
   const [branchId, setBranchId] = useState('');
   const [more, setMore] = useState<{ base: CareListResponse | undefined; items: CareListItem[]; page: number }>({ base: undefined, items: [], page: 1 });
   const [loadingMore, setLoadingMore] = useState(false);

@@ -70,7 +70,7 @@ export function BottomNavigation({ state, descriptors, emitter, navigateToTab }:
             </View>
           ) : null}
         </View>
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.label, focused && styles.activeLabel]}>
+        <Text style={[styles.label, focused && styles.activeLabel]}>
           {label}
         </Text>
       </Pressable>
@@ -135,12 +135,12 @@ const styles = StyleSheet.create({
   tab: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', minHeight: 56, gap: 3, paddingHorizontal: 2 },
   icon: { width: 44, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   selected: { backgroundColor: colors.flameSoft },
-  label: { fontFamily: fonts.medium, fontSize: 11.5, lineHeight: 16, color: '#5f5c55' },
+  label: { fontFamily: fonts.medium, fontSize: 12.5, lineHeight: 17, color: colors.muted, textAlign: 'center' },
   activeLabel: { fontFamily: fonts.semibold, color: colors.ink },
-  centre: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', height: 76, marginTop: -20, gap: 1 },
+  centre: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', minHeight: 76, marginTop: -20, gap: 1 },
   ring: { width: 66, height: 66, padding: 5, borderRadius: 33, backgroundColor: colors.page },
   circle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.flame, alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 12px rgba(234,88,12,0.22)' },
-  newLabel: { fontFamily: fonts.semibold, fontSize: 11.5, lineHeight: 16, color: colors.ink },
+  newLabel: { fontFamily: fonts.semibold, fontSize: 12.5, lineHeight: 17, color: colors.ink, textAlign: 'center' },
   badge: {
     position: 'absolute',
     right: -4,

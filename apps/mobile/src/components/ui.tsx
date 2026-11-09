@@ -23,7 +23,7 @@ import { initials as personInitials, type Tone } from '@/lib/format';
 import { Icon, type IconName } from './icon';
 import { PressableScale, Reveal } from './motion';
 
-/* ChuFlow phone UI kit: light, quiet and small — the website's look at a phone's scale. */
+/* Shared layout and typography for ChuFlow's phone screens. */
 
 export function tap(style: 'light' | 'medium' | 'success' | 'warning' = 'light') {
   if (Platform.OS === 'web') return;
@@ -91,9 +91,9 @@ export function ScreenHeader({ title, subtitle, right }: { title: string; subtit
   return (
     <View style={styles.screenHeader}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Title numberOfLines={1}>{title}</Title>
+        <Title>{title}</Title>
         {subtitle ? (
-          <Caption style={{ marginTop: 3 }} numberOfLines={2}>
+          <Caption style={{ marginTop: 3 }}>
             {subtitle}
           </Caption>
         ) : null}
@@ -118,12 +118,12 @@ type ScreenProps = {
 export function Screen({ children, refreshing = false, onRefresh, safeTop = true, contentStyle, footer }: ScreenProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, safeTop && { paddingTop: insets.top }]}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.screenContent,
-          { paddingTop: (safeTop ? insets.top : 0) + space.md, paddingBottom: space.xxl + (footer ? 84 : 0) },
+          { paddingTop: space.md, paddingBottom: space.xxl + (footer ? 84 : 0) },
           contentStyle,
         ]}
         refreshControl={
@@ -182,7 +182,7 @@ export function Button({ label, variant = 'primary', icon, loading, size = 'md',
       baseOpacity={disabled ? 0.4 : 1}
       style={[
         styles.button,
-        { height: BUTTON_HEIGHT[size], paddingHorizontal: size === 'sm' ? 12 : 16, backgroundColor: background },
+        { minHeight: BUTTON_HEIGHT[size], paddingHorizontal: size === 'sm' ? 12 : 16, backgroundColor: background },
         variant === 'secondary' && { borderWidth: 1, borderColor: colors.hairlineStrong },
         style,
       ]}
@@ -193,7 +193,7 @@ export function Button({ label, variant = 'primary', icon, loading, size = 'md',
       ) : icon ? (
         <Icon name={icon} size={size === 'sm' ? 15 : 17} color={fg} strokeWidth={1.9} />
       ) : null}
-      <Text style={[styles.buttonLabel, { color: fg, fontSize: size === 'sm' ? 13 : 14.5 }]}>{label}</Text>
+      <Text style={[styles.buttonLabel, { color: fg, fontSize: size === 'sm' ? 14 : 15 }]}>{label}</Text>
     </PressableScale>
   );
 }
@@ -303,11 +303,11 @@ export function ListRow({
     <>
       {left}
       <View style={styles.rowText}>
-        <Text style={type.label} numberOfLines={1}>
+        <Text style={type.label}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={[type.small, { marginTop: 1 }]} numberOfLines={1}>
+          <Text style={[type.body, { color: colors.muted, marginTop: 2 }]}>
             {subtitle}
           </Text>
         ) : null}
@@ -468,14 +468,14 @@ const styles = StyleSheet.create({
     borderTopColor: colors.hairlineStrong,
   },
   screenHeader: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: 2 },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.sm },
-  sectionTitle: { ...type.micro, textTransform: 'uppercase' },
-  sectionAction: { fontFamily: fonts.medium, fontSize: 13, color: colors.flame },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm, marginTop: space.sm },
+  sectionTitle: { ...type.micro, flexShrink: 1, textTransform: 'uppercase' },
+  sectionAction: { ...type.label, color: colors.warning },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg },
   cardPadded: { padding: space.lg },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.hairlineStrong },
   button: { flexDirection: 'row', gap: 7, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  buttonLabel: { fontFamily: fonts.medium },
+  buttonLabel: { fontFamily: fonts.medium, flexShrink: 1, textAlign: 'center', paddingVertical: 5 },
   iconButton: { backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   dotBadge: {
     position: 'absolute',
@@ -503,14 +503,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badge: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
-  badgeText: { fontFamily: fonts.medium, fontSize: 11 },
+  badgeText: { fontFamily: fonts.medium, fontSize: 12 },
   avatar: { backgroundColor: colors.surfaceStrong, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: fonts.semibold, color: colors.text },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 11 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairlineStrong },
   rowText: { flex: 1, minWidth: 0 },
   field: { gap: 6 },
-  fieldLabel: { fontFamily: fonts.medium, fontSize: 12.5, color: colors.text },
+  fieldLabel: { ...type.label, color: colors.text },
   input: {
     minHeight: 44,
     borderRadius: radius.md,
@@ -526,14 +526,15 @@ const styles = StyleSheet.create({
   segmented: { gap: space.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.hairlineStrong },
   segment: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 9, borderBottomWidth: 2, borderBottomColor: 'transparent', marginBottom: -StyleSheet.hairlineWidth },
   segmentActive: { borderBottomColor: colors.ink },
-  segmentText: { fontFamily: fonts.medium, fontSize: 13.5, color: colors.faint },
+  segmentText: { fontFamily: fonts.medium, fontSize: 14, color: colors.faint },
   segmentTextActive: { color: colors.ink },
   segmentCount: { fontFamily: fonts.medium, fontSize: 12, color: colors.faint },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 32,
+    minHeight: 32,
+    paddingVertical: 5,
     paddingHorizontal: 12,
     borderRadius: radius.pill,
     borderWidth: 1,
@@ -542,9 +543,9 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-  chipText: { fontFamily: fonts.medium, fontSize: 13, color: colors.ink },
+  chipText: { fontFamily: fonts.medium, fontSize: 14, color: colors.ink, flexShrink: 1 },
   empty: { alignItems: 'center', gap: 4, paddingVertical: 32, paddingHorizontal: space.xl },
   loading: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   notice: { flexDirection: 'row', gap: space.sm, alignItems: 'center', borderRadius: radius.md, paddingVertical: 9, paddingHorizontal: space.md },
-  noticeText: { flex: 1, fontFamily: fonts.medium, fontSize: 12.5, lineHeight: 17 },
+  noticeText: { ...type.body, flex: 1, fontFamily: fonts.medium },
 });

@@ -1,6 +1,6 @@
 /**
  * ChuFlow design tokens for the phone app: the website's look (white, warm gray, near-black ink,
- * flame accent) at a phone's scale — light weights, small type, hairlines over filled blocks.
+ * flame accent) at a phone's scale, with readable text and light dividers.
  */
 
 export const colors = {
@@ -10,8 +10,8 @@ export const colors = {
   inset: '#ffffff',
   ink: '#151515',
   text: '#45433f',
-  muted: '#73716b',
-  faint: '#9a978f',
+  muted: '#625f59',
+  faint: '#6c6962',
   hairline: 'rgba(17,17,17,0.07)',
   hairlineStrong: 'rgba(17,17,17,0.12)',
   flameFrom: '#f59e0b',
@@ -40,11 +40,11 @@ export const fonts = {
 /** One type scale for every screen. */
 export const type = {
   display: { fontFamily: fonts.semibold, fontSize: 22, lineHeight: 27, letterSpacing: -0.6, color: colors.ink },
-  title: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2, color: colors.ink },
-  body: { fontFamily: fonts.regular, fontSize: 13.5, lineHeight: 19, color: colors.text },
-  label: { fontFamily: fonts.medium, fontSize: 13.5, lineHeight: 19, color: colors.ink },
-  small: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.muted },
-  micro: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14, letterSpacing: 0.4, color: colors.faint },
+  title: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 22, letterSpacing: -0.2, color: colors.ink },
+  body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 21, color: colors.text },
+  label: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 21, color: colors.ink },
+  small: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 19, color: colors.muted },
+  micro: { fontFamily: fonts.semibold, fontSize: 12, lineHeight: 16, letterSpacing: 0.4, color: colors.faint },
   number: { fontFamily: fonts.semibold, fontSize: 20, lineHeight: 24, letterSpacing: -0.4, color: colors.ink },
 } as const;
 

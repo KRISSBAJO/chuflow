@@ -14,9 +14,11 @@ import { useAlerts } from '@/lib/alerts';
 import { usePlan } from '@/lib/entitlements';
 import { query } from '@/lib/api';
 import { routeForAlert } from '@/lib/notifications';
+import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
 import { useOnline } from '@/lib/offline-queue';
 import { can } from '@/lib/permissions';
 import { useSession } from '@/lib/session';
+import type { AlertsSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { DaysRow } from './days-row';
 import { BranchHealth, Watchlist } from './executive-blocks';
@@ -126,8 +128,22 @@ export function HomeScreen() {
     .filter((action) => action.show)
     .map(({ show: _show, ...action }) => action);
 
-  const openPriority = () =>
-    router.push(priority ? routeForAlert(priority.href) : nextMeeting ? (`/meetings/${nextMeeting._id}` as Href) : can.guests(role) ? '/guest/new' : '/more');
+  const openAlert = ({ key, href }: AlertsSummary['items'][number]) => {
+    if (key === 'attendance_watch') {
+      router.push('/attendance-history');
+      return;
+    }
+    const [path] = href.split('?');
+    if (path === '/branches' || path === '/evangelism') {
+      void openWorkspaceBrowser(href, user?.workspace);
+      return;
+    }
+    router.push(routeForAlert(href));
+  };
+
+  const openPriority = () => priority
+    ? openAlert(priority)
+    : router.push(nextMeeting ? (`/meetings/${nextMeeting._id}` as Href) : can.guests(role) ? '/guest/new' : '/more');
 
   return (
     <Screen
@@ -152,7 +168,7 @@ export function HomeScreen() {
         scope={[scopeLabel, tc('time.lastNDays', { count: days })].filter(Boolean).join(' · ')}
         alerts={summary?.quickStats.activeAlerts ?? 0}
         alertsLabel={t('alertsLabel', { count: summary?.quickStats.activeAlerts ?? 0 })}
-        onAlerts={() => router.push(priority ? routeForAlert(priority.href) : '/more')}
+        onAlerts={() => priority ? openAlert(priority) : router.push('/more')}
         person={user}
         profileLabel={t('welcome.profile')}
         onProfile={() => router.push('/more')}
@@ -216,7 +232,7 @@ export function HomeScreen() {
                 title={`${format.number(item.count)} ${item.label}`}
                 subtitle={item.description}
                 left={<Icon name="care" size={18} color={colors.flame} />}
-                onPress={() => router.push(routeForAlert(item.href))}
+                onPress={() => openAlert(item)}
               />
             ))}
           </View>
