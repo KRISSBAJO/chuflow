@@ -10,6 +10,7 @@ import { API_URL } from "@/lib/api";
 import { workspacePublicHref } from "@/lib/workspace-routing";
 import type { YouthDetail, YouthPerson } from "@/lib/youth";
 import { EventFollowUp } from "./event-follow-up";
+import { GuardianReminder } from "./guardian-reminder";
 import { useYouthAction } from "./use-youth-action";
 import { YouthGroupFields, youthGroupValues } from "./youth-setup";
 
@@ -135,6 +136,7 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
       {active.length ? <ul className="divide-y divide-black/10">
         {active.map(person => <li key={person._id} className="flex flex-wrap items-center justify-between gap-2 py-3">
           <span className="font-medium">{person.firstName} {person.lastName}</span>
+          {group.eventDate && group.eventDate >= new Date().toISOString().slice(0, 10) ? <GuardianReminder person={person} path={path + "/people/" + person._id} /> : null}
           <Button type="button" variant="secondary" aria-pressed={current.has(person._id)} disabled={busy || !canRecord || (Boolean(group.eventDate) && date > new Date().toISOString().slice(0, 10))}
             onClick={() => void run(path + "/attendance", "PATCH", { date, enrollmentId: person._id, present: !current.has(person._id) })}>
             {t(current.has(person._id) ? "present" : "markPresent")}

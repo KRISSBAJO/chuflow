@@ -44,6 +44,9 @@ export class YouthController {
   @Get() @Header('Cache-Control', 'no-store')
   overview(@CurrentUser() user: AuthUser) { return this.youth.overview(user); }
 
+  @Get('reports') @Header('Cache-Control', 'no-store')
+  reports(@CurrentUser() user: AuthUser) { return this.youth.reports(user); }
+
   @Post('pilot')
   seed(@CurrentUser() user: AuthUser, @Body() dto: YouthBranchDto) { return this.youth.seedPilot(user, dto.branchId); }
 
@@ -101,6 +104,11 @@ export class YouthController {
     return this.youth.campFollowUp(user, id, branch, person, dto);
   }
 
+  @Post('camps/:id/branches/:branch/people/:person/guardian-reminder')
+  campGuardianReminder(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string) {
+    return this.youth.eventGuardianReminder(user, id, person, branch);
+  }
+
   @Get('groups/:id') @Header('Cache-Control', 'no-store')
   details(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query('date') date?: string, @Query('view') view?: string) {
     return this.youth.details(user, id, date, view === 'attendance');
@@ -135,6 +143,11 @@ export class YouthController {
     return this.youth.eventFollowUp(user, id, person, dto);
   }
 
+  @Post('groups/:id/people/:person/guardian-reminder')
+  eventGuardianReminder(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
+    return this.youth.eventGuardianReminder(user, id, person);
+  }
+
   @Post('groups/:id/people/:person/welcome')
   welcome(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
     return this.youth.welcome(user, id, person);
@@ -159,6 +172,11 @@ export class YouthController {
 @Controller('youth-registration')
 export class YouthRegistrationController {
   constructor(private readonly youth: YouthService) {}
+
+  @Public() @Post('unsubscribe') @Header('Cache-Control', 'no-store')
+  unsubscribe(@Headers('x-youth-registration') token: string, @Ip() ip: string) {
+    return this.youth.unsubscribeGuardian(token, ip);
+  }
 
   @Public() @Get() @Header('Cache-Control', 'no-store')
   info(@Headers('x-youth-registration') token: string) { return this.youth.publicInfo(token); }

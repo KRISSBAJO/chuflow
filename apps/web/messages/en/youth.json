@@ -1,5 +1,29 @@
 {
   "youth": {
+    "guardianMessaging": {
+      "optIn": "Email me a practical reminder for this event. I can opt out at any time.",
+      "send": "Send guardian reminder",
+      "confirm": "Send one event reminder to the guardian who opted in?",
+      "sending": "Sending reminder…",
+      "accepted": "Reminder accepted by the email provider.",
+      "unconfirmed": "Delivery could not be confirmed.",
+      "unsubscribe": "Stop guardian reminders",
+      "unsubscribeHint": "Stop email reminders for this registration.",
+      "unsubscribed": "Reminders are off for this registration.",
+      "unsubscribeError": "Could not update your preference. Try again."
+    },
+    "reports": {
+      "title": "Reports",
+      "hint": "All recorded youth activity, grouped by the participant’s branch. A return means attendance at a second event or camp.",
+      "empty": "No branches are available in your scope.",
+      "total": "Combined branch totals",
+      "checkIns": "Event and camp check-ins",
+      "returned": "Returning participants",
+      "started": "Track starts",
+      "open": "Open follow-ups",
+      "overdue": "Overdue follow-ups",
+      "closed": "Closed follow-ups"
+    },
     "campFollowUp": {
       "heading": "Event follow-up",
       "assign": "Assign follow-up",

@@ -15,6 +15,7 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
   const locale = useLocale();
   const [form, setForm] = useState<Registration | null>();
   const [birthDate, setBirthDate] = useState("");
+  const [contact, setContact] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [received, setReceived] = useState(false);
   const [error, setError] = useState<"failed" | "unavailable" | "checkDetails">();
@@ -37,6 +38,7 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
   const age = ageAt(today);
   const eventAge = ageAt(form.eventDate ?? today);
   const guardian = age !== null && age < form.guardianUnderAge;
+  const offersReminders = guardian && Boolean(form.eventDate) && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(contact.trim());
   const ageValid = eventAge !== null && birthDate <= today && eventAge >= form.minAge && eventAge <= form.maxAge;
   const dateLabel = (date: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(date));
   const currency = form.currency;
@@ -62,6 +64,7 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
             firstName: data.get("firstName"), lastName: data.get("lastName"), birthDate,
             contact: data.get("contact"), ...(guardian ? { guardianName: data.get("guardianName") } : {}),
             consent: true, consentVersion: form.consentVersion, locale, ...memberFieldPayload(form.form, data),
+            ...(offersReminders ? { guardianEmailOptIn: data.has("guardianEmailOptIn") } : {}),
             ...(form.campEndDate ? { transportConsent: data.has("transportConsent") } : {}),
           }),
         });
@@ -84,7 +87,10 @@ export function YouthRegistrationForm({ token, apiBase }: { token: string; apiBa
       {age !== null && !ageValid ? <p role="alert" className="text-sm text-red-800">{t("outsideRange")}</p> : null}
       {ageValid ? <>
         {guardian ? <Field label={t("guardianName")}><input name="guardianName" className="ui-input" maxLength={160} required /></Field> : null}
-        <Field label={t(guardian ? "guardianContact" : "contact")}><input name="contact" className="ui-input" maxLength={120} required /></Field>
+        <Field label={t(guardian ? "guardianContact" : "contact")}><input name="contact" className="ui-input" maxLength={120} required value={contact} onChange={event => setContact(event.target.value)} /></Field>
+        {offersReminders ? <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="guardianEmailOptIn" />{t("guardianMessaging.optIn")}
+        </label> : null}
         {form.form.fields.length ? <MemberCustomFields fields={form.form.fields} /> : null}
         {form.campEndDate ? <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" name="transportConsent" />{t(guardian ? "campGuardianTransport" : "campAdultTransport")}

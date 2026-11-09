@@ -1,5 +1,29 @@
 {
   "youth": {
+    "guardianMessaging": {
+      "optIn": "Je souhaite recevoir par e-mail un rappel pratique pour cet événement. Je peux me désinscrire à tout moment.",
+      "send": "Envoyer un rappel au responsable légal",
+      "confirm": "Envoyer un rappel au responsable légal qui y a consenti ?",
+      "sending": "Envoi du rappel…",
+      "accepted": "Rappel accepté par le fournisseur de messagerie.",
+      "unconfirmed": "La livraison n’a pas pu être confirmée.",
+      "unsubscribe": "Ne plus recevoir de rappels",
+      "unsubscribeHint": "Désactivez les rappels par e-mail pour cette inscription.",
+      "unsubscribed": "Les rappels sont désactivés pour cette inscription.",
+      "unsubscribeError": "Impossible de modifier votre préférence. Réessayez."
+    },
+    "reports": {
+      "title": "Rapports",
+      "hint": "Toute l’activité jeunesse enregistrée, par assemblée du participant. Un retour correspond à une présence à un deuxième événement ou camp.",
+      "empty": "Aucune assemblée disponible dans votre périmètre.",
+      "total": "Totaux des assemblées",
+      "checkIns": "Présences aux événements et camps",
+      "returned": "Participants revenus",
+      "started": "Parcours commencés",
+      "open": "Suivis en cours",
+      "overdue": "Suivis en retard",
+      "closed": "Suivis clôturés"
+    },
     "campFollowUp": {
       "heading": "Suivi de l’événement",
       "assign": "Attribuer un suivi",

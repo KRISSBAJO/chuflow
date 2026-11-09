@@ -1,5 +1,10 @@
 import type { GuestCustomAnswer } from "@/lib/guest-fields";
 
+export type GuardianReminderFields = {
+  guardianEmailOptIn?: boolean;
+  guardianReminderStatus?: "sending" | "accepted" | "unconfirmed";
+};
+
 export type YouthGroup = {
   _id: string;
   branchId: string;
@@ -24,7 +29,7 @@ export type YouthOverview = {
   branches: { _id: string; name: string }[];
   groups: (Pick<YouthGroup, "_id" | "program" | "name" | "eventDate" | "campEndDate" | "venue" | "capacity"> & { branchName: string; canOpen: boolean; active: number; pending: number; sessions: number; visits: number })[];
 };
-export type YouthPerson = {
+export type YouthPerson = GuardianReminderFields & {
   _id: string;
   firstName: string;
   lastName: string;

@@ -1,5 +1,6 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { isEmail } from 'class-validator';
 import { InjectModel } from '@nestjs/mongoose';
 import { createHash, randomBytes } from 'node:crypto';
 import { Model, Types } from 'mongoose';
@@ -11,7 +12,9 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
-import { getWorkspace } from '../workspaces/workspace-boundary';
+import { getWorkspace, workspaceWebLink } from '../workspaces/workspace-boundary';
+import { MailService } from '../mail/mail.service';
+import { YouthDevelopment, YouthDevelopmentProgress } from './youth-development.schema';
 import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 
@@ -19,6 +22,13 @@ const day = () => new Date().toISOString().slice(0, 10);
 const duplicate = (error: unknown) => (error as { code?: number })?.code === 11000;
 const leaderRoles = [...BRANCH_LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES, ...YOUTH_ROLES];
 const followUpRoles = [...BRANCH_LEADERSHIP_ROLES, 'youth_pastor'];
+const emailAddress = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
+const reminderCopy = {
+  en: ['Youth event reminder', 'Event', 'Date', 'Location', 'Stop these reminders'],
+  es: ['Recordatorio del evento juvenil', 'Evento', 'Fecha', 'Lugar', 'Dejar de recibir estos recordatorios'],
+  fr: ['Rappel de l’événement jeunesse', 'Événement', 'Date', 'Lieu', 'Ne plus recevoir ces rappels'],
+  pt: ['Lembrete do evento de jovens', 'Evento', 'Data', 'Local', 'Parar de receber estes lembretes'],
+} as const;
 const id = (value: string) => {
   if (!Types.ObjectId.isValid(value)) throw new NotFoundException();
   return new Types.ObjectId(value);
@@ -35,9 +45,12 @@ export class YouthService {
     @InjectModel(User.name) private readonly users: Model<User>,
     @InjectModel(Member.name) private readonly members: Model<Member>,
     @InjectModel(ChildProfile.name) private readonly children: Model<ChildProfile>,
+    @InjectModel(YouthDevelopment.name) private readonly activities: Model<YouthDevelopment>,
+    @InjectModel(YouthDevelopmentProgress.name) private readonly progress: Model<YouthDevelopmentProgress>,
     private readonly access: AccessScopeService,
     private readonly forms: GuestFieldsService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   private canManage(user: AuthUser) {
@@ -118,6 +131,48 @@ export class YouthService {
     };
   }
 
+  async reports(user: AuthUser) {
+    if (!this.canManageEvents(user)) throw new ForbiddenException();
+    const branches = await this.branches.find(await this.access.getBranchDocumentQuery(user)).select('name').sort({ name: 1 }).lean();
+    const branchIds = branches.map(branch => branch._id);
+    const [followUps, attendance, tracks] = await Promise.all([
+      this.enrollments.aggregate<{ _id: Types.ObjectId; open: number; closed: number; overdue: number }>([
+        { $match: { branchId: { $in: branchIds }, 'campFollowUp.outcome': { $exists: true } } },
+        { $group: { _id: '$branchId',
+          open: { $sum: { $cond: [{ $and: [{ $eq: ['$state', 'active'] }, { $eq: ['$campFollowUp.outcome', 'open'] }] }, 1, 0] } },
+          closed: { $sum: { $cond: [{ $ne: ['$campFollowUp.outcome', 'open'] }, 1, 0] } },
+          overdue: { $sum: { $cond: [{ $and: [{ $eq: ['$state', 'active'] }, { $eq: ['$campFollowUp.outcome', 'open'] }, { $lt: ['$campFollowUp.dueDate', day()] }] }, 1, 0] } },
+        } },
+      ]),
+      this.enrollments.aggregate<{ _id: Types.ObjectId; checkIns: number; returned: number }>([
+        { $match: { branchId: { $in: branchIds } } },
+        { $lookup: { from: this.groups.collection.name, localField: 'groupId', foreignField: '_id', as: 'group' } },
+        { $match: { 'group.eventDate': { $exists: true } } },
+        { $lookup: { from: this.sessions.collection.name, localField: 'groupId', foreignField: 'groupId',
+          let: { participant: '$_id' }, pipeline: [{ $match: { $expr: { $in: ['$$participant', '$present'] } } }, { $project: { _id: 1 } }], as: 'visits' } },
+        { $match: { 'visits.0': { $exists: true } } },
+        { $group: { _id: { branch: '$branchId', key: '$registrationKey' }, events: { $addToSet: '$groupId' }, checkIns: { $sum: { $size: '$visits' } } } },
+        { $group: { _id: '$_id.branch', checkIns: { $sum: '$checkIns' }, returned: { $sum: { $cond: [{ $gt: [{ $size: '$events' }, 1] }, 1, 0] } } } },
+      ]),
+      this.enrollments.aggregate<{ _id: Types.ObjectId; started: number }>([
+        { $match: { branchId: { $in: branchIds } } },
+        { $lookup: { from: this.progress.collection.name, localField: '_id', foreignField: 'enrollmentId',
+          pipeline: [{ $match: { 'completed.0': { $exists: true } } },
+            { $lookup: { from: this.activities.collection.name, localField: 'activityId', foreignField: '_id', as: 'activity' } },
+            { $match: { 'activity.kind': 'track' } }, { $limit: 1 }], as: 'tracks' } },
+        { $match: { 'tracks.0': { $exists: true } } },
+        { $group: { _id: '$branchId', started: { $sum: 1 } } },
+      ]),
+    ]);
+    return branches.map(branch => {
+      const tasks = followUps.find(row => row._id.equals(branch._id));
+      const visits = attendance.find(row => row._id.equals(branch._id));
+      return { branchId: branch._id, name: branch.name, open: tasks?.open ?? 0, overdue: tasks?.overdue ?? 0,
+        closed: tasks?.closed ?? 0, checkIns: visits?.checkIns ?? 0, returned: visits?.returned ?? 0,
+        started: tracks.find(row => row._id.equals(branch._id))?.started ?? 0 };
+    });
+  }
+
   async createGroup(user: AuthUser, dto: YouthGroupDto) {
     const branchId = await this.manageBranch(user, dto.branchId);
     return this.saveGroup(branchId, dto);
@@ -195,7 +250,7 @@ export class YouthService {
     const showFollowUp = Boolean(group.eventDate && showRegistration && this.canManage(user));
     const [people, session, leaders, link, recentSessions, cleared, destinations, followUpOwners] = await Promise.all([
       this.enrollments.find({ groupId: group._id, state: showRegistration ? { $in: ['active', 'pending'] } : 'active' })
-        .select(showRegistration ? '+guardianName +contact +birthDate +customAnswers' + (showFollowUp ? ' +campFollowUp' : '') : 'firstName lastName state welcomedAt').sort({ firstName: 1, lastName: 1 }).lean(),
+        .select(showRegistration ? '+guardianName +contact +birthDate +customAnswers' + (showFollowUp ? ' +campFollowUp +guardianEmailOptIn +guardianReminderStatus' : '') : 'firstName lastName state welcomedAt').sort({ firstName: 1, lastName: 1 }).lean(),
       this.sessions.findOne({ groupId: group._id, date }).lean(),
       showRegistration ? this.users.find({ branchId: group.branchId, isActive: true, role: { $in: leaderRoles } }).select('firstName lastName').sort({ firstName: 1 }).lean() : [],
       showRegistration ? this.groups.findById(group._id).select('+registrationToken').lean() : null,
@@ -267,8 +322,12 @@ export class YouthService {
     const { group, branchId } = await this.publicGroup(token);
     const customAnswers = await this.forms.prepare(MinistryFormKind.Youth, dto, undefined, 'public');
     const enrollment = this.enrollmentData(group, dto);
+    const optIn = dto.guardianEmailOptIn === true;
+    if (optIn && (!group.eventDate || !enrollment.needsGuardian || !emailAddress.test(enrollment.contact) || !isEmail(enrollment.contact))) {
+      throw new BadRequestException('Guardian reminders require a guardian email address for an event.');
+    }
     try {
-      await this.enrollments.create({ ...enrollment, branchId, customAnswers,
+      await this.enrollments.create({ ...enrollment, branchId, customAnswers, guardianEmailOptIn: optIn,
         ...(group.campEndDate ? { transportConsent: dto.transportConsent === true } : {}) });
     } catch (error) {
       if (!duplicate(error)) throw error;
@@ -473,7 +532,7 @@ export class YouthService {
         { $group: { _id: { branch: '$branchId', state: '$state' }, count: { $sum: 1 }, guardians: { $sum: { $cond: ['$needsGuardian', 1, 0] } } } },
       ]),
       selected ? this.enrollments.find({ groupId: group._id, branchId: selected.branchId })
-        .select('+guardianName +contact +transportConsent +campTransport +campRoom +campFollowUp' + (finance ? ' +campPaid +campScholarship +campFinanceRevision +campLedger' : ''))
+        .select('+guardianName +contact +transportConsent +campTransport +campRoom +campFollowUp +guardianEmailOptIn +guardianReminderStatus' + (finance ? ' +campPaid +campScholarship +campFinanceRevision +campLedger' : ''))
         .sort({ firstName: 1, lastName: 1 }).lean() : [],
       selected ? this.sessions.findOne({ groupId: group._id, date }).lean() : null,
       selected ? this.delegations.findById(selected._id).select('+token').lean() : null,
@@ -508,6 +567,50 @@ export class YouthService {
     if (!group.eventDate || group.campEndDate) throw new NotFoundException();
     if (!this.canManage(user)) throw new ForbiddenException();
     return this.saveEventFollowUp(user, group, group.branchId, personId, dto);
+  }
+
+  async eventGuardianReminder(user: AuthUser, groupId: string, personId: string, branchId?: string) {
+    const group = branchId ? (await this.campBranch(user, groupId, branchId)).group : await this.scopedGroup(user, groupId, true);
+    if (!this.canManage(user)) throw new ForbiddenException();
+    if (!group.eventDate || (!branchId && group.campEndDate) || group.eventDate < day()) throw new BadRequestException();
+    const token = randomBytes(24).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const claimed = await this.enrollments.findOneAndUpdate({
+      _id: id(personId), groupId: group._id, branchId: branchId ? id(branchId) : group.branchId,
+      state: 'active', needsGuardian: true, guardianEmailOptIn: true, guardianReminderStatus: { $exists: false },
+      contact: emailAddress,
+    }, { $set: { guardianReminderStatus: 'sending', guardianEmailTokenHash: tokenHash } })
+      .select('+contact').lean();
+    if (!claimed) throw new ConflictException();
+    const locale = claimed.consentLocale in reminderCopy ? claimed.consentLocale as keyof typeof reminderCopy : 'en';
+    const [subject, event, date, venue, unsubscribe] = reminderCopy[locale];
+    const formatDate = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(value));
+    const dates = group.campEndDate && group.campEndDate !== group.eventDate
+      ? formatDate(group.eventDate) + ' – ' + formatDate(group.campEndDate) : formatDate(group.eventDate);
+    const link = workspaceWebLink(this.config, '/youth-register/' + token, { unsubscribe: '1' });
+    let result;
+    try {
+      result = await this.mail.sendAppEmail({ to: claimed.contact, subject,
+        text: [getWorkspace(this.config).name, `${event}: ${group.name}`, `${date}: ${dates}`, `${venue}: ${group.venue ?? ''}`, `${unsubscribe}: ${link}`].join('\n'),
+        idempotencyKey: 'youth-guardian-reminder-' + claimed._id });
+    } catch {
+      await this.enrollments.updateOne({ _id: claimed._id }, { $set: { guardianReminderStatus: 'unconfirmed' } });
+      throw new ServiceUnavailableException();
+    }
+    if (!result.delivered) {
+      await this.enrollments.updateOne({ _id: claimed._id }, { $unset: { guardianReminderStatus: 1, guardianEmailTokenHash: 1 } });
+      throw new ServiceUnavailableException();
+    }
+    await this.enrollments.updateOne({ _id: claimed._id }, { $set: { guardianReminderStatus: 'accepted' } });
+    return { accepted: true };
+  }
+
+  async unsubscribeGuardian(token: string | undefined, ip: string) {
+    this.forms.limitPublicSubmission(ip);
+    if (!token || !/^[a-f0-9]{48}$/.test(token)) throw new BadRequestException();
+    const guardianEmailTokenHash = createHash('sha256').update(token).digest('hex');
+    await this.enrollments.updateOne({ guardianEmailTokenHash }, { $set: { guardianEmailOptIn: false } });
+    return { saved: true };
   }
 
   private followUpOwners(branchId: Types.ObjectId) {

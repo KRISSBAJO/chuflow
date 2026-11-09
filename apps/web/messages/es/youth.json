@@ -1,5 +1,29 @@
 {
   "youth": {
+    "guardianMessaging": {
+      "optIn": "Envíenme por correo un recordatorio práctico de este evento. Puedo cancelar en cualquier momento.",
+      "send": "Enviar recordatorio al tutor",
+      "confirm": "¿Enviar un recordatorio al tutor que lo aceptó?",
+      "sending": "Enviando recordatorio…",
+      "accepted": "El proveedor de correo aceptó el recordatorio.",
+      "unconfirmed": "No se pudo confirmar la entrega.",
+      "unsubscribe": "Dejar de recibir recordatorios",
+      "unsubscribeHint": "Desactiva los recordatorios por correo de esta inscripción.",
+      "unsubscribed": "Los recordatorios de esta inscripción están desactivados.",
+      "unsubscribeError": "No se pudo actualizar tu preferencia. Inténtalo de nuevo."
+    },
+    "reports": {
+      "title": "Informes",
+      "hint": "Toda la actividad juvenil registrada, agrupada por la sede del participante. Un regreso implica asistir a otro evento o campamento.",
+      "empty": "No hay sedes disponibles en tu ámbito.",
+      "total": "Totales de las sedes",
+      "checkIns": "Registros de asistencia a eventos y campamentos",
+      "returned": "Participantes que volvieron",
+      "started": "Inicios de itinerarios",
+      "open": "Seguimientos abiertos",
+      "overdue": "Seguimientos vencidos",
+      "closed": "Seguimientos cerrados"
+    },
     "campFollowUp": {
       "heading": "Seguimiento del evento",
       "assign": "Asignar seguimiento",

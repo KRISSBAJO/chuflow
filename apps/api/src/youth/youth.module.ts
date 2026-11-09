@@ -11,10 +11,11 @@ import { YouthCampDelegation, YouthCampDelegationSchema, YouthEnrollment, YouthE
 import { YouthService } from './youth.service';
 import { YouthDevelopment, YouthDevelopmentProgress, YouthDevelopmentProgressSchema, YouthDevelopmentSchema } from './youth-development.schema';
 import { YouthDevelopmentService } from './youth-development.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
-    AccessScopeModule, GuestsModule,
+    AccessScopeModule, GuestsModule, MailModule,
     MongooseModule.forFeature([
       { name: YouthGroup.name, schema: YouthGroupSchema },
       { name: YouthEnrollment.name, schema: YouthEnrollmentSchema },

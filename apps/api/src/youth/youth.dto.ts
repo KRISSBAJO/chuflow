@@ -47,6 +47,7 @@ export class YouthRegistrationDto {
   @IsOptional() @IsInt() @Min(0) formRevision?: number;
   @IsOptional() @IsObject() customFields?: Record<string, unknown>;
   @IsOptional() @IsBoolean() transportConsent?: boolean;
+  @IsOptional() @IsBoolean() guardianEmailOptIn?: boolean;
 }
 export class YouthReviewDto {
   @IsIn(['active', 'declined']) state!: 'active' | 'declined';

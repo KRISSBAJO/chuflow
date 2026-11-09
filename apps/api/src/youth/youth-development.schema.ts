@@ -31,3 +31,4 @@ export class YouthDevelopmentProgress {
 }
 export const YouthDevelopmentProgressSchema = SchemaFactory.createForClass(YouthDevelopmentProgress);
 YouthDevelopmentProgressSchema.index({ activityId: 1, enrollmentId: 1 }, { unique: true });
+YouthDevelopmentProgressSchema.index({ enrollmentId: 1 });

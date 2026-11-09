@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { randomBytes } = require('node:crypto');
+const net = require('node:net');
 const bcrypt = require('bcryptjs');
 const { MongoClient, ObjectId } = require('mongoose').mongo;
 const { start } = require('../scripts/workspace-gateway.cjs');
@@ -15,12 +16,41 @@ async function run() {
   const adminPassword = secret();
   const adminEmail = 'guest-admin@example.com';
   const mongo = new MongoClient(uri, { serverSelectionTimeoutMS: 3000 });
+  const messages = [];
+  const smtp = net.createServer(socket => {
+    let buffer = '';
+    let data;
+    socket.setEncoding('utf8');
+    socket.write('220 localhost QA\r\n');
+    socket.on('data', chunk => {
+      buffer += chunk;
+      let newline;
+      while ((newline = buffer.indexOf('\r\n')) !== -1) {
+        const line = buffer.slice(0, newline);
+        buffer = buffer.slice(newline + 2);
+        if (data) {
+          if (line === '.') {
+            messages.push(data.join('\r\n'));
+            data = undefined;
+            socket.write('250 Accepted\r\n');
+          } else data.push(line);
+        } else if (line === 'DATA') {
+          data = [];
+          socket.write('354 End with a period\r\n');
+        } else if (line === 'QUIT') socket.end('221 Goodbye\r\n');
+        else socket.write('250 localhost\r\n');
+      }
+    });
+  });
+  smtp.listen(0, '127.0.0.1');
+  await once(smtp, 'listening');
   const gateway = start({
     PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, TEMP: process.env.TEMP,
     NODE_PATH: require('node:path').join(__dirname, '..', 'node_modules'),
     PORT: '0', API_BIND_HOST: '127.0.0.1', MONGODB_URI: uri + '/' + database,
     JWT_SECRET: secret(), ADMIN_EMAIL: adminEmail, ADMIN_PASSWORD: adminPassword,
     WEB_URL: 'http://localhost:3000',
+    MAIL_HOST: '127.0.0.1', MAIL_PORT: String(smtp.address().port),
     CHUFLOW_WORKSPACE_REGISTRY: JSON.stringify([{
       id: 'test-church', name: 'Test Church', databaseName: tenantDb, jwtSecret: secret(),
       adminEmail, adminPassword,
@@ -366,8 +396,9 @@ async function run() {
     const form = await expect(await registration(eventLink), 200);
     assert.equal(form.eventDate, date);
     assert.equal(form.venue, 'Local Hall');
-    await expect(await registration(eventLink, teen), 201);
-    await expect(await registration(eventLink, { ...teen, firstName: 'Second' }), 201);
+    await expect(await registration(eventLink, { ...teen, guardianEmailOptIn: true, contact: '555-111-2222' }), 400);
+    await expect(await registration(eventLink, { ...teen, guardianEmailOptIn: true, locale: 'es' }), 201);
+    await expect(await registration(eventLink, { ...teen, firstName: 'Second', guardianEmailOptIn: true, locale: 'es' }), 201);
     const eventRoster = await expect(await youth(eventPath), 200);
     const approveSeat = (person) => youth(eventPath + '/people/' + person._id, 'PATCH', { state: 'active', guardianVerified: true });
     const results = await Promise.all(eventRoster.people.map(approveSeat));
@@ -375,6 +406,21 @@ async function run() {
     assert.equal((await results.find(response => response.status === 409).json()).code, 'youth_event_full');
     const confirmed = eventRoster.people.find((_, index) => results[index].status === 200);
     const waiting = eventRoster.people.find((_, index) => results[index].status === 409);
+    const reminderPath = eventPath + '/people/' + confirmed._id + '/guardian-reminder';
+    await expect(await youth(reminderPath, 'POST', undefined, otherPastor), 403);
+    await expect(await youth(reminderPath, 'POST', undefined, district), 403);
+    await expect(await youth(eventPath + '/people/' + waiting._id + '/guardian-reminder', 'POST'), 409);
+    const deliveries = await Promise.all([youth(reminderPath, 'POST'), youth(reminderPath, 'POST')]);
+    assert.deepEqual(deliveries.map(response => response.status).sort(), [201, 409]);
+    const reminder = messages.find(message => message.includes('Recordatorio del evento juvenil'));
+    assert.ok(reminder);
+    assert.ok(reminder.includes('Youth Rally'));
+    const unsubscribeToken = reminder.replace(/=\r\n/g, '').match(/youth-register\/([a-f0-9]{48})/)[1];
+    const unsubscribe = await fetch(base + '/youth-registration/unsubscribe', { method: 'POST', headers: { 'x-youth-registration': unsubscribeToken } });
+    await expect(unsubscribe, 201);
+    const optedOut = (await expect(await youth(eventPath), 200)).people.find(person => person._id === confirmed._id);
+    assert.equal(optedOut.guardianEmailOptIn, false);
+    assert.equal(optedOut.guardianEmailTokenHash, undefined);
     const eventMark = { date, enrollmentId: confirmed._id, present: true };
     await expect(await youth(eventPath + '/attendance', 'PATCH', { ...eventMark, date: '2000-01-01' }, team), 400);
     await expect(await youth(eventPath + '/attendance', 'PATCH', eventMark, team), 200);
@@ -456,6 +502,15 @@ async function run() {
     assert.ok(campWithFollowUp.followUpOwners.some(owner => owner._id === youthPastor.id));
     assert.deepEqual((await expect(await youth(campPath, 'GET', undefined, district), 200)).followUpOwners, []);
     assert.equal((await expect(await youth(campPath, 'GET', undefined, otherPastor), 200)).people[0].campFollowUp, undefined);
+    await expect(await youth(visitPersonPath + '/guardian-reminder', 'POST', undefined, otherPastor), 409);
+    await mongo.db(database).collection('branches').insertOne({ ...branchDocument, _id: new ObjectId(), name: 'Outside reporting scope', district: 'Different district' });
+    const localReport = await expect(await youth('/reports'), 200);
+    assert.deepEqual(localReport.map(row => row.branchId), [String(branch)]);
+    assert.equal(localReport[0].closed, 2);
+    assert.equal(localReport[0].checkIns, 2);
+    const districtReport = await expect(await youth('/reports', 'GET', undefined, district), 200);
+    assert.deepEqual(new Set(districtReport.map(row => row.branchId)), new Set([String(branch), String(otherBranch)]));
+    await expect(await youth('/reports', 'GET', undefined, youthLeader.token), 403);
     assert.equal((await expect(await youth(campPath + '?branch=' + branch + '&date=' + tomorrow), 200)).present.length, 0);
     const payment = { requestId: '11111111-1111-4111-8111-111111111111', kind: 'payment', amount: 2000, revision: 0 };
     await expect(await youth(ownPersonPath + '/ledger', 'POST', payment, youthPastor.token), 403);
@@ -486,6 +541,7 @@ async function run() {
     console.log('Guest Forms & fields verified through both registration routes and workspace boundaries.');
   } finally {
     gateway.close();
+    smtp.close();
     await Promise.all([database, tenantDb].map((name) => mongo.db(name).dropDatabase()));
     await mongo.close();
   }

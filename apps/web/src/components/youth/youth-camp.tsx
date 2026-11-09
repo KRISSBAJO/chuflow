@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import { TemplateQrCard } from "@/components/template-qr-card";
 import { Button, Field } from "@/components/ui/ui";
 import { campMajorUnit, campMinorAmount } from "@/lib/youth-camp-money";
-import type { YouthEventFollowUp, YouthGroup } from "@/lib/youth";
+import type { GuardianReminderFields, YouthEventFollowUp, YouthGroup } from "@/lib/youth";
 import { workspacePublicHref } from "@/lib/workspace-routing";
 import { useYouthAction } from "./use-youth-action";
 import { EventFollowUp } from "./event-follow-up";
+import { GuardianReminder } from "./guardian-reminder";
 
 const kinds = ["payment", "scholarship", "refund", "scholarship_reversal"] as const;
 type Entry = { requestId: string; kind: (typeof kinds)[number]; amount: number; at: string };
-type Person = {
+type Person = GuardianReminderFields & {
   _id: string; firstName: string; lastName: string; state: "pending" | "active" | "declined" | "withdrawn";
   needsGuardian: boolean; contact?: string; guardianName?: string; transportConsent?: boolean;
   campTransport?: string; campRoom?: string; campPaid?: number; campScholarship?: number;
@@ -116,6 +117,7 @@ function CampParticipant({ person, data, path }: { person: Person; data: CampOve
       </details>
     </> : null}
     {person.state === "active" ? <EventFollowUp person={person} data={data} path={enrollment} /> : null}
+    {person.state === "active" && data.group.eventDate >= new Date().toISOString().slice(0, 10) ? <GuardianReminder person={person} path={enrollment} /> : null}
     {data.finance && data.group.feeMinor > 0 && (person.state !== "declined" || person.campLedger?.length) ? <CampLedger camp={data.group} person={person} path={enrollment} /> : null}
   </article>;
 }

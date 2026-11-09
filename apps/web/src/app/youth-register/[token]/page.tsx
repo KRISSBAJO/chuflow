@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { LanguagePicker } from "@/components/i18n/language-picker";
 import { YouthRegistrationForm } from "@/components/youth/youth-registration";
+import { GuardianUnsubscribe } from "@/components/youth/guardian-reminder";
 import { workspaceApiContext, workspaceId } from "@/lib/workspace-routing";
 
 export async function generateMetadata() {
@@ -10,14 +11,15 @@ export async function generateMetadata() {
 }
 export default async function Page({ params, searchParams }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ workspace?: string }>;
+  searchParams: Promise<{ workspace?: string; unsubscribe?: string }>;
 }) {
   const { token } = await params;
-  const { workspace } = await searchParams;
+  const { workspace, unsubscribe } = await searchParams;
   const scope = workspaceId(workspace);
   if (!/^[a-f0-9]{48}$/.test(token) || (workspace && !scope)) notFound();
   return <main className="mx-auto max-w-2xl space-y-8 px-5 py-8 sm:py-14">
     <header className="flex items-center justify-between gap-3"><span className="text-xl font-bold">ChuFlow</span><LanguagePicker /></header>
-    <YouthRegistrationForm token={token} apiBase={workspaceApiContext(scope).base} />
+    {unsubscribe === "1" ? <GuardianUnsubscribe token={token} apiBase={workspaceApiContext(scope).base} /> :
+      <YouthRegistrationForm token={token} apiBase={workspaceApiContext(scope).base} />}
   </main>;
 }

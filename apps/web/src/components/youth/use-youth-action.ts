@@ -32,6 +32,7 @@ export function useYouthAction() {
       return true;
     } catch {
       toast.error(t("failed"));
+      if (path.endsWith("/guardian-reminder")) router.refresh();
     } finally {
       setBusy(false);
     }

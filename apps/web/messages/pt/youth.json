@@ -1,5 +1,29 @@
 {
   "youth": {
+    "guardianMessaging": {
+      "optIn": "Quero receber por e-mail um lembrete prático deste evento. Posso cancelar a qualquer momento.",
+      "send": "Enviar lembrete ao responsável",
+      "confirm": "Enviar um lembrete ao responsável que autorizou o envio?",
+      "sending": "Enviando lembrete…",
+      "accepted": "Lembrete aceito pelo provedor de e-mail.",
+      "unconfirmed": "Não foi possível confirmar a entrega.",
+      "unsubscribe": "Parar de receber lembretes",
+      "unsubscribeHint": "Desative os lembretes por e-mail desta inscrição.",
+      "unsubscribed": "Os lembretes desta inscrição foram desativados.",
+      "unsubscribeError": "Não foi possível atualizar sua preferência. Tente novamente."
+    },
+    "reports": {
+      "title": "Relatórios",
+      "hint": "Toda a atividade juvenil registrada, agrupada pela filial do participante. Um retorno significa presença em um segundo evento ou acampamento.",
+      "empty": "Não há filiais disponíveis no seu escopo.",
+      "total": "Totais das filiais",
+      "checkIns": "Presenças em eventos e acampamentos",
+      "returned": "Participantes que retornaram",
+      "started": "Trilhas iniciadas",
+      "open": "Acompanhamentos em aberto",
+      "overdue": "Acompanhamentos atrasados",
+      "closed": "Acompanhamentos encerrados"
+    },
     "campFollowUp": {
       "heading": "Acompanhamento do evento",
       "assign": "Atribuir acompanhamento",

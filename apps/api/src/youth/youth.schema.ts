@@ -39,6 +39,9 @@ export class YouthEnrollment {
   @Prop({ required: true, select: false }) birthDate!: string;
   @Prop({ required: true, select: false }) contact!: string;
   @Prop({ select: false }) guardianName?: string;
+  @Prop({ select: false }) guardianEmailOptIn?: boolean;
+  @Prop({ select: false }) guardianEmailTokenHash?: string;
+  @Prop({ select: false }) guardianReminderStatus?: 'sending' | 'accepted' | 'unconfirmed';
   @Prop({ type: [Object], select: false, default: undefined }) customAnswers?: import('../guests/guest-fields.service').GuestAnswer[];
   @Prop({ required: true, select: false }) registrationKey!: string;
   @Prop({ required: true }) needsGuardian!: boolean;
@@ -69,6 +72,8 @@ export class YouthEnrollment {
   @Prop({ type: Date }) withdrawnAt?: Date;
 }
 export const YouthEnrollmentSchema = SchemaFactory.createForClass(YouthEnrollment);
+YouthEnrollmentSchema.index({ guardianEmailTokenHash: 1 }, { unique: true, sparse: true });
+YouthEnrollmentSchema.index({ branchId: 1, groupId: 1 });
 YouthEnrollmentSchema.index({ groupId: 1, registrationKey: 1 }, { unique: true });
 YouthEnrollmentSchema.index({ groupId: 1, memberId: 1 }, { unique: true, partialFilterExpression: { memberId: { $type: 'objectId' } } });
 YouthEnrollmentSchema.index({ groupId: 1, childId: 1 }, { unique: true, partialFilterExpression: { childId: { $type: 'objectId' } } });
