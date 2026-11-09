@@ -354,7 +354,12 @@ for (const role of allRoles) {
       "@/components/dashboard/dashboard-view": {},
       "@/components/shell": {},
     }).default;
-    if (
+    if (role === "youth_participant") {
+      await assert.rejects(page({ searchParams: Promise.resolve({}) }), {
+        message: "REDIRECT:/unauthorized",
+      });
+      assert.equal(requests.length, 0);
+    } else if (
       ["follow_up", "usher", "children_worker", "children_supervisor", "youth_leader", "youth_pastor"].includes(
         role,
       )

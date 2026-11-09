@@ -28,6 +28,7 @@ export class YouthDevelopmentProgress {
   @Prop({ type: SchemaTypes.ObjectId, required: true }) activityId!: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId, required: true }) enrollmentId!: Types.ObjectId;
   @Prop({ type: [Number], default: [] }) completed!: number[];
+  @Prop({ type: Date }) signedUpAt?: Date;
 }
 export const YouthDevelopmentProgressSchema = SchemaFactory.createForClass(YouthDevelopmentProgress);
 YouthDevelopmentProgressSchema.index({ activityId: 1, enrollmentId: 1 }, { unique: true });

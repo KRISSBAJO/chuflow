@@ -1,5 +1,37 @@
 {
   "youth": {
+    "participantHome": {
+      "rsvp": "Inscribirme",
+      "progress": "{done, number} de {total, number} etapas completadas",
+      "signUp": "Inscribirme para servir",
+      "signedUp": "Inscripción registrada",
+      "actionFailed": "Ocurrió un error. Inténtalo de nuevo.",
+      "signOut": "Cerrar sesión",
+      "registration": {
+        "active": "Confirmada",
+        "pending": "Pendiente de revisión",
+        "declined": "Rechazada",
+        "withdrawn": "Retirada"
+      },
+      "open": "Vista previa del inicio juvenil",
+      "title": "Inicio juvenil",
+      "previewNote": "Vista previa para el equipo. Las actividades son de solo lectura.",
+      "headline": "Encuentra tu próximo paso",
+      "subtitle": "Descubre qué viene, crece en tu fe y encuentra maneras de servir.",
+      "home": "Inicio",
+      "events": "Eventos",
+      "journey": "Mi camino",
+      "serve": "Servir",
+      "nextUp": "Lo próximo",
+      "groups": "Grupos juveniles",
+      "upcoming": "Próximos eventos",
+      "tracks": "Itinerarios de discipulado",
+      "projects": "Proyectos de servicio",
+      "noEvents": "No hay eventos con inscripciones abiertas en este momento.",
+      "noGroups": "Todavía no hay grupos juveniles.",
+      "noTracks": "Todavía no hay itinerarios de discipulado.",
+      "noProjects": "No hay proyectos de servicio próximos."
+    },
     "camps": "Campamentos y convenciones",
     "noCamps": "Aún no hay campamentos ni convenciones en tu ámbito.",
     "development": "Discipulado y servicio",

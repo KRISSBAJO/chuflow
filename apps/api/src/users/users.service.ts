@@ -340,6 +340,7 @@ export class UsersService implements OnModuleInit {
   }
 
   private validateRoleAssignment(currentUser: AuthUser, role: string) {
+    if (role === 'youth_participant') throw new ForbiddenException('Invite participants from Youth Ministry.');
     if (!APP_ROLES.includes(role as (typeof APP_ROLES)[number])) {
       throw new BadRequestException('Invalid role selected');
     }
@@ -870,6 +871,7 @@ export class UsersService implements OnModuleInit {
 
   async update(currentUser: AuthUser, userId: string, dto: UpdateUserDto) {
     const target = await this.ensureManageableTarget(currentUser, userId);
+    if (target.role === 'youth_participant') throw new ForbiddenException('Youth participant accounts are managed separately.');
     const attemptedPrivilegedChange =
       dto.role !== undefined ||
       dto.branchId !== undefined ||

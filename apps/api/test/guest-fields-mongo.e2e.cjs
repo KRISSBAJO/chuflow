@@ -375,7 +375,46 @@ async function run() {
     await expect(await youth(development + '/' + mentoring.id + '/end', 'PATCH', undefined, youthPastor.token), 200);
     await expect(await youth(teens + '/leader', 'PATCH', { leaderId: String(staffId), clearanceUntil: '2099-01-01', screeningVerified: true }), 200);
 
+    const invitePath = teens + '/people/' + teenId + '/invite';
+    const invite = { email: 'participant@example.com', permissionConfirmed: true };
+    await expect(await youth(invitePath, 'POST', invite, otherPastor), 403);
+    await expect(await youth(invitePath, 'POST', { ...invite, permissionConfirmed: false }, youthPastor.token), 400);
+    const invitation = await expect(await youth(invitePath, 'POST', invite, youthPastor.token), 201);
+    await expect(await youth(invitePath, 'POST', invite, youthPastor.token), 409);
+    const inviteToken = new URL(invitation.invitation).searchParams.get('token');
+    await expect(await request('/auth/reset-password', 'POST', { token: inviteToken, newPassword: adminPassword }), 201);
+    await expect(await request('/auth/reset-password', 'POST', { token: inviteToken, newPassword: adminPassword }), 400);
+    const participant = await expect(await request('/auth/mobile/login', 'POST', { email: invite.email, password: adminPassword }), 200);
+    assert.equal(participant.user.role, 'youth_participant');
+    const participantToken = participant.accessToken;
+    const participantHome = () => request('/youth-participant/home', 'GET', undefined, participantToken);
+    const youthHome = await expect(await participantHome(), 200);
+    assert.deepEqual(youthHome.tracks.find(item => item.id === track.id).completed, [1]);
+    assert.equal(youthHome.projects.find(item => item.id === future.id).signedUp, false);
+    assert.ok(!JSON.stringify(youthHome).includes('Leadership skills'));
+    await expect(await request('/youth', 'GET', undefined, participantToken), 403);
+    await expect(await request('/guests', 'GET', undefined, participantToken), 403);
+    await expect(await request('/youth-participant/home', 'GET', undefined, youthPastor.token), 403);
+    await expect(await request('/youth-participant/projects/' + track.id + '/signup', 'POST', {}, participantToken), 404);
+    await expect(await request('/youth-participant/projects/' + future.id + '/signup', 'POST', {}, participantToken), 201);
+    await expect(await request('/youth-participant/projects/' + future.id + '/signup', 'POST', {}, participantToken), 201);
+    assert.equal((await expect(await participantHome(), 200)).projects.find(item => item.id === future.id).signedUp, true);
+    assert.ok((await expect(await youth(development), 200)).progress.some(item => item.activityId === future.id && item.enrollmentId === teenId && item.signedUpAt));
+
+    const pilotEvent = await expect(await youth('/events', 'POST', { branchId: String(branch), name: 'Participant RSVP QA',
+      program: 'Teens Church', minAge: 13, maxAge: 17, guardianUnderAge: 18, venue: 'Local Hall',
+      eventDate: date, registrationDeadline: date, capacity: 1 }), 201);
+    const pilotPath = '/groups/' + pilotEvent.id;
+    await expect(await youth(pilotPath + '/leader', 'PATCH', { leaderId: String(staffId), clearanceUntil: '2099-01-01', screeningVerified: true }), 200);
+    await expect(await youth(pilotPath + '/link', 'POST'), 201);
+    const openEvent = (await expect(await participantHome(), 200)).events.find(item => item.id === pilotEvent.id);
+    await expect(await registration(new URL(openEvent.registrationUrl).pathname.split('/').pop(), teen), 201);
+    const rsvp = (await expect(await participantHome(), 200)).events.find(item => item.id === pilotEvent.id);
+    assert.equal(rsvp.state, 'pending');
+    assert.equal(rsvp.registrationUrl, undefined);
+
     await expect(await youth(teens + '/people/' + teenId + '/withdraw', 'POST'), 201);
+    await expect(await participantHome(), 403);
     await expect(await youth(teens + '/attendance', 'PATCH', mark, team), 404);
     assert.deepEqual((await expect(await youth(teens), 200)).present, [teenId]);
     await expect(await youth(teens + '/link', 'DELETE'), 200);
@@ -464,6 +503,16 @@ async function run() {
     await expect(await youth(localCamp + '/link', 'PATCH', { enabled: true }), 200);
     await expect(await youth(visitingCamp + '/link', 'PATCH', { enabled: true }, otherPastor), 200);
     const campToken = (await expect(await youth(campPath + '?branch=' + branch), 200)).token;
+    const home = await expect(await youth('/home-preview', 'GET', undefined, youthPastor.token), 200);
+    assert.equal(home.branch, 'QA Station');
+    assert.ok(home.groups.some(group => group.program === 'Teens Church'));
+    assert.ok(home.events.some(event => event.id === camp.id));
+    assert.ok(home.tracks.length);
+    assert.ok(!JSON.stringify(home).includes(campToken));
+    const otherHome = await expect(await youth('/home-preview', 'GET', undefined, otherPastor), 200);
+    assert.notEqual(otherHome.branch, home.branch);
+    assert.equal(otherHome.tracks.length, 0);
+    await expect(await youth('/home-preview', 'GET', undefined, youthLeader.token), 403);
     const visitorToken = (await expect(await youth(campPath, 'GET', undefined, otherPastor), 200)).token;
     assert.notEqual(campToken, visitorToken);
     const campForm = await expect(await registration(campToken), 200);

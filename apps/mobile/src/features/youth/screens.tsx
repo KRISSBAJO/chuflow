@@ -13,7 +13,7 @@ import { useSession } from '@/lib/session';
 import { useApi } from '@/lib/use-api';
 
 type Group = { _id: string; name: string; program: string; branchName: string; active: number; pending: number; canOpen: boolean; eventDate?: string; campEndDate?: string };
-type Overview = { groups: Group[]; canManage: boolean; canManageEvents?: boolean };
+type Overview = { groups: Group[]; canManage: boolean; canManageEvents?: boolean; canPreviewHome?: boolean };
 type Detail = {
   group: { name: string; eventDate?: string };
   date: string;
@@ -31,6 +31,8 @@ export function YouthOverview({ embedded = false }: { embedded?: boolean } = {})
   return (
     <Screen safeTop={embedded} refreshing={data.refreshing} onRefresh={() => void data.refresh()}>
       {embedded ? <ScreenHeader title={t('title')} /> : <Stack.Screen options={{ title: t('title') }} />}
+      {data.data?.canPreviewHome ? <Button variant="secondary" label={t('participantHome.open')}
+        onPress={() => router.push('/youth/home-preview' as Href)} /> : null}
       {data.loading ? <Loading /> : data.error ? <ErrorState message={data.error} onRetry={() => void data.refresh()} /> : (
         <View>
           {(['groups', 'events', 'camps'] as const).map(section => {

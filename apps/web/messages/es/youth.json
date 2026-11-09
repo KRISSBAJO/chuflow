@@ -1,5 +1,16 @@
 {
   "youth": {
+    "participantInvite": {
+      "title": "Invitar al inicio juvenil",
+      "email": "Correo de acceso del participante",
+      "permission": "Verifiqué quién usa este correo y confirmé el permiso del tutor cuando corresponde.",
+      "create": "Crear invitación",
+      "link": "Enlace de invitación",
+      "shareHint": "Compártelo en privado con el destinatario verificado. El enlace vence en 24 horas y solo se puede usar una vez.",
+      "conflict": "Este correo o registro juvenil ya tiene una cuenta.",
+      "failed": "No se pudo crear la invitación.",
+      "projectSignups": "Inscripciones de servicio ({count, number})"
+    },
     "guardianMessaging": {
       "optIn": "Envíenme por correo un recordatorio práctico de este evento. Puedo cancelar en cualquier momento.",
       "send": "Enviar recordatorio al tutor",

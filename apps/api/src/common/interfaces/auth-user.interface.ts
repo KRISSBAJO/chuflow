@@ -18,7 +18,8 @@ export interface AuthUser {
     | 'children_worker'
     | 'children_supervisor'
     | 'youth_leader'
-    | 'youth_pastor';
+    | 'youth_pastor'
+    | 'youth_participant';
   oversightRegion?: string;
   district?: string;
   branchId?: string;

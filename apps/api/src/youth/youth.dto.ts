@@ -1,8 +1,12 @@
-import { Equals, IsBoolean, IsDateString, IsIn, IsInt, IsMongoId, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { Equals, IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsMongoId, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { OmitType, PickType } from '@nestjs/swagger';
 
 export class YouthBranchDto {
   @IsMongoId() branchId!: string;
+}
+export class YouthParticipantInviteDto {
+  @IsEmail() @MaxLength(254) email!: string;
+  @Equals(true) permissionConfirmed!: true;
 }
 export const youthFollowUpReasons = ['welcome', 'missed', 'invite'] as const;
 export const youthFollowUpOutcomes = ['open', 'connected', 'no_response', 'declined'] as const;

@@ -6,7 +6,7 @@ import { ChildProfile, ChildProfileSchema } from '../children/children.schema';
 import { GuestsModule } from '../guests/guests.module';
 import { Member, MemberSchema } from '../members/schemas/member.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { YouthController, YouthRegistrationController } from './youth.controller';
+import { YouthController, YouthParticipantController, YouthRegistrationController } from './youth.controller';
 import { YouthCampDelegation, YouthCampDelegationSchema, YouthEnrollment, YouthEnrollmentSchema, YouthGroup, YouthGroupSchema, YouthSession, YouthSessionSchema } from './youth.schema';
 import { YouthService } from './youth.service';
 import { YouthDevelopment, YouthDevelopmentProgress, YouthDevelopmentProgressSchema, YouthDevelopmentSchema } from './youth-development.schema';
@@ -29,7 +29,7 @@ import { MailModule } from '../mail/mail.module';
       { name: User.name, schema: UserSchema },
     ]),
   ],
-  controllers: [YouthController, YouthRegistrationController],
+  controllers: [YouthController, YouthParticipantController, YouthRegistrationController],
   providers: [YouthService, YouthDevelopmentService],
 })
 export class YouthModule {}

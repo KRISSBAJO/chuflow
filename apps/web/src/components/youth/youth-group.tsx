@@ -11,6 +11,7 @@ import { workspacePublicHref } from "@/lib/workspace-routing";
 import type { YouthDetail, YouthPerson } from "@/lib/youth";
 import { EventFollowUp } from "./event-follow-up";
 import { GuardianReminder } from "./guardian-reminder";
+import { ParticipantInvite } from "./participant-invite";
 import { useYouthAction } from "./use-youth-action";
 import { YouthGroupFields, youthGroupValues } from "./youth-setup";
 
@@ -223,6 +224,7 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
               if (window.confirm(t("withdrawConfirm"))) void run(path + "/people/" + person._id + "/withdraw", "POST");
             }}>{t("withdraw")}</Button>
             <TransitionForm path={path + "/people/" + person._id} person={person} destinations={destinations} />
+            {!group.eventDate ? <ParticipantInvite path={path + "/people/" + person._id} /> : null}
           </li>)}
         </ul>
       </details> : null}

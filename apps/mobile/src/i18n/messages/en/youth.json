@@ -1,5 +1,37 @@
 {
   "youth": {
+    "participantHome": {
+      "rsvp": "RSVP",
+      "progress": "{done, number} of {total, number} milestones completed",
+      "signUp": "Sign up to serve",
+      "signedUp": "Signed up",
+      "actionFailed": "Something went wrong. Try again.",
+      "signOut": "Sign out",
+      "registration": {
+        "active": "Confirmed",
+        "pending": "Awaiting review",
+        "declined": "Declined",
+        "withdrawn": "Withdrawn"
+      },
+      "open": "Preview Youth Home",
+      "title": "Youth Home",
+      "previewNote": "Staff preview. Activities are read-only here.",
+      "headline": "Find your next step",
+      "subtitle": "See what’s coming up, grow in your faith, and find ways to serve.",
+      "home": "Home",
+      "events": "Events",
+      "journey": "My Journey",
+      "serve": "Serve",
+      "nextUp": "Next up",
+      "groups": "Youth groups",
+      "upcoming": "Upcoming events",
+      "tracks": "Discipleship tracks",
+      "projects": "Service projects",
+      "noEvents": "No events are open for registration right now.",
+      "noGroups": "No youth groups yet.",
+      "noTracks": "No discipleship tracks yet.",
+      "noProjects": "No upcoming service projects."
+    },
     "camps": "Camps & conventions",
     "noCamps": "No camps or conventions in your scope yet.",
     "development": "Discipleship & service",

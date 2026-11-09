@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { isEmail } from 'class-validator';
 import { InjectModel } from '@nestjs/mongoose';
 import { createHash, randomBytes } from 'node:crypto';
+import * as bcrypt from 'bcryptjs';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { Branch } from '../branches/schemas/branch.schema';
@@ -17,6 +18,7 @@ import { MailService } from '../mail/mail.service';
 import { YouthDevelopment, YouthDevelopmentProgress } from './youth-development.schema';
 import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
+import { YouthParticipantInviteDto } from './youth.dto';
 
 const day = () => new Date().toISOString().slice(0, 10);
 const duplicate = (error: unknown) => (error as { code?: number })?.code === 11000;
@@ -115,6 +117,7 @@ export class YouthService {
     return {
       canManage: this.canManage(user),
       canManageEvents: this.canManageEvents(user),
+      canPreviewHome: this.canManage(user) && Boolean(user.branchId),
       pilotAvailable: this.canManage(user) && this.pilotAvailable,
       branches: this.canManageEvents(user) ? visibleBranches : [],
       groups: groups.map(group => ({
@@ -129,6 +132,114 @@ export class YouthService {
         visits: sessionCounts.find(row => String(row._id) === String(group._id))?.visits ?? 0,
       })),
     };
+  }
+
+  async homePreview(user: AuthUser) {
+    if (!this.canManage(user) || !user.branchId) throw new ForbiddenException();
+    const branchId = await this.access.resolveScopedBranchId(user);
+    const branch = await this.branches.findById(branchId).select('name').lean();
+    if (!branch) throw new NotFoundException();
+
+    const [groups, events, delegations] = await Promise.all([
+      this.groups.find({ branchId, eventDate: { $exists: false } }).select('name program').sort({ name: 1 }).lean(),
+      this.groups.find({ branchId, eventDate: { $gte: day() }, registrationToken: { $exists: true }, campEndDate: { $exists: false } })
+        .select('name program venue eventDate registrationDeadline leaderId clearanceUntil branchId').sort({ eventDate: 1 }).limit(12).lean(),
+      this.delegations.find({ branchId, token: { $exists: true } }).select('groupId').lean(),
+    ]);
+    const [activities, camps] = await Promise.all([
+      this.activities.find({ groupId: { $in: groups.map(group => group._id) }, kind: { $in: ['track', 'project'] },
+        $or: [{ kind: 'track' }, { date: { $gte: day() } }] })
+        .select('groupId kind title date location milestones').sort({ date: 1, _id: -1 }).lean(),
+      this.groups.find({ _id: { $in: delegations.map(row => row.groupId) }, campEndDate: { $exists: true }, eventDate: { $gte: day() } })
+        .select('name program venue eventDate campEndDate registrationDeadline leaderId clearanceUntil branchId').sort({ eventDate: 1 }).limit(12).lean(),
+    ]);
+    const upcoming = [...events, ...camps].sort((a, b) => a.eventDate!.localeCompare(b.eventDate!));
+    const open = await Promise.all(upcoming.map(async event => this.registrationInTime(event) && await this.cleared(event)));
+    return {
+      branch: branch.name,
+      groups: groups.map(({ _id, name, program }) => ({ id: _id, name, program })),
+      events: upcoming.filter((_, index) => open[index]).slice(0, 12)
+        .map(({ _id, name, program, venue, eventDate, campEndDate }) => ({ id: _id, name, program, venue, date: eventDate, endDate: campEndDate })),
+      tracks: activities.filter(item => item.kind === 'track').map(({ _id, title, groupId, milestones }) => ({ id: _id, title, groupId, milestones })),
+      projects: activities.filter(item => item.kind === 'project').map(({ _id, title, groupId, date, location }) => ({ id: _id, title, groupId, date, location })),
+    };
+  }
+
+  async inviteParticipant(user: AuthUser, groupId: string, enrollmentId: string, dto: YouthParticipantInviteDto) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const person = await this.enrollments.findOne({ _id: id(enrollmentId), groupId: group._id, state: 'active' }).lean();
+    if (!person) throw new NotFoundException();
+    const email = dto.email.trim().toLowerCase();
+    const token = randomBytes(32).toString('hex');
+    const passwordResetToken = createHash('sha256').update(token).digest('hex');
+    const passwordResetExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    try {
+      await this.users.create({ email, password: await bcrypt.hash(randomBytes(32).toString('hex'), 10),
+        firstName: person.firstName, lastName: person.lastName, role: 'youth_participant',
+        branchId: group.branchId, youthEnrollmentId: person._id, passwordResetToken, passwordResetExpiresAt });
+    } catch (error) {
+      if (duplicate(error)) throw new ConflictException('This email or enrollment already has an account.');
+      throw error;
+    }
+    return { invitation: workspaceWebLink(this.config, '/reset-password', { token }), expiresAt: passwordResetExpiresAt };
+  }
+
+  private async participantEnrollment(user: AuthUser) {
+    const account = await this.users.findOne({ _id: id(user.sub), isActive: true, role: 'youth_participant' }).select('+youthEnrollmentId branchId').lean();
+    if (!account?.youthEnrollmentId || !account.branchId) throw new ForbiddenException();
+    const person = await this.enrollments.findOne({ _id: account.youthEnrollmentId, branchId: account.branchId, state: 'active' })
+      .select('+birthDate +registrationKey').lean();
+    if (!person) throw new ForbiddenException();
+    return person;
+  }
+
+  async participantHome(user: AuthUser) {
+    const person = await this.participantEnrollment(user);
+    const [group, branch, activities, events, delegations, registrations] = await Promise.all([
+      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program').lean(),
+      this.branches.findById(person.branchId).select('name').lean(),
+      this.activities.find({ groupId: person.groupId, kind: { $in: ['track', 'project'] } })
+        .select('kind title date location milestones').sort({ date: 1 }).lean(),
+      this.groups.find({ branchId: person.branchId, eventDate: { $gte: day() }, campEndDate: { $exists: false } }).select('+registrationToken').sort({ eventDate: 1 }).limit(40).lean(),
+      this.delegations.find({ branchId: person.branchId }).select('+token').lean(),
+      this.enrollments.find({ branchId: person.branchId, registrationKey: person.registrationKey, groupId: { $ne: person.groupId } }).select('groupId state').lean(),
+    ]);
+    if (!group || !branch) throw new ForbiddenException();
+    const camps = await this.groups.find({ _id: { $in: delegations.map(item => item.groupId) }, eventDate: { $gte: day() }, campEndDate: { $exists: true } }).sort({ eventDate: 1 }).limit(40).lean();
+    const progress = await this.progress.find({ enrollmentId: person._id, activityId: { $in: activities.map(item => item._id) } }).select('activityId completed signedUpAt').lean();
+    const states = new Map(registrations.map(item => [String(item.groupId), item.state]));
+    const rows = await Promise.all([...events, ...camps].map(async event => {
+      const token = event.campEndDate ? delegations.find(item => item.groupId.equals(event._id))?.token : event.registrationToken;
+      const state = states.get(String(event._id));
+      const date = event.eventDate!;
+      const age = Number(date.slice(0, 4)) - Number(person.birthDate.slice(0, 4)) - (date.slice(5) < person.birthDate.slice(5) ? 1 : 0);
+      if (!state && (age < event.minAge || age > event.maxAge || !token || !this.registrationInTime(event) || !await this.cleared(event))) return null;
+      return { id: event._id, name: event.name, date: event.eventDate, endDate: event.campEndDate, venue: event.venue, state,
+        registrationUrl: !state && token ? workspaceWebLink(this.config, '/youth-register/' + token) : undefined };
+    }));
+    return {
+      branch: branch.name, groups: [{ id: group._id, name: group.name, program: group.program }],
+      events: rows.filter(row => row !== null).sort((a, b) => a.date!.localeCompare(b.date!)),
+      tracks: activities.filter(item => item.kind === 'track').map(item => ({ id: item._id, title: item.title,
+        groupId: group._id, milestones: item.milestones, completed: progress.find(row => row.activityId.equals(item._id))?.completed ?? [] })),
+      projects: activities.filter(item => item.kind === 'project' && item.date && item.date >= day()).map(item => ({
+        id: item._id, title: item.title, groupId: group._id, date: item.date, location: item.location,
+        signedUp: Boolean(progress.find(row => row.activityId.equals(item._id))?.signedUpAt) })),
+    };
+  }
+
+  async participantServe(user: AuthUser, activityId: string) {
+    const person = await this.participantEnrollment(user);
+    const activity = await this.activities.findOne({ _id: id(activityId), groupId: person.groupId, kind: 'project', date: { $gte: day() } }).select('_id').lean();
+    if (!activity) throw new NotFoundException();
+    try {
+      await this.progress.updateOne({ activityId: activity._id, enrollmentId: person._id },
+        { $set: { signedUpAt: new Date() }, $setOnInsert: { completed: [] } }, { upsert: true });
+    } catch (error) {
+      if (!duplicate(error)) throw error;
+      await this.progress.updateOne({ activityId: activity._id, enrollmentId: person._id }, { $set: { signedUpAt: new Date() } });
+    }
+    return { saved: true };
   }
 
   async reports(user: AuthUser) {

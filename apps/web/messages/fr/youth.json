@@ -1,5 +1,16 @@
 {
   "youth": {
+    "participantInvite": {
+      "title": "Inviter à l’accueil jeunesse",
+      "email": "E-mail de connexion du participant",
+      "permission": "J’ai vérifié à qui appartient cette adresse et confirmé l’accord du responsable légal si nécessaire.",
+      "create": "Créer une invitation",
+      "link": "Lien d’invitation",
+      "shareHint": "Transmettez ce lien en privé au destinataire vérifié. Il expire au bout de 24 heures et ne peut être utilisé qu’une fois.",
+      "conflict": "Cette adresse ou ce dossier jeunesse est déjà associé à un compte.",
+      "failed": "Impossible de créer l’invitation.",
+      "projectSignups": "Inscriptions au service ({count, number})"
+    },
     "guardianMessaging": {
       "optIn": "Je souhaite recevoir par e-mail un rappel pratique pour cet événement. Je peux me désinscrire à tout moment.",
       "send": "Envoyer un rappel au responsable légal",

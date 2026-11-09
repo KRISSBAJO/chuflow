@@ -71,6 +71,9 @@ export class User {
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch' })
   branchId?: Types.ObjectId;
 
+  @Prop({ type: SchemaTypes.ObjectId, unique: true, sparse: true, select: false })
+  youthEnrollmentId?: Types.ObjectId;
+
   @Prop({ default: true })
   isActive!: boolean;
 

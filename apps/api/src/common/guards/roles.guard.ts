@@ -28,6 +28,10 @@ export class RolesGuard implements CanActivate {
     const handler = context.getHandler().name;
     const role = request.user?.role as AppRole | undefined;
     const endpoint = this.reflector.get(PATH_METADATA, context.getHandler());
+    if (role === 'youth_participant') {
+      return controller === 'youth-participant' ||
+        (controller === 'auth' && ['me', 'logout', 'change-password', 'workspaces', 'workspaces/:workspaceId/handoff'].includes(String(endpoint)));
+    }
     if (role && YOUTH_ROLES.includes(role) && controller !== 'youth' &&
         !(controller === 'auth' && ['me', 'logout', 'change-password', 'workspaces', 'workspaces/:workspaceId/handoff', 'browser-handoff'].includes(String(endpoint)))) {
       return false;

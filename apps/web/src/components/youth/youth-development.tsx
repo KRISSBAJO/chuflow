@@ -19,7 +19,7 @@ type Activity = {
   checkIns?: string[];
   active?: boolean;
 };
-type Progress = { activityId: string; enrollmentId: string; completed: number[] };
+type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string };
 export type YouthDevelopmentOverview = {
   groupName: string; manager: boolean; screenedLeader: boolean; people: Person[]; activities: Activity[]; progress: Progress[];
 };
@@ -41,10 +41,15 @@ function ProgressCard({ item, people, records, path }: { item: Activity; people:
   const completed = records.find(row => row.enrollmentId === selected)?.completed ?? [];
   const completeCount = records.filter(row => row.completed.length === milestones.length).length;
   const future = Boolean(item.date && item.date > new Date().toISOString().slice(0, 10));
+  const signups = item.kind === "project" ? people.filter(person => records.some(row => row.enrollmentId === person._id && row.signedUpAt)) : [];
   return <article className="app-card space-y-3 p-5">
     <h3 className="font-semibold">{item.title}</h3>
     {item.date ? <p className="text-sm">{format.dateTime(new Date(item.date), { dateStyle: "medium", timeZone: "UTC" })} · {item.location}</p> : null}
     <p className="text-sm text-neutral-600">{t("completedCount", { count: completeCount, total: people.length })}</p>
+    {signups.length ? <details className="text-sm">
+      <summary className="cursor-pointer font-medium">{t("participantInvite.projectSignups", { count: signups.length })}</summary>
+      <ul className="mt-2 space-y-1">{signups.map(person => <li key={person._id}>{person.firstName} {person.lastName}</li>)}</ul>
+    </details> : null}
     <Field label={t("participant")}><select value={selected} className="ui-input" onChange={event => setParticipant(event.target.value)}><PersonOptions people={people} /></select></Field>
     <ul className="divide-y divide-black/10">
       {milestones.map((milestone, index) => <li key={index} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">

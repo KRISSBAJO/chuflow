@@ -8,6 +8,7 @@ import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, 
 import { YouthService } from './youth.service';
 import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
+import { YouthParticipantInviteDto } from './youth.dto';
 
 @Controller('youth')
 @Roles(...APP_ROLES)
@@ -46,6 +47,14 @@ export class YouthController {
 
   @Get('reports') @Header('Cache-Control', 'no-store')
   reports(@CurrentUser() user: AuthUser) { return this.youth.reports(user); }
+
+  @Get('home-preview') @Header('Cache-Control', 'no-store')
+  homePreview(@CurrentUser() user: AuthUser) { return this.youth.homePreview(user); }
+
+  @Post('groups/:id/people/:person/invite') @Header('Cache-Control', 'no-store')
+  inviteParticipant(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string, @Body() dto: YouthParticipantInviteDto) {
+    return this.youth.inviteParticipant(user, id, person, dto);
+  }
 
   @Post('pilot')
   seed(@CurrentUser() user: AuthUser, @Body() dto: YouthBranchDto) { return this.youth.seedPilot(user, dto.branchId); }
@@ -167,6 +176,18 @@ export class YouthController {
   attendance(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthAttendanceDto) {
     return this.youth.attendance(user, id, dto);
   }
+}
+
+@Controller('youth-participant')
+@Roles('youth_participant')
+export class YouthParticipantController {
+  constructor(private readonly youth: YouthService) {}
+
+  @Get('home') @Header('Cache-Control', 'no-store')
+  home(@CurrentUser() user: AuthUser) { return this.youth.participantHome(user); }
+
+  @Post('projects/:id/signup')
+  signup(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.youth.participantServe(user, id); }
 }
 
 @Controller('youth-registration')

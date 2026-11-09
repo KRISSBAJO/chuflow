@@ -40,8 +40,8 @@ export class YouthDevelopmentService {
     const [progress, mentors] = await Promise.all([this.progress.find({
       activityId: { $in: visible.filter(({ kind }) => kind !== 'mentoring').map(({ _id }) => _id) },
       enrollmentId: { $in: people.map(({ _id }) => _id) },
-      'completed.0': { $exists: true },
-    }).select('activityId enrollmentId completed').lean(),
+      $or: [{ 'completed.0': { $exists: true } }, { signedUpAt: { $exists: true } }],
+    }).select('activityId enrollmentId completed signedUpAt').lean(),
     this.users.find({ _id: { $in: visible.flatMap(({ mentorId }) => mentorId ? [mentorId] : []) }, branchId: group.branchId })
       .select('firstName lastName').lean()]);
     const mentorNames = new Map(mentors.map(mentor => [String(mentor._id), [mentor.firstName, mentor.lastName].filter(Boolean).join(' ')]));

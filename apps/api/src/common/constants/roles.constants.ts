@@ -13,6 +13,7 @@ export const APP_ROLES = [
   'children_supervisor',
   'youth_leader',
   'youth_pastor',
+  'youth_participant',
 ] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];

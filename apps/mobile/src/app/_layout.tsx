@@ -46,8 +46,11 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-      <Stack.Protected guard={!!user && !choosingWorkspace && !user.passwordChangeRequired}>
+      <Stack.Protected guard={!!user && user.role !== 'youth_participant' && !choosingWorkspace && !user.passwordChangeRequired}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={user?.role === 'youth_participant' && !choosingWorkspace && !user.passwordChangeRequired}>
+        <Stack.Screen name="youth-home" />
       </Stack.Protected>
       <Stack.Protected guard={!!user && !!user.passwordChangeRequired}>
         <Stack.Screen name="change-password" />
