@@ -14,11 +14,17 @@ import { useYouthAction } from "./use-youth-action";
 
 const kinds = ["payment", "scholarship", "refund", "scholarship_reversal"] as const;
 type Entry = { requestId: string; kind: (typeof kinds)[number]; amount: number; at: string };
+const followUpOutcomes = ["open", "connected", "no_response", "declined"] as const;
+type FollowUp = {
+  ownerId: string; dueDate: string; date: string; reason: "welcome" | "missed" | "invite";
+  outcome: (typeof followUpOutcomes)[number]; revision: number;
+};
 type Person = {
   _id: string; firstName: string; lastName: string; state: "pending" | "active" | "declined" | "withdrawn";
   needsGuardian: boolean; contact?: string; guardianName?: string; transportConsent?: boolean;
   campTransport?: string; campRoom?: string; campPaid?: number; campScholarship?: number;
   campFinanceRevision?: number; campLedger?: Entry[];
+  campFollowUp?: FollowUp;
 };
 type Branch = { _id: string; name: string };
 type Camp = YouthGroup & { eventDate: string; campEndDate: string; venue: string; currency: string; feeMinor: number; depositMinor: number };
@@ -26,7 +32,46 @@ export type CampOverview = {
   group: Camp; coordinator: boolean; options: Branch[]; leaders: { _id: string; firstName: string; lastName: string }[];
   date: string; people: Person[]; finance: boolean; screened: boolean; registrationAvailable: boolean; token: string | null;
   selectedBranch?: string; present: string[]; branches: (Branch & { local: boolean; approved: number; pending: number; guardianPending?: number })[];
+  followUpOwners?: CampOverview["leaders"]; attendanceRecorded?: boolean;
 };
+
+function CampFollowUp({ person, data, path }: { person: Person; data: CampOverview; path: string }) {
+  const t = useTranslations("youth.campFollowUp");
+  const { run, busy } = useYouthAction();
+  const task = person.campFollowUp;
+  const owners = data.followUpOwners ?? [];
+  const date = task?.date ?? data.date;
+  const reasons = task
+    ? [task.reason]
+    : data.present.includes(person._id) ? ["welcome", "invite"] as const : ["missed"] as const;
+  if (!task && (!data.attendanceRecorded || data.date > new Date().toISOString().slice(0, 10) || !owners.length)) return null;
+  return <details className="rounded-lg border border-black/10 p-3">
+    <summary className="cursor-pointer text-sm font-semibold">
+      {task ? t(`outcomes.${task.outcome}`) + " · " + task.dueDate : t("assign")}
+    </summary>
+    <form key={task?.revision ?? data.date} className="mt-3 space-y-3" onSubmit={event => {
+      event.preventDefault();
+      const fields = new FormData(event.currentTarget);
+      void run(path + "/follow-up", "PATCH", { ...Object.fromEntries(fields), date, revision: task?.revision ?? 0 });
+    }}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={t("reason")}><select name="reason" className="ui-input">
+          {reasons.map(reason => <option key={reason} value={reason}>{t(`reasons.${reason}`)}</option>)}
+        </select></Field>
+        <Field label={t("owner")}><select name="ownerId" className="ui-input" required defaultValue={task?.ownerId ?? ""}>
+          <option value="" disabled>{t("chooseOwner")}</option>
+          {task && !owners.some(owner => owner._id === task.ownerId) ? <option value={task.ownerId} disabled>{t("chooseOwner")}</option> : null}
+          {owners.map(owner => <option key={owner._id} value={owner._id}>{owner.firstName} {owner.lastName}</option>)}
+        </select></Field>
+        <Field label={t("dueDate")}><input className="ui-input" type="date" name="dueDate" min={date} required defaultValue={task?.dueDate} /></Field>
+        <Field label={t("outcome")}><select className="ui-input" name="outcome" defaultValue={task?.outcome ?? "open"}>
+          {followUpOutcomes.map(outcome => <option key={outcome} value={outcome}>{t(`outcomes.${outcome}`)}</option>)}
+        </select></Field>
+      </div>
+      <Button type="submit" size="sm" disabled={busy || !owners.length}>{t("save")}</Button>
+    </form>
+  </details>;
+}
 
 function CampLedger({ camp, person, path }: { camp: Camp; person: Person; path: string }) {
   const t = useTranslations("youth");
@@ -112,6 +157,7 @@ function CampParticipant({ person, data, path }: { person: Person; data: CampOve
         </form>
       </details>
     </> : null}
+    {person.state === "active" ? <CampFollowUp person={person} data={data} path={enrollment} /> : null}
     {data.finance && data.group.feeMinor > 0 && (person.state !== "declined" || person.campLedger?.length) ? <CampLedger camp={data.group} person={person} path={enrollment} /> : null}
   </article>;
 }
@@ -122,6 +168,10 @@ export function YouthCampWorkspace({ data, workspace }: { data: CampOverview; wo
   const router = useRouter();
   const { run, busy } = useYouthAction();
   const [qr, setQr] = useState<string>();
+  const [onlyFollowUp, setOnlyFollowUp] = useState(false);
+  const pendingFollowUps = data.people.filter(person => person.state === "active" && person.campFollowUp?.outcome === "open")
+    .sort((a, b) => a.campFollowUp!.dueDate.localeCompare(b.campFollowUp!.dueDate));
+  const visiblePeople = onlyFollowUp ? pendingFollowUps : data.people;
   const { group, selectedBranch } = data;
   const base = "/youth/camps/" + group._id;
   const branchPath = base + "/branches/" + selectedBranch;
@@ -182,7 +232,11 @@ export function YouthCampWorkspace({ data, workspace }: { data: CampOverview; wo
           onClick={() => void run(branchPath + "/link", "PATCH", { enabled: !data.token })}>{t(data.token ? "disableLink" : "enableLink")}</Button>
       </div>
       {href && qr && new URL(qr).pathname + new URL(qr).search === href ? <TemplateQrCard url={qr} title={group.name} /> : null}
-      {data.people.length ? data.people.map(person => <CampParticipant key={person._id} person={person} data={data} path={branchPath} />) : <p className="text-sm">{t("noPending")}</p>}
+      <Button type="button" size="sm" variant="secondary" aria-pressed={onlyFollowUp} onClick={() => setOnlyFollowUp(!onlyFollowUp)}>
+        {onlyFollowUp ? t("campFollowUp.all") : t("campFollowUp.inbox", { count: pendingFollowUps.length })}
+      </Button>
+      {visiblePeople.length ? visiblePeople.map(person => <CampParticipant key={person._id} person={person} data={data} path={branchPath} />) :
+        <p className="text-sm">{t(onlyFollowUp ? "campFollowUp.empty" : "noPending")}</p>}
     </section> : null}
   </div>;
 }

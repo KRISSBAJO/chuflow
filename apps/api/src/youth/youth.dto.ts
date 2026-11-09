@@ -4,6 +4,17 @@ import { OmitType, PickType } from '@nestjs/swagger';
 export class YouthBranchDto {
   @IsMongoId() branchId!: string;
 }
+export const youthFollowUpReasons = ['welcome', 'missed', 'invite'] as const;
+export const youthFollowUpOutcomes = ['open', 'connected', 'no_response', 'declined'] as const;
+
+export class YouthCampFollowUpDto {
+  @IsMongoId() ownerId!: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) dueDate!: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date!: string;
+  @IsIn(youthFollowUpReasons) reason!: typeof youthFollowUpReasons[number];
+  @IsIn(youthFollowUpOutcomes) outcome!: typeof youthFollowUpOutcomes[number];
+  @IsInt() @Min(0) revision!: number;
+}
 export class YouthGroupDto extends YouthBranchDto {
   @IsString() @Matches(/\S/) @MaxLength(80) program!: string;
   @IsString() @Matches(/\S/) @MaxLength(80) name!: string;

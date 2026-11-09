@@ -12,12 +12,13 @@ import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.ser
 import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
 import { getWorkspace } from '../workspaces/workspace-boundary';
-import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 
 const day = () => new Date().toISOString().slice(0, 10);
 const duplicate = (error: unknown) => (error as { code?: number })?.code === 11000;
 const leaderRoles = [...BRANCH_LEADERSHIP_ROLES, ...BRANCH_SUPPORT_ROLES, ...YOUTH_ROLES];
+const followUpRoles = [...BRANCH_LEADERSHIP_ROLES, 'youth_pastor'];
 const id = (value: string) => {
   if (!Types.ObjectId.isValid(value)) throw new NotFoundException();
   return new Types.ObjectId(value);
@@ -461,7 +462,7 @@ export class YouthService {
     const date = selectedDate ?? group.eventDate!;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < group.eventDate! || date > group.campEndDate!) throw new BadRequestException();
     const finance = Boolean(selected && this.campFinanceRole(user));
-    const [branches, options, totals, people, session, link, leaders, screened] = await Promise.all([
+    const [branches, options, totals, people, session, link, leaders, screened, followUpOwners] = await Promise.all([
       this.branches.find({ _id: { $in: available.map(row => row.branchId) } }).select('name').lean(),
       coordinator ? this.campBranchOptions(user, group) : [],
       this.enrollments.aggregate<{ _id: { branch: Types.ObjectId; state: string }; count: number; guardians: number }>([
@@ -469,17 +470,19 @@ export class YouthService {
         { $group: { _id: { branch: '$branchId', state: '$state' }, count: { $sum: 1 }, guardians: { $sum: { $cond: ['$needsGuardian', 1, 0] } } } },
       ]),
       selected ? this.enrollments.find({ groupId: group._id, branchId: selected.branchId })
-        .select('+guardianName +contact +transportConsent +campTransport +campRoom' + (finance ? ' +campPaid +campScholarship +campFinanceRevision +campLedger' : ''))
+        .select('+guardianName +contact +transportConsent +campTransport +campRoom +campFollowUp' + (finance ? ' +campPaid +campScholarship +campFinanceRevision +campLedger' : ''))
         .sort({ firstName: 1, lastName: 1 }).lean() : [],
       selected ? this.sessions.findOne({ groupId: group._id, date }).lean() : null,
       selected ? this.delegations.findById(selected._id).select('+token').lean() : null,
       coordinator ? this.users.find({ branchId: group.branchId, isActive: true, role: { $in: leaderRoles } }).select('firstName lastName').sort({ firstName: 1 }).lean() : [],
       this.cleared(group),
+      selected ? this.users.find({ branchId: selected.branchId, isActive: true, role: { $in: followUpRoles } })
+        .select('firstName lastName').sort({ firstName: 1, lastName: 1 }).lean() : [],
     ]);
     const ownIds = new Set(people.map(person => String(person._id)));
     const localBranches = new Set(local.map(row => String(row.branchId)));
     return {
-      group, coordinator, options, leaders, date, people, finance, screened,
+      group, coordinator, options, leaders, date, people, finance, screened, followUpOwners, attendanceRecorded: Boolean(session),
       registrationAvailable: screened && this.registrationInTime(group),
       token: link?.token ?? null, selectedBranch: selected?.branchId,
       present: (session?.present ?? []).filter(person => ownIds.has(String(person))),
@@ -491,6 +494,32 @@ export class YouthService {
           guardianPending: rows.find(row => row._id.state === 'pending')?.guardians ?? 0 };
       }),
     };
+  }
+
+  async campFollowUp(user: AuthUser, groupId: string, branchId: string, personId: string, dto: YouthCampFollowUpDto) {
+    const { group, branch } = await this.campBranch(user, groupId, branchId);
+    if (dto.date < group.eventDate! || dto.date > group.campEndDate! || dto.date > day() || dto.dueDate < dto.date) {
+      throw new BadRequestException('Choose a recorded camp day and a due date on or after it.');
+    }
+    const filter = { _id: id(personId), groupId: group._id, branchId: branch.branchId, state: 'active' };
+    const person = await this.enrollments.findOne(filter).select('+campFollowUp').lean();
+    if (!person) throw new NotFoundException();
+    if (!await this.users.exists({ _id: id(dto.ownerId), branchId: branch.branchId, isActive: true, role: { $in: followUpRoles } })) {
+      throw new BadRequestException('Choose an active youth manager in this branch.');
+    }
+    if (dto.revision !== (person.campFollowUp?.revision ?? 0)) throw new ConflictException();
+    if (dto.date !== person.campFollowUp?.date || dto.reason !== person.campFollowUp?.reason) {
+      const session = await this.sessions.findOne({ groupId: group._id, date: dto.date }).lean();
+      const attended = session?.present.some(entry => entry.equals(person._id));
+      if (!session || attended !== (dto.reason !== 'missed')) {
+        throw new BadRequestException('The reason must match the recorded attendance.');
+      }
+    }
+    const result = await this.enrollments.updateOne({
+      ...filter, ...(dto.revision ? { 'campFollowUp.revision': dto.revision } : { campFollowUp: { $exists: false } }),
+    }, { $set: { campFollowUp: { ...dto, revision: dto.revision + 1, updatedBy: user.sub, updatedAt: new Date() } } });
+    if (!result.matchedCount) throw new ConflictException();
+    return { saved: true };
   }
 
   async addCampBranch(user: AuthUser, groupId: string, branchId: string) {

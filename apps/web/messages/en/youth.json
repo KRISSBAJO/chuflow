@@ -1,5 +1,28 @@
 {
   "youth": {
+    "campFollowUp": {
+      "assign": "Assign follow-up",
+      "reason": "Reason",
+      "owner": "Owner",
+      "chooseOwner": "Choose an active staff member",
+      "dueDate": "Due date",
+      "outcome": "Outcome",
+      "save": "Save follow-up",
+      "all": "Show full roster",
+      "inbox": "Open follow-ups ({count, number})",
+      "empty": "No open follow-ups for this delegation.",
+      "reasons": {
+        "welcome": "Welcome after camp",
+        "missed": "Check in after a missed day",
+        "invite": "Invite to a group or track"
+      },
+      "outcomes": {
+        "open": "Open",
+        "connected": "Connected",
+        "no_response": "No response",
+        "declined": "Declined"
+      }
+    },
     "campGuardianPending": "{count, number} need guardian verification",
     "camps": "Camps & conventions",
     "noCamps": "No camps or conventions in your scope yet.",

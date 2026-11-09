@@ -51,6 +51,10 @@ export class YouthEnrollment {
   @Prop({ select: false }) transportConsent?: boolean;
   @Prop({ select: false }) campTransport?: string;
   @Prop({ select: false }) campRoom?: string;
+  @Prop({ type: Object, select: false }) campFollowUp?: {
+    ownerId: string; dueDate: string; date: string; reason: string; outcome: string;
+    revision: number; updatedBy: string; updatedAt: Date;
+  };
   @Prop({ select: false }) campPaid?: number;
   @Prop({ select: false }) campScholarship?: number;
   @Prop({ select: false }) campFinanceRevision?: number;

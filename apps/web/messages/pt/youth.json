@@ -1,5 +1,28 @@
 {
   "youth": {
+    "campFollowUp": {
+      "assign": "Atribuir acompanhamento",
+      "reason": "Motivo",
+      "owner": "Responsável",
+      "chooseOwner": "Selecione uma pessoa ativa da equipe",
+      "dueDate": "Prazo",
+      "outcome": "Resultado",
+      "save": "Salvar acompanhamento",
+      "all": "Ver lista completa",
+      "inbox": "Acompanhamentos em aberto ({count, number})",
+      "empty": "Esta delegação não tem acompanhamentos em aberto.",
+      "reasons": {
+        "welcome": "Dar as boas-vindas após o acampamento",
+        "missed": "Entrar em contato após uma ausência",
+        "invite": "Convidar para um grupo ou trilha"
+      },
+      "outcomes": {
+        "open": "Em aberto",
+        "connected": "Contato realizado",
+        "no_response": "Sem resposta",
+        "declined": "Recusado"
+      }
+    },
     "campGuardianPending": "{count, number} requerem verificação do responsável",
     "camps": "Acampamentos e convenções",
     "noCamps": "Ainda não há acampamentos nem convenções no seu âmbito.",

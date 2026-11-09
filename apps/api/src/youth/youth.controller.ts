@@ -4,7 +4,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
+import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
 import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
@@ -94,6 +94,11 @@ export class YouthController {
   @Post('camps/:id/branches/:branch/people/:person/ledger')
   campFinance(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string, @Body() dto: YouthCampFinanceDto) {
     return this.youth.campFinance(user, id, branch, person, dto);
+  }
+
+  @Patch('camps/:id/branches/:branch/people/:person/follow-up')
+  campFollowUp(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('branch') branch: string, @Param('person') person: string, @Body() dto: YouthCampFollowUpDto) {
+    return this.youth.campFollowUp(user, id, branch, person, dto);
   }
 
   @Get('groups/:id') @Header('Cache-Control', 'no-store')

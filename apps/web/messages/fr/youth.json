@@ -1,5 +1,28 @@
 {
   "youth": {
+    "campFollowUp": {
+      "assign": "Attribuer un suivi",
+      "reason": "Motif",
+      "owner": "Responsable",
+      "chooseOwner": "Choisir un membre actif de l’équipe",
+      "dueDate": "Échéance",
+      "outcome": "Résultat",
+      "save": "Enregistrer le suivi",
+      "all": "Afficher la liste complète",
+      "inbox": "Suivis en cours ({count, number})",
+      "empty": "Aucun suivi en cours pour cette délégation.",
+      "reasons": {
+        "welcome": "Souhaiter la bienvenue après le camp",
+        "missed": "Prendre des nouvelles après une absence",
+        "invite": "Inviter à rejoindre un groupe ou un parcours"
+      },
+      "outcomes": {
+        "open": "En cours",
+        "connected": "Contact établi",
+        "no_response": "Sans réponse",
+        "declined": "Refusé"
+      }
+    },
     "campGuardianPending": "{count, number} à vérifier auprès du responsable légal",
     "camps": "Camps et conventions",
     "noCamps": "Aucun camp ni convention dans votre périmètre.",
