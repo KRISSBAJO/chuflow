@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Avatar, Badge, Caption, EmptyState, ListRow, Section } from '@/components/ui';
 import { space } from '@/constants/theme';
+import { memberDisplayName, useMemberLabels } from '@/features/members/labels';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { branchName, statusTone } from '@/lib/format';
@@ -87,6 +88,7 @@ export function NewestMembers({ members, onSeeAll, onOpen }: { members: MemberLi
   const t = useT('home.newestMembers');
   const tc = useT('common');
   const format = useAppFormat();
+  const labels = useMemberLabels();
 
   return (
     <View>
@@ -96,7 +98,7 @@ export function NewestMembers({ members, onSeeAll, onOpen }: { members: MemberLi
           <ListRow
             key={member._id}
             divider={index > 0}
-            title={[member.title, format.fullName(member)].filter(Boolean).join(' ')}
+            title={memberDisplayName(labels, member, format.fullName(member))}
             subtitle={[branchName(member.branchId), format.relativeTime(member.createdAt)].filter(Boolean).join(' · ')}
             left={<Avatar person={member} size={30} />}
             right={member.membershipStatus ? <Badge label={format.status(member.membershipStatus)} tone={statusTone(member.membershipStatus)} /> : undefined}
