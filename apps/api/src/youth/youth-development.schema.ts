@@ -29,7 +29,23 @@ export class YouthDevelopmentProgress {
   @Prop({ type: SchemaTypes.ObjectId, required: true }) enrollmentId!: Types.ObjectId;
   @Prop({ type: [Number], default: [] }) completed!: number[];
   @Prop({ type: Date }) signedUpAt?: Date;
+  @Prop() serviceMinutes?: number;
+  @Prop({ type: SchemaTypes.ObjectId, select: false }) serviceVerifiedBy?: Types.ObjectId;
+  @Prop({ type: Date, select: false }) serviceVerifiedAt?: Date;
 }
 export const YouthDevelopmentProgressSchema = SchemaFactory.createForClass(YouthDevelopmentProgress);
 YouthDevelopmentProgressSchema.index({ activityId: 1, enrollmentId: 1 }, { unique: true });
 YouthDevelopmentProgressSchema.index({ enrollmentId: 1 });
+
+@Schema({ timestamps: true })
+export class YouthPost {
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) groupId!: Types.ObjectId;
+  @Prop({ required: true, enum: ['update', 'devotional'] }) kind!: 'update' | 'devotional';
+  @Prop({ required: true }) title!: string;
+  @Prop({ required: true }) body!: string;
+  @Prop({ type: Date }) archivedAt?: Date;
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) createdBy!: Types.ObjectId;
+  createdAt!: Date;
+}
+export const YouthPostSchema = SchemaFactory.createForClass(YouthPost);
+YouthPostSchema.index({ groupId: 1, archivedAt: 1, createdAt: -1 });

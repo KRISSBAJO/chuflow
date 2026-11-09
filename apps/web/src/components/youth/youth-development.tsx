@@ -19,10 +19,41 @@ type Activity = {
   checkIns?: string[];
   active?: boolean;
 };
-type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string };
+type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string; serviceMinutes?: number };
+type YouthPost = { _id: string; kind: "update" | "devotional"; title: string; body: string; createdAt: string };
 export type YouthDevelopmentOverview = {
   groupName: string; manager: boolean; screenedLeader: boolean; people: Person[]; activities: Activity[]; progress: Progress[];
+  posts?: YouthPost[];
 };
+
+function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
+  const t = useTranslations("youth.posts");
+  const format = useFormatter();
+  const { run, busy } = useYouthAction();
+  return <div className="space-y-4">
+    <form className="app-card space-y-3 p-5" onSubmit={async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (await run(path, "POST", Object.fromEntries(new FormData(form)))) form.reset();
+    }}>
+      <h2 className="font-semibold">{t("publish")}</h2>
+      <Field label={t("kind")}><select name="kind" className="ui-input">
+        <option value="update">{t("update")}</option><option value="devotional">{t("devotional")}</option>
+      </select></Field>
+      <Field label={t("title")}><input name="title" className="ui-input" maxLength={100} required /></Field>
+      <Field label={t("body")}><textarea name="body" className="ui-input" rows={5} maxLength={3000} required /></Field>
+      <Button type="submit" disabled={busy}>{t("publish")}</Button>
+    </form>
+    {posts.length ? posts.map(post => <article className="app-card space-y-2 p-5" key={post._id}>
+      <p className="text-sm text-neutral-600">{t(post.kind)} · {format.dateTime(new Date(post.createdAt), { dateStyle: "medium" })}</p>
+      <h3 className="font-semibold">{post.title}</h3>
+      <p className="whitespace-pre-wrap break-words text-sm">{post.body}</p>
+      <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => {
+        if (window.confirm(t("archiveConfirm"))) void run(path + "/" + post._id, "DELETE");
+      }}>{t("archive")}</Button>
+    </article>) : <p className="app-card p-5 text-sm text-neutral-600">{t("empty")}</p>}
+  </div>;
+}
 
 function PersonOptions({ people }: { people: Person[] }) {
   const t = useTranslations("youth");
@@ -31,14 +62,15 @@ function PersonOptions({ people }: { people: Person[] }) {
   </>;
 }
 
-function ProgressCard({ item, people, records, path }: { item: Activity; people: Person[]; records: Progress[]; path: string }) {
+function ProgressCard({ item, people, records, path, manager }: { item: Activity; people: Person[]; records: Progress[]; path: string; manager: boolean }) {
   const t = useTranslations("youth");
   const format = useFormatter();
   const { run, busy } = useYouthAction();
   const [participant, setParticipant] = useState("");
   const milestones = item.milestones ?? [t("serviceCompleted")];
   const selected = people.some(person => person._id === participant) ? participant : "";
-  const completed = records.find(row => row.enrollmentId === selected)?.completed ?? [];
+  const selectedRecord = records.find(row => row.enrollmentId === selected);
+  const completed = selectedRecord?.completed ?? [];
   const completeCount = records.filter(row => row.completed.length === milestones.length).length;
   const future = Boolean(item.date && item.date > new Date().toISOString().slice(0, 10));
   const signups = item.kind === "project" ? people.filter(person => records.some(row => row.enrollmentId === person._id && row.signedUpAt)) : [];
@@ -60,6 +92,19 @@ function ProgressCard({ item, people, records, path }: { item: Activity; people:
         </Button> : null}
       </li>)}
     </ul>
+    {manager && item.kind === "project" && selected && completed.includes(0) && !future ? <form
+      key={selected + ":" + (selectedRecord?.serviceMinutes ?? 0)} className="space-y-2 border-t border-black/10 pt-3"
+      onSubmit={event => {
+        event.preventDefault();
+        const minutes = Number(new FormData(event.currentTarget).get("minutes"));
+        void run(path + "/" + item._id + "/service-minutes", "PATCH", { enrollmentId: selected, minutes });
+      }}>
+      <Field label={t("serviceLog.minutes")} hint={t("serviceLog.hint")}>
+        <input className="ui-input" name="minutes" type="number" min={0} max={1440} step={1} required
+          defaultValue={selectedRecord?.serviceMinutes ?? ""} />
+      </Field>
+      <Button type="submit" size="sm" disabled={busy}>{t("serviceLog.save")}</Button>
+    </form> : null}
     {future ? <p className="text-sm text-neutral-600">{t("projectDateHint")}</p> : null}
   </article>;
 }
@@ -97,15 +142,18 @@ const sections = [
 export function YouthDevelopmentWorkspace({ groupId, data }: { groupId: string; data: YouthDevelopmentOverview }) {
   const t = useTranslations("youth");
   const { run, busy } = useYouthAction();
-  const [view, setView] = useState<(typeof sections)[number]["kind"]>("track");
-  const section = sections.find(item => item.kind === view)!;
+  const [view, setView] = useState<(typeof sections)[number]["kind"] | "posts">("track");
+  const section = sections.find(item => item.kind === view) ?? sections[0];
   const path = "/youth/groups/" + groupId + "/development";
   const activities = data.activities.filter(item => item.kind === view);
   return <div className="space-y-5">
     <nav aria-label={t("development")} className="flex flex-wrap gap-2">
       {sections.map(item => <Button key={item.kind} type="button" size="sm" variant={view === item.kind ? "primary" : "secondary"}
         aria-pressed={view === item.kind} onClick={() => setView(item.kind)}>{t(item.label)}</Button>)}
+      {data.manager ? <Button type="button" size="sm" variant={view === "posts" ? "primary" : "secondary"}
+        aria-pressed={view === "posts"} onClick={() => setView("posts")}>{t("posts.heading")}</Button> : null}
     </nav>
+    {view === "posts" && data.manager ? <GroupPosts path={path + "/posts"} posts={data.posts ?? []} /> : <>
     {data.manager ? <details key={view} className="app-card p-5">
       <summary className="cursor-pointer font-semibold">{t(section.create)}</summary>
       <form className="mt-4 space-y-4" onSubmit={async event => {
@@ -135,7 +183,8 @@ export function YouthDevelopmentWorkspace({ groupId, data }: { groupId: string; 
     </details> : null}
     {activities.length ? activities.map(item => item.kind === "mentoring" ?
       <MentoringCard key={item._id} item={item} path={path} manager={data.manager} person={data.people.find(person => person._id === item.enrollmentId)} /> :
-      <ProgressCard key={item._id} item={item} path={path} people={data.people} records={data.progress.filter(row => row.activityId === item._id)} />) :
+      <ProgressCard key={item._id} item={item} path={path} manager={data.manager} people={data.people} records={data.progress.filter(row => row.activityId === item._id)} />) :
       <p className="app-card p-5 text-sm text-neutral-600">{t("noDevelopment")}</p>}
+    </>}
   </div>;
 }

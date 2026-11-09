@@ -1,6 +1,18 @@
 {
   "youth": {
     "participantHome": {
+      "serviceLog": {
+        "trackComplete": "Track complete",
+        "history": "Verified service",
+        "hours": "{hours} h"
+      },
+      "posts": {
+        "heading": "Group updates",
+        "update": "Update",
+        "devotional": "Devotional",
+        "more": "Show more",
+        "less": "Show fewer"
+      },
       "previewBadge": "Staff preview",
       "welcomeTitle": "Welcome to Youth",
       "welcomeSubtitle": "Find your people and your next step.",

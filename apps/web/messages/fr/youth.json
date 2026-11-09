@@ -1,5 +1,22 @@
 {
   "youth": {
+    "serviceLog": {
+      "minutes": "Minutes de service vérifiées",
+      "hint": "Saisissez le temps de service. Saisissez zéro pour supprimer une saisie précédente.",
+      "save": "Enregistrer le temps de service"
+    },
+    "posts": {
+      "heading": "Actualités du groupe",
+      "update": "Actualité",
+      "devotional": "Méditation",
+      "publish": "Publier dans le groupe",
+      "kind": "Type de publication",
+      "title": "Titre",
+      "body": "Message",
+      "archive": "Archiver",
+      "archiveConfirm": "Archiver cette publication et la masquer de l’accueil jeunesse ?",
+      "empty": "Aucune publication pour le moment."
+    },
     "participantInvite": {
       "title": "Inviter à l’accueil jeunesse",
       "email": "E-mail de connexion du participant",

@@ -1,6 +1,18 @@
 {
   "youth": {
     "participantHome": {
+      "serviceLog": {
+        "trackComplete": "Parcours terminé",
+        "history": "Service vérifié",
+        "hours": "{hours} h"
+      },
+      "posts": {
+        "heading": "Actualités du groupe",
+        "update": "Actualité",
+        "devotional": "Méditation",
+        "more": "Voir plus",
+        "less": "Voir moins"
+      },
       "previewBadge": "Aperçu équipe",
       "welcomeTitle": "Bienvenue à l’espace jeunesse",
       "welcomeSubtitle": "Retrouve ton groupe et découvre ta prochaine étape.",

@@ -1,5 +1,22 @@
 {
   "youth": {
+    "serviceLog": {
+      "minutes": "Verified service minutes",
+      "hint": "Enter the time served. Enter zero to remove a previous entry.",
+      "save": "Save service time"
+    },
+    "posts": {
+      "heading": "Group updates",
+      "update": "Update",
+      "devotional": "Devotional",
+      "publish": "Publish to group",
+      "kind": "Post type",
+      "title": "Title",
+      "body": "Message",
+      "archive": "Archive",
+      "archiveConfirm": "Archive this post and hide it from Youth Home?",
+      "empty": "No posts published yet."
+    },
     "participantInvite": {
       "title": "Invite to Youth Home",
       "email": "Participant sign-in email",

@@ -6,7 +6,7 @@ import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
-import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthTrackDto } from './youth-development.dto';
+import { YouthMentoringCheckInDto, YouthMentoringDto, YouthPostDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
 import { YouthParticipantInviteDto } from './youth.dto';
 
@@ -17,6 +17,16 @@ export class YouthController {
 
   @Get('groups/:id/development') @Header('Cache-Control', 'no-store')
   developmentOverview(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.development.overview(user, id); }
+
+  @Post('groups/:id/development/posts')
+  publishPost(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthPostDto) {
+    return this.youth.publishPost(user, id, dto);
+  }
+
+  @Delete('groups/:id/development/posts/:post')
+  archivePost(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
+    return this.youth.archivePost(user, id, post);
+  }
 
   @Post('groups/:id/development/tracks')
   track(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthTrackDto) { return this.development.createTrack(user, id, dto); }
@@ -30,6 +40,11 @@ export class YouthController {
   @Patch('groups/:id/development/:activity/progress')
   progress(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string, @Body() dto: YouthProgressDto) {
     return this.development.mark(user, id, activity, dto);
+  }
+
+  @Patch('groups/:id/development/:activity/service-minutes')
+  verifyService(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string, @Body() dto: YouthServiceMinutesDto) {
+    return this.development.verifyService(user, id, activity, dto);
   }
 
   @Post('groups/:id/development/:activity/check-ins')

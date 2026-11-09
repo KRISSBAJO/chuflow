@@ -27,6 +27,8 @@ type Preview = {
   events: Event[];
   tracks: { id: string; title: string; groupId: string; milestones?: string[]; completed?: number[] }[];
   projects: { id: string; title: string; groupId: string; date?: string; location?: string; signedUp?: boolean }[];
+  posts?: { _id: string; groupId: string; kind: 'update' | 'devotional'; title: string; body: string; createdAt: string }[];
+  serviceHistory?: { id: string; title: string; date?: string; minutes: number }[];
 };
 
 export function YouthHomePreview({ participant = false }: { participant?: boolean } = {}) {
@@ -35,6 +37,8 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
   const [tab, setTab] = useState<(typeof tabs)[number]['key']>('home');
   const { signOut } = useSession();
   const [busy, setBusy] = useState<string>();
+  const [openPost, setOpenPost] = useState<string>();
+  const [showAllPosts, setShowAllPosts] = useState(false);
   const result = useApi<Preview>(participant ? '/youth-participant/home' : '/youth/home-preview');
   const { reload } = result;
   useEffect(() => {
@@ -45,6 +49,8 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
     return () => subscription.remove();
   }, [participant, reload]);
   const preview = result.data;
+  const serviceHistory = preview?.serviceHistory ?? [];
+  const serviceHours = (minutes: number) => format.number(minutes / 60, { maximumFractionDigits: 2 });
   const next = preview?.events[0];
   const eventDetails = (event: Event) => {
     const dates = event.endDate && event.endDate !== event.date
@@ -97,6 +103,27 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
             </View>
             <View style={styles.featureIcon}><Icon name={featured.icon} color="#974020" /></View>
           </Pressable> : null}
+          {preview.posts?.length ? <View style={styles.sections}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>{t('posts.heading')}</Text>
+            {(showAllPosts ? preview.posts : preview.posts.slice(0, 3)).map(post => {
+              const expanded = openPost === post._id;
+              const group = preview.groups.find(item => item.id === post.groupId);
+              return <View key={post._id} style={styles.track}>
+                <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setOpenPost(expanded ? undefined : post._id)}
+                  style={styles.postToggle}>
+                  <View style={styles.featureCopy}>
+                    <Text style={styles.eyebrow}>{t(`posts.${post.kind}`)}</Text>
+                    <Text style={type.title}>{post.title}</Text>
+                    <Text style={type.small}>{[!participant ? group?.name : undefined, format.date(post.createdAt)].filter(Boolean).join(' · ')}</Text>
+                  </View>
+                  <Icon name={expanded ? 'minus' : 'plus'} size={19} color={colors.muted} />
+                </Pressable>
+                {expanded ? <Text style={type.body}>{post.body}</Text> : null}
+              </View>;
+            })}
+            {preview.posts.length > 3 ? <Button variant="ghost" label={t(showAllPosts ? 'posts.less' : 'posts.more')}
+              onPress={() => setShowAllPosts(!showAllPosts)} /> : null}
+          </View> : null}
           <View style={styles.sections}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t('groups')}</Text>
             {preview.groups.length ? preview.groups.map(group => <View key={group.id} style={styles.group}>
@@ -130,13 +157,28 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
           {preview.tracks.length ? preview.tracks.map(track => <View key={track.id} style={styles.track}>
             <Text style={type.title}>{track.title}</Text>
             <Text style={type.small}>{preview.groups.find(group => group.id === track.groupId)?.name}</Text>
-            {participant ? <Text style={type.body}>{t('progress', { done: track.completed?.length ?? 0, total: track.milestones?.length ?? 0 })}</Text> : null}
+            {participant && track.milestones?.length && track.milestones.every((_, index) => track.completed?.includes(index)) ?
+              <Text style={styles.eyebrow}>{t('serviceLog.trackComplete')}</Text> :
+              participant ? <Text style={type.body}>{t('progress', { done: track.completed?.length ?? 0, total: track.milestones?.length ?? 0 })}</Text> : null}
             {track.milestones?.map((milestone, index) => <Text key={milestone} style={type.body}>
               {track.completed?.includes(index) ? '✓' : format.number(index + 1) + '.'} {milestone}
             </Text>)}
           </View>) : <Text style={styles.empty}>{t('noTracks')}</Text>}
         </View> : null}
         {tab === 'serve' ? <View style={styles.sections}>
+          {participant && serviceHistory.length ? <View style={styles.sections}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>{t('serviceLog.history')}</Text>
+            <View style={styles.track}>
+              <Text style={styles.featureTitle}>{t('serviceLog.hours', { hours: serviceHours(serviceHistory.reduce((sum, record) => sum + record.minutes, 0)) })}</Text>
+              {serviceHistory.map(record => <View key={record.id} style={styles.serviceRecord}>
+                <View style={styles.featureCopy}>
+                  <Text style={type.title}>{record.title}</Text>
+                  {record.date ? <Text style={type.small}>{format.date(record.date)}</Text> : null}
+                </View>
+                <Text style={type.small}>{t('serviceLog.hours', { hours: serviceHours(record.minutes) })}</Text>
+              </View>)}
+            </View>
+          </View> : null}
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t('projects')}</Text>
           {preview.projects.length ? preview.projects.map(project => <View key={project.id} style={styles.track}>
             <Text style={type.title}>{project.title}</Text>
@@ -188,4 +230,6 @@ const styles = StyleSheet.create({
   empty: { ...type.small, padding: 15, backgroundColor: colors.surface, borderRadius: 14 },
   pressed: { opacity: 0.74 },
   track: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 6 },
+  postToggle: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 },
+  serviceRecord: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
 });

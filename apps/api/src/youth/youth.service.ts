@@ -15,7 +15,8 @@ import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
 import { getWorkspace, workspaceWebLink } from '../workspaces/workspace-boundary';
 import { MailService } from '../mail/mail.service';
-import { YouthDevelopment, YouthDevelopmentProgress } from './youth-development.schema';
+import { YouthDevelopment, YouthDevelopmentProgress, YouthPost } from './youth-development.schema';
+import { YouthPostDto } from './youth-development.dto';
 import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 import { YouthParticipantInviteDto } from './youth.dto';
@@ -49,6 +50,7 @@ export class YouthService {
     @InjectModel(ChildProfile.name) private readonly children: Model<ChildProfile>,
     @InjectModel(YouthDevelopment.name) private readonly activities: Model<YouthDevelopment>,
     @InjectModel(YouthDevelopmentProgress.name) private readonly progress: Model<YouthDevelopmentProgress>,
+    @InjectModel(YouthPost.name) private readonly posts: Model<YouthPost>,
     private readonly access: AccessScopeService,
     private readonly forms: GuestFieldsService,
     private readonly config: ConfigService,
@@ -146,23 +148,45 @@ export class YouthService {
         .select('name program venue eventDate registrationDeadline leaderId clearanceUntil branchId').sort({ eventDate: 1 }).limit(12).lean(),
       this.delegations.find({ branchId, token: { $exists: true } }).select('groupId').lean(),
     ]);
-    const [activities, camps] = await Promise.all([
+    const [activities, camps, posts] = await Promise.all([
       this.activities.find({ groupId: { $in: groups.map(group => group._id) }, kind: { $in: ['track', 'project'] },
         $or: [{ kind: 'track' }, { date: { $gte: day() } }] })
         .select('groupId kind title date location milestones').sort({ date: 1, _id: -1 }).lean(),
       this.groups.find({ _id: { $in: delegations.map(row => row.groupId) }, campEndDate: { $exists: true }, eventDate: { $gte: day() } })
         .select('name program venue eventDate campEndDate registrationDeadline leaderId clearanceUntil branchId').sort({ eventDate: 1 }).limit(12).lean(),
+      this.groupPosts(groups.map(group => group._id)),
     ]);
     const upcoming = [...events, ...camps].sort((a, b) => a.eventDate!.localeCompare(b.eventDate!));
     const open = await Promise.all(upcoming.map(async event => this.registrationInTime(event) && await this.cleared(event)));
     return {
       branch: branch.name,
+      posts,
       groups: groups.map(({ _id, name, program }) => ({ id: _id, name, program })),
       events: upcoming.filter((_, index) => open[index]).slice(0, 12)
         .map(({ _id, name, program, venue, eventDate, campEndDate }) => ({ id: _id, name, program, venue, date: eventDate, endDate: campEndDate })),
       tracks: activities.filter(item => item.kind === 'track').map(({ _id, title, groupId, milestones }) => ({ id: _id, title, groupId, milestones })),
       projects: activities.filter(item => item.kind === 'project').map(({ _id, title, groupId, date, location }) => ({ id: _id, title, groupId, date, location })),
     };
+  }
+
+  groupPosts(groupIds: Types.ObjectId[]) {
+    return this.posts.find({ groupId: { $in: groupIds }, archivedAt: { $exists: false } })
+      .select('groupId kind title body createdAt').sort({ createdAt: -1, _id: -1 }).limit(30).lean();
+  }
+
+  async publishPost(user: AuthUser, groupId: string, dto: YouthPostDto) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const post = await this.posts.create({ groupId: group._id, createdBy: id(user.sub),
+      kind: dto.kind, title: dto.title.trim(), body: dto.body.trim() });
+    return { id: post.id };
+  }
+
+  async archivePost(user: AuthUser, groupId: string, postId: string) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const post = await this.posts.updateOne({ _id: id(postId), groupId: group._id, archivedAt: { $exists: false } },
+      { $set: { archivedAt: new Date() } });
+    if (!post.matchedCount) throw new NotFoundException();
+    return { saved: true };
   }
 
   async inviteParticipant(user: AuthUser, groupId: string, enrollmentId: string, dto: YouthParticipantInviteDto) {
@@ -195,7 +219,7 @@ export class YouthService {
 
   async participantHome(user: AuthUser) {
     const person = await this.participantEnrollment(user);
-    const [group, branch, activities, events, delegations, registrations] = await Promise.all([
+    const [group, branch, activities, events, delegations, registrations, posts] = await Promise.all([
       this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program').lean(),
       this.branches.findById(person.branchId).select('name').lean(),
       this.activities.find({ groupId: person.groupId, kind: { $in: ['track', 'project'] } })
@@ -203,10 +227,18 @@ export class YouthService {
       this.groups.find({ branchId: person.branchId, eventDate: { $gte: day() }, campEndDate: { $exists: false } }).select('+registrationToken').sort({ eventDate: 1 }).limit(40).lean(),
       this.delegations.find({ branchId: person.branchId }).select('+token').lean(),
       this.enrollments.find({ branchId: person.branchId, registrationKey: person.registrationKey, groupId: { $ne: person.groupId } }).select('groupId state').lean(),
+      this.groupPosts([person.groupId]),
     ]);
     if (!group || !branch) throw new ForbiddenException();
     const camps = await this.groups.find({ _id: { $in: delegations.map(item => item.groupId) }, eventDate: { $gte: day() }, campEndDate: { $exists: true } }).sort({ eventDate: 1 }).limit(40).lean();
-    const progress = await this.progress.find({ enrollmentId: person._id, activityId: { $in: activities.map(item => item._id) } }).select('activityId completed signedUpAt').lean();
+    const progress = await this.progress.find({ enrollmentId: person._id, activityId: { $in: activities.map(item => item._id) } })
+      .select('activityId completed signedUpAt serviceMinutes').lean();
+    const personalProgress = new Map(progress.map(record => [String(record.activityId), record]));
+    const serviceHistory = activities.filter(item => item.kind === 'project').flatMap(item => {
+      const record = personalProgress.get(String(item._id));
+      return record?.completed.includes(0) && record.serviceMinutes
+        ? [{ id: item._id, title: item.title, date: item.date, minutes: record.serviceMinutes }] : [];
+    }).reverse();
     const states = new Map(registrations.map(item => [String(item.groupId), item.state]));
     const rows = await Promise.all([...events, ...camps].map(async event => {
       const token = event.campEndDate ? delegations.find(item => item.groupId.equals(event._id))?.token : event.registrationToken;
@@ -218,13 +250,15 @@ export class YouthService {
         registrationUrl: !state && token ? workspaceWebLink(this.config, '/youth-register/' + token) : undefined };
     }));
     return {
+      posts,
+      serviceHistory,
       branch: branch.name, groups: [{ id: group._id, name: group.name, program: group.program }],
       events: rows.filter(row => row !== null).sort((a, b) => a.date!.localeCompare(b.date!)),
       tracks: activities.filter(item => item.kind === 'track').map(item => ({ id: item._id, title: item.title,
-        groupId: group._id, milestones: item.milestones, completed: progress.find(row => row.activityId.equals(item._id))?.completed ?? [] })),
+        groupId: group._id, milestones: item.milestones, completed: personalProgress.get(String(item._id))?.completed ?? [] })),
       projects: activities.filter(item => item.kind === 'project' && item.date && item.date >= day()).map(item => ({
         id: item._id, title: item.title, groupId: group._id, date: item.date, location: item.location,
-        signedUp: Boolean(progress.find(row => row.activityId.equals(item._id))?.signedUpAt) })),
+        signedUp: Boolean(personalProgress.get(String(item._id))?.signedUpAt) })),
     };
   }
 

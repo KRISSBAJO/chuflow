@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { User } from '../users/schemas/user.schema';
 import { YouthDevelopment, YouthDevelopmentProgress } from './youth-development.schema';
-import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthTrackDto } from './youth-development.dto';
+import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthEnrollment } from './youth.schema';
 import { YouthService } from './youth.service';
 
@@ -27,13 +27,14 @@ export class YouthDevelopmentService {
 
   async overview(user: AuthUser, groupId: string) {
     const { group, manager, screenedLeader } = await this.youth.developmentScope(user, groupId);
-    const [people, activities] = await Promise.all([
+    const [people, activities, posts] = await Promise.all([
       this.enrollments.find({ groupId: group._id, state: 'active' }).select('firstName lastName needsGuardian')
         .sort({ firstName: 1, lastName: 1 }).lean(),
       this.activities.find({
         groupId: group._id,
         ...(manager ? {} : { $or: [{ kind: { $in: ['track', 'project'] } }, { kind: 'mentoring', mentorId: user.sub, active: true }] }),
       }).select('-createdBy').sort({ _id: -1 }).lean(),
+      manager ? this.youth.groupPosts([group._id]) : [],
     ]);
     const activeIds = new Set(people.map(person => String(person._id)));
     const visible = activities.filter(item => item.kind !== 'mentoring' || activeIds.has(String(item.enrollmentId)));
@@ -41,11 +42,11 @@ export class YouthDevelopmentService {
       activityId: { $in: visible.filter(({ kind }) => kind !== 'mentoring').map(({ _id }) => _id) },
       enrollmentId: { $in: people.map(({ _id }) => _id) },
       $or: [{ 'completed.0': { $exists: true } }, { signedUpAt: { $exists: true } }],
-    }).select('activityId enrollmentId completed signedUpAt').lean(),
+    }).select('activityId enrollmentId completed signedUpAt serviceMinutes').lean(),
     this.users.find({ _id: { $in: visible.flatMap(({ mentorId }) => mentorId ? [mentorId] : []) }, branchId: group.branchId })
       .select('firstName lastName').lean()]);
     const mentorNames = new Map(mentors.map(mentor => [String(mentor._id), [mentor.firstName, mentor.lastName].filter(Boolean).join(' ')]));
-    return { groupName: group.name, manager, screenedLeader, people, progress,
+    return { groupName: group.name, manager, screenedLeader, people, progress, posts,
       activities: visible.map(({ mentorId, ...item }) => ({
         ...item,
         ...(mentorId ? {
@@ -102,7 +103,10 @@ export class YouthDevelopmentService {
     if (dto.milestone >= (activity.milestones?.length ?? 1) || (activity.date && activity.date > today())) throw new BadRequestException();
     const enrollmentId = await this.activeEnrollment(group._id, dto.enrollmentId);
     const query = { activityId: activity._id, enrollmentId };
-    if (!dto.completed) await this.progress.updateOne(query, { $pull: { completed: dto.milestone } });
+    if (!dto.completed) await this.progress.updateOne(query, {
+      $pull: { completed: dto.milestone },
+      ...(activity.kind === 'project' ? { $unset: { serviceMinutes: 1, serviceVerifiedBy: 1, serviceVerifiedAt: 1 } } : {}),
+    });
     else {
       await this.progress.init();
       try {
@@ -112,6 +116,19 @@ export class YouthDevelopmentService {
         await this.progress.updateOne(query, { $addToSet: { completed: dto.milestone } });
       }
     }
+    return { saved: true };
+  }
+
+  async verifyService(user: AuthUser, groupId: string, activityId: string, dto: YouthServiceMinutesDto) {
+    const { group } = await this.youth.developmentScope(user, groupId, true);
+    const project = await this.activities.findOne({ _id: objectId(activityId), groupId: group._id,
+      kind: 'project', date: { $lte: today() } }).select('_id').lean();
+    if (!project) throw new NotFoundException();
+    const enrollmentId = await this.activeEnrollment(group._id, dto.enrollmentId);
+    const result = await this.progress.updateOne({ activityId: project._id, enrollmentId, completed: 0 },
+      dto.minutes ? { $set: { serviceMinutes: dto.minutes, serviceVerifiedBy: objectId(user.sub), serviceVerifiedAt: new Date() } } :
+        { $unset: { serviceMinutes: 1, serviceVerifiedBy: 1, serviceVerifiedAt: 1 } });
+    if (!result.matchedCount) throw new ConflictException('Mark the project complete before verifying service time.');
     return { saved: true };
   }
 

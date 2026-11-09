@@ -1,5 +1,22 @@
 {
   "youth": {
+    "serviceLog": {
+      "minutes": "Minutos de serviço verificados",
+      "hint": "Informe o tempo de serviço. Digite zero para remover um registro anterior.",
+      "save": "Salvar tempo de serviço"
+    },
+    "posts": {
+      "heading": "Novidades do grupo",
+      "update": "Novidade",
+      "devotional": "Devocional",
+      "publish": "Publicar no grupo",
+      "kind": "Tipo de publicação",
+      "title": "Título",
+      "body": "Mensagem",
+      "archive": "Arquivar",
+      "archiveConfirm": "Arquivar esta publicação e ocultá-la da página inicial dos jovens?",
+      "empty": "Ainda não há publicações."
+    },
     "participantInvite": {
       "title": "Convidar para o início de jovens",
       "email": "E-mail de acesso do participante",

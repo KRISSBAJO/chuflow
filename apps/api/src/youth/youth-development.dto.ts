@@ -1,7 +1,12 @@
-import { ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsInt, IsMongoId, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsMongoId, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
 class ActivityTitle {
   @IsString() @Matches(/\S/) @MaxLength(100) title!: string;
+}
+
+export class YouthPostDto extends ActivityTitle {
+  @IsIn(['update', 'devotional']) kind!: 'update' | 'devotional';
+  @IsString() @Matches(/\S/) @MaxLength(3000) body!: string;
 }
 
 export class YouthTrackDto extends ActivityTitle {
@@ -24,6 +29,11 @@ export class YouthProgressDto {
   @IsMongoId() enrollmentId!: string;
   @IsInt() @Min(0) milestone!: number;
   @IsBoolean() completed!: boolean;
+}
+
+export class YouthServiceMinutesDto {
+  @IsMongoId() enrollmentId!: string;
+  @IsInt() @Min(0) @Max(1440) minutes!: number;
 }
 
 export class YouthMentoringCheckInDto {
