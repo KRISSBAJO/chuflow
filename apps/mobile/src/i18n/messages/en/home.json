@@ -77,6 +77,8 @@
       "empty": "No new members have been added in this scope yet."
     },
     "welcome": {
+      "nextService": "Next service",
+      "recordAttendance": "Record attendance",
       "profile": "Your profile and workspace",
       "nextUp": "Next up",
       "insights": "Your church at a glance",

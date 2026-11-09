@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, Stack, type Href } from 'expo-router';
+import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { colors, fonts, radius, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { api, errorMessage, getApiSession, NetworkError } from '@/lib/api';
-import { isoDay } from '@/lib/format';
+import { isoDay, toLocalDate } from '@/lib/format';
 import { queueAttendance, useOnline } from '@/lib/offline-queue';
 import { can, canManageLocalServiceTypes } from '@/lib/permissions';
 import { useSession, userBranchId } from '@/lib/session';
@@ -126,6 +126,7 @@ function BigCounter({ label, value, onChange, hint }: { label: string; value: nu
 }
 
 export function AttendanceCountFlow() {
+  const params = useLocalSearchParams<{ serviceTypeId?: string; date?: string }>();
   const { user } = useSession();
   const t = useT('attendance.flow');
   const tc = useT('attendance.count');
@@ -142,9 +143,15 @@ export function AttendanceCountFlow() {
 
   const serviceTypes = useApi<ServiceType[]>(effectiveBranchId || !pickBranch ? `/service-types${effectiveBranchId ? `?branchId=${effectiveBranchId}` : ''}` : null);
   const [cachedTypes, setCachedTypes] = useState<ServiceType[]>([]);
-  const [serviceTypeId, setServiceTypeId] = useState('');
+  const [serviceTypeId, setServiceTypeId] = useState(() => pickBranch ? '' : params.serviceTypeId ?? '');
   const [today] = useState(() => new Date());
-  const [date, setDate] = useState(() => new Date());
+  const [date, setDate] = useState(() => {
+    if (!pickBranch && params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date)) {
+      const requested = toLocalDate(params.date);
+      if (isoDay(requested) === params.date) return requested;
+    }
+    return new Date();
+  });
   const [counts, setCounts] = useState<Counts>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);

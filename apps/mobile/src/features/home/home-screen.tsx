@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Icon } from '@/components/icon';
 import { StatGrid, StatTile } from '@/components/kit';
 import { Reveal } from '@/components/motion';
-import { ErrorState, ListRow, Notice, Screen, Section } from '@/components/ui';
+import { Caption, ErrorState, ListRow, Notice, Screen, Section } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import type { MeetingListResponse } from '@/features/meetings/types';
 import type { ReportsSummary } from '@/features/reports/types';
@@ -17,13 +17,14 @@ import { routeForAlert } from '@/lib/notifications';
 import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
 import { useOnline } from '@/lib/offline-queue';
 import { can } from '@/lib/permissions';
-import { useSession } from '@/lib/session';
+import { useSession, userBranchId } from '@/lib/session';
 import type { AlertsSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { DaysRow } from './days-row';
 import { BranchHealth, Watchlist } from './executive-blocks';
 import { ActionsCard, GuestStrip, HeroBand, PulseCard, QuickActions, type QuickAction } from './home-blocks';
 import { FollowUpPipeline, NewestMembers } from './operational-blocks';
+import { nextLocalService, type HomeServiceSchedule } from './today';
 import type { DashboardOverview } from './types';
 
 const DAY_OPTIONS = [7, 30, 90] as const;
@@ -31,6 +32,9 @@ type Series = 'attendance' | 'guests' | 'firstTimers';
 const SERIES: Series[] = ['attendance', 'guests', 'firstTimers'];
 
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+const EXECUTIVE_SHORTCUTS = ['approvals', 'reports', 'attendance', 'followUp'];
+const CARE_SHORTCUTS = ['followUp', 'guests', 'attendance', 'approvals'];
+const USHER_SHORTCUTS = ['attendance', 'guests', 'finance', 'meetings'];
 
 export function HomeScreen() {
   const { user, workspaces, showWorkspacePicker } = useSession();
@@ -41,15 +45,18 @@ export function HomeScreen() {
   const tw = useT('auth.workspacePicker');
   const format = useAppFormat();
   const role = user?.role;
-  const { allows } = usePlan();
+  const { allows, readOnly } = usePlan();
   const [days, setDays] = useState(() => user?.preferences?.defaultReportDays ?? 30);
   const [showAllNeeds, setShowAllNeeds] = useState(false);
   const [series, setSeries] = useState<Series>('attendance');
-  const [today] = useState(() => new Date());
+  const [today, setToday] = useState(() => new Date());
 
   const dashboard = useApi<DashboardOverview>(`/reports/dashboard?days=${days}`);
   const reports = useApi<ReportsSummary>(can.reports(role) ? `/reports/summary${query({ days })}` : null);
-  const meetings = useApi<MeetingListResponse>(can.meetings(role) ? `/meetings${query({ from: today.toISOString(), sort: 'oldest', limit: 3, page: 1 })}` : null);
+  const meetings = useApi<MeetingListResponse>(can.meetings(role) && allows('meetings') ? `/meetings${query({ from: today.toISOString(), sort: 'oldest', limit: 3, page: 1 })}` : null);
+  const localBranchId = !can.pickBranch(role) && can.attendance(role) && allows('attendance') ? userBranchId(user) : '';
+  const schedules = useApi<HomeServiceSchedule[]>(localBranchId ? `/service-schedules${query({ branchId: localBranchId })}` : null);
+  const service = nextLocalService(schedules.data ?? [], today);
 
   const data = dashboard.data?.scope.days === days ? dashboard.data : undefined;
   const reportData = reports.data?.range.days === days ? reports.data : undefined;
@@ -63,7 +70,10 @@ export function HomeScreen() {
   const upcoming = (meetings.data?.items ?? []).filter((meeting) => meeting.status !== 'cancelled').slice(0, 2);
   const nextMeeting = upcoming[0];
   const executive = can.executive(role) && data?.scope.kind !== 'branch' ? data?.executive : undefined;
-  const networkWide = data ? data.scope.kind !== 'branch' : can.executive(role);
+  const showService = service && (service.isToday || !nextMeeting) ? service : undefined;
+  const otherMeetings = showService ? upcoming : upcoming.slice(1);
+  const serviceTypeId = typeof showService?.schedule.serviceTypeId === 'string' ? showService.schedule.serviceTypeId : showService?.schedule.serviceTypeId?._id;
+  const canRecordService = !readOnly && showService?.isToday && showService.schedule.attendanceEntryEnabled && serviceTypeId && can.recordAttendance(role);
 
   /* ---- pulse: the chosen series over the range, and this week against the one before ---- */
   const trends = reportData?.trends ?? [];
@@ -103,7 +113,7 @@ export function HomeScreen() {
     },
   ];
 
-  /* ---- round quick actions, in the order people reach for them ---- */
+  /* ---- shortcuts ordered around the signed-in person's work ---- */
   const pendingApprovals = summary?.quickStats.pendingApprovals ?? 0;
   const actions: QuickAction[] = (
     [
@@ -122,10 +132,13 @@ export function HomeScreen() {
       { key: 'meetings', icon: 'calendar', label: t('shortcuts.meetings'), onPress: () => router.push('/meetings' as Href), show: can.meetings(role) && allows('meetings') },
       { key: 'finance', icon: 'finance', label: t('shortcuts.finance'), onPress: () => router.push('/finance' as Href), show: can.finance(role) && allows('finance') },
       { key: 'reports', icon: 'reports', label: t('shortcuts.reports'), onPress: () => router.push('/reports' as Href), show: can.reports(role) && allows('reporting') },
+      { key: 'guests', icon: 'guests', label: t('metrics.guests'), onPress: () => router.push('/guests'), show: can.guests(role) && allows('guests') },
     ] as (QuickAction & { show: boolean })[]
   )
     .filter((action) => action.show)
     .map(({ show: _show, ...action }) => action);
+  const preferred = can.executive(role) ? EXECUTIVE_SHORTCUTS : role === 'follow_up' ? CARE_SHORTCUTS : role === 'usher' ? USHER_SHORTCUTS : [];
+  const orderedActions = [...preferred.flatMap((key) => actions.filter((action) => action.key === key)), ...actions.filter((action) => !preferred.includes(action.key))];
 
   const openAlert = ({ key, href }: AlertsSummary['items'][number]) => {
     if (key === 'attendance_watch') {
@@ -139,10 +152,6 @@ export function HomeScreen() {
     }
     router.push(routeForAlert(href));
   };
-
-  const openPriority = () => priority
-    ? openAlert(priority)
-    : router.push(nextMeeting ? (`/meetings/${nextMeeting._id}` as Href) : can.guests(role) ? '/guest/new' : '/more');
 
   const alertTitle = (item: AlertsSummary['items'][number]) => {
     const count = item.count;
@@ -162,6 +171,8 @@ export function HomeScreen() {
         void reports.refresh();
         void refreshAlerts();
         void meetings.refresh();
+        void schedules.refresh();
+        setToday(new Date());
       }}
       contentStyle={{ gap: space.xl }}
     >
@@ -201,28 +212,10 @@ export function HomeScreen() {
               title={alertTitle(priority)}
               detail={priority.description}
               hint={t(priority.key === 'care_overdue' ? 'needsYou.reviewCare' : 'welcome.viewTask')}
-              onPress={openPriority}
+              onPress={() => openAlert(priority)}
             />
           </View>
-        ) : nextMeeting ? (
-          <ActionsCard
-            tone="calm"
-            kicker={t('welcome.nextGathering')}
-            title={nextMeeting.title}
-            detail={format.dateTime(nextMeeting.startsAt)}
-            hint={t('welcome.viewMeeting')}
-            onPress={openPriority}
-          />
-        ) : (
-          <ActionsCard
-            tone="calm"
-            kicker={networkWide ? t('welcome.todayNetwork') : t('welcome.today')}
-            title={t('welcome.opening')}
-            detail={t('welcome.openingDetail')}
-            hint={can.guests(role) ? t('shortcuts.newGuest') : tc('tabs.more')}
-            onPress={openPriority}
-          />
-        )}
+        ) : summary ? <Caption style={{ color: colors.success }}>{t('needsYou.caughtUp')}</Caption> : null}
         {needsYou.length > 1 ? (
           <View style={{ marginTop: space.sm }}>
             {needsYou.slice(1, showAllNeeds ? undefined : 3).map((item, index) => (
@@ -242,11 +235,26 @@ export function HomeScreen() {
         ) : null}
       </Reveal>
 
+      {showService ? (
+        <ActionsCard
+          tone="calm"
+          kicker={t(showService.isToday ? 'welcome.today' : 'welcome.nextService')}
+          title={showService.schedule.name}
+          detail={[format.date(showService.start, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }), showService.schedule.locationNotes].filter(Boolean).join(' · ')}
+          hint={t(canRecordService ? 'welcome.recordAttendance' : 'shortcuts.attendance')}
+          onPress={() => canRecordService ? router.push({ pathname: '/attendance/new', params: { serviceTypeId, date: showService.start.toISOString().slice(0, 10) } }) : router.push('/attendance')}
+        />
+      ) : nextMeeting ? (
+        <ActionsCard tone="calm" kicker={t('welcome.nextGathering')} title={nextMeeting.title}
+          detail={[format.dateTime(nextMeeting.startsAt), nextMeeting.location].filter(Boolean).join(' · ')}
+          hint={t('welcome.viewMeeting')} onPress={() => router.push(`/meetings/${nextMeeting._id}` as Href)} />
+      ) : null}
+
       {actions.length ? (
         <Reveal delay={90}>
           <QuickActions
             title={t('shortcuts.title')}
-            actions={showAllActions ? actions : actions.slice(0, 4)}
+            actions={showAllActions ? orderedActions : orderedActions.slice(0, 4)}
             viewAll={actions.length > 4 ? t(showAllActions ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
             onViewAll={() => setShowAllActions(!showAllActions)}
           />
@@ -299,10 +307,10 @@ export function HomeScreen() {
         </Reveal>
       ) : null}
 
-      {upcoming.length ? (
+      {otherMeetings.length ? (
         <View>
           <Section title={t('welcome.upcoming')} action={tc('actions.seeAll')} onAction={() => router.push('/meetings' as Href)} />
-          {upcoming.map((meeting, index) => (
+          {otherMeetings.map((meeting, index) => (
             <ListRow
               key={meeting._id}
               divider={index > 0}

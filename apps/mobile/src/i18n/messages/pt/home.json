@@ -77,6 +77,8 @@
       "empty": "Ainda não foram adicionados novos membros neste âmbito."
     },
     "welcome": {
+      "nextService": "Próximo culto",
+      "recordAttendance": "Registrar presença",
       "profile": "Seu perfil e espaço de trabalho",
       "nextUp": "Sua prioridade",
       "insights": "Sua igreja em resumo",

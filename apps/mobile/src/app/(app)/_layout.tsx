@@ -9,7 +9,7 @@ import { useT } from '@/i18n/provider';
 import { AlertsProvider } from '@/lib/alerts';
 import { disablePush, enablePush } from '@/lib/notifications';
 import { useOutboxSync } from '@/lib/offline-queue';
-import { onBeforeSignOut, useSession } from '@/lib/session';
+import { onBeforeSignOut, useSession, userBranchId, userId } from '@/lib/session';
 import { useAlertTaps } from '@/lib/use-alert-taps';
 
 /*
@@ -56,7 +56,7 @@ export default function SignedInLayout() {
 
   return (
     <AppLockGate>
-      <AlertsProvider days={user?.preferences?.defaultReportDays ?? 30}>
+      <AlertsProvider key={JSON.stringify([user?.workspace?.id, userId(user), user?.role, userBranchId(user), user?.district, user?.oversightRegion])} days={user?.preferences?.defaultReportDays ?? 30}>
         <PlanGate>
         <Stack
           screenOptions={{

@@ -77,6 +77,8 @@
       "empty": "Aucun nouveau membre n’a encore été ajouté dans ce périmètre."
     },
     "welcome": {
+      "nextService": "Prochain culte",
+      "recordAttendance": "Saisir la présence",
       "profile": "Votre profil et votre espace",
       "nextUp": "Votre priorité",
       "insights": "Votre église en un regard",
