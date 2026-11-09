@@ -97,7 +97,15 @@
       "moreCare": "Keep the connection going",
       "todayNetwork": "Across your churches today"
     },
+    "people": { "title": "People" },
     "pulse": {
+      "sunday": "Sunday attendance",
+      "sundayEmpty": "No Sunday attendance recorded in the last 30 days.",
+      "sundayMissingPrevious": "No attendance was recorded the previous Sunday.",
+      "sundayFlat": "Same as the previous Sunday",
+      "sundayUp": "Up {value} from the previous Sunday",
+      "sundayDown": "Down {value} from the previous Sunday",
+      "openChart": "View chart",
       "title": "Your church’s pulse",
       "attendance": "Attendance",
       "guests": "Guests",

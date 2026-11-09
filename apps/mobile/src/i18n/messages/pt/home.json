@@ -97,7 +97,15 @@
       "moreCare": "Manter a conexão",
       "todayNetwork": "Hoje nas suas igrejas"
     },
+    "people": { "title": "Pessoas" },
     "pulse": {
+      "sunday": "Presença no domingo",
+      "sundayEmpty": "Nenhuma presença aos domingos foi registrada nos últimos 30 dias.",
+      "sundayMissingPrevious": "Nenhuma presença foi registrada no domingo anterior.",
+      "sundayFlat": "Igual ao domingo anterior",
+      "sundayUp": "Aumento de {value} em relação ao domingo anterior",
+      "sundayDown": "Queda de {value} em relação ao domingo anterior",
+      "openChart": "Ver gráfico",
       "title": "O pulso da sua igreja",
       "attendance": "Presença",
       "guests": "Visitantes",

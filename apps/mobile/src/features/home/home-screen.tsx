@@ -4,7 +4,7 @@ import { ScrollView, View } from 'react-native';
 import { Icon } from '@/components/icon';
 import { Sheet, StatGrid, StatTile } from '@/components/kit';
 import { Reveal } from '@/components/motion';
-import { Caption, ErrorState, ListRow, Notice, Screen, Section } from '@/components/ui';
+import { Caption, EmptyState, ErrorState, ListRow, Notice, Screen, Section, Segmented } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import type { MeetingListResponse } from '@/features/meetings/types';
 import type { ReportsSummary } from '@/features/reports/types';
@@ -26,10 +26,12 @@ import { ActionsCard, GuestStrip, HeroBand, PulseCard, type QuickAction } from '
 import { HomeShortcuts } from './home-shortcuts';
 import { FollowUpPipeline, NewestMembers } from './operational-blocks';
 import { nextLocalService, type HomeServiceSchedule } from './today';
+import { sundayPulse } from './sunday-pulse';
 import type { DashboardOverview } from './types';
 
 const DAY_OPTIONS = [7, 30, 90] as const;
 type Series = 'attendance' | 'guests' | 'firstTimers';
+type PeopleView = 'guests' | 'members' | 'followUp';
 const SERIES: Series[] = ['attendance', 'guests', 'firstTimers'];
 
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
@@ -50,20 +52,42 @@ export function HomeScreen() {
   const [days, setDays] = useState(() => user?.preferences?.defaultReportDays ?? 30);
   const [showAllNeeds, setShowAllNeeds] = useState(false);
   const [series, setSeries] = useState<Series>('attendance');
+  const [showPulse, setShowPulse] = useState(false);
+  const [peopleView, setPeopleView] = useState<PeopleView>('guests');
   const [today, setToday] = useState(() => new Date());
 
   const dashboard = useApi<DashboardOverview>(`/reports/dashboard?days=${days}`);
-  const reports = useApi<ReportsSummary>(can.reports(role) ? `/reports/summary${query({ days })}` : null);
+  const canViewPulse = can.reports(role) && allows('reporting');
+  const pulseReports = useApi<ReportsSummary>(canViewPulse ? '/reports/summary?days=30' : null);
+  const reports = useApi<ReportsSummary>(canViewPulse && showPulse && days !== 30 ? `/reports/summary${query({ days })}` : null);
   const meetings = useApi<MeetingListResponse>(can.meetings(role) && allows('meetings') ? `/meetings${query({ from: today.toISOString(), sort: 'oldest', limit: 3, page: 1 })}` : null);
   const localBranchId = !can.pickBranch(role) && can.attendance(role) && allows('attendance') ? userBranchId(user) : '';
   const schedules = useApi<HomeServiceSchedule[]>(localBranchId ? `/service-schedules${query({ branchId: localBranchId })}` : null);
   const service = nextLocalService(schedules.data ?? [], today);
 
   const data = dashboard.data?.scope.days === days ? dashboard.data : undefined;
-  const reportData = reports.data?.range.days === days ? reports.data : undefined;
+  const reportData = days === 30 ? pulseReports.data : reports.data?.range.days === days ? reports.data : undefined;
+  const sunday = sundayPulse(pulseReports.data?.trends ?? []);
+  const change = sunday?.change;
+  let sundayDetail = pulseReports.error ?? undefined;
+  if (sunday) {
+    let comparison = t('pulse.sundayMissingPrevious');
+    if (change === 0) comparison = t('pulse.sundayFlat');
+    else if (change !== undefined) {
+      comparison = t(change > 0 ? 'pulse.sundayUp' : 'pulse.sundayDown', { value: format.number(Math.abs(change)) });
+    }
+    sundayDetail = `${format.longDate(sunday.current.date)} · ${comparison}`;
+  } else if (pulseReports.data) {
+    sundayDetail = t('pulse.sundayEmpty');
+  }
   const metrics = data?.metrics;
   const operational = data?.operational;
   const recent = operational?.recentGuests ?? [];
+  const peopleTabs: { value: PeopleView; label: string }[] = [];
+  if (can.guests(role) && allows('guests')) peopleTabs.push({ value: 'guests', label: t('metrics.guests') });
+  if (can.members(role) && allows('members')) peopleTabs.push({ value: 'members', label: t('metrics.members') });
+  if (can.followUp(role) && allows('follow_up')) peopleTabs.push({ value: 'followUp', label: t('metrics.followUp') });
+  const activePeople = peopleTabs.find((tab) => tab.value === peopleView)?.value ?? peopleTabs[0]?.value;
   const needsYou = (summary?.items ?? []).filter((item) => item.count > 0).sort((a, b) => Number(b.tone === 'critical') - Number(a.tone === 'critical'));
   const priority = needsYou[0];
   const scopeLabel = data?.scope.kind === 'all_network' ? t('allNetwork') : (data?.scope.label ?? (typeof user?.branchId === 'object' ? user.branchId?.name : undefined));
@@ -176,6 +200,7 @@ export function HomeScreen() {
       onRefresh={() => {
         void dashboard.refresh();
         void reports.refresh();
+        void pulseReports.refresh();
         void refreshAlerts();
         void meetings.refresh();
         void schedules.refresh();
@@ -264,23 +289,10 @@ export function HomeScreen() {
       {dashboard.error && !metrics ? <ErrorState message={dashboard.error} onRetry={() => void dashboard.refresh()} /> : null}
 
       <Reveal delay={140}>
-        {can.reports(role) ? (
-          <PulseCard
-            title={t('pulse.title')}
-            value={reportData ? format.number(total) : '—'}
-            caption={`${t(`pulse.${series}`)} · ${tc('time.lastNDays', { count: days })}`}
-            deltaLabel={reportData ? deltaLabel : (reports.error ?? undefined)}
-            deltaTone={deltaTone}
-            series={values}
-            tabs={SERIES.map((value) => ({ value, label: t(`pulse.${value}`) }))}
-            tab={series}
-            onTab={(value) => setSeries(value as Series)}
-            dayOptions={DAY_OPTIONS}
-            days={days}
-            onDays={setDays}
-            dayLabel={(count) => t('overview.days', { count })}
-            metrics={pulseMetrics}
-          />
+        {canViewPulse ? (
+          <ActionsCard tone="calm" kicker={t('pulse.title')}
+            title={sunday ? `${format.number(sunday.current.attendance)} · ${t('pulse.sunday')}` : t('pulse.sunday')}
+            detail={sundayDetail} hint={t('pulse.openChart')} onPress={() => setShowPulse(true)} />
         ) : (
           <View>
             <DaysRow title={t('overview.title')} value={days} options={DAY_OPTIONS} onChange={setDays} label={(count) => t('overview.days', { count })} />
@@ -293,17 +305,45 @@ export function HomeScreen() {
         )}
       </Reveal>
 
-      {recent.length ? (
-        <Reveal delay={180}>
-          <GuestStrip
-            title={t('recentGuests.strip')}
-            guests={recent.slice(0, 10)}
-            seeAll={can.guests(role) ? tc('actions.seeAll') : undefined}
-            onSeeAll={() => router.push('/guests')}
-            onOpen={can.guests(role) ? (id) => router.push(`/guest/${id}`) : undefined}
-            nameOf={(guest) => guest.firstName || format.fullName(guest)}
-            statusOf={(guest) => (guest.visitStatus ? format.status(guest.visitStatus) : '')}
-          />
+      {canViewPulse && showPulse ? (
+        <Sheet visible title={t('pulse.title')} onClose={() => setShowPulse(false)}>
+          <ScrollView>
+            <PulseCard
+              title={t('pulse.title')}
+              value={reportData ? format.number(total) : '—'}
+              caption={`${t(`pulse.${series}`)} · ${tc('time.lastNDays', { count: days })}`}
+              deltaLabel={reportData ? deltaLabel : (days === 30 ? pulseReports.error : reports.error) ?? undefined}
+              deltaTone={deltaTone}
+              series={values}
+              tabs={SERIES.map((value) => ({ value, label: t(`pulse.${value}`) }))}
+              tab={series}
+              onTab={(value) => setSeries(value as Series)}
+              dayOptions={DAY_OPTIONS}
+              days={days}
+              onDays={setDays}
+              dayLabel={(count) => t('overview.days', { count })}
+              metrics={pulseMetrics.map((metric) => ({ ...metric, onPress: metric.onPress ? () => { setShowPulse(false); metric.onPress?.(); } : undefined }))}
+            />
+          </ScrollView>
+        </Sheet>
+      ) : null}
+
+      {operational && activePeople ? (
+        <Reveal delay={180} style={{ gap: space.sm }}>
+          <Section title={t('people.title')} />
+          {peopleTabs.length > 1 ? <Segmented options={peopleTabs} value={activePeople} onChange={setPeopleView} /> : null}
+          {activePeople === 'guests' ? recent.length ? (
+            <GuestStrip title={t('recentGuests.title')} guests={recent.slice(0, 10)}
+              seeAll={tc('actions.seeAll')} onSeeAll={() => router.push('/guests')} onOpen={(id) => router.push(`/guest/${id}`)}
+              nameOf={(guest) => guest.firstName || format.fullName(guest)} statusOf={(guest) => guest.visitStatus ? format.status(guest.visitStatus) : ''} />
+          ) : (
+            <View>
+              <Section title={t('recentGuests.title')} action={tc('actions.seeAll')} onAction={() => router.push('/guests')} />
+              <EmptyState icon="guests" title={t('recentGuests.empty')} />
+            </View>
+          ) : activePeople === 'members' ? (
+            <NewestMembers members={operational.newestMembers} onSeeAll={() => router.push('/members')} onOpen={(id) => router.push(`/members/${id}`)} />
+          ) : <FollowUpPipeline pipeline={operational.followUpPipeline} onOpen={() => router.push('/follow-up')} />}
         </Reveal>
       ) : null}
 
@@ -323,18 +363,6 @@ export function HomeScreen() {
         </View>
       ) : null}
 
-      {operational?.followUpPipeline?.length ? (
-        <FollowUpPipeline pipeline={operational.followUpPipeline} onOpen={can.followUp(role) ? () => router.push('/follow-up') : undefined} />
-      ) : null}
-
-      {operational ? (
-        <NewestMembers
-          members={operational.newestMembers}
-          onSeeAll={can.members(role) ? () => router.push('/members' as Href) : undefined}
-          onOpen={can.members(role) ? (id) => router.push(`/members/${id}` as Href) : undefined}
-        />
-      ) : null}
-
       {executive ? (
         <>
           <Watchlist executive={executive} />
@@ -342,7 +370,7 @@ export function HomeScreen() {
         </>
       ) : null}
 
-      {can.reports(role) ? (
+      {canViewPulse ? (
         <ListRow
           title={t('welcome.insights')}
           subtitle={t('welcome.insightsHint')}
