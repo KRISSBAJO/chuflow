@@ -1,6 +1,10 @@
 {
   "youth": {
     "participantHome": {
+      "previewBadge": "Prévia da equipe",
+      "welcomeTitle": "Boas-vindas ao espaço jovem",
+      "welcomeSubtitle": "Encontre seu grupo e descubra seu próximo passo.",
+      "calendarQuiet": "Nenhuma inscrição aberta agora",
       "rsvp": "Inscrever-me",
       "progress": "{done, number} de {total, number} etapas concluídas",
       "signUp": "Inscrever-me para servir",

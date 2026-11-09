@@ -1,6 +1,10 @@
 {
   "youth": {
     "participantHome": {
+      "previewBadge": "Staff preview",
+      "welcomeTitle": "Welcome to Youth",
+      "welcomeSubtitle": "Find your people and your next step.",
+      "calendarQuiet": "No events open right now",
       "rsvp": "RSVP",
       "progress": "{done, number} of {total, number} milestones completed",
       "signUp": "Sign up to serve",
