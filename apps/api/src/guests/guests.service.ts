@@ -519,7 +519,7 @@ export class GuestsService {
 
     const [target, source] = await Promise.all([
       this.guestModel.findById(targetGuestId).select('+customAnswers +prayerRequest'),
-      this.guestModel.findById(sourceGuestId).select('+customAnswers +prayerRequest +prayerCareStatus +prayerCareAssigneeId +prayerCareRevision +prayerCareUpdatedAt'),
+      this.guestModel.findById(sourceGuestId).select('+customAnswers +prayerRequest +prayerCareStatus +prayerCareAssigneeId +prayerCareRevision +prayerCareUpdatedAt +prayerCareDueDate +prayerCareTimeline'),
     ]);
 
     if (!target || !source) {
@@ -574,6 +574,8 @@ export class GuestsService {
         prayerCareAssigneeId: source.prayerCareAssigneeId,
         prayerCareRevision: source.prayerCareRevision,
         prayerCareUpdatedAt: source.prayerCareUpdatedAt,
+        prayerCareDueDate: source.prayerCareDueDate,
+        prayerCareTimeline: source.prayerCareTimeline,
       } : {}),
       ...(customAnswers.length ? { customAnswers } : {}),
     });

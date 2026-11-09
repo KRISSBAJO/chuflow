@@ -3,6 +3,15 @@ import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 
 export type GuestDocument = HydratedDocument<Guest>;
 
+export type PrayerCareEvent = {
+  at: Date;
+  actor: string;
+  note?: string;
+  status?: string;
+  assignee?: string | null;
+  dueDate?: string | null;
+};
+
 @Schema({ timestamps: true })
 export class Guest {
   declare createdAt?: Date;
@@ -72,6 +81,8 @@ export class Guest {
   @Prop({ type: SchemaTypes.ObjectId, select: false }) prayerCareAssigneeId?: Types.ObjectId | null;
   @Prop({ select: false }) prayerCareRevision?: number;
   @Prop({ select: false }) prayerCareUpdatedAt?: Date;
+  @Prop({ type: String, select: false }) prayerCareDueDate?: string | null;
+  @Prop({ type: [Object], select: false, default: undefined }) prayerCareTimeline?: PrayerCareEvent[];
 
   @Prop()
   salvationResponse?: string;

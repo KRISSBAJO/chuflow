@@ -1,12 +1,12 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { IsIn, IsInt, IsMongoId, IsOptional, Min } from 'class-validator';
+import { IsDateString, IsIn, IsInt, IsMongoId, IsOptional, IsString, Matches, MaxLength, Min, ValidateIf } from 'class-validator';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { User } from '../users/schemas/user.schema';
-import { Guest, GuestDocument } from './schemas/guest.schema';
+import { Guest, GuestDocument, PrayerCareEvent } from './schemas/guest.schema';
 
 const PRAYER_ROLES = ['super_admin', 'branch_admin', 'resident_pastor', 'associate_pastor', 'follow_up'];
 const ASSIGNEE_ROLES = PRAYER_ROLES.slice(1);
@@ -17,6 +17,8 @@ export class UpdatePrayerCareDto {
   @IsInt() @Min(0) revision!: number;
   @IsIn(STATUSES) status!: PrayerStatus;
   @IsOptional() @IsMongoId() assigneeId?: string | null;
+  @ValidateIf((_, value) => value !== undefined) @IsString() @Matches(/\S/) @MaxLength(2000) note?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) dueDate?: string | null;
 }
 
 @Injectable()
@@ -58,7 +60,7 @@ export class PrayerCareService {
     const limit = 20;
     const [records, total] = await Promise.all([
       this.guests.find(query)
-        .select('_id branchId firstName lastName phone createdAt wantsPastoralCall +prayerRequest +prayerCareStatus +prayerCareAssigneeId +prayerCareRevision +prayerCareUpdatedAt')
+        .select('_id branchId firstName lastName phone createdAt wantsPastoralCall +prayerRequest +prayerCareStatus +prayerCareAssigneeId +prayerCareRevision +prayerCareUpdatedAt +prayerCareDueDate')
         .populate('branchId', 'name')
         .sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       this.guests.countDocuments(query),
@@ -78,36 +80,62 @@ export class PrayerCareService {
         assigneeId: record.prayerCareAssigneeId ? String(record.prayerCareAssigneeId) : null,
         revision: record.prayerCareRevision ?? 0, createdAt: record.createdAt,
         updatedAt: record.prayerCareUpdatedAt,
+        dueDate: record.prayerCareDueDate ?? null,
         contactAllowed: record.wantsPastoralCall === true,
         ...(record.wantsPastoralCall === true ? { phone: record.phone } : {}),
       })),
     };
   }
 
+  async timeline(user: AuthUser, id: string) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException();
+    const record = await this.guests.findOne({ ...(await this.scope(user)), _id: id })
+      .select('createdAt +prayerCareTimeline').lean();
+    if (!record) throw new NotFoundException();
+    return { receivedAt: record.createdAt, events: (record.prayerCareTimeline ?? []).reverse() };
+  }
+
   async update(user: AuthUser, id: string, dto: UpdatePrayerCareDto) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException();
     const query = { ...(await this.scope(user)), _id: id };
     const record = await this.guests.findOne(query)
-      .select('branchId wantsPastoralCall +prayerCareRevision +prayerCareStatus +prayerCareAssigneeId').lean();
+      .select('branchId wantsPastoralCall +prayerCareRevision +prayerCareStatus +prayerCareAssigneeId +prayerCareDueDate').lean();
     if (!record) throw new NotFoundException();
     if (dto.assigneeId !== undefined && user.role === 'follow_up') throw new ForbiddenException();
     if (dto.status === 'follow_up' && record.wantsPastoralCall !== true) {
       throw new BadRequestException('This guest has not asked to be contacted.');
     }
-    if (dto.assigneeId && !await this.users.exists({
-      _id: dto.assigneeId, branchId: record.branchId, role: { $in: ASSIGNEE_ROLES }, isActive: true,
-    })) throw new BadRequestException('Choose an active care team member from this branch.');
-
     const revision = record.prayerCareRevision ?? 0;
     if (revision !== dto.revision) throw new ConflictException('This request changed. Refresh and try again.');
+    if (dto.dueDate && dto.status !== 'follow_up') throw new BadRequestException('A follow-up date requires follow-up status.');
+    const assignee = dto.assigneeId ? await this.users.findOne({
+      _id: dto.assigneeId, branchId: record.branchId, role: { $in: ASSIGNEE_ROLES }, isActive: true,
+    }).select('firstName lastName').lean() : null;
+    if (dto.assigneeId && !assignee) throw new BadRequestException('Choose an active care team member from this branch.');
+
+    const status = record.prayerCareStatus ?? 'new';
+    const dueDate = dto.status === 'follow_up' ? dto.dueDate === undefined ? record.prayerCareDueDate ?? null : dto.dueDate : null;
+    const note = dto.note?.trim();
+    const reassigned = dto.assigneeId !== undefined && dto.assigneeId !== (record.prayerCareAssigneeId ? String(record.prayerCareAssigneeId) : null);
+    const dateChanged = dueDate !== (record.prayerCareDueDate ?? null);
+    if (status === dto.status && !reassigned && !dateChanged && !note) return { revision };
+    const author = await this.users.findById(user.sub).select('firstName lastName').lean();
+    const event: PrayerCareEvent = {
+      at: new Date(),
+      actor: [author?.firstName, author?.lastName].filter(Boolean).join(' ') || user.email,
+      ...(note ? { note } : {}),
+      ...(status !== dto.status ? { status: dto.status } : {}),
+      ...(reassigned ? { assignee: assignee ? [assignee.firstName, assignee.lastName].filter(Boolean).join(' ') : null } : {}),
+      ...(dateChanged ? { dueDate } : {}),
+    };
     const change = {
-      prayerCareStatus: dto.status, prayerCareUpdatedAt: new Date(),
+      prayerCareStatus: dto.status, prayerCareUpdatedAt: event.at, prayerCareDueDate: dueDate,
       ...(dto.assigneeId !== undefined ? { prayerCareAssigneeId: dto.assigneeId } : {}),
     };
     const saved = await this.guests.updateOne({
       ...query, branchId: record.branchId,
       ...(revision ? { prayerCareRevision: revision } : { $or: [{ prayerCareRevision: 0 }, { prayerCareRevision: { $exists: false } }] }),
-    }, { $set: change, $inc: { prayerCareRevision: 1 } });
+    }, { $set: change, $inc: { prayerCareRevision: 1 }, $push: { prayerCareTimeline: event } });
     if (!saved.matchedCount) throw new ConflictException('This request changed. Refresh and try again.');
     await this.audit.record({
       entityType: 'prayer_care', entityId: id, action: 'update', summary: 'Updated private prayer care', actor: user,
@@ -115,6 +143,8 @@ export class PrayerCareService {
       metadata: {
         previousStatus: record.prayerCareStatus ?? 'new',
         status: dto.status,
+        ...(note ? { noteAdded: true } : {}),
+        ...(dateChanged ? { dueDateChanged: true } : {}),
         ...(dto.assigneeId !== undefined ? {
           previousAssigneeId: record.prayerCareAssigneeId ? String(record.prayerCareAssigneeId) : null,
           assigneeId: dto.assigneeId,

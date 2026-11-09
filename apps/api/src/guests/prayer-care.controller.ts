@@ -17,6 +17,12 @@ export class PrayerCareController {
     return this.prayerCare.list(user, Number(page), view);
   }
 
+  @Get(':id/timeline')
+  @Header('Cache-Control', 'no-store')
+  timeline(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.prayerCare.timeline(user, id);
+  }
+
   @Patch(':id')
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdatePrayerCareDto) {
     return this.prayerCare.update(user, id, dto);

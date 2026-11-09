@@ -26,7 +26,7 @@ export default async function PrayerCarePage({ searchParams }: { searchParams: P
           <Link className="rounded-full border border-black/10 px-4 py-2 aria-[current=page]:bg-black aria-[current=page]:text-white" aria-current={followUp ? "page" : undefined} href="?view=follow_up">{t("status.follow_up")}</Link>
         </nav>
         {queue.items.length ? queue.items.map((item) => (
-          <PrayerCareCard key={item.id + ":" + item.revision} item={item}
+          <PrayerCareCard key={item.id} item={item}
             assignees={queue.canAssign ? queue.assignees.filter((person) => person.branchId === item.branch?._id) : undefined} />
         )) : <p className="rounded-2xl bg-[var(--lp-panel)] p-5">{t("empty")}</p>}
         {queue.totalPages > 1 ? (

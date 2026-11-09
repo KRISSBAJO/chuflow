@@ -1,6 +1,21 @@
 {
   "people": {
     "prayerCare": {
+      "addNote": "Añadir nota privada",
+      "noteLabel": "Nota de atención",
+      "noteHint": "Visible para el personal autorizado. Las notas se guardan en el historial de la solicitud.",
+      "dueDate": "Fecha de seguimiento (opcional)",
+      "dueOn": "Seguimiento el {date}",
+      "dueCleared": "Fecha de seguimiento eliminada",
+      "showTimeline": "Ver historial",
+      "hideTimeline": "Ocultar historial",
+      "loadingTimeline": "Cargando historial…",
+      "timelineFailed": "No se pudo cargar el historial.",
+      "retryTimeline": "Volver a intentar",
+      "received": "Solicitud recibida",
+      "statusChanged": "Estado actualizado a {status}",
+      "assignedTo": "Asignada a {name}",
+      "assignmentCleared": "Asignación eliminada",
       "all": "Todas las peticiones",
       "title": "Atención de oración",
       "private": "Privado",

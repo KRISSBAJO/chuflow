@@ -1,6 +1,21 @@
 {
   "people": {
     "prayerCare": {
+      "addNote": "Add private note",
+      "noteLabel": "Care note",
+      "noteHint": "Visible to authorized care staff. Notes are saved in the request timeline.",
+      "dueDate": "Follow-up date (optional)",
+      "dueOn": "Follow-up on {date}",
+      "dueCleared": "Follow-up date cleared",
+      "showTimeline": "Show timeline",
+      "hideTimeline": "Hide timeline",
+      "loadingTimeline": "Loading timeline…",
+      "timelineFailed": "Could not load the timeline.",
+      "retryTimeline": "Try again",
+      "received": "Request received",
+      "statusChanged": "Status changed to {status}",
+      "assignedTo": "Assigned to {name}",
+      "assignmentCleared": "Assignment cleared",
       "all": "All requests",
       "title": "Prayer Care",
       "private": "Private",

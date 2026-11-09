@@ -21,7 +21,9 @@ type Item = {
   contactAllowed: boolean;
   phone?: string;
   createdAt?: string;
+  dueDate?: string | null;
 };
+type Timeline = { receivedAt?: string; events: { at: string; actor: string; note?: string; status?: Status; assignee?: string | null; dueDate?: string | null }[] };
 export type PrayerCareQueue = { page: number; totalPages: number; canAssign: boolean; items: Item[]; assignees: Assignee[] };
 
 export function PrayerCareCard({ item, assignees }: { item: Item; assignees?: Assignee[] }) {
@@ -29,7 +31,26 @@ export function PrayerCareCard({ item, assignees }: { item: Item; assignees?: As
   const locale = useLocale();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [revision, setRevision] = useState(item.revision);
+  const [selected, setSelected] = useState({ revision: item.revision, status: item.status });
+  const [note, setNote] = useState("");
+  const [timeline, setTimeline] = useState<Timeline | null>(null);
+  const [timelineState, setTimelineState] = useState<"closed" | "loading" | "open" | "error">("closed");
+  const status = selected.revision === item.revision ? selected.status : item.status;
+  const endpoint = API_URL + "/guests/prayer-care/" + encodeURIComponent(item.id);
+  const dateLabel = (date: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(date));
+
+  async function loadTimeline() {
+    setTimelineState("loading");
+    try {
+      const response = await fetch(endpoint + "/timeline", { credentials: "include", cache: "no-store" });
+      if (!response.ok) throw new Error();
+      setTimeline(await response.json() as Timeline);
+      setTimelineState("open");
+    } catch {
+      setTimeline(null);
+      setTimelineState("error");
+    }
+  }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,22 +59,27 @@ export function PrayerCareCard({ item, assignees }: { item: Item; assignees?: As
     const assignee = form.get("assigneeId");
     setSaving(true);
     try {
-      const response = await fetch(API_URL + "/guests/prayer-care/" + encodeURIComponent(item.id), {
+      const response = await fetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          revision, status: form.get("status"),
+          revision: item.revision, status,
+          ...(note.trim() ? { note: note.trim() } : {}),
+          ...(status === "follow_up" ? { dueDate: form.get("dueDate") || null } : {}),
           ...(typeof assignee === "string" && assignee !== (item.assigneeId ?? "") ? { assigneeId: assignee || null } : {}),
         }),
       });
       if (!response.ok) {
         toast.error(t(response.status === 409 ? "conflict" : "failed"));
-        if (response.status === 409) router.refresh();
+        if (response.status === 409) {
+          if (timelineState !== "closed") void loadTimeline();
+          router.refresh();
+        }
         return;
       }
-      const result = await response.json() as { revision: number };
-      setRevision(result.revision);
+      setNote("");
+      if (timelineState !== "closed") void loadTimeline();
       toast.success(t("saved"));
       router.refresh();
     } catch {
@@ -74,25 +100,57 @@ export function PrayerCareCard({ item, assignees }: { item: Item; assignees?: As
         {t(item.contactAllowed ? "contactAllowed" : "privateOnly")}
         {item.phone ? <a href={`tel:${item.phone.replace(/[^+\d]/g, "")}`} className="ml-2 underline">{item.phone}</a> : null}
       </p>
-      <form onSubmit={save} className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <Field label={t("statusLabel")}>
-          <select name="status" defaultValue={item.status} className="ui-input">
-            {statuses.filter((status) => status !== "follow_up" || item.contactAllowed || item.status === status).map((status) => (
-              <option key={status} value={status} disabled={status === "follow_up" && !item.contactAllowed}>{t(`status.${status}`)}</option>
-            ))}
-          </select>
-        </Field>
-        {assignees ? (
-          <Field label={t("assigned")}>
-            <select name="assigneeId" defaultValue={item.assigneeId ?? ""} className="ui-input">
-              <option value="">{t("unassigned")}</option>
-              {item.assigneeId && !assignees.some(({ _id }) => _id === item.assigneeId) ? <option value={item.assigneeId} disabled>{t("inactive")}</option> : null}
-              {assignees.map((person) => <option key={person._id} value={person._id}>{person.firstName} {person.lastName}</option>)}
+      {item.dueDate ? <p className="text-sm font-medium">{t("dueOn", { date: dateLabel(item.dueDate) })}</p> : null}
+      <form onSubmit={save} className="space-y-3">
+        <div key={item.revision} className="grid items-end gap-3 sm:grid-cols-2">
+          <Field label={t("statusLabel")}>
+            <select name="status" value={status} onChange={(event) => setSelected({ revision: item.revision, status: event.target.value as Status })} className="ui-input">
+              {statuses.filter((status) => status !== "follow_up" || item.contactAllowed || item.status === status).map((status) => (
+                <option key={status} value={status} disabled={status === "follow_up" && !item.contactAllowed}>{t(`status.${status}`)}</option>
+              ))}
             </select>
           </Field>
-        ) : null}
+          {assignees ? (
+            <Field label={t("assigned")}>
+              <select name="assigneeId" defaultValue={item.assigneeId ?? ""} className="ui-input">
+                <option value="">{t("unassigned")}</option>
+                {item.assigneeId && !assignees.some(({ _id }) => _id === item.assigneeId) ? <option value={item.assigneeId} disabled>{t("inactive")}</option> : null}
+                {assignees.map((person) => <option key={person._id} value={person._id}>{person.firstName} {person.lastName}</option>)}
+              </select>
+            </Field>
+          ) : null}
+          {status === "follow_up" ? <Field label={t("dueDate")}><input name="dueDate" type="date" defaultValue={item.dueDate ?? ""} className="ui-input" /></Field> : null}
+        </div>
+        <details>
+          <summary className="cursor-pointer py-2 text-sm font-medium">{t("addNote")}</summary>
+          <Field label={t("noteLabel")} hint={t("noteHint")}>
+            <textarea name="note" rows={3} maxLength={2000} value={note} disabled={saving} onChange={(event) => setNote(event.target.value)} className="ui-input" />
+          </Field>
+        </details>
         <Button type="submit" disabled={saving}>{t("save")}</Button>
       </form>
+      <section className="border-t border-black/10 pt-3">
+        <button type="button" className="min-h-11 text-sm font-medium underline" aria-expanded={timelineState !== "closed"}
+          onClick={() => timelineState === "closed" ? void loadTimeline() : setTimelineState("closed")} disabled={timelineState === "loading"}>
+          {t(timelineState === "closed" ? "showTimeline" : "hideTimeline")}
+        </button>
+        {timelineState === "loading" ? <p role="status" className="text-sm">{t("loadingTimeline")}</p> : null}
+        {timelineState === "error" ? <p role="alert" className="text-sm">{t("timelineFailed")} <button type="button" className="underline" onClick={() => void loadTimeline()}>{t("retryTimeline")}</button></p> : null}
+        {timelineState === "open" && timeline ? (
+          <ol className="space-y-4 border-l border-black/10 pl-4 text-sm">
+            {timeline.events.map((entry, index) => (
+              <li key={`${entry.at}:${index}`} className="space-y-1">
+                <p className="font-medium">{entry.actor} <time className="font-normal text-neutral-600" dateTime={entry.at}>{new Date(entry.at).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })}</time></p>
+                {entry.status ? <p>{t("statusChanged", { status: t(`status.${entry.status}`) })}</p> : null}
+                {entry.assignee !== undefined ? <p>{entry.assignee ? t("assignedTo", { name: entry.assignee }) : t("assignmentCleared")}</p> : null}
+                {entry.dueDate !== undefined ? <p>{entry.dueDate ? t("dueOn", { date: dateLabel(entry.dueDate) }) : t("dueCleared")}</p> : null}
+                {entry.note ? <p className="whitespace-pre-wrap break-words rounded-lg bg-white p-3">{entry.note}</p> : null}
+              </li>
+            ))}
+            <li>{t("received")}{timeline.receivedAt ? ` · ${dateLabel(timeline.receivedAt)}` : ""}</li>
+          </ol>
+        ) : null}
+      </section>
     </Card>
   );
 }

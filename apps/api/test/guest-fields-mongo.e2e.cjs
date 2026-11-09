@@ -194,9 +194,27 @@ async function run() {
     const assigned = (await expect(await request(prayer, 'GET', undefined, team), 200)).items;
     assert.deepEqual(assigned.map((item) => item.id), [contact.id]);
     await expect(await updatePrayer(assigned[0], { status: 'follow_up', assigneeId: null }, team), 403);
-    await expect(await updatePrayer(assigned[0], { status: 'follow_up' }, team), 200);
+    await expect(await updatePrayer(assigned[0], { status: 'follow_up', dueDate: '2026-02-30' }, team), 400);
+    const privateNote = 'Private follow-up note from local QA';
+    await expect(await updatePrayer(assigned[0], { status: 'follow_up', dueDate: '2026-11-12', note: privateNote }, team), 200);
+    await expect(await updatePrayer(assigned[0], { status: 'follow_up', note: 'Stale draft' }, team), 409);
     const followUpQueue = await expect(await request(prayer + '?view=follow_up', 'GET', undefined, branchAdmin), 200);
     assert.deepEqual(followUpQueue.items.map((item) => item.id), [contact.id]);
+    assert.equal(followUpQueue.items[0].dueDate, '2026-11-12');
+    assert.ok(!JSON.stringify(followUpQueue).includes(privateNote));
+    const timeline = prayer + '/' + contact.id + '/timeline';
+    await expect(await request(timeline), 401);
+    await expect(await request(timeline, 'GET', undefined, otherPastor), 404);
+    await expect(await request(timeline, 'GET', undefined, usher), 403);
+    const history = await expect(await request(timeline, 'GET', undefined, team), 200);
+    assert.deepEqual(history.events.map(({ status }) => status), ['follow_up', 'praying']);
+    assert.equal(history.events[0].note, privateNote);
+    assert.equal(history.events[0].dueDate, '2026-11-12');
+    assert.ok(history.events[1].assignee);
+    const audits = await mongo.db(database).collection('auditlogs').find({ entityId: contact.id }).toArray();
+    assert.ok(!JSON.stringify(audits).includes(privateNote));
+    await expect(await updatePrayer(followUpQueue.items[0], { status: 'closed', assigneeId: null }), 200);
+    await expect(await request(timeline, 'GET', undefined, team), 404);
 
     await mongo.db(database).collection('appsettings').updateOne({ scopeKey: 'global' }, { $set: { publicConnectEnabled: false } }, { upsert: true });
     await expect(await publicForm(), 404);
