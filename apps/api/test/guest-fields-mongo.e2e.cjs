@@ -308,6 +308,43 @@ async function run() {
     const linked = await mongo.db(database).collection('youthenrollments').findOne({ groupId: new ObjectId(extraGroup.id) });
     assert.equal(String(linked.linkedEnrollmentId), adultId);
     assert.equal(linked.consentSource, 'staff');
+
+    const development = teens + '/development';
+    await expect(await youth(development, 'GET', undefined, otherPastor), 403);
+    await expect(await youth(development, 'GET', undefined, youthLeader.token), 403);
+    await expect(await youth(development + '/tracks', 'POST', { title: 'Foundations', milestones: ['Start'] }, team), 403);
+    const track = await expect(await youth(development + '/tracks', 'POST', {
+      title: 'Foundations', milestones: ['Read together', 'Discuss'],
+    }, youthPastor.token), 201);
+    const progressPath = development + '/' + track.id + '/progress';
+    const setProgress = (milestone, completed = true, enrollmentId = teenId) =>
+      youth(progressPath, 'PATCH', { enrollmentId, milestone, completed }, team);
+    await expect(await setProgress(5), 400);
+    await expect(await setProgress(0, true, adultId), 404);
+    for (const response of await Promise.all([setProgress(0), setProgress(1), setProgress(0)])) await expect(response, 200);
+    const progress = (await expect(await youth(development, 'GET', undefined, team), 200)).progress;
+    assert.deepEqual(progress.find(row => row.activityId === track.id).completed.sort(), [0, 1]);
+    await expect(await setProgress(0, false), 200);
+    const project = await expect(await youth(development + '/projects', 'POST', { title: 'Community cleanup', date, location: 'Park' }), 201);
+    await expect(await youth(development + '/' + project.id + '/progress', 'PATCH', { enrollmentId: teenId, milestone: 0, completed: true }, team), 200);
+    const future = await expect(await youth(development + '/projects', 'POST', { title: 'Future project', date: '2099-01-01', location: 'Park' }), 201);
+    await expect(await youth(development + '/' + future.id + '/progress', 'PATCH', { enrollmentId: teenId, milestone: 0, completed: true }, team), 400);
+    const pair = { title: 'Leadership skills', enrollmentId: teenId, permissionConfirmed: true };
+    await expect(await youth(development + '/mentoring', 'POST', { ...pair, permissionConfirmed: false }), 400);
+    const mentoring = await expect(await youth(development + '/mentoring', 'POST', pair, youthPastor.token), 201);
+    await expect(await youth(development + '/mentoring', 'POST', pair), 409);
+    const checkIn = development + '/' + mentoring.id + '/check-ins';
+    await expect(await youth(checkIn, 'POST', { date }, team), 201);
+    await expect(await youth(checkIn, 'POST', { date }, team), 201);
+    const mentorView = await expect(await youth(development, 'GET', undefined, team), 200);
+    assert.deepEqual(mentorView.activities.find(item => item._id === mentoring.id).checkIns, [date]);
+    assert.equal(mentorView.people[0].contact, undefined);
+    await expect(await youth(teens + '/leader', 'PATCH', { leaderId: youthLeader.id, clearanceUntil: '2099-01-01', screeningVerified: true }), 200);
+    await expect(await youth(checkIn, 'POST', { date }, team), 403);
+    assert.ok(!(await expect(await youth(development, 'GET', undefined, youthLeader.token), 200)).activities.some(item => item._id === mentoring.id));
+    await expect(await youth(development + '/' + mentoring.id + '/end', 'PATCH', undefined, youthPastor.token), 200);
+    await expect(await youth(teens + '/leader', 'PATCH', { leaderId: String(staffId), clearanceUntil: '2099-01-01', screeningVerified: true }), 200);
+
     await expect(await youth(teens + '/people/' + teenId + '/withdraw', 'POST'), 201);
     await expect(await youth(teens + '/attendance', 'PATCH', mark, team), 404);
     assert.deepEqual((await expect(await youth(teens), 200)).present, [teenId]);

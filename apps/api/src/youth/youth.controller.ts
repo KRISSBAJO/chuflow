@@ -6,11 +6,40 @@ import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { YouthAttendanceDto, YouthBranchDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
+import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthTrackDto } from './youth-development.dto';
+import { YouthDevelopmentService } from './youth-development.service';
 
 @Controller('youth')
 @Roles(...APP_ROLES)
 export class YouthController {
-  constructor(private readonly youth: YouthService) {}
+  constructor(private readonly youth: YouthService, private readonly development: YouthDevelopmentService) {}
+
+  @Get('groups/:id/development') @Header('Cache-Control', 'no-store')
+  developmentOverview(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.development.overview(user, id); }
+
+  @Post('groups/:id/development/tracks')
+  track(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthTrackDto) { return this.development.createTrack(user, id, dto); }
+
+  @Post('groups/:id/development/projects')
+  project(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthProjectDto) { return this.development.createProject(user, id, dto); }
+
+  @Post('groups/:id/development/mentoring')
+  mentoring(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthMentoringDto) { return this.development.createMentoring(user, id, dto); }
+
+  @Patch('groups/:id/development/:activity/progress')
+  progress(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string, @Body() dto: YouthProgressDto) {
+    return this.development.mark(user, id, activity, dto);
+  }
+
+  @Post('groups/:id/development/:activity/check-ins')
+  mentoringCheckIn(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string, @Body() dto: YouthMentoringCheckInDto) {
+    return this.development.checkIn(user, id, activity, dto);
+  }
+
+  @Patch('groups/:id/development/:activity/end')
+  endMentoring(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string) {
+    return this.development.endMentoring(user, id, activity);
+  }
 
   @Get() @Header('Cache-Control', 'no-store')
   overview(@CurrentUser() user: AuthUser) { return this.youth.overview(user); }

@@ -72,6 +72,12 @@ export class YouthService {
     return group;
   }
 
+  async developmentScope(user: AuthUser, groupId: string, management = false) {
+    const group = await this.scopedGroup(user, groupId, management);
+    if (group.eventDate) throw new NotFoundException();
+    return { group, manager: this.managesGroup(user, group), screenedLeader: await this.cleared(group) };
+  }
+
   async overview(user: AuthUser) {
     const scope = await this.access.buildBranchObjectIdFilter(user);
     const query = LEADERSHIP_ROLES.includes(user.role) || user.role === 'youth_pastor' ? scope : { ...scope, leaderId: id(user.sub) };

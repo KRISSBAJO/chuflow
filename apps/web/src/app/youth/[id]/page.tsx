@@ -27,6 +27,7 @@ export default async function YouthGroupPage({ params, searchParams }: {
   return <Shell><main className="mx-auto max-w-4xl space-y-6">
     <Link href={data.group.eventDate ? "/youth?view=events" : "/youth"} className="inline-flex min-h-11 items-center text-sm font-semibold underline">{t("back")}</Link>
     <PageHeader eyebrow={data.group.program} title={data.group.name} description={t("ages", { from: data.group.minAge, to: data.group.maxAge })} />
+    {!data.group.eventDate ? <Link href={`/youth/${id}/development`} className="inline-flex min-h-11 items-center rounded-full border border-black/10 px-4 text-sm font-semibold">{t("development")}</Link> : null}
     <YouthGroupWorkspace data={data} workspace={user.workspace?.id} />
   </main></Shell>;
 }

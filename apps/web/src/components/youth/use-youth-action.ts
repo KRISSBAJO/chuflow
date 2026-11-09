@@ -29,6 +29,7 @@ export function useYouthAction() {
       }
       toast.success(t("saved"));
       router.refresh();
+      return true;
     } catch {
       toast.error(t("failed"));
     } finally {

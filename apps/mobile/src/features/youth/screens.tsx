@@ -92,6 +92,8 @@ export function YouthAttendance() {
         </View>
       )}
       {detail?.manager ? <Button variant="secondary" label={t('manageWeb')} onPress={() => void openWorkspaceBrowser('/youth/' + id, user?.workspace)} /> : null}
+      {detail && !detail.group.eventDate ? <Button variant="secondary" label={t('development')}
+        onPress={() => void openWorkspaceBrowser('/youth/' + encodeURIComponent(id) + '/development', user?.workspace)} /> : null}
     </Screen>
   );
 }

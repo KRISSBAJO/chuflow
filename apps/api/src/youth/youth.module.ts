@@ -9,6 +9,8 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { YouthController, YouthRegistrationController } from './youth.controller';
 import { YouthEnrollment, YouthEnrollmentSchema, YouthGroup, YouthGroupSchema, YouthSession, YouthSessionSchema } from './youth.schema';
 import { YouthService } from './youth.service';
+import { YouthDevelopment, YouthDevelopmentProgress, YouthDevelopmentProgressSchema, YouthDevelopmentSchema } from './youth-development.schema';
+import { YouthDevelopmentService } from './youth-development.service';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { YouthService } from './youth.service';
       { name: YouthGroup.name, schema: YouthGroupSchema },
       { name: YouthEnrollment.name, schema: YouthEnrollmentSchema },
       { name: YouthSession.name, schema: YouthSessionSchema },
+      { name: YouthDevelopment.name, schema: YouthDevelopmentSchema },
+      { name: YouthDevelopmentProgress.name, schema: YouthDevelopmentProgressSchema },
       { name: Branch.name, schema: BranchSchema },
       { name: ChildProfile.name, schema: ChildProfileSchema },
       { name: Member.name, schema: MemberSchema },
@@ -24,6 +28,6 @@ import { YouthService } from './youth.service';
     ]),
   ],
   controllers: [YouthController, YouthRegistrationController],
-  providers: [YouthService],
+  providers: [YouthService, YouthDevelopmentService],
 })
 export class YouthModule {}
