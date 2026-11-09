@@ -870,6 +870,14 @@
       "locked": "Ce modèle partagé est verrouillé au niveau global."
     },
     "settings": {
+      "navigation": {
+        "intro": "Choisissez les paramètres à gérer.",
+        "workspace": "Espace de travail",
+        "forms": "Formulaires et champs",
+        "personal": "Votre compte",
+        "guestForms": "Formulaires des visiteurs",
+        "back": "Retour aux paramètres"
+      },
       "eyebrow": "Paramètres",
       "adminTitle": "Configuration du système et valeurs par défaut",
       "userTitle": "Compte et préférences",

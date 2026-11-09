@@ -870,6 +870,14 @@
       "locked": "Este modelo partilhado está bloqueado ao nível global."
     },
     "settings": {
+      "navigation": {
+        "intro": "Escolha o que você quer configurar.",
+        "workspace": "Espaço de trabalho",
+        "forms": "Formulários e campos",
+        "personal": "Sua conta",
+        "guestForms": "Formulários de visitantes",
+        "back": "Voltar às configurações"
+      },
       "eyebrow": "Definições",
       "adminTitle": "Configuração do sistema e predefinições",
       "userTitle": "Conta e preferências",

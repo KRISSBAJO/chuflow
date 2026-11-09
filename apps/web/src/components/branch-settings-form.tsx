@@ -52,7 +52,7 @@ export function BranchSettingsForm({
     } else {
       params.delete("branchId");
     }
-    router.replace(`/settings${params.toString() ? `?${params.toString()}` : ""}`);
+    router.replace(`/settings/branch-defaults${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
   }
 
   async function handleSubmit(formData: FormData) {

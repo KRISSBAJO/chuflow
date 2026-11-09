@@ -870,6 +870,14 @@
       "locked": "Esta plantilla compartida está bloqueada a nivel global."
     },
     "settings": {
+      "navigation": {
+        "intro": "Elige los ajustes que quieres gestionar.",
+        "workspace": "Espacio de trabajo",
+        "forms": "Formularios y campos",
+        "personal": "Tu cuenta",
+        "guestForms": "Formularios de visitantes",
+        "back": "Volver a Configuración"
+      },
       "eyebrow": "Configuración",
       "adminTitle": "Configuración del sistema y valores predeterminados",
       "userTitle": "Cuenta y preferencias",

@@ -870,6 +870,14 @@
       "locked": "This shared template is locked at the global level."
     },
     "settings": {
+      "navigation": {
+        "intro": "Choose what you want to manage.",
+        "workspace": "Workspace",
+        "forms": "Forms & fields",
+        "personal": "Your account",
+        "guestForms": "Guest forms",
+        "back": "Back to Settings"
+      },
       "eyebrow": "Settings",
       "adminTitle": "System setup and defaults",
       "userTitle": "Account and preferences",
