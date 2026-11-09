@@ -1,5 +1,16 @@
 {
   "attendanceHistory": {
+    "layout": {
+      "options": "Attendance options",
+      "total": "Total attendance",
+      "services": "Services",
+      "breakdown": "View breakdown",
+      "emptyRange": "Showing {from} to {to}.",
+      "record": "Record attendance",
+      "changeRange": "Change date range",
+      "sundayAverage": "Sunday average",
+      "recordedSundays": "{count, plural, =0 {No Sundays recorded} one {Based on # recorded Sunday} other {Based on # recorded Sundays}}"
+    },
     "title": "Attendance history",
     "noAccess": "Your role can’t see attendance history.",
     "countNow": "Count now",

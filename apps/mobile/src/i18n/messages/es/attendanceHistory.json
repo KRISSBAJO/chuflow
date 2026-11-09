@@ -1,5 +1,16 @@
 {
   "attendanceHistory": {
+    "layout": {
+      "options": "Opciones de asistencia",
+      "total": "Asistencia total",
+      "services": "Servicios",
+      "breakdown": "Ver desglose",
+      "emptyRange": "Del {from} al {to}.",
+      "record": "Registrar asistencia",
+      "changeRange": "Cambiar el período",
+      "sundayAverage": "Promedio dominical",
+      "recordedSundays": "{count, plural, =0 {Sin domingos registrados} one {Basado en # domingo registrado} other {Basado en # domingos registrados}}"
+    },
     "title": "Historial de asistencia",
     "noAccess": "Tu rol no puede ver el historial de asistencia.",
     "countNow": "Contar ahora",

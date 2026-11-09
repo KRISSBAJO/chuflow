@@ -1,5 +1,16 @@
 {
   "attendanceHistory": {
+    "layout": {
+      "options": "Options de présence",
+      "total": "Présence totale",
+      "services": "Cultes",
+      "breakdown": "Voir le détail",
+      "emptyRange": "Du {from} au {to}.",
+      "record": "Saisir la présence",
+      "changeRange": "Changer la période",
+      "sundayAverage": "Moyenne du dimanche",
+      "recordedSundays": "{count, plural, =0 {Aucun dimanche enregistré} one {Sur # dimanche enregistré} other {Sur # dimanches enregistrés}}"
+    },
     "title": "Historique de présence",
     "noAccess": "Votre rôle ne permet pas de voir l’historique de présence.",
     "countNow": "Compter maintenant",

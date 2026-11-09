@@ -1,5 +1,16 @@
 {
   "attendanceHistory": {
+    "layout": {
+      "options": "Opções de presença",
+      "total": "Presença total",
+      "services": "Cultos",
+      "breakdown": "Ver detalhes",
+      "emptyRange": "De {from} a {to}.",
+      "record": "Registrar presença",
+      "changeRange": "Alterar período",
+      "sundayAverage": "Média de domingo",
+      "recordedSundays": "{count, plural, =0 {Nenhum domingo registrado} one {Com base em # domingo registrado} other {Com base em # domingos registrados}}"
+    },
     "title": "Histórico de presença",
     "noAccess": "O seu perfil não pode ver o histórico de presença.",
     "countNow": "Contar agora",

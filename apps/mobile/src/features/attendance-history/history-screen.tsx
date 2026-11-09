@@ -1,11 +1,11 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SheetPicker, StatGrid, StatTile } from '@/components/kit';
+import { Sheet, SheetPicker } from '@/components/kit';
 import { Button, Field, Caption, EmptyState, ErrorState, ListRow, Loading, RoundAction, Screen, ScreenHeader } from '@/components/ui';
 import { Reveal } from '@/components/motion';
-import { colors, space, type } from '@/constants/theme';
+import { colors, radius, space, type } from '@/constants/theme';
 import { OutboxNotices } from '@/features/attendance/outbox';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -50,6 +50,9 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
   const [branchId, setBranchId] = useState('');
   const [today] = useState(() => new Date());
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const canManageTypes = canManageLocalServiceTypes(role);
   const [month, setMonth] = useState(String(today.getMonth()));
   const [year, setYear] = useState(String(today.getFullYear()));
   const [from, setFrom] = useState(isoDay(startOfWeek(today)));
@@ -143,26 +146,26 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
     );
   }
 
+  const headerActions = canCount || canManageTypes ? (
+    <View style={styles.headerActions}>
+      {canManageTypes ? <RoundAction icon="more" label={t('layout.options')} onPress={() => setMenuOpen(true)} /> : null}
+      {canCount ? <RoundAction icon="plus" label={tTab('newCount')} tone="dark" onPress={() => router.push(NEW_COUNT)} /> : null}
+    </View>
+  ) : undefined;
+
   const header = (
-    <View style={[styles.header, asTab && { paddingTop: insets.top + space.md }]}>
+    <View style={styles.header}>
       {asTab ? (
         <ScreenHeader
           title={t('title')}
-          subtitle={canCount ? tTab('subtitle') : undefined}
-          right={canCount ? <RoundAction icon="plus" label={tTab('newCount')} tone="dark" onPress={() => router.push(NEW_COUNT)} /> : null}
+          right={headerActions}
         />
       ) : null}
       {canCount ? <OutboxNotices onSent={() => void list.reload()} /> : null}
       <View style={styles.controls}>
-        <View style={{ flex: 1 }}>
-          <RangeChips options={RANGES.map((value) => ({ value, label: t(`range.${value}`) }))} value={range} onChange={setRange} />
-        </View>
-        {canCount && !asTab ? <Button label={t('countNow')} size="sm" icon="plus" onPress={() => router.push(NEW_COUNT)} /> : null}
+        <RangeChips options={RANGES.map((value) => ({ value, label: t(`range.${value}`) }))} value={range} onChange={setRange} />
+        <Button icon="filter" label={t('advanced.filters')} variant="secondary" size="sm" onPress={() => setFiltersOpen(!filtersOpen)} />
       </View>
-      {canManageLocalServiceTypes(role) ? (
-        <Button label={tTypes('title')} variant="secondary" size="sm" onPress={() => router.push('/attendance/service-types' as Href)} />
-      ) : null}
-      <Button icon="filter" label={t('advanced.filters')} variant="secondary" size="sm" onPress={() => setFiltersOpen(!filtersOpen)} />
       {filtersOpen ? (
         <View style={{ gap: space.md }}>
           <SheetPicker
@@ -229,31 +232,33 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
       {filtersOpen && pickBranch ? (
         <BranchFilter label={t('branch.label')} allLabel={t('branch.all')} branches={branches.data ?? []} value={branchId} onChange={setBranchId} />
       ) : null}
-      <Caption>{t('advanced.averageHint')}</Caption>
-      {list.data ? (
-        <StatGrid>
-          <StatTile label={t('tiles.people')} value={format.number(totals.people)} hint={t('tiles.services', { count: records.length })} />
-          <StatTile label={t('tiles.firstTimers')} value={format.number(totals.firstTimers)} tone={totals.firstTimers ? 'flame' : 'neutral'} />
-          <StatTile label={t('tiles.adults')} value={format.number(totals.adults)} />
-          <StatTile label={t('tiles.children')} value={format.number(totals.children)} />
-          <StatTile label={t('advanced.average')} value={records.length ? format.number(totals.people / records.length, { maximumFractionDigits: 1 }) : '—'} />
-          <StatTile
-            label={t('advanced.sundayAverage')}
-            value={sundayAverage === undefined ? '—' : format.number(sundayAverage, { maximumFractionDigits: 1 })}
-            hint={t('advanced.sundayCount') + ': ' + sundayDays}
-          />
-        </StatGrid>
+      {records.length ? (
+        <View style={styles.summary}>
+          <View style={styles.metrics}>
+            {([
+              [t('layout.total'), totals.people],
+              [t('layout.services'), records.length],
+              [t('tiles.firstTimers'), totals.firstTimers],
+            ] as const).map(([label, value]) => (
+              <View key={label} style={styles.metric}>
+                <Text style={type.number}>{format.number(value)}</Text>
+                <Caption>{label}</Caption>
+              </View>
+            ))}
+          </View>
+          <ListRow title={t('layout.breakdown')} divider onPress={() => setBreakdownOpen(true)} />
+        </View>
       ) : null}
     </View>
   );
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, asTab && { paddingTop: insets.top }]}>
       {asTab ? null : (
         <Stack.Screen
           options={{
             title: t('title'),
-            headerRight: canCount ? () => <RoundAction icon="plus" label={tTab('newCount')} tone="dark" onPress={() => router.push(NEW_COUNT)} /> : undefined,
+            headerRight: headerActions ? () => headerActions : undefined,
           }}
         />
       )}
@@ -286,11 +291,30 @@ export function AttendanceHistoryScreen({ asTab = false }: { asTab?: boolean }) 
             <Loading />
           ) : list.error ? (
             <ErrorState message={list.error} onRetry={() => void list.refresh()} />
-          ) : (
-            <EmptyState icon="attendance" title={t('empty.title')} body={t('empty.body')} />
-          )
+          ) : validDates ? (
+            <EmptyState icon="attendance" title={t('empty.title')}
+              body={t('layout.emptyRange', { from: format.date(startDay), to: format.date(endDay) })}
+              action={canCount ? <Button label={t('layout.record')} onPress={() => router.push(NEW_COUNT)} /> :
+                <Button label={t('layout.changeRange')} variant="secondary" onPress={() => setFiltersOpen(true)} />} />
+          ) : undefined
         }
       />
+      {menuOpen && canManageTypes ? (
+        <Sheet visible title={t('layout.options')} onClose={() => setMenuOpen(false)}>
+          <ListRow title={tTypes('title')} onPress={() => { setMenuOpen(false); router.push('/attendance/service-types'); }} />
+        </Sheet>
+      ) : null}
+      {breakdownOpen && records.length ? (
+        <Sheet visible title={t('layout.breakdown')} onClose={() => setBreakdownOpen(false)}>
+          <ScrollView>
+            <ListRow title={t('tiles.adults')} right={<Text style={styles.count}>{format.number(totals.adults)}</Text>} />
+            <ListRow divider title={t('tiles.children')} right={<Text style={styles.count}>{format.number(totals.children)}</Text>} />
+            <ListRow divider title={t('advanced.average')} right={<Text style={styles.count}>{format.number(totals.people / records.length, { maximumFractionDigits: 1 })}</Text>} />
+            <ListRow divider title={t('layout.sundayAverage')} subtitle={t('layout.recordedSundays', { count: sundayDays })}
+              right={<Text style={styles.count}>{sundayAverage === undefined ? '—' : format.number(sundayAverage, { maximumFractionDigits: 1 })}</Text>} />
+          </ScrollView>
+        </Sheet>
+      ) : null}
     </View>
   );
 }
@@ -299,7 +323,11 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.page },
   content: { paddingHorizontal: space.page, paddingBottom: space.xxl },
   header: { paddingTop: space.sm, paddingBottom: space.xs, gap: space.lg },
-  controls: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  headerActions: { flexDirection: 'row', gap: space.sm },
+  controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm },
+  summary: { backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: space.md },
+  metrics: { flexDirection: 'row', gap: space.sm, paddingVertical: space.md },
+  metric: { flex: 1, minWidth: 0, gap: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md, marginTop: space.lg, marginBottom: 2 },
   sectionTitle: { ...type.micro, textTransform: 'uppercase' },
   count: { ...type.label, fontVariant: ['tabular-nums'] },
