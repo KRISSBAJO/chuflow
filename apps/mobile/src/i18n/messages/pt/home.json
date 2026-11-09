@@ -25,7 +25,11 @@
       "showLess": "Ver menos"
     },
     "needsYou": {
-      "title": "Pendente",
+      "title": "Requer atenção",
+      "overdueCare": "{count, plural, one {# compromisso de acompanhamento em atraso} other {# compromissos de acompanhamento em atraso}}",
+      "careOwners": "{count, plural, one {# pessoa precisa de um responsável pelo acompanhamento} other {# pessoas precisam de um responsável pelo acompanhamento}}",
+      "attendanceMissing": "{count, plural, one {# filial sem presença recente} other {# filiais sem presença recente}}",
+      "reviewCare": "Revisar acompanhamentos em atraso",
       "caughtUp": "Está tudo em dia.",
       "actions": "{count, plural, one {# ação necessária} other {# ações necessárias}}"
     },
@@ -99,6 +103,7 @@
       "noData": "Nada registrado neste período ainda"
     },
     "searchTips": {
+      "homeHint": "Buscar pessoas ou filiais",
       "name": "Tente um nome ou sobrenome",
       "phone": "Cole um número de telefone",
       "branch": "Procure uma igreja local",

@@ -25,7 +25,11 @@
       "showLess": "Réduire"
     },
     "needsYou": {
-      "title": "À faire",
+      "title": "À traiter",
+      "overdueCare": "{count, plural, one {# engagement de suivi en retard} other {# engagements de suivi en retard}}",
+      "careOwners": "{count, plural, one {# personne a besoin d’un référent} other {# personnes ont besoin d’un référent}}",
+      "attendanceMissing": "{count, plural, one {# branche sans présence récente} other {# branches sans présence récente}}",
+      "reviewCare": "Examiner les suivis en retard",
       "caughtUp": "Vous êtes à jour.",
       "actions": "{count, plural, one {# action requise} other {# actions requises}}"
     },
@@ -99,6 +103,7 @@
       "noData": "Rien d’enregistré sur cette période pour l’instant"
     },
     "searchTips": {
+      "homeHint": "Rechercher des personnes ou des branches",
       "name": "Essayez un prénom ou un nom",
       "phone": "Collez un numéro de téléphone",
       "branch": "Recherchez une église locale",

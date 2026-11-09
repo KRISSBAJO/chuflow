@@ -1,14 +1,10 @@
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useIsFocused } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { useReducedMotion } from 'react-native-reanimated';
-import { Animated, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/motion';
 import { Avatar, Chip, Section, tap } from '@/components/ui';
 import { colors, fonts, radius, space, type } from '@/constants/theme';
-import { useT } from '@/i18n/provider';
+import { Wordmark } from '@/components/wordmark';
 import type { GuestListItem } from '@/lib/types';
 import { TrendChart } from './trend-chart';
 
@@ -33,48 +29,44 @@ type HeroBandProps = {
 };
 
 export function HeroBand({ dateLabel, greeting, name, workspace, scope, alerts, alertsLabel, onAlerts, person, profileLabel, onProfile, searchLabel, onSearch }: HeroBandProps) {
-  const workspaceName = workspace ? <Text numberOfLines={1} style={styles.workspaceName}>{workspace.name}</Text> : null;
+  const workspaceName = workspace ? <Text style={styles.workspaceName}>{workspace.name}</Text> : null;
   return (
-    <View style={styles.bandWrap}>
-      <View style={styles.hero}>
-        <View style={styles.heroAccent} pointerEvents="none" />
-        <Image source={PHOTO} style={styles.heroPhoto} contentFit="cover" contentPosition="center" cachePolicy="memory-disk" accessible={false} />
-        <View style={styles.topRow}>
-          <View style={styles.dateRow}>
-            <Icon name="calendar" size={14} color="#ffffff" />
-            <Text style={styles.date}>{dateLabel}</Text>
-          </View>
-          <View style={styles.topActions}>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={alertsLabel}
-              onPress={() => {
-                tap();
-                onAlerts();
-              }}
-              style={styles.bell}
-            >
-              <Icon name="bell" size={20} color="#ffffff" />
-              {alerts > 0 ? (
-                <View style={styles.bellBadge}>
-                  <Text style={styles.bellBadgeText}>{alerts > 9 ? '9+' : alerts}</Text>
-                </View>
-              ) : null}
-            </PressableScale>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={profileLabel}
-              onPress={() => {
-                tap();
-                onProfile();
-              }}
-              style={styles.avatarRing}
-            >
-              <Avatar person={person} size={38} />
-            </PressableScale>
-          </View>
+    <View style={styles.welcome}>
+      <View style={styles.topRow}>
+        <Wordmark size={23} />
+        <View style={styles.topActions}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={alertsLabel}
+            onPress={() => {
+              tap();
+              onAlerts();
+            }}
+            style={styles.bell}
+          >
+            <Icon name="bell" size={20} color={colors.ink} />
+            {alerts > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{alerts > 9 ? '9+' : alerts}</Text>
+              </View>
+            ) : null}
+          </PressableScale>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={profileLabel}
+            onPress={() => {
+              tap();
+              onProfile();
+            }}
+            style={styles.avatarRing}
+          >
+            <Avatar person={person} size={38} />
+          </PressableScale>
         </View>
+      </View>
+      <View style={styles.hero}>
         <View style={styles.copy}>
+          <Text style={styles.date}>{dateLabel}</Text>
           <Text style={styles.greeting}>{greeting},</Text>
           <Text accessibilityRole="header" style={styles.name}>
             {name}
@@ -89,81 +81,44 @@ export function HeroBand({ dateLabel, greeting, name, workspace, scope, alerts, 
               style={styles.workspaceRow}
             >
               {workspaceName}
-              <Icon name="arrowRight" size={12} color="#f6bb88" />
+              <Icon name="arrowRight" size={12} color={colors.warning} />
             </PressableScale>
           ) : workspaceName}
           {scope ? <Text style={styles.scope}>{scope}</Text> : null}
         </View>
+        <Image source={PHOTO} style={styles.heroPhoto} contentFit="cover" contentPosition="center" cachePolicy="memory-disk" accessible={false} />
       </View>
       {onSearch && searchLabel ? <HomeSearchPill label={searchLabel} onPress={onSearch} /> : null}
     </View>
   );
 }
 
-const SEARCH_TIPS = ['name', 'phone', 'branch', 'email'] as const;
-const SEARCH_TIP_INTERVAL = 5000;
-const useNativeAnimationDriver = Platform.OS !== 'web';
-
 function HomeSearchPill({ label, onPress }: { label: string; onPress: () => void }) {
-  const t = useT('home.searchTips');
-  const focused = useIsFocused();
-  const reduceMotion = useReducedMotion();
-  const [tipIndex, setTipIndex] = useState(0);
-  const [opacity] = useState(() => new Animated.Value(1));
-
-  useEffect(() => {
-    if (!focused || reduceMotion) return;
-    const timer = setInterval(() => {
-      Animated.timing(opacity, { toValue: 0, duration: 140, useNativeDriver: useNativeAnimationDriver, isInteraction: false }).start(({ finished }) => {
-        if (!finished) return;
-        setTipIndex((index) => (index + 1) % (SEARCH_TIPS.length + 1));
-        Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: useNativeAnimationDriver, isInteraction: false }).start();
-      });
-    }, SEARCH_TIP_INTERVAL);
-    return () => {
-      clearInterval(timer);
-      opacity.stopAnimation();
-      opacity.setValue(1);
-    };
-  }, [focused, opacity, reduceMotion]);
-
-  const tip = reduceMotion || tipIndex === 0 ? label : t(SEARCH_TIPS[tipIndex - 1]);
-
   return (
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
-      scaleTo={reduceMotion ? 1 : 0.985}
       onPress={() => {
         tap();
         onPress();
       }}
-      style={styles.searchWrap}
+      style={styles.search}
     >
-      <LinearGradient colors={[colors.flameFrom, colors.flameTo, '#f5c29d']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.searchRing}>
-        <View style={styles.search}>
-          <LinearGradient colors={[colors.flameFrom, colors.flameTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.searchLens}>
-            <Icon name="search" size={20} color="#ffffff" strokeWidth={2.2} />
-          </LinearGradient>
-          <Animated.Text style={[styles.searchText, { opacity }]} numberOfLines={1}>
-            {tip}
-          </Animated.Text>
-          <Icon name="sparkle" size={16} color={colors.flame} />
-        </View>
-      </LinearGradient>
+      <Icon name="search" size={20} color={colors.warning} strokeWidth={2} />
+      <Text style={styles.searchText}>{label}</Text>
     </PressableScale>
   );
 }
 
 /* ---------- Quick actions ---------- */
 
-export type QuickAction = { key: string; icon: IconName; label: string; onPress: () => void; tone?: 'flame' | 'plain'; badge?: number };
+export type QuickAction = { key: string; icon: IconName; label: string; onPress: () => void; badge?: number };
 
 export function QuickActions({ title, actions, viewAll, onViewAll }: { title: string; actions: QuickAction[]; viewAll?: string; onViewAll?: () => void }) {
   return (
     <View style={{ gap: space.xs }}>
       <Section title={title} action={viewAll} onAction={onViewAll} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actionsRow} style={styles.bleed}>
+      <View style={styles.actionsRow}>
         {actions.map((action) => (
           <PressableScale
             key={action.key}
@@ -176,8 +131,8 @@ export function QuickActions({ title, actions, viewAll, onViewAll }: { title: st
             style={styles.action}
             scaleTo={0.94}
           >
-            <View style={[styles.actionCircle, action.tone === 'flame' && styles.actionCircleFlame]}>
-              <Icon name={action.icon} size={24} color={action.tone === 'flame' ? '#ffffff' : colors.flame} strokeWidth={1.8} />
+            <View style={styles.actionCircle}>
+              <Icon name={action.icon} size={21} color={colors.warning} strokeWidth={1.8} />
               {action.badge ? (
                 <View style={styles.actionBadge}>
                   <Text style={styles.actionBadgeText}>{action.badge > 99 ? '99+' : action.badge}</Text>
@@ -189,7 +144,7 @@ export function QuickActions({ title, actions, viewAll, onViewAll }: { title: st
             </Text>
           </PressableScale>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -198,7 +153,6 @@ export function QuickActions({ title, actions, viewAll, onViewAll }: { title: st
 
 export function ActionsCard({
   tone,
-  count,
   kicker,
   title,
   detail,
@@ -206,7 +160,6 @@ export function ActionsCard({
   hint,
 }: {
   tone: 'alert' | 'calm';
-  count?: number;
   kicker: string;
   title: string;
   detail?: string;
@@ -215,41 +168,35 @@ export function ActionsCard({
 }) {
   const alert = tone === 'alert';
   return (
-    <View style={styles.actionsWrap}>
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityHint={hint}
-        onPress={() => {
-          tap();
-          onPress();
-        }}
-        style={[styles.actionsCard, !alert && styles.actionsCardCalm]}
-        scaleTo={0.985}
-      >
-        <View style={{ flex: 1, minWidth: 0, gap: 4, paddingLeft: alert ? 40 : 0 }}>
-          <Text style={[styles.actionsKicker, !alert && { color: '#963b14' }]} numberOfLines={1}>
-            {kicker}
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityHint={hint}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={[styles.actionsCard, !alert && styles.actionsCardCalm]}
+      scaleTo={0.985}
+    >
+      <View style={styles.priorityCopy}>
+        <View style={styles.priorityKicker}>
+          {alert ? <View style={styles.priorityDot} /> : null}
+          <Text style={styles.actionsKicker}>{kicker}</Text>
+        </View>
+        <Text style={styles.actionsTitle}>
+          {title}
+        </Text>
+        {detail ? (
+          <Text style={styles.actionsDetail}>
+            {detail}
           </Text>
-          <Text style={[styles.actionsTitle, !alert && { color: colors.ink }]} numberOfLines={2}>
-            {title}
-          </Text>
-          {detail ? (
-            <Text style={[styles.actionsDetail, !alert && { color: colors.text }]} numberOfLines={2}>
-              {detail}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.forward}>
-          <Icon name="arrowRight" size={18} color="#ffffff" strokeWidth={2.2} />
-        </View>
-      </PressableScale>
-      {alert ? (
-        <View style={styles.alertBadge} pointerEvents="none">
-          <Icon name="alert" size={22} color="#ffffff" strokeWidth={2.2} />
-          {count ? <Text style={styles.alertCount}>{count}</Text> : null}
-        </View>
-      ) : null}
-    </View>
+        ) : null}
+        <Text style={styles.priorityAction}>{hint}</Text>
+      </View>
+      <View style={styles.forward}>
+        <Icon name="arrowRight" size={17} color={colors.warning} strokeWidth={2} />
+      </View>
+    </PressableScale>
   );
 }
 
@@ -413,142 +360,42 @@ export function GuestStrip({
 const styles = StyleSheet.create({
   bleed: { marginHorizontal: -space.page },
 
-  bandWrap: { marginHorizontal: -space.page },
-  hero: {
-    minHeight: 244,
-    paddingHorizontal: space.page,
-    paddingTop: space.md,
-    paddingBottom: 52,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    overflow: 'hidden',
-    backgroundColor: '#221b16',
-  },
-  heroAccent: { position: 'absolute', top: -120, right: -90, width: 280, height: 280, borderRadius: 140, backgroundColor: '#42291a' },
-  heroPhoto: { position: 'absolute', right: -8, bottom: -8, width: '47%', maxWidth: 250, aspectRatio: 1, borderRadius: 150, backgroundColor: '#42291a' },
+  welcome: { gap: space.md },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  topActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  bell: { width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: '#bca28c', alignItems: 'center', justifyContent: 'center' },
-  bellBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    minWidth: 17,
-    height: 17,
-    paddingHorizontal: 3,
-    borderRadius: 9,
-    backgroundColor: colors.flame,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellBadgeText: { fontFamily: fonts.semibold, fontSize: 9, color: '#ffffff' },
-  avatarRing: { width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: '#bca28c', alignItems: 'center', justifyContent: 'center' },
-  copy: { width: '55%', marginTop: 24, gap: 3 },
-  greeting: { fontFamily: fonts.medium, fontSize: 16, color: '#e8ddd3' },
-  name: { fontFamily: fonts.semibold, fontSize: 36, lineHeight: 42, letterSpacing: -0.9, color: '#ffffff' },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  bell: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  bellBadge: { position: 'absolute', top: 0, right: 0, minWidth: 17, height: 17, paddingHorizontal: 3, borderRadius: 9, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
+  bellBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: '#ffffff' },
+  avatarRing: { width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairlineStrong, alignItems: 'center', justifyContent: 'center' },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: 24, backgroundColor: colors.surface },
+  heroPhoto: { width: '37%', maxWidth: 180, aspectRatio: 0.94, borderRadius: 18, backgroundColor: colors.surfaceStrong },
+  copy: { flex: 1, minWidth: 0, gap: 3 },
+  date: { ...type.micro, color: colors.muted, marginBottom: 5 },
+  greeting: { ...type.body, color: colors.muted },
+  name: { fontFamily: fonts.semibold, fontSize: 31, lineHeight: 36, letterSpacing: -0.8, color: colors.ink, marginBottom: 3 },
   workspaceRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', maxWidth: '100%', gap: 5 },
-  workspaceName: { ...type.small, fontFamily: fonts.medium, color: '#f6bb88', flexShrink: 1 },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    flexShrink: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#bca28c',
-  },
-  date: { fontFamily: fonts.medium, fontSize: 12, color: '#ffffff', flexShrink: 1 },
-  scope: { fontFamily: fonts.regular, fontSize: 13, color: '#e8ddd3' },
-  searchWrap: {
-    marginHorizontal: space.page,
-    marginTop: -27,
-    borderRadius: radius.pill,
-    boxShadow: '0 5px 0 rgba(234,88,12,0.22), 0 9px 18px rgba(48,25,12,0.13)',
-  },
-  searchRing: { padding: 1, borderRadius: radius.pill },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    minHeight: 53,
-    paddingLeft: 6,
-    paddingRight: 15,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    backgroundColor: colors.page,
-  },
-  searchLens: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  searchText: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.text },
+  workspaceName: { ...type.small, fontFamily: fonts.semibold, color: colors.ink, flexShrink: 1 },
+  scope: type.small,
+  search: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 50, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.hairlineStrong, backgroundColor: colors.page },
+  searchText: { ...type.body, flex: 1, color: colors.text },
 
-  actionsRow: { paddingHorizontal: space.page, gap: 14, paddingVertical: 4 },
-  action: { width: 76, alignItems: 'center', gap: 8 },
-  actionCircle: { width: 66, height: 66, borderRadius: 33, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  actionCircleFlame: { backgroundColor: colors.flame },
-  actionBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: 10,
-    backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.page,
-  },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.md, marginTop: space.sm },
+  action: { width: '25%', alignItems: 'center', gap: 6, paddingHorizontal: 3 },
+  actionCircle: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  actionBadge: { position: 'absolute', top: -4, right: -6, minWidth: 19, height: 19, paddingHorizontal: 3, borderRadius: 10, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.page },
   actionBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: '#ffffff' },
   actionLabel: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 17, color: colors.ink, textAlign: 'center' },
 
-  actionsWrap: { paddingTop: 10, paddingLeft: 10 },
-  actionsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.lg,
-    paddingLeft: space.lg,
-    borderRadius: 24,
-    backgroundColor: colors.flameSoft,
-    overflow: 'hidden',
-    minHeight: 96,
-  },
-  actionsCardCalm: { backgroundColor: colors.surface },
-  actionsKicker: { ...type.micro, textTransform: 'uppercase', color: colors.text },
-  actionsTitle: { fontFamily: fonts.semibold, fontSize: 18, lineHeight: 23, color: colors.ink },
+  actionsCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: 20, backgroundColor: '#fbf2e8', borderWidth: StyleSheet.hairlineWidth, borderColor: '#eedbcc' },
+  actionsCardCalm: { backgroundColor: colors.surface, borderColor: colors.hairline },
+  priorityCopy: { flex: 1, minWidth: 0, gap: 5 },
+  priorityKicker: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  priorityDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.danger },
+  actionsKicker: { ...type.micro, flexShrink: 1, textTransform: 'uppercase', color: colors.text },
+  actionsTitle: { fontFamily: fonts.semibold, fontSize: 19, lineHeight: 24, color: colors.ink },
   actionsDetail: type.body,
-  forward: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.flame, alignItems: 'center', justifyContent: 'center' },
-  alertBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.page,
-  },
-  alertCount: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    color: colors.danger,
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    lineHeight: 20,
-    textAlign: 'center',
-    overflow: 'hidden',
-  },
+  priorityAction: { ...type.label, color: colors.warning, marginTop: 4 },
+  forward: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.page, alignItems: 'center', justifyContent: 'center' },
 
   pulse: { borderRadius: 24, padding: space.lg, gap: space.md, backgroundColor: colors.page, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairlineStrong },
   pulseTitle: { ...type.micro, textTransform: 'uppercase' },

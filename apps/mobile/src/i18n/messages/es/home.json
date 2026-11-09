@@ -25,7 +25,11 @@
       "showLess": "Ver menos"
     },
     "needsYou": {
-      "title": "Pendiente",
+      "title": "Requiere atención",
+      "overdueCare": "{count, plural, one {# compromiso de seguimiento vencido} other {# compromisos de seguimiento vencidos}}",
+      "careOwners": "{count, plural, one {# persona necesita un responsable de seguimiento} other {# personas necesitan un responsable de seguimiento}}",
+      "attendanceMissing": "{count, plural, one {# sede sin asistencia reciente} other {# sedes sin asistencia reciente}}",
+      "reviewCare": "Revisar el seguimiento vencido",
       "caughtUp": "Estás al día.",
       "actions": "{count, plural, one {# acción requerida} other {# acciones requeridas}}"
     },
@@ -99,6 +103,7 @@
       "noData": "Aún no hay nada registrado en este periodo"
     },
     "searchTips": {
+      "homeHint": "Buscar personas o sedes",
       "name": "Prueba con un nombre o apellido",
       "phone": "Pega un número de teléfono",
       "branch": "Busca una iglesia local",

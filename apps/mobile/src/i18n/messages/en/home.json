@@ -25,7 +25,11 @@
       "showLess": "Show less"
     },
     "needsYou": {
-      "title": "Needs you",
+      "title": "Needs attention",
+      "overdueCare": "{count, plural, one {# overdue care commitment} other {# overdue care commitments}}",
+      "careOwners": "{count, plural, one {# person needs a care owner} other {# people need a care owner}}",
+      "attendanceMissing": "{count, plural, one {# branch has no recent attendance} other {# branches have no recent attendance}}",
+      "reviewCare": "Review overdue care",
       "caughtUp": "You’re all caught up.",
       "actions": "{count, plural, one {# action required} other {# actions required}}"
     },
@@ -99,6 +103,7 @@
       "noData": "Nothing recorded in this range yet"
     },
     "searchTips": {
+      "homeHint": "Search people or branches",
       "name": "Try a first or last name",
       "phone": "Paste a phone number",
       "branch": "Look up a branch",

@@ -78,7 +78,7 @@ export function Section({ title, action, onAction }: { title: string; action?: s
     <View style={styles.sectionRow}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {action && onAction ? (
-        <Pressable onPress={onAction} hitSlop={10}>
+        <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10}>
           <Text style={styles.sectionAction}>{action}</Text>
         </Pressable>
       ) : null}

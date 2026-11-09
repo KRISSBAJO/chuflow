@@ -38,7 +38,6 @@ export function HomeScreen() {
   const online = useOnline();
   const t = useT('home');
   const tc = useT('common');
-  const tm = useT('more');
   const tw = useT('auth.workspacePicker');
   const format = useAppFormat();
   const role = user?.role;
@@ -59,6 +58,7 @@ export function HomeScreen() {
   const recent = operational?.recentGuests ?? [];
   const needsYou = (summary?.items ?? []).filter((item) => item.count > 0).sort((a, b) => Number(b.tone === 'critical') - Number(a.tone === 'critical'));
   const priority = needsYou[0];
+  const [showAllActions, setShowAllActions] = useState(false);
   const scopeLabel = data?.scope.kind === 'all_network' ? t('allNetwork') : (data?.scope.label ?? (typeof user?.branchId === 'object' ? user.branchId?.name : undefined));
   const upcoming = (meetings.data?.items ?? []).filter((meeting) => meeting.status !== 'cancelled').slice(0, 2);
   const nextMeeting = upcoming[0];
@@ -107,8 +107,7 @@ export function HomeScreen() {
   const pendingApprovals = summary?.quickStats.pendingApprovals ?? 0;
   const actions: QuickAction[] = (
     [
-      { key: 'newGuest', icon: 'plus', label: t('shortcuts.newGuest'), tone: 'flame', onPress: () => router.push('/guest/new'), show: can.guests(role) && allows('guests') },
-      { key: 'attendance', icon: 'attendance', label: t('shortcuts.attendance'), onPress: () => router.push('/attendance/new' as Href), show: can.recordAttendance(role) && allows('attendance') },
+      { key: 'attendance', icon: 'attendance', label: t('shortcuts.attendance'), onPress: () => router.push('/attendance'), show: can.attendance(role) && allows('attendance') },
       {
         key: 'followUp',
         icon: 'care',
@@ -145,6 +144,16 @@ export function HomeScreen() {
     ? openAlert(priority)
     : router.push(nextMeeting ? (`/meetings/${nextMeeting._id}` as Href) : can.guests(role) ? '/guest/new' : '/more');
 
+  const alertTitle = (item: AlertsSummary['items'][number]) => {
+    const count = item.count;
+    switch (item.key) {
+      case 'care_overdue': return t('needsYou.overdueCare', { count });
+      case 'care_unassigned': return t('needsYou.careOwners', { count });
+      case 'attendance_watch': return t('needsYou.attendanceMissing', { count });
+      default: return `${format.number(count)} ${item.label}`;
+    }
+  };
+
   return (
     <Screen
       refreshing={dashboard.refreshing}
@@ -165,14 +174,14 @@ export function HomeScreen() {
           pickerLabel: tw('title'),
           onPress: workspaces.length > 1 ? showWorkspacePicker : undefined,
         } : undefined}
-        scope={[scopeLabel, tc('time.lastNDays', { count: days })].filter(Boolean).join(' · ')}
+        scope={scopeLabel}
         alerts={summary?.quickStats.activeAlerts ?? 0}
         alertsLabel={t('alertsLabel', { count: summary?.quickStats.activeAlerts ?? 0 })}
         onAlerts={() => priority ? openAlert(priority) : router.push('/more')}
         person={user}
         profileLabel={t('welcome.profile')}
         onProfile={() => router.push('/more')}
-        searchLabel={can.search(role) ? tm('hints.search') : undefined}
+        searchLabel={can.search(role) ? t('searchTips.homeHint') : undefined}
         onSearch={can.search(role) ? () => router.push('/search' as Href) : undefined}
       />
 
@@ -182,23 +191,19 @@ export function HomeScreen() {
         </Notice>
       ) : null}
 
-      {actions.length ? (
-        <Reveal delay={40}>
-          <QuickActions title={t('shortcuts.title')} actions={actions} viewAll={t('shortcuts.showAll')} onViewAll={() => router.push('/more')} />
-        </Reveal>
-      ) : null}
-
-      <Reveal delay={90}>
+      <Reveal delay={40}>
         {priority ? (
-          <ActionsCard
-            tone="alert"
-            count={needsYou.length}
-            kicker={t('needsYou.actions', { count: needsYou.length })}
-            title={`${format.number(priority.count)} ${priority.label}`}
-            detail={priority.description}
-            hint={t('welcome.viewTask')}
-            onPress={openPriority}
-          />
+          <View style={{ gap: space.sm }}>
+            <Section title={t('needsYou.title')} />
+            <ActionsCard
+              tone="alert"
+              kicker={t('needsYou.actions', { count: needsYou.length })}
+              title={alertTitle(priority)}
+              detail={priority.description}
+              hint={t(priority.key === 'care_overdue' ? 'needsYou.reviewCare' : 'welcome.viewTask')}
+              onPress={openPriority}
+            />
+          </View>
         ) : nextMeeting ? (
           <ActionsCard
             tone="calm"
@@ -220,24 +225,33 @@ export function HomeScreen() {
         )}
         {needsYou.length > 1 ? (
           <View style={{ marginTop: space.sm }}>
-            <Section
-              title={t('welcome.moreCare')}
-              action={needsYou.length > 3 ? t(showAllNeeds ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
-              onAction={() => setShowAllNeeds(!showAllNeeds)}
-            />
             {needsYou.slice(1, showAllNeeds ? undefined : 3).map((item, index) => (
               <ListRow
                 key={item.key}
                 divider={index > 0}
-                title={`${format.number(item.count)} ${item.label}`}
+                title={alertTitle(item)}
                 subtitle={item.description}
-                left={<Icon name="care" size={18} color={colors.flame} />}
+                left={<Icon name={item.key.startsWith('attendance') ? 'attendance' : item.key.startsWith('meeting') ? 'calendar' : item.key.endsWith('approvals') ? 'approvals' : item.key === 'missing_leadership' ? 'members' : 'care'} size={19} color={colors.warning} />}
                 onPress={() => openAlert(item)}
               />
             ))}
+            {needsYou.length > 3 ? (
+              <ListRow title={t(showAllNeeds ? 'shortcuts.showLess' : 'shortcuts.showAll')} divider onPress={() => setShowAllNeeds(!showAllNeeds)} />
+            ) : null}
           </View>
         ) : null}
       </Reveal>
+
+      {actions.length ? (
+        <Reveal delay={90}>
+          <QuickActions
+            title={t('shortcuts.title')}
+            actions={showAllActions ? actions : actions.slice(0, 4)}
+            viewAll={actions.length > 4 ? t(showAllActions ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
+            onViewAll={() => setShowAllActions(!showAllActions)}
+          />
+        </Reveal>
+      ) : null}
 
       {dashboard.error && !metrics ? <ErrorState message={dashboard.error} onRetry={() => void dashboard.refresh()} /> : null}
 
