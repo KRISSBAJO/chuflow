@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { User } from '../users/schemas/user.schema';
 import { YouthDevelopment, YouthDevelopmentProgress } from './youth-development.schema';
-import { YouthMentoringCheckInDto, YouthMentoringDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
+import { YouthMentoringCheckInDto, YouthMentoringDto, YouthMentoringReminderDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthEnrollment } from './youth.schema';
 import { YouthService } from './youth.service';
 
@@ -142,13 +142,31 @@ export class YouthDevelopmentService {
     await this.activeEnrollment(group._id, String(assignment.enrollmentId));
     if (dto.date > today() || dto.date < assignment.permissionConfirmedAt.toISOString().slice(0, 10)) throw new BadRequestException();
     if (!(await this.activities.updateOne(query, { $addToSet: { checkIns: dto.date } })).matchedCount) throw new ConflictException();
+    await this.activities.updateOne({ ...query, nextCheckIn: dto.date }, { $unset: { nextCheckIn: 1, participantNextStep: 1 } });
+    return { saved: true };
+  }
+
+  async mentoringReminder(user: AuthUser, groupId: string, activityId: string, dto: YouthMentoringReminderDto) {
+    const { group, screenedLeader, manager } = await this.youth.developmentScope(user, groupId);
+    if (!screenedLeader || (!manager && String(group.leaderId) !== user.sub)) throw new ForbiddenException();
+    if (dto.date && dto.date < today()) throw new BadRequestException('Choose today or a future check-in date.');
+    const query = { _id: objectId(activityId), groupId: group._id, kind: 'mentoring', active: true,
+      mentorId: group.leaderId, permissionConfirmedAt: { $exists: true } };
+    const assignment = await this.activities.findOne(query).select('enrollmentId').lean();
+    if (!assignment?.enrollmentId) throw new NotFoundException();
+    await this.activeEnrollment(group._id, String(assignment.enrollmentId));
+    const result = await this.activities.updateOne({ ...query, ...(dto.date ? { checkIns: { $ne: dto.date } } : {}) },
+      dto.date ? { $set: { nextCheckIn: dto.date, participantNextStep: dto.nextStep?.trim() ?? '' } } :
+        { $unset: { nextCheckIn: 1, participantNextStep: 1 } });
+    if (!result.matchedCount) throw new ConflictException();
     return { saved: true };
   }
 
   async endMentoring(user: AuthUser, groupId: string, activityId: string) {
     const { group } = await this.youth.developmentScope(user, groupId, true);
     const query = { _id: objectId(activityId), groupId: group._id, kind: 'mentoring', active: true };
-    if (!(await this.activities.updateOne(query, { $set: { active: false, endedAt: new Date() } })).matchedCount) throw new NotFoundException();
+    if (!(await this.activities.updateOne(query, { $set: { active: false, endedAt: new Date() },
+      $unset: { nextCheckIn: 1, participantNextStep: 1 } })).matchedCount) throw new NotFoundException();
     return { saved: true };
   }
 }

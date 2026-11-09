@@ -1,6 +1,9 @@
 {
   "youth": {
     "participantHome": {
+      "mentoringReminder": {
+        "title": "Mentoring check-in"
+      },
       "serviceLog": {
         "trackComplete": "Track complete",
         "history": "Verified service",

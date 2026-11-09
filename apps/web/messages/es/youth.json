@@ -1,5 +1,13 @@
 {
   "youth": {
+    "mentoringReminder": {
+      "title": "Seguimiento de mentoría",
+      "date": "Fecha de la próxima reunión",
+      "nextStep": "Próximo paso acordado (opcional)",
+      "visible": "El participante puede leerlo. Mantén las notas privadas fuera de este campo.",
+      "save": "Guardar recordatorio",
+      "clear": "Quitar recordatorio"
+    },
     "serviceLog": {
       "minutes": "Minutos de servicio verificados",
       "hint": "Introduce el tiempo de servicio. Introduce cero para eliminar un registro anterior.",

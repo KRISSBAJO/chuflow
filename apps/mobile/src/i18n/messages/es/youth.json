@@ -1,6 +1,9 @@
 {
   "youth": {
     "participantHome": {
+      "mentoringReminder": {
+        "title": "Seguimiento de mentoría"
+      },
       "serviceLog": {
         "trackComplete": "Itinerario completado",
         "history": "Servicio verificado",

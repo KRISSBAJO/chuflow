@@ -1,5 +1,13 @@
 {
   "youth": {
+    "mentoringReminder": {
+      "title": "Point de mentorat",
+      "date": "Date du prochain rendez-vous",
+      "nextStep": "Prochaine étape convenue (facultatif)",
+      "visible": "Le participant peut lire ce texte. Gardez les notes privées en dehors de ce champ.",
+      "save": "Enregistrer le rappel",
+      "clear": "Effacer le rappel"
+    },
     "serviceLog": {
       "minutes": "Minutes de service vérifiées",
       "hint": "Saisissez le temps de service. Saisissez zéro pour supprimer une saisie précédente.",

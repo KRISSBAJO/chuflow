@@ -6,7 +6,7 @@ import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
-import { YouthMentoringCheckInDto, YouthMentoringDto, YouthPostDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
+import { YouthMentoringCheckInDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPostDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
 import { YouthParticipantInviteDto } from './youth.dto';
 
@@ -50,6 +50,11 @@ export class YouthController {
   @Post('groups/:id/development/:activity/check-ins')
   mentoringCheckIn(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string, @Body() dto: YouthMentoringCheckInDto) {
     return this.development.checkIn(user, id, activity, dto);
+  }
+
+  @Patch('groups/:id/development/:activity/reminder')
+  mentoringReminder(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string, @Body() dto: YouthMentoringReminderDto) {
+    return this.development.mentoringReminder(user, id, activity, dto);
   }
 
   @Patch('groups/:id/development/:activity/end')

@@ -29,6 +29,7 @@ type Preview = {
   projects: { id: string; title: string; groupId: string; date?: string; location?: string; signedUp?: boolean }[];
   posts?: { _id: string; groupId: string; kind: 'update' | 'devotional'; title: string; body: string; createdAt: string }[];
   serviceHistory?: { id: string; title: string; date?: string; minutes: number }[];
+  mentoringReminder?: { date: string; nextStep?: string };
 };
 
 export function YouthHomePreview({ participant = false }: { participant?: boolean } = {}) {
@@ -50,6 +51,15 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
   }, [participant, reload]);
   const preview = result.data;
   const serviceHistory = preview?.serviceHistory ?? [];
+  const reminder = participant ? preview?.mentoringReminder : undefined;
+  const mentoringCard = reminder ? <View style={styles.feature}>
+    <View style={styles.featureCopy}>
+      <Text style={styles.eyebrow}>{t('mentoringReminder.title')}</Text>
+      <Text style={styles.featureTitle}>{format.date(reminder.date)}</Text>
+      {reminder.nextStep ? <Text style={type.body}>{reminder.nextStep}</Text> : null}
+    </View>
+    <View style={styles.featureIcon}><Icon name="calendar" color="#974020" /></View>
+  </View> : null;
   const serviceHours = (minutes: number) => format.number(minutes / 60, { maximumFractionDigits: 2 });
   const next = preview?.events[0];
   const eventDetails = (event: Event) => {
@@ -94,6 +104,7 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
               <Text style={type.body}>{t('welcomeSubtitle')}</Text>
             </View>
           </View>
+          {mentoringCard}
           {featured ? <Pressable accessibilityRole="button" onPress={() => setTab(featured.tab)}
             style={({ pressed }) => [styles.feature, pressed && styles.pressed]}>
             <View style={styles.featureCopy}>
@@ -153,6 +164,7 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
             : <Text style={styles.empty}>{t('noEvents')}</Text>}
         </View> : null}
         {tab === 'journey' ? <View style={styles.sections}>
+          {mentoringCard}
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t('tracks')}</Text>
           {preview.tracks.length ? preview.tracks.map(track => <View key={track.id} style={styles.track}>
             <Text style={type.title}>{track.title}</Text>

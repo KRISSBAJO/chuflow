@@ -220,7 +220,7 @@ export class YouthService {
   async participantHome(user: AuthUser) {
     const person = await this.participantEnrollment(user);
     const [group, branch, activities, events, delegations, registrations, posts] = await Promise.all([
-      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program').lean(),
+      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program branchId leaderId clearanceUntil').lean(),
       this.branches.findById(person.branchId).select('name').lean(),
       this.activities.find({ groupId: person.groupId, kind: { $in: ['track', 'project'] } })
         .select('kind title date location milestones').sort({ date: 1 }).lean(),
@@ -230,6 +230,12 @@ export class YouthService {
       this.groupPosts([person.groupId]),
     ]);
     if (!group || !branch) throw new ForbiddenException();
+    const assignment = group.leaderId && await this.cleared(group) ? await this.activities.findOne({
+      groupId: group._id, enrollmentId: person._id, kind: 'mentoring', active: true, mentorId: group.leaderId,
+      permissionConfirmedAt: { $exists: true }, nextCheckIn: { $exists: true },
+    }).select('nextCheckIn participantNextStep checkIns').lean() : null;
+    const reminder = assignment?.nextCheckIn && !assignment.checkIns?.includes(assignment.nextCheckIn)
+      ? { date: assignment.nextCheckIn, nextStep: assignment.participantNextStep } : undefined;
     const camps = await this.groups.find({ _id: { $in: delegations.map(item => item.groupId) }, eventDate: { $gte: day() }, campEndDate: { $exists: true } }).sort({ eventDate: 1 }).limit(40).lean();
     const progress = await this.progress.find({ enrollmentId: person._id, activityId: { $in: activities.map(item => item._id) } })
       .select('activityId completed signedUpAt serviceMinutes').lean();
@@ -252,6 +258,7 @@ export class YouthService {
     return {
       posts,
       serviceHistory,
+      mentoringReminder: reminder,
       branch: branch.name, groups: [{ id: group._id, name: group.name, program: group.program }],
       events: rows.filter(row => row !== null).sort((a, b) => a.date!.localeCompare(b.date!)),
       tracks: activities.filter(item => item.kind === 'track').map(item => ({ id: item._id, title: item.title,

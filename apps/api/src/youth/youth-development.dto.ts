@@ -1,4 +1,4 @@
-import { ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsMongoId, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsMongoId, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 class ActivityTitle {
   @IsString() @Matches(/\S/) @MaxLength(100) title!: string;
@@ -38,4 +38,10 @@ export class YouthServiceMinutesDto {
 
 export class YouthMentoringCheckInDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date!: string;
+}
+
+export class YouthMentoringReminderDto {
+  @ValidateIf((_, value) => value !== null)
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date!: string | null;
+  @IsOptional() @IsString() @MaxLength(180) nextStep?: string;
 }

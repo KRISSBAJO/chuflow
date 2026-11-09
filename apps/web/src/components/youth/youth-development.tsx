@@ -17,6 +17,8 @@ type Activity = {
   mentorName?: string;
   canCheckIn?: boolean;
   checkIns?: string[];
+  nextCheckIn?: string;
+  participantNextStep?: string;
   active?: boolean;
 };
 type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string; serviceMinutes?: number };
@@ -113,6 +115,8 @@ function MentoringCard({ item, person, manager, path }: { item: Activity; person
   const t = useTranslations("youth");
   const format = useFormatter();
   const { run, busy } = useYouthAction();
+  const today = new Date().toISOString().slice(0, 10);
+  const reminderPath = path + "/" + item._id + "/reminder";
   return <article className="app-card space-y-3 p-5">
     <h3 className="font-semibold">{item.title}</h3>
     <p className="text-sm">{person?.firstName} {person?.lastName} · {t("mentorLabel", { name: item.mentorName || t("mentorUnavailable") })}</p>
@@ -124,9 +128,30 @@ function MentoringCard({ item, person, manager, path }: { item: Activity; person
       event.preventDefault();
       void run(path + "/" + item._id + "/check-ins", "POST", { date: new FormData(event.currentTarget).get("date") });
     }}>
-      <Field label={t("checkInDate")}><input className="ui-input" type="date" name="date" max={new Date().toISOString().slice(0, 10)} required /></Field>
+      <Field label={t("checkInDate")}><input className="ui-input" type="date" name="date" max={today} required /></Field>
       <Button type="submit" disabled={busy}>{t("logCheckIn")}</Button>
     </form> : null}
+    {item.canCheckIn ? <details className="rounded-xl border border-black/10 p-3">
+      <summary className="cursor-pointer text-sm font-semibold">{t("mentoringReminder.title")}{item.nextCheckIn ? " · " +
+        format.dateTime(new Date(item.nextCheckIn), { dateStyle: "medium", timeZone: "UTC" }) : ""}</summary>
+      <form key={(item.nextCheckIn ?? "") + ":" + (item.participantNextStep ?? "")} className="mt-3 space-y-3" onSubmit={event => {
+        event.preventDefault();
+        const fields = new FormData(event.currentTarget);
+        void run(reminderPath, "PATCH", { date: fields.get("date"), nextStep: fields.get("nextStep") });
+      }}>
+        <Field label={t("mentoringReminder.date")}>
+          <input className="ui-input" name="date" type="date" min={today} defaultValue={item.nextCheckIn} required />
+        </Field>
+        <Field label={t("mentoringReminder.nextStep")} hint={t("mentoringReminder.visible")}>
+          <input className="ui-input" name="nextStep" maxLength={180} defaultValue={item.participantNextStep} />
+        </Field>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" size="sm" disabled={busy}>{t("mentoringReminder.save")}</Button>
+          {item.nextCheckIn ? <Button type="button" size="sm" variant="secondary" disabled={busy}
+            onClick={() => void run(reminderPath, "PATCH", { date: null })}>{t("mentoringReminder.clear")}</Button> : null}
+        </div>
+      </form>
+    </details> : null}
     {manager && item.active ? <Button type="button" variant="secondary" disabled={busy} onClick={() => {
       if (window.confirm(t("endMentoringConfirm"))) void run(path + "/" + item._id + "/end", "PATCH");
     }}>{t("endMentoring")}</Button> : null}

@@ -14,6 +14,8 @@ export class YouthDevelopment {
   @Prop({ type: SchemaTypes.ObjectId, required: true }) createdBy!: Types.ObjectId;
   @Prop({ type: Date }) permissionConfirmedAt?: Date;
   @Prop({ type: [String], default: undefined }) checkIns?: string[];
+  @Prop() nextCheckIn?: string;
+  @Prop() participantNextStep?: string;
   @Prop({ type: Date }) endedAt?: Date;
   @Prop() active?: boolean;
 }

@@ -1,6 +1,9 @@
 {
   "youth": {
     "participantHome": {
+      "mentoringReminder": {
+        "title": "Point de mentorat"
+      },
       "serviceLog": {
         "trackComplete": "Parcours terminé",
         "history": "Service vérifié",

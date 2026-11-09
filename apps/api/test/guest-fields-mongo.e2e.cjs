@@ -389,6 +389,22 @@ async function run() {
     const participantToken = participant.accessToken;
     const participantHome = () => request('/youth-participant/home', 'GET', undefined, participantToken);
     const youthHome = await expect(await participantHome(), 200);
+    const reminderAssignment = await expect(await youth(development + '/mentoring', 'POST',
+      { ...pair, title: 'Private staff focus' }, youthPastor.token), 201);
+    const mentoringReminderPath = development + '/' + reminderAssignment.id + '/reminder';
+    const reminderInput = { date, nextStep: 'Bring your reflection.' };
+    await expect(await youth(mentoringReminderPath, 'PATCH', reminderInput, otherPastor), 403);
+    await expect(await youth(mentoringReminderPath, 'PATCH', { ...reminderInput, date: '2026-02-30' }, team), 400);
+    await expect(await youth(mentoringReminderPath, 'PATCH', reminderInput, team), 200);
+    const reminderHome = await expect(await participantHome(), 200);
+    assert.deepEqual(reminderHome.mentoringReminder, reminderInput);
+    assert.ok(!JSON.stringify(reminderHome).includes('Private staff focus'));
+    await expect(await youth(development + '/' + reminderAssignment.id + '/check-ins', 'POST', { date }, team), 201);
+    assert.equal((await expect(await participantHome(), 200)).mentoringReminder, undefined);
+    await expect(await youth(mentoringReminderPath, 'PATCH', reminderInput, team), 409);
+    await expect(await youth(mentoringReminderPath, 'PATCH', { date: '2099-02-28' }, youthPastor.token), 200);
+    await expect(await youth(mentoringReminderPath, 'PATCH', { date: null }, youthPastor.token), 200);
+    assert.equal((await expect(await participantHome(), 200)).mentoringReminder, undefined);
     const servicePath = development + '/' + project.id + '/service-minutes';
     const service = { enrollmentId: teenId, minutes: 90 };
     await expect(await youth(servicePath, 'PATCH', service, team), 403);

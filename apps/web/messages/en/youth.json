@@ -1,5 +1,13 @@
 {
   "youth": {
+    "mentoringReminder": {
+      "title": "Mentoring check-in",
+      "date": "Next check-in date",
+      "nextStep": "Agreed next step (optional)",
+      "visible": "The participant can read this. Keep private mentoring notes out of this field.",
+      "save": "Save reminder",
+      "clear": "Clear reminder"
+    },
     "serviceLog": {
       "minutes": "Verified service minutes",
       "hint": "Enter the time served. Enter zero to remove a previous entry.",
