@@ -11,6 +11,9 @@
       "followUp": "Suivi"
     },
     "shortcuts": {
+      "pinTitle": "Épingler des raccourcis",
+      "pinHint": "Choisissez jusqu’à quatre favoris. Les places libres sont remplies selon votre rôle.",
+      "pinFailed": "Impossible d’enregistrer vos raccourcis. Réessayez.",
       "newGuest": "Nouvel invité",
       "attendance": "Présence",
       "followUp": "Suivi",

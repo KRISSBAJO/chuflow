@@ -11,6 +11,9 @@
       "followUp": "Follow-up"
     },
     "shortcuts": {
+      "pinTitle": "Pin shortcuts",
+      "pinHint": "Choose up to four favorites. Open spots are filled with shortcuts for your role.",
+      "pinFailed": "Could not save your shortcuts. Try again.",
       "newGuest": "New guest",
       "attendance": "Attendance",
       "followUp": "Follow-up",

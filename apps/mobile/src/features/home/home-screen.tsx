@@ -1,8 +1,8 @@
 import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Icon } from '@/components/icon';
-import { StatGrid, StatTile } from '@/components/kit';
+import { Sheet, StatGrid, StatTile } from '@/components/kit';
 import { Reveal } from '@/components/motion';
 import { Caption, ErrorState, ListRow, Notice, Screen, Section } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
@@ -17,12 +17,13 @@ import { routeForAlert } from '@/lib/notifications';
 import { openWorkspaceBrowser } from '@/lib/open-workspace-browser';
 import { useOnline } from '@/lib/offline-queue';
 import { can } from '@/lib/permissions';
-import { useSession, userBranchId } from '@/lib/session';
+import { useSession, userBranchId, userId } from '@/lib/session';
 import type { AlertsSummary } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { DaysRow } from './days-row';
 import { BranchHealth, Watchlist } from './executive-blocks';
-import { ActionsCard, GuestStrip, HeroBand, PulseCard, QuickActions, type QuickAction } from './home-blocks';
+import { ActionsCard, GuestStrip, HeroBand, PulseCard, type QuickAction } from './home-blocks';
+import { HomeShortcuts } from './home-shortcuts';
 import { FollowUpPipeline, NewestMembers } from './operational-blocks';
 import { nextLocalService, type HomeServiceSchedule } from './today';
 import type { DashboardOverview } from './types';
@@ -65,7 +66,6 @@ export function HomeScreen() {
   const recent = operational?.recentGuests ?? [];
   const needsYou = (summary?.items ?? []).filter((item) => item.count > 0).sort((a, b) => Number(b.tone === 'critical') - Number(a.tone === 'critical'));
   const priority = needsYou[0];
-  const [showAllActions, setShowAllActions] = useState(false);
   const scopeLabel = data?.scope.kind === 'all_network' ? t('allNetwork') : (data?.scope.label ?? (typeof user?.branchId === 'object' ? user.branchId?.name : undefined));
   const upcoming = (meetings.data?.items ?? []).filter((meeting) => meeting.status !== 'cancelled').slice(0, 2);
   const nextMeeting = upcoming[0];
@@ -139,6 +139,7 @@ export function HomeScreen() {
     .map(({ show: _show, ...action }) => action);
   const preferred = can.executive(role) ? EXECUTIVE_SHORTCUTS : role === 'follow_up' ? CARE_SHORTCUTS : role === 'usher' ? USHER_SHORTCUTS : [];
   const orderedActions = [...preferred.flatMap((key) => actions.filter((action) => action.key === key)), ...actions.filter((action) => !preferred.includes(action.key))];
+  const shortcutsKey = `chuflow.homeShortcuts.${JSON.stringify([user?.workspace?.id, userId(user)])}`;
 
   const openAlert = ({ key, href }: AlertsSummary['items'][number]) => {
     if (key === 'attendance_watch') {
@@ -162,6 +163,12 @@ export function HomeScreen() {
       default: return `${format.number(count)} ${item.label}`;
     }
   };
+
+  const alertRow = (item: AlertsSummary['items'][number], index: number, onPress: () => void) => (
+    <ListRow key={item.key} divider={index > 0} title={alertTitle(item)} subtitle={item.description}
+      left={<Icon name={item.key.startsWith('attendance') ? 'attendance' : item.key.startsWith('meeting') ? 'calendar' : item.key.endsWith('approvals') ? 'approvals' : item.key === 'missing_leadership' ? 'members' : 'care'} size={19} color={colors.warning} />}
+      onPress={onPress} />
+  );
 
   return (
     <Screen
@@ -218,22 +225,20 @@ export function HomeScreen() {
         ) : summary ? <Caption style={{ color: colors.success }}>{t('needsYou.caughtUp')}</Caption> : null}
         {needsYou.length > 1 ? (
           <View style={{ marginTop: space.sm }}>
-            {needsYou.slice(1, showAllNeeds ? undefined : 3).map((item, index) => (
-              <ListRow
-                key={item.key}
-                divider={index > 0}
-                title={alertTitle(item)}
-                subtitle={item.description}
-                left={<Icon name={item.key.startsWith('attendance') ? 'attendance' : item.key.startsWith('meeting') ? 'calendar' : item.key.endsWith('approvals') ? 'approvals' : item.key === 'missing_leadership' ? 'members' : 'care'} size={19} color={colors.warning} />}
-                onPress={() => openAlert(item)}
-              />
-            ))}
+            {needsYou.slice(1, 3).map((item, index) => alertRow(item, index, () => openAlert(item)))}
             {needsYou.length > 3 ? (
-              <ListRow title={t(showAllNeeds ? 'shortcuts.showLess' : 'shortcuts.showAll')} divider onPress={() => setShowAllNeeds(!showAllNeeds)} />
+              <ListRow title={t('shortcuts.showAll')} divider onPress={() => setShowAllNeeds(true)} />
             ) : null}
           </View>
         ) : null}
       </Reveal>
+      {showAllNeeds ? (
+        <Sheet visible title={t('needsYou.title')} onClose={() => setShowAllNeeds(false)}>
+          <ScrollView>
+            {needsYou.map((item, index) => alertRow(item, index, () => { setShowAllNeeds(false); openAlert(item); }))}
+          </ScrollView>
+        </Sheet>
+      ) : null}
 
       {showService ? (
         <ActionsCard
@@ -252,12 +257,7 @@ export function HomeScreen() {
 
       {actions.length ? (
         <Reveal delay={90}>
-          <QuickActions
-            title={t('shortcuts.title')}
-            actions={showAllActions ? orderedActions : orderedActions.slice(0, 4)}
-            viewAll={actions.length > 4 ? t(showAllActions ? 'shortcuts.showLess' : 'shortcuts.showAll') : undefined}
-            onViewAll={() => setShowAllActions(!showAllActions)}
-          />
+          <HomeShortcuts key={shortcutsKey} actions={orderedActions} storageKey={shortcutsKey} />
         </Reveal>
       ) : null}
 

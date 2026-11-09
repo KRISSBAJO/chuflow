@@ -11,6 +11,9 @@
       "followUp": "Acompanhamento"
     },
     "shortcuts": {
+      "pinTitle": "Fixar atalhos",
+      "pinHint": "Escolha até quatro favoritos. Os espaços livres são preenchidos de acordo com sua função.",
+      "pinFailed": "Não foi possível salvar seus atalhos. Tente novamente.",
       "newGuest": "Novo visitante",
       "attendance": "Presença",
       "followUp": "Acompanhamento",

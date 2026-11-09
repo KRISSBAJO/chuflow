@@ -114,10 +114,10 @@ function HomeSearchPill({ label, onPress }: { label: string; onPress: () => void
 
 export type QuickAction = { key: string; icon: IconName; label: string; onPress: () => void; badge?: number };
 
-export function QuickActions({ title, actions, viewAll, onViewAll }: { title: string; actions: QuickAction[]; viewAll?: string; onViewAll?: () => void }) {
+export function QuickActions({ title, actions, actionLabel, onAction }: { title: string; actions: QuickAction[]; actionLabel?: string; onAction?: () => void }) {
   return (
     <View style={{ gap: space.xs }}>
-      <Section title={title} action={viewAll} onAction={onViewAll} />
+      <Section title={title} action={actionLabel} onAction={onAction} />
       <View style={styles.actionsRow}>
         {actions.map((action) => (
           <PressableScale

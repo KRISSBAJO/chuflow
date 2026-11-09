@@ -11,6 +11,9 @@
       "followUp": "Seguimiento"
     },
     "shortcuts": {
+      "pinTitle": "Fijar accesos rápidos",
+      "pinHint": "Elige hasta cuatro favoritos. Los espacios libres se completan según tu rol.",
+      "pinFailed": "No se pudieron guardar tus accesos rápidos. Inténtalo de nuevo.",
       "newGuest": "Nuevo invitado",
       "attendance": "Asistencia",
       "followUp": "Seguimiento",
