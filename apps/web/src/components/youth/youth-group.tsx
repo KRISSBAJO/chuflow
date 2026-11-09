@@ -9,6 +9,7 @@ import { Button, Field } from "@/components/ui/ui";
 import { API_URL } from "@/lib/api";
 import { workspacePublicHref } from "@/lib/workspace-routing";
 import type { YouthDetail, YouthPerson } from "@/lib/youth";
+import { EventFollowUp } from "./event-follow-up";
 import { useYouthAction } from "./use-youth-action";
 import { YouthGroupFields, youthGroupValues } from "./youth-setup";
 
@@ -106,12 +107,16 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
   const { run, busy } = useYouthAction();
   const path = "/youth/groups/" + group._id;
   const [qrLink, setQrLink] = useState<string>();
+  const [onlyOpen, setOnlyOpen] = useState(false);
   const registrationAvailable = data.registrationAvailable ?? canRecord;
   const href = registrationToken && registrationAvailable ? workspacePublicHref("/youth-register/" + registrationToken, workspace) : null;
   const pending = people.filter(person => person.state === "pending");
   const active = people.filter(person => person.state === "active");
   const current = new Set(present);
   const eventFull = group.capacity !== undefined && active.length >= group.capacity;
+  const openFollowUps = active.filter(person => person.campFollowUp?.outcome === "open")
+    .sort((a, b) => a.campFollowUp!.dueDate.localeCompare(b.campFollowUp!.dueDate));
+  const followUpRoster = onlyOpen ? openFollowUps : active;
   return <div className="space-y-5">
     {group.eventDate && group.registrationDeadline ? <section className="app-card space-y-1 p-5 text-sm">
       <p><strong>{t("eventDate")}</strong> · {format.dateTime(new Date(group.eventDate), { dateStyle: "medium", timeZone: "UTC" })} · {group.venue}</p>
@@ -141,6 +146,18 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
           {format.dateTime(new Date(session.date), { dateStyle: "medium", timeZone: "UTC" })} · {t("presentCount", { count: session.count })}
         </li>)}</ul></details> : null}
     </section>
+    {data.followUpOwners && (data.attendanceRecorded || openFollowUps.length > 0) ? <section className="app-card space-y-4 p-5">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">{t("campFollowUp.heading")}</h2>
+        <Button type="button" size="sm" variant="secondary" aria-pressed={onlyOpen} onClick={() => setOnlyOpen(!onlyOpen)}>
+          {onlyOpen ? t("campFollowUp.all") : t("campFollowUp.inbox", { count: openFollowUps.length })}
+        </Button>
+      </header>
+      {followUpRoster.length ? followUpRoster.map(person => <div key={person._id} className="space-y-2">
+        <p className="text-sm font-semibold">{person.firstName} {person.lastName}</p>
+        <EventFollowUp person={person} data={data} path={path + "/people/" + person._id} />
+      </div>) : <p className="text-sm text-neutral-600">{t("campFollowUp.empty")}</p>}
+    </section> : null}
     <section className="app-card space-y-3 p-5">
       <h2 className="text-lg font-semibold">{t("welcome")}</h2>
       {active.some(person => !person.welcomedAt) ? active.filter(person => !person.welcomedAt).map(person =>

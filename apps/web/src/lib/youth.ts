@@ -37,6 +37,11 @@ export type YouthPerson = {
   consentAt?: string;
   consentVersion?: number;
   customAnswers?: GuestCustomAnswer[];
+  campFollowUp?: YouthEventFollowUp;
+};
+export type YouthEventFollowUp = {
+  ownerId: string; dueDate: string; date: string; reason: "welcome" | "missed" | "invite";
+  outcome: "open" | "connected" | "no_response" | "declined"; revision: number;
 };
 export type YouthDetail = {
   group: YouthGroup;
@@ -49,5 +54,7 @@ export type YouthDetail = {
   registrationAvailable?: boolean;
   registrationToken: string | null;
   present: string[];
+  followUpOwners?: YouthDetail["leaders"];
+  attendanceRecorded?: boolean;
   recentSessions: { date: string; count: number }[];
 };

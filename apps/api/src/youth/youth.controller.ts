@@ -130,6 +130,11 @@ export class YouthController {
     return this.youth.review(user, id, person, dto);
   }
 
+  @Patch('groups/:id/people/:person/follow-up')
+  eventFollowUp(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string, @Body() dto: YouthCampFollowUpDto) {
+    return this.youth.eventFollowUp(user, id, person, dto);
+  }
+
   @Post('groups/:id/people/:person/welcome')
   welcome(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
     return this.youth.welcome(user, id, person);

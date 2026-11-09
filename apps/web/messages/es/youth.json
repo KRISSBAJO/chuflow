@@ -1,6 +1,7 @@
 {
   "youth": {
     "campFollowUp": {
+      "heading": "Seguimiento del evento",
       "assign": "Asignar seguimiento",
       "reason": "Motivo",
       "owner": "Responsable",
@@ -10,9 +11,9 @@
       "save": "Guardar seguimiento",
       "all": "Ver lista completa",
       "inbox": "Seguimientos abiertos ({count, number})",
-      "empty": "Esta delegación no tiene seguimientos abiertos.",
+      "empty": "No hay seguimientos abiertos.",
       "reasons": {
-        "welcome": "Dar la bienvenida después del campamento",
+        "welcome": "Dar la bienvenida después del evento",
         "missed": "Contactar tras una ausencia",
         "invite": "Invitar a un grupo o itinerario"
       },

@@ -192,21 +192,24 @@ export class YouthService {
     date = group.eventDate ?? date;
     const manager = this.managesGroup(user, group);
     const showRegistration = manager && !attendanceOnly;
-    const [people, session, leaders, link, recentSessions, cleared, destinations] = await Promise.all([
+    const showFollowUp = Boolean(group.eventDate && showRegistration && this.canManage(user));
+    const [people, session, leaders, link, recentSessions, cleared, destinations, followUpOwners] = await Promise.all([
       this.enrollments.find({ groupId: group._id, state: showRegistration ? { $in: ['active', 'pending'] } : 'active' })
-        .select(showRegistration ? '+guardianName +contact +birthDate +customAnswers' : 'firstName lastName state welcomedAt').sort({ firstName: 1, lastName: 1 }).lean(),
+        .select(showRegistration ? '+guardianName +contact +birthDate +customAnswers' + (showFollowUp ? ' +campFollowUp' : '') : 'firstName lastName state welcomedAt').sort({ firstName: 1, lastName: 1 }).lean(),
       this.sessions.findOne({ groupId: group._id, date }).lean(),
       showRegistration ? this.users.find({ branchId: group.branchId, isActive: true, role: { $in: leaderRoles } }).select('firstName lastName').sort({ firstName: 1 }).lean() : [],
       showRegistration ? this.groups.findById(group._id).select('+registrationToken').lean() : null,
       this.sessions.find({ groupId: group._id }).sort({ date: -1 }).limit(12).lean(),
       this.cleared(group),
       showRegistration && !group.eventDate ? this.groups.find({ branchId: group.branchId, eventDate: { $exists: false }, _id: { $ne: group._id } }).select('name minAge maxAge guardianUnderAge').sort({ name: 1 }).lean() : [],
+      showFollowUp ? this.followUpOwners(group.branchId) : undefined,
     ]);
     return {
       group, manager, date, people, leaders, destinations, canRecord: cleared,
       registrationAvailable: cleared && this.registrationInTime(group),
       registrationToken: link?.registrationToken ?? null,
       present: session?.present ?? [],
+      followUpOwners, attendanceRecorded: showFollowUp && Boolean(session),
       recentSessions: recentSessions.map(({ date, present }) => ({ date, count: present.length })),
     };
   }
@@ -476,8 +479,7 @@ export class YouthService {
       selected ? this.delegations.findById(selected._id).select('+token').lean() : null,
       coordinator ? this.users.find({ branchId: group.branchId, isActive: true, role: { $in: leaderRoles } }).select('firstName lastName').sort({ firstName: 1 }).lean() : [],
       this.cleared(group),
-      selected ? this.users.find({ branchId: selected.branchId, isActive: true, role: { $in: followUpRoles } })
-        .select('firstName lastName').sort({ firstName: 1, lastName: 1 }).lean() : [],
+      selected ? this.followUpOwners(selected.branchId) : [],
     ]);
     const ownIds = new Set(people.map(person => String(person._id)));
     const localBranches = new Set(local.map(row => String(row.branchId)));
@@ -498,13 +500,29 @@ export class YouthService {
 
   async campFollowUp(user: AuthUser, groupId: string, branchId: string, personId: string, dto: YouthCampFollowUpDto) {
     const { group, branch } = await this.campBranch(user, groupId, branchId);
-    if (dto.date < group.eventDate! || dto.date > group.campEndDate! || dto.date > day() || dto.dueDate < dto.date) {
-      throw new BadRequestException('Choose a recorded camp day and a due date on or after it.');
+    return this.saveEventFollowUp(user, group, branch.branchId, personId, dto);
+  }
+
+  async eventFollowUp(user: AuthUser, groupId: string, personId: string, dto: YouthCampFollowUpDto) {
+    const group = await this.scopedGroup(user, groupId, true);
+    if (!group.eventDate || group.campEndDate) throw new NotFoundException();
+    if (!this.canManage(user)) throw new ForbiddenException();
+    return this.saveEventFollowUp(user, group, group.branchId, personId, dto);
+  }
+
+  private followUpOwners(branchId: Types.ObjectId) {
+    return this.users.find({ branchId, isActive: true, role: { $in: followUpRoles } })
+      .select('firstName lastName').sort({ firstName: 1 }).lean();
+  }
+
+  private async saveEventFollowUp(user: AuthUser, group: YouthGroup & { _id: Types.ObjectId }, branchId: Types.ObjectId, personId: string, dto: YouthCampFollowUpDto) {
+    if (!group.eventDate || dto.date < group.eventDate || dto.date > (group.campEndDate ?? group.eventDate) || dto.date > day() || dto.dueDate < dto.date) {
+      throw new BadRequestException('Choose a recorded event day and a due date on or after it.');
     }
-    const filter = { _id: id(personId), groupId: group._id, branchId: branch.branchId, state: 'active' };
+    const filter = { _id: id(personId), groupId: group._id, branchId, state: 'active' };
     const person = await this.enrollments.findOne(filter).select('+campFollowUp').lean();
     if (!person) throw new NotFoundException();
-    if (!await this.users.exists({ _id: id(dto.ownerId), branchId: branch.branchId, isActive: true, role: { $in: followUpRoles } })) {
+    if (!await this.users.exists({ _id: id(dto.ownerId), branchId, isActive: true, role: { $in: followUpRoles } })) {
       throw new BadRequestException('Choose an active youth manager in this branch.');
     }
     if (dto.revision !== (person.campFollowUp?.revision ?? 0)) throw new ConflictException();

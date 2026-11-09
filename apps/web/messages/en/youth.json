@@ -1,6 +1,7 @@
 {
   "youth": {
     "campFollowUp": {
+      "heading": "Event follow-up",
       "assign": "Assign follow-up",
       "reason": "Reason",
       "owner": "Owner",
@@ -10,10 +11,10 @@
       "save": "Save follow-up",
       "all": "Show full roster",
       "inbox": "Open follow-ups ({count, number})",
-      "empty": "No open follow-ups for this delegation.",
+      "empty": "No open follow-ups.",
       "reasons": {
-        "welcome": "Welcome after camp",
-        "missed": "Check in after a missed day",
+        "welcome": "Welcome after the event",
+        "missed": "Check in after a missed session",
         "invite": "Invite to a group or track"
       },
       "outcomes": {

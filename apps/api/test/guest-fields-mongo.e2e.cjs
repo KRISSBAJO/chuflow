@@ -380,6 +380,21 @@ async function run() {
     await expect(await youth(eventPath + '/attendance', 'PATCH', eventMark, team), 200);
     await expect(await youth(eventPath + '/leader', 'PATCH', { leaderId: youthLeader.id, clearanceUntil: '2099-01-01', screeningVerified: true }, youthPastor.token), 200);
     await expect(await youth(eventPath + '/attendance', 'PATCH', eventMark, youthLeader.token), 200);
+    const eventFollowUpPath = eventPath + '/people/' + confirmed._id + '/follow-up';
+    const eventTask = { ownerId: youthPastor.id, dueDate: date, date, reason: 'invite', outcome: 'open', revision: 0 };
+    await expect(await youth(eventFollowUpPath, 'PATCH', eventTask, youthLeader.token), 403);
+    await expect(await youth(eventFollowUpPath, 'PATCH', eventTask, district), 403);
+    await expect(await youth(eventFollowUpPath, 'PATCH', eventTask, otherPastor), 403);
+    await expect(await youth(eventFollowUpPath, 'PATCH', { ...eventTask, reason: 'missed' }), 400);
+    await expect(await youth(eventFollowUpPath, 'PATCH', eventTask), 200);
+    await expect(await youth(eventFollowUpPath, 'PATCH', { ...eventTask, outcome: 'connected', revision: 1 }, youthPastor.token), 200);
+    const eventFollowUpRoster = await expect(await youth(eventPath), 200);
+    assert.equal(eventFollowUpRoster.people.find(person => person._id === confirmed._id).campFollowUp.outcome, 'connected');
+    for (const [suffix, auth] of [['', district], ['', youthLeader.token], ['?view=attendance', branchAdmin]]) {
+      const restricted = await expect(await youth(eventPath + suffix, 'GET', undefined, auth), 200);
+      assert.equal(restricted.followUpOwners, undefined);
+      assert.equal(restricted.people.find(person => person._id === confirmed._id).campFollowUp, undefined);
+    }
     await expect(await youth(eventPath + '/link', 'DELETE', undefined, youthLeader.token), 403);
     assert.equal((await expect(await youth(eventPath, 'GET', undefined, youthLeader.token), 200)).people[0].guardianName, undefined);
     assert.equal((await expect(await youth('', 'GET', undefined, youthLeader.token), 200)).groups.length, 1);

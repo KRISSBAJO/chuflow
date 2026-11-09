@@ -1,6 +1,7 @@
 {
   "youth": {
     "campFollowUp": {
+      "heading": "Suivi de l’événement",
       "assign": "Attribuer un suivi",
       "reason": "Motif",
       "owner": "Responsable",
@@ -10,9 +11,9 @@
       "save": "Enregistrer le suivi",
       "all": "Afficher la liste complète",
       "inbox": "Suivis en cours ({count, number})",
-      "empty": "Aucun suivi en cours pour cette délégation.",
+      "empty": "Aucun suivi en cours.",
       "reasons": {
-        "welcome": "Souhaiter la bienvenue après le camp",
+        "welcome": "Souhaiter la bienvenue après l’événement",
         "missed": "Prendre des nouvelles après une absence",
         "invite": "Inviter à rejoindre un groupe ou un parcours"
       },
