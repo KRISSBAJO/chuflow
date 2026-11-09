@@ -30,6 +30,8 @@ import {
   FollowUpDocument,
 } from '../follow-ups/schemas/follow-up.schema';
 import { Guest, GuestDocument } from '../guests/schemas/guest.schema';
+import { PrayerCareService } from '../guests/prayer-care.service';
+import { EntitlementsService } from '../platform/entitlements.service';
 import {
   IntakeSubmission,
   IntakeSubmissionDocument,
@@ -56,6 +58,8 @@ export class AlertsService {
   constructor(
     private readonly careService: CareService,
     private readonly meetingsService: MeetingsService,
+    private readonly prayerCare: PrayerCareService,
+    private readonly entitlements: EntitlementsService,
     @InjectModel(OutreachContact.name)
     private readonly outreachModel: Model<OutreachContactDocument>,
     @InjectModel(Branch.name)
@@ -296,7 +300,13 @@ export class AlertsService {
       }),
     ]);
     const careSummary = await this.careService.alertSummary(currentUser);
+    const plan = await this.entitlements.snapshot();
+    const prayerFollowUp = !plan.enforced || plan.features.includes('guests') ? await this.prayerCare.pendingFollowUp(currentUser) : 0;
     const items: AlertItem[] = [
+      prayerFollowUp > 0 ? {
+        key: 'prayer_follow_up', label: 'Prayer requests need follow-up', count: prayerFollowUp, tone: 'warm',
+        description: 'Review requests from guests who asked to be contacted.', href: '/guests/prayer-care?view=follow_up',
+      } : null,
       ...(careSummary.overdue > 0
         ? [
             {

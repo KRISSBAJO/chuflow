@@ -26,7 +26,6 @@ export function GuestProfileForm({
     maritalStatus?: string;
     invitedBy?: string;
     heardAboutChurch?: string;
-    prayerRequest?: string;
     salvationResponse?: string;
     visitStatus: string;
     branchId?: { _id?: string; name?: string };
@@ -62,7 +61,6 @@ export function GuestProfileForm({
           maritalStatus: formData.get("maritalStatus") || undefined,
           invitedBy: formData.get("invitedBy") || undefined,
           heardAboutChurch: formData.get("heardAboutChurch") || undefined,
-          prayerRequest: formData.get("prayerRequest") || undefined,
           salvationResponse: formData.get("salvationResponse") || undefined,
           visitStatus: formData.get("visitStatus") || undefined,
         }),
@@ -215,14 +213,6 @@ export function GuestProfileForm({
             name="salvationResponse"
             defaultValue={guest.salvationResponse || ""}
             placeholder={t("salvationResponse")}
-            className="ui-input"
-          />
-        </Field>
-        <Field label={t("prayerRequest")} className="md:col-span-2">
-          <textarea
-            name="prayerRequest"
-            defaultValue={guest.prayerRequest || ""}
-            placeholder={t("prayerRequest")}
             className="ui-input"
           />
         </Field>

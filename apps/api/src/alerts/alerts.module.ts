@@ -33,12 +33,16 @@ import {
 } from '../workspace-requests/schemas/workspace-request.schema';
 import { AlertsController } from './alerts.controller';
 import { AlertsService } from './alerts.service';
+import { GuestsModule } from '../guests/guests.module';
+import { EntitlementsModule } from '../platform/entitlements.module';
 
 @Module({
   imports: [
     MeetingsModule,
     CareModule,
     AccessScopeModule,
+    GuestsModule,
+    EntitlementsModule,
     MongooseModule.forFeature([
       { name: OutreachContact.name, schema: OutreachContactSchema },
       { name: Branch.name, schema: BranchSchema },

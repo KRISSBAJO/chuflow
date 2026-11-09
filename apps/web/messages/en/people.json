@@ -1,5 +1,33 @@
 {
   "people": {
+    "prayerCare": {
+      "all": "All requests",
+      "title": "Prayer Care",
+      "private": "Private",
+      "back": "Back to guests",
+      "description": "Review private guest prayer requests and assign care within the guest’s branch.",
+      "empty": "No prayer requests in your queue.",
+      "page": "Page {page} of {total}",
+      "next": "Next",
+      "contactAllowed": "Guest asked to be contacted.",
+      "privateOnly": "Prayer only. The guest hasn’t requested contact.",
+      "statusLabel": "Status",
+      "assigned": "Assigned to",
+      "unassigned": "Unassigned",
+      "inactive": "Previous assignee is unavailable",
+      "save": "Save",
+      "saved": "Prayer care updated.",
+      "failed": "Could not save this request.",
+      "conflict": "This request changed. The latest version is loading.",
+      "contactConfirmed": "The guest agreed to be contacted by the care team.",
+      "status": {
+        "new": "New",
+        "praying": "Praying",
+        "follow_up": "Follow-up due",
+        "answered": "Answered",
+        "closed": "Closed"
+      }
+    },
     "shared": {
       "unassigned": "Unassigned",
       "notRecorded": "Not recorded",

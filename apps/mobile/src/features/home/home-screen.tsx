@@ -171,7 +171,7 @@ export function HomeScreen() {
       return;
     }
     const [path] = href.split('?');
-    if (path === '/branches' || path === '/evangelism') {
+    if (path === '/branches' || path === '/evangelism' || path === '/guests/prayer-care') {
       void openWorkspaceBrowser(href, user?.workspace);
       return;
     }
@@ -184,12 +184,15 @@ export function HomeScreen() {
       case 'care_overdue': return t('needsYou.overdueCare', { count });
       case 'care_unassigned': return t('needsYou.careOwners', { count });
       case 'attendance_watch': return t('needsYou.attendanceMissing', { count });
+      case 'prayer_follow_up': return t('needsYou.prayerFollowUp', { count });
       default: return `${format.number(count)} ${item.label}`;
     }
   };
 
+  const alertDescription = (item: AlertsSummary['items'][number]) => item.key === 'prayer_follow_up' ? t('needsYou.prayerFollowUpHint') : item.description;
+
   const alertRow = (item: AlertsSummary['items'][number], index: number, onPress: () => void) => (
-    <ListRow key={item.key} divider={index > 0} title={alertTitle(item)} subtitle={item.description}
+    <ListRow key={item.key} divider={index > 0} title={alertTitle(item)} subtitle={alertDescription(item)}
       left={<Icon name={item.key.startsWith('attendance') ? 'attendance' : item.key.startsWith('meeting') ? 'calendar' : item.key.endsWith('approvals') ? 'approvals' : item.key === 'missing_leadership' ? 'members' : 'care'} size={19} color={colors.warning} />}
       onPress={onPress} />
   );
@@ -242,7 +245,7 @@ export function HomeScreen() {
               tone="alert"
               kicker={t('needsYou.actions', { count: needsYou.length })}
               title={alertTitle(priority)}
-              detail={priority.description}
+              detail={alertDescription(priority)}
               hint={t(priority.key === 'care_overdue' ? 'needsYou.reviewCare' : 'welcome.viewTask')}
               onPress={() => openAlert(priority)}
             />

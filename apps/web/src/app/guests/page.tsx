@@ -22,7 +22,7 @@ import {
   TableWrap,
 } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
-import { canFilterAcrossBranches } from "@/lib/permissions";
+import { canAccessPrayerCare, canFilterAcrossBranches } from "@/lib/permissions";
 import { publicServerGet, serverGet } from "@/lib/server-api";
 import type {
   BranchSummary,
@@ -188,6 +188,9 @@ export default async function GuestsPage({
         serviceTypes={serviceTypes}
         defaultBranchId={selectedBranchId || user.branchId}
       />
+      {canAccessPrayerCare(user.role) ? (
+        <div><Link href="/guests/prayer-care" className="inline-flex min-h-11 items-center rounded-full border border-black/10 px-4 text-sm font-medium">{(await getTranslations("people.prayerCare"))("title")}</Link></div>
+      ) : null}
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard
           label={t("registeredToday")}

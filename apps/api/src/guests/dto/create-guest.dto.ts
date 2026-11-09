@@ -8,6 +8,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateGuestDto {
@@ -103,6 +104,7 @@ export class CreateGuestDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   prayerRequest?: string;
 
   @ApiProperty({ required: false })
@@ -136,4 +138,4 @@ export class CreateGuestDto {
   assignedFollowUpUserId?: string;
 }
 
-export class UpdateGuestDto extends PartialType(OmitType(CreateGuestDto, ['customFields', 'formRevision'] as const)) {}
+export class UpdateGuestDto extends PartialType(OmitType(CreateGuestDto, ['customFields', 'formRevision', 'prayerRequest', 'wantsPastoralCall'] as const)) {}

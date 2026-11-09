@@ -5,6 +5,7 @@ export type GuestDocument = HydratedDocument<Guest>;
 
 @Schema({ timestamps: true })
 export class Guest {
+  declare createdAt?: Date;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'ImportBatch' }) importBatchId?: Types.ObjectId;
   @Prop() importedAt?: Date;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Branch', required: true })
@@ -61,11 +62,16 @@ export class Guest {
   @Prop()
   heardAboutChurch?: string;
 
-  @Prop()
+  @Prop({ select: false })
   prayerRequest?: string;
 
   @Prop({ default: false })
   wantsPastoralCall!: boolean;
+
+  @Prop({ select: false }) prayerCareStatus?: string;
+  @Prop({ type: SchemaTypes.ObjectId, select: false }) prayerCareAssigneeId?: Types.ObjectId | null;
+  @Prop({ select: false }) prayerCareRevision?: number;
+  @Prop({ select: false }) prayerCareUpdatedAt?: Date;
 
   @Prop()
   salvationResponse?: string;

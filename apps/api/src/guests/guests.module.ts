@@ -24,6 +24,9 @@ import { Guest, GuestSchema } from './schemas/guest.schema';
 import { GuestFieldsService } from './guest-fields.service';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { AppSetting, AppSettingSchema } from '../settings/schemas/app-setting.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { PrayerCareService } from './prayer-care.service';
+import { PrayerCareController } from './prayer-care.controller';
 
 @Module({
   imports: [
@@ -31,6 +34,7 @@ import { AppSetting, AppSettingSchema } from '../settings/schemas/app-setting.sc
     AuditLogsModule,
     MongooseModule.forFeature([
       { name: AppSetting.name, schema: AppSettingSchema },
+      { name: User.name, schema: UserSchema },
       { name: Guest.name, schema: GuestSchema },
       { name: Visit.name, schema: VisitSchema },
       { name: FollowUp.name, schema: FollowUpSchema },
@@ -42,8 +46,8 @@ import { AppSetting, AppSettingSchema } from '../settings/schemas/app-setting.sc
     FollowUpsModule,
     PushModule,
   ],
-  controllers: [GuestsController],
-  providers: [GuestsService, GuestFieldsService],
-  exports: [GuestsService, GuestFieldsService, MongooseModule],
+  controllers: [PrayerCareController, GuestsController],
+  providers: [GuestsService, GuestFieldsService, PrayerCareService],
+  exports: [GuestsService, GuestFieldsService, PrayerCareService, MongooseModule],
 })
 export class GuestsModule {}

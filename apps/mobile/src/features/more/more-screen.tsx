@@ -31,9 +31,10 @@ const AREAS: { key: AreaKey; icon: IconName; href: Href; feature: FeatureKey; sh
   { key: 'attendanceHistory', icon: 'history', href: '/attendance-history', feature: 'attendance', show: can.attendance },
   { key: 'reports', icon: 'reports', href: '/reports', feature: 'reporting', show: can.reports },
 ];
-type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings' | 'outreach' | 'serviceUnits' | 'registerFamily' | 'forms';
+type LinkKey = 'branches' | 'users' | 'templates' | 'structure' | 'settings' | 'outreach' | 'serviceUnits' | 'registerFamily' | 'forms' | 'prayerCare';
 type WebLink = { key: LinkKey; icon: IconName; path: string; show: (role?: string) => boolean; feature?: FeatureKey };
 const MINISTRY_LINKS: WebLink[] = [
+  { key: 'prayerCare', icon: 'care', path: '/guests/prayer-care', show: can.prayerCare, feature: 'guests' },
   { key: 'outreach', icon: 'members', path: '/evangelism', show: can.guests },
   { key: 'serviceUnits', icon: 'grid', path: '/service-units', show: can.lead },
   { key: 'registerFamily', icon: 'user', path: '/children/families/new', show: can.kidsSupervise, feature: 'kids' },

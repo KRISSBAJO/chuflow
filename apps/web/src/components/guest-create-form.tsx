@@ -36,6 +36,7 @@ export function GuestCreateForm({
   const t = useTranslations("people.guests.create");
   const tc = useTranslations("common");
   const tf = useTranslations("admin.settings.guestFields");
+  const tp = useTranslations("people.prayerCare");
   const locale = useLocale();
   const [selectedBranchId, setSelectedBranchId] = useState(
     defaultBranchId || (branches.length === 1 ? branches[0]?._id : "") || "",
@@ -111,6 +112,7 @@ export function GuestCreateForm({
           invitedBy: formData.get("invitedBy"),
           heardAboutChurch: formData.get("heardAboutChurch"),
           prayerRequest: formData.get("prayerRequest"),
+          wantsPastoralCall: formData.get("wantsPastoralCall") === "on",
           assignedFollowUpUserId:
             formData.get("assignedFollowUpUserId") || undefined,
           serviceType: formData.get("serviceType"),
@@ -283,10 +285,14 @@ export function GuestCreateForm({
         {visible("prayerRequest") ? <Field label={t("prayerRequest")} className="md:col-span-2">
           <textarea
             name="prayerRequest"
+            maxLength={2000}
             placeholder={t("prayerRequestPlaceholder")}
             className="ui-input"
           />
         </Field> : null}
+        {visible("wantsPastoralCall") ? <label className="flex items-center gap-2 text-sm md:col-span-2">
+          <input type="checkbox" name="wantsPastoralCall" /> {tp("contactConfirmed")}
+        </label> : null}
         {definition?.fields.map((field) => (
           <Field key={field.key} label={((locale === "es" && field.labelEs) || (locale === "fr" && field.labelFr) || (locale === "pt" && field.labelPt)) || field.label} required={field.required}>
             {field.type === "select" ? (

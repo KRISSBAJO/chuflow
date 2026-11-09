@@ -34,6 +34,7 @@ export const can = {
   guests: (role?: string) => has([...LEADERSHIP, ...SUPPORT], role),
   followUp: (role?: string) => has([...LEADERSHIP, 'follow_up'], role),
   careCases: (role?: string) => has([...LEADERSHIP, 'follow_up'], role),
+  prayerCare: (role?: string) => has([...GLOBAL, ...BRANCH_LEADERSHIP, 'follow_up'], role),
   attendance: (role?: string) => has([...LEADERSHIP, 'follow_up', 'usher'], role),
   recordAttendance: (role?: string) => has([...BRANCH_LEADERSHIP, 'usher'], role),
   approvals: (role?: string) => has([...LEADERSHIP, 'follow_up'], role),

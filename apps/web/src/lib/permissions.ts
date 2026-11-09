@@ -86,6 +86,10 @@ export function canConfigureAppSettings(role?: string) {
   return includesRole(APP_SETTINGS_ROLES, role);
 }
 
+export function canAccessPrayerCare(role?: string) {
+  return role !== undefined && ["super_admin", "branch_admin", "resident_pastor", "associate_pastor", "follow_up"].includes(role);
+}
+
 export function canManageCommunicationTemplates(role?: string) {
   return includesRole(['super_admin'], role);
 }

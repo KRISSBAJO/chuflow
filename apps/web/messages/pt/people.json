@@ -1,5 +1,33 @@
 {
   "people": {
+    "prayerCare": {
+      "all": "Todos os pedidos",
+      "title": "Cuidado em oração",
+      "private": "Privado",
+      "back": "Voltar aos visitantes",
+      "description": "Revise os pedidos de oração privados e atribua o acompanhamento na filial do visitante.",
+      "empty": "Nenhum pedido de oração na sua fila.",
+      "page": "Página {page} de {total}",
+      "next": "Próxima",
+      "contactAllowed": "O visitante pediu para ser contatado.",
+      "privateOnly": "Somente oração. O visitante não solicitou contato.",
+      "statusLabel": "Status",
+      "assigned": "Atribuído a",
+      "unassigned": "Sem responsável",
+      "inactive": "O responsável anterior não está disponível",
+      "save": "Salvar",
+      "saved": "Acompanhamento de oração atualizado.",
+      "failed": "Não foi possível salvar este pedido.",
+      "conflict": "O pedido foi alterado. Carregando a versão mais recente.",
+      "contactConfirmed": "O visitante concordou em ser contatado pela equipe de cuidado.",
+      "status": {
+        "new": "Novo",
+        "praying": "Em oração",
+        "follow_up": "Acompanhamento pendente",
+        "answered": "Respondido",
+        "closed": "Encerrado"
+      }
+    },
     "shared": {
       "unassigned": "Não atribuído",
       "notRecorded": "Não registado",

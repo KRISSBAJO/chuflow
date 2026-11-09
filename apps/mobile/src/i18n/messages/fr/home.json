@@ -28,6 +28,8 @@
       "showLess": "Réduire"
     },
     "needsYou": {
+      "prayerFollowUp": "{count, plural, one {# demande de prière à suivre} other {# demandes de prière à suivre}}",
+      "prayerFollowUpHint": "Consultez les demandes des visiteurs qui souhaitent être contactés.",
       "title": "À traiter",
       "overdueCare": "{count, plural, one {# engagement de suivi en retard} other {# engagements de suivi en retard}}",
       "careOwners": "{count, plural, one {# personne a besoin d’un référent} other {# personnes ont besoin d’un référent}}",

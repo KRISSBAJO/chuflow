@@ -1,5 +1,33 @@
 {
   "people": {
+    "prayerCare": {
+      "all": "Toutes les demandes",
+      "title": "Accompagnement par la prière",
+      "private": "Privé",
+      "back": "Retour aux visiteurs",
+      "description": "Consultez les demandes de prière privées et attribuez le suivi dans la branche du visiteur.",
+      "empty": "Aucune demande de prière dans votre file.",
+      "page": "Page {page} sur {total}",
+      "next": "Suivant",
+      "contactAllowed": "Le visiteur souhaite être contacté.",
+      "privateOnly": "Prière uniquement. Le visiteur n’a pas demandé à être contacté.",
+      "statusLabel": "Statut",
+      "assigned": "Attribué à",
+      "unassigned": "Non attribué",
+      "inactive": "La personne précédente n’est pas disponible",
+      "save": "Enregistrer",
+      "saved": "Suivi de prière mis à jour.",
+      "failed": "Impossible d’enregistrer cette demande.",
+      "conflict": "Cette demande a changé. Chargement de la dernière version.",
+      "contactConfirmed": "Le visiteur accepte d’être contacté par l’équipe de suivi.",
+      "status": {
+        "new": "Nouvelle",
+        "praying": "En prière",
+        "follow_up": "Suivi à faire",
+        "answered": "Exaucée",
+        "closed": "Clôturée"
+      }
+    },
     "shared": {
       "unassigned": "Non attribué",
       "notRecorded": "Non renseigné",

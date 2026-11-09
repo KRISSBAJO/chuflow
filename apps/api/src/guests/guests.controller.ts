@@ -25,7 +25,7 @@ import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 
 class LegacyPublicGuestDto extends PickType(CreateGuestDto, [
-  'branchId', 'firstName', 'lastName', 'phone', 'email', 'prayerRequest', 'heardAboutChurch', 'serviceType', 'customFields', 'formRevision',
+  'branchId', 'firstName', 'lastName', 'phone', 'email', 'prayerRequest', 'wantsPastoralCall', 'heardAboutChurch', 'serviceType', 'customFields', 'formRevision',
 ] as const) {}
 
 @ApiTags('Guests')

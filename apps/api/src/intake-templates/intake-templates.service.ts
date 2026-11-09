@@ -1141,11 +1141,25 @@ export class IntakeTemplatesService implements OnModuleInit {
     definition?: Awaited<ReturnType<GuestFieldsService['get']>>,
   ): T {
     if (!definition) return template;
+    const fields = template.fields.filter(({ key }) => !definition.hiddenPublic.some((hidden) =>
+      this.normalizeLookupValue(hidden) === this.normalizeLookupValue(key)) && !key.startsWith('custom_'));
+    const prayerFields = template.kind === 'guest' ? fields.flatMap((field) => {
+      if (this.normalizeLookupValue(field.key) === 'wantspastoralcall') return [];
+      if (this.normalizeLookupValue(field.key) !== 'prayerrequest') return [field];
+      return [{ ...field,
+        helpText: 'Only authorized care staff can read your request.',
+        helpTextEs: 'Solo el equipo de cuidado autorizado puede leer tu petición.',
+      }, {
+        key: 'wantsPastoralCall', type: 'select', required: false, width: 'full',
+        label: 'Would you like the care team to contact you?',
+        labelEs: '¿Quieres que el equipo de cuidado se comunique contigo?',
+        options: ['Yes', 'No'], optionsEs: ['Sí', 'No'],
+      }];
+    }) : fields;
     return {
       ...template,
       fields: [
-        ...template.fields.filter(({ key }) => !definition.hiddenPublic.some((hidden) =>
-          this.normalizeLookupValue(hidden) === this.normalizeLookupValue(key)) && !key.startsWith('custom_')),
+        ...prayerFields,
         ...definition.fields.filter((field) => field.public).map(({ key, label, labelEs, type, required, options }) =>
           ({ key, label, labelEs, type, required, options, width: type === 'textarea' ? 'full' : 'half' })),
       ],
@@ -1971,6 +1985,7 @@ export class IntakeTemplatesService implements OnModuleInit {
           ['prayerRequest'],
           ['prayer'],
         ),
+        wantsPastoralCall: this.getAnswerString(template, answers, ['wantsPastoralCall']) === 'Yes',
         serviceType:
           this.getAnswerString(
             template,
@@ -3367,7 +3382,8 @@ export class IntakeTemplatesService implements OnModuleInit {
       templateName: template.name,
       templateKind: template.kind,
       branchId: template.branchId,
-      answers: formKind ? Object.fromEntries(Object.entries(answers).filter(([key]) => !key.startsWith('custom_'))) : answers,
+      answers: formKind ? Object.fromEntries(Object.entries(answers).filter(([key]) =>
+        !key.startsWith('custom_') && (!isGuest || !['prayerrequest', 'wantspastoralcall'].includes(this.normalizeLookupValue(key))))) : answers,
       status: ['attendance', 'weekly_report', 'maag_report'].includes(
         template.kind,
       )

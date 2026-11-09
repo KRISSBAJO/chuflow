@@ -162,8 +162,7 @@ export class GuestsService {
           : target.visitStatus || source.visitStatus,
       invitedBy: target.invitedBy || source.invitedBy,
       heardAboutChurch: target.heardAboutChurch || source.heardAboutChurch,
-      prayerRequest: target.prayerRequest || source.prayerRequest,
-      wantsPastoralCall: target.wantsPastoralCall || source.wantsPastoralCall,
+      wantsPastoralCall: target.prayerRequest ? target.wantsPastoralCall : source.prayerRequest ? source.wantsPastoralCall : target.wantsPastoralCall || source.wantsPastoralCall,
       salvationResponse: target.salvationResponse || source.salvationResponse,
       convertedToMember: target.convertedToMember || source.convertedToMember,
     };
@@ -442,14 +441,16 @@ export class GuestsService {
   }
 
   async update(id: string, dto: UpdateGuestDto, currentUser: AuthUser) {
-    await this.findOne(id, currentUser);
+    const existing = await this.findOne(id, currentUser);
     const scopedBranchId = await this.accessScopeService.resolveScopedBranchId(
       currentUser,
       dto.branchId,
     );
+    const existingBranch = existing.branchId?._id ?? existing.branchId;
+    const moving = scopedBranchId && scopedBranchId !== String(existingBranch);
     const guest = await this.guestModel
-      .findByIdAndUpdate(
-        id,
+      .findOneAndUpdate(
+        { _id: id, ...(moving ? { prayerRequest: { $not: /\S/ } } : {}) },
         {
           ...dto,
           ...(scopedBranchId ? { branchId: scopedBranchId } : {}),
@@ -459,6 +460,7 @@ export class GuestsService {
       .populate('branchId')
       .lean();
     if (!guest) {
+      if (moving) throw new BadRequestException('A guest with a private prayer request cannot be transferred to another branch.');
       throw new NotFoundException('Guest not found');
     }
     return guest;
@@ -516,8 +518,8 @@ export class GuestsService {
     }
 
     const [target, source] = await Promise.all([
-      this.guestModel.findById(targetGuestId).select('+customAnswers'),
-      this.guestModel.findById(sourceGuestId).select('+customAnswers'),
+      this.guestModel.findById(targetGuestId).select('+customAnswers +prayerRequest'),
+      this.guestModel.findById(sourceGuestId).select('+customAnswers +prayerRequest +prayerCareStatus +prayerCareAssigneeId +prayerCareRevision +prayerCareUpdatedAt'),
     ]);
 
     if (!target || !source) {
@@ -531,6 +533,9 @@ export class GuestsService {
       throw new BadRequestException(
         'Guests must belong to the same branch to merge',
       );
+    }
+    if (target.prayerRequest?.trim() && source.prayerRequest?.trim()) {
+      throw new BadRequestException('Both guests have private prayer requests. The records cannot be merged.');
     }
 
     const mergedPayload = this.mergeGuestPayload(target, source);
@@ -563,6 +568,13 @@ export class GuestsService {
     ).values()];
     await this.guestModel.findByIdAndUpdate(target._id, {
       ...mergedPayload,
+      ...(!target.prayerRequest && source.prayerRequest ? {
+        prayerRequest: source.prayerRequest,
+        prayerCareStatus: source.prayerCareStatus,
+        prayerCareAssigneeId: source.prayerCareAssigneeId,
+        prayerCareRevision: source.prayerCareRevision,
+        prayerCareUpdatedAt: source.prayerCareUpdatedAt,
+      } : {}),
       ...(customAnswers.length ? { customAnswers } : {}),
     });
     await this.guestModel.findByIdAndDelete(source._id);
