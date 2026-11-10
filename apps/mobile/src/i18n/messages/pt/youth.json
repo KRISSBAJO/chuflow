@@ -1,5 +1,9 @@
 {
   "youth": {
+    "hub": {
+      "camps": "Acampamentos",
+      "previewHint": "Veja o que os participantes veem."
+    },
     "participantHome": {
       "design": {
         "title": "Personalizar meu início",

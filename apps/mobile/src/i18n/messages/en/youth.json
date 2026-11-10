@@ -1,5 +1,9 @@
 {
   "youth": {
+    "hub": {
+      "camps": "Camps",
+      "previewHint": "See what participants see."
+    },
     "participantHome": {
       "design": {
         "title": "Design my dashboard",

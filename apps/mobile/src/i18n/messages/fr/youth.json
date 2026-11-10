@@ -1,5 +1,9 @@
 {
   "youth": {
+    "hub": {
+      "camps": "Camps",
+      "previewHint": "Découvrez la vue des participants."
+    },
     "participantHome": {
       "design": {
         "title": "Personnaliser mon accueil",
