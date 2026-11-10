@@ -44,6 +44,16 @@ async function run() {
   });
   smtp.listen(0, '127.0.0.1');
   await once(smtp, 'listening');
+  const scanner = net.createServer(socket => {
+    let bytes = Buffer.alloc(0);
+    socket.on('data', chunk => {
+      bytes = Buffer.concat([bytes, chunk]);
+      if (bytes.length < 14 || bytes.length < 18 + bytes.readUInt32BE(10)) return;
+      socket.end(bytes.includes('scanner-reject') ? 'stream: Test FOUND\0' : 'stream: OK\0');
+    });
+  });
+  scanner.listen(0, '127.0.0.1');
+  await once(scanner, 'listening');
   const gateway = start({
     PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, TEMP: process.env.TEMP,
     NODE_PATH: require('node:path').join(__dirname, '..', 'node_modules'),
@@ -51,6 +61,7 @@ async function run() {
     JWT_SECRET: secret(), ADMIN_EMAIL: adminEmail, ADMIN_PASSWORD: adminPassword,
     WEB_URL: 'http://localhost:3000',
     MAIL_HOST: '127.0.0.1', MAIL_PORT: String(smtp.address().port),
+    YOUTH_CLAMAV_HOST: '127.0.0.1', YOUTH_CLAMAV_PORT: String(scanner.address().port),
     CHUFLOW_WORKSPACE_REGISTRY: JSON.stringify([{
       id: 'test-church', name: 'Test Church', databaseName: tenantDb, jwtSecret: secret(),
       adminEmail, adminPassword,
@@ -447,12 +458,93 @@ async function run() {
     await expect(await youth(projectProgress, 'PATCH', { enrollmentId: teenId, milestone: 0, completed: false }, team), 200);
     await expect(await youth(servicePath, 'PATCH', service, youthPastor.token), 409);
     assert.deepEqual((await expect(await participantHome(), 200)).serviceHistory, []);
+    const chatPath = development + '/chat';
+    const participantChat = (suffix = '', method = 'GET', body) =>
+      request('/youth-participant/chat' + suffix, method, body, participantToken);
+    await expect(await participantChat(), 403);
+    await expect(await youth(chatPath, 'GET', undefined, otherPastor), 403);
+    await expect(await youth(chatPath + '/settings', 'PATCH', { enabled: true }, youthPastor.token), 200);
+    await expect(await participantChat(), 403);
+    const consentPath = chatPath + '/consent/' + teenId;
+    await expect(await youth(consentPath, 'PATCH', { enabled: true }, youthPastor.token), 200);
+    assert.equal((await expect(await participantHome(), 200)).chatEnabled, true);
+    const messagesPath = chatPath + '/messages';
+    const sends = await Promise.all([
+      participantChat('/messages', 'POST', { body: 'First message for review.' }),
+      participantChat('/messages', 'POST', { body: 'Second message for review.' }),
+    ]);
+    assert.deepEqual(sends.map(response => response.status).sort(), [201, 409]);
+    const sent = await expect(sends.find(response => response.status === 201), 201);
+    const [pending] = await expect(await participantChat(), 200);
+    assert.equal(pending.state, 'pending');
+    assert.equal(pending.authorId, undefined);
+    assert.equal(pending.reviewHistory, undefined);
+    const reviewPath = messagesPath + '/' + sent.id;
+    await expect(await participantChat('/messages/' + sent.id + '/report', 'POST'), 404);
+    await expect(await youth(adults + '/development/chat/messages/' + sent.id, 'PATCH', { action: 'approve' }), 403);
+    await expect(await youth(reviewPath, 'PATCH', { action: 'approve' }, youthPastor.token), 200);
+    assert.equal((await expect(await participantChat(), 200))[0].state, 'approved');
+    for (let i = 0; i < 2; i++) {
+      await expect(await participantChat('/messages/' + sent.id + '/report', 'POST'), 201);
+    }
+    const review = await expect(await youth(chatPath), 200);
+    assert.equal(review.messages[0].reportCount, 1);
+    assert.equal(review.messages[0].reviewHistory[0].action, 'approve');
+    assert.equal(review.messages[0].reviewHistory[0].by, undefined);
+    assert.equal((await expect(await participantChat(), 200))[0].reportCount, undefined);
+    await expect(await youth(chatPath + '/settings', 'PATCH', { enabled: false }, youthPastor.token), 200);
+    await expect(await participantChat(), 403);
+    await expect(await youth(reviewPath, 'PATCH', { action: 'hide' }, youthPastor.token), 200);
+    await expect(await youth(chatPath + '/settings', 'PATCH', { enabled: true }, youthPastor.token), 200);
+    assert.deepEqual(await expect(await participantChat(), 200), []);
+    await expect(await youth(consentPath, 'PATCH', { enabled: false }, youthPastor.token), 200);
+    await expect(await participantChat(), 403);
+    await expect(await youth(chatPath + '/settings', 'PATCH', { enabled: false }, youthPastor.token), 200);
     const postBody = { kind: 'devotional', title: 'Weekly reflection', body: 'Consider how you can welcome someone this week.' };
     const sundayProgram = { kind: 'program', title: 'Esther and courage', body: 'Read and discuss together.',
       sunday: '2026-11-15', scripture: 'Esther 4', question: 'When is it hard to speak up?', resourceUrl: 'https://example.com/worksheet.pdf' };
+    const pollInput = { kind: 'poll', title: 'Sunday activity', body: 'Choose an activity.', pollOptions: ['Music', 'Art'] };
+    await expect(await youth(development + '/posts', 'POST', { ...pollInput, pollOptions: ['Music', ' music '] }), 400);
+    const poll = await expect(await youth(development + '/posts', 'POST', pollInput), 201);
+    const otherPoll = await expect(await youth(adults + '/development/posts', 'POST', pollInput), 201);
+    const vote = (post, option) => request('/youth-participant/polls/' + post + '/vote', 'POST', { option }, participantToken);
+    await expect(await vote(otherPoll.id, 0), 404);
+    await expect(await vote(poll.id, 2), 409);
+    const votes = await Promise.all([vote(poll.id, 0), vote(poll.id, 1)]);
+    const recorded = await Promise.all(votes.map(response => expect(response, 201)));
+    assert.equal(recorded[0].option, recorded[1].option);
+    const openPoll = await expect(await participantHome(), 200);
+    assert.deepEqual(openPoll.pollStates[poll.id], { selected: recorded[0].option });
+    assert.equal(openPoll.posts.find(post => post._id === poll.id).pollVotes, undefined);
+    const pollPath = development + '/posts/' + poll.id;
+    await expect(await youth(pollPath + '/poll-results', 'GET', undefined, otherPastor), 403);
+    await expect(await youth(pollPath + '/close-poll', 'PATCH'), 200);
+    const counts = recorded[0].option === 0 ? [1, 0] : [0, 1];
+    assert.deepEqual((await expect(await participantHome(), 200)).pollStates[poll.id].counts, counts);
+    assert.deepEqual((await expect(await youth(pollPath + '/poll-results'), 200)).counts, counts);
+    await expect(await youth(pollPath, 'DELETE'), 200);
     await expect(await youth(development + '/posts', 'POST', { ...sundayProgram, sunday: '2026-11-16' }), 400);
     await expect(await youth(development + '/posts', 'POST', { ...sundayProgram, resourceUrl: 'http://example.com/file.pdf' }), 400);
     const program = await expect(await youth(development + '/posts', 'POST', sundayProgram, youthPastor.token), 201);
+    const pdfPath = development + '/posts/' + program.id + '/pdf';
+    const uploadPdf = (bytes, auth = branchAdmin) => {
+      const body = new FormData();
+      body.set('file', new Blob([bytes], { type: 'application/pdf' }), 'worksheet.pdf');
+      return fetch(base + '/youth' + pdfPath, { method: 'POST', headers: { Authorization: 'Bearer ' + auth }, body });
+    };
+    await expect(await uploadPdf('plain text'), 400);
+    await expect(await uploadPdf('%PDF-1.4 scanner-reject'), 400);
+    await expect(await uploadPdf('%PDF-1.4 cross branch', otherPastor), 403);
+    await expect(await uploadPdf('%PDF-1.4 checked worksheet'), 201);
+    const ticketPath = '/youth-participant/programs/' + program.id + '/pdf-ticket';
+    const ticket = await expect(await request(ticketPath, 'POST', undefined, participantToken), 201);
+    const download = await fetch(base + ticket.path);
+    assert.equal(download.status, 200);
+    assert.match(download.headers.get('content-disposition'), /^attachment/);
+    assert.equal(await download.text(), '%PDF-1.4 checked worksheet');
+    await expect(await request(ticket.path + '0'), 404);
+    await expect(await youth(pdfPath, 'DELETE'), 200);
+    await expect(await request(ticket.path), 404);
     const otherProgram = await expect(await youth(adults + '/development/posts', 'POST', sundayProgram), 201);
     const reply = (post, answer) => request('/youth-participant/programs/' + post + '/response', 'POST', { answer }, participantToken);
     await expect(await reply(otherProgram.id, 'Outside my group'), 404);
@@ -686,6 +778,7 @@ async function run() {
   } finally {
     gateway.close();
     smtp.close();
+    scanner.close();
     await Promise.all([database, tenantDb].map((name) => mongo.db(name).dropDatabase()));
     await mongo.close();
   }

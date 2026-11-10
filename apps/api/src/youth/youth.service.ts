@@ -15,8 +15,9 @@ import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
 import { getWorkspace, workspaceWebLink } from '../workspaces/workspace-boundary';
 import { MailService } from '../mail/mail.service';
-import { YouthDevelopment, YouthDevelopmentProgress, YouthPost, YouthProgramResponse } from './youth-development.schema';
+import { YouthChatMessage, YouthDevelopment, YouthDevelopmentProgress, YouthPost, YouthProgramResponse } from './youth-development.schema';
 import { YouthMentoringConsentDto, YouthPostDto, YouthRolloutDto } from './youth-development.dto';
+import { MAX_YOUTH_PDF_BYTES, scanYouthPdf } from './youth-pdf-scan';
 import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 import { YouthParticipantInviteDto } from './youth.dto';
@@ -58,6 +59,7 @@ export class YouthService {
     @InjectModel(YouthDevelopmentProgress.name) private readonly progress: Model<YouthDevelopmentProgress>,
     @InjectModel(YouthPost.name) private readonly posts: Model<YouthPost>,
     @InjectModel(YouthProgramResponse.name) private readonly programResponses: Model<YouthProgramResponse>,
+    @InjectModel(YouthChatMessage.name) private readonly chatMessages: Model<YouthChatMessage>,
     private readonly access: AccessScopeService,
     private readonly forms: GuestFieldsService,
     private readonly config: ConfigService,
@@ -78,6 +80,10 @@ export class YouthService {
 
   private get pilotAvailable() {
     return getWorkspace(this.config).id === 'winners-chapel-international';
+  }
+
+  get pdfUploadsEnabled() {
+    return Boolean(this.config.get<string>('YOUTH_CLAMAV_HOST'));
   }
 
   private async manageBranch(user: AuthUser, branchId: string, event = false) {
@@ -178,7 +184,8 @@ export class YouthService {
 
   groupPosts(groupIds: Types.ObjectId[]) {
     return this.posts.find({ groupId: { $in: groupIds }, archivedAt: { $exists: false } })
-      .select('groupId kind title body sunday scripture question resourceUrl createdAt').sort({ createdAt: -1, _id: -1 }).limit(30).lean();
+      .select('groupId kind title body sunday scripture question resourceUrl resourceFileName pollOptions pollClosedAt createdAt')
+      .sort({ createdAt: -1, _id: -1 }).limit(30).lean();
   }
 
   async saveRollout(user: AuthUser, groupId: string, dto: YouthRolloutDto) {
@@ -272,11 +279,115 @@ export class YouthService {
   async publishPost(user: AuthUser, groupId: string, dto: YouthPostDto) {
     const { group } = await this.developmentScope(user, groupId, true);
     if (dto.kind === 'program' && new Date(dto.sunday!).getUTCDay() !== 0) throw new BadRequestException('Choose a Sunday.');
+    const options = dto.kind === 'poll' ? dto.pollOptions!.map(option => option.trim()) : undefined;
+    if (options && new Set(options.map(option => option.toLowerCase())).size !== options.length) throw new BadRequestException('Poll options must be distinct.');
     const post = await this.posts.create({ groupId: group._id, createdBy: id(user.sub),
       kind: dto.kind, title: dto.title.trim(), body: dto.body.trim(),
+      ...(options ? { pollOptions: options } : {}),
       ...(dto.kind === 'program' ? { sunday: dto.sunday, scripture: dto.scripture?.trim(),
         question: dto.question?.trim(), resourceUrl: dto.resourceUrl } : {}) });
     return { id: post.id };
+  }
+
+  private pollCounts(post: Pick<YouthPost, 'pollOptions' | 'pollVotes'>) {
+    const counts = (post.pollOptions ?? []).map(() => 0);
+    for (const vote of post.pollVotes ?? []) {
+      if (vote.option >= 0 && vote.option < counts.length) counts[vote.option]++;
+    }
+    return counts;
+  }
+
+  async pollResults(user: AuthUser, groupId: string, postId: string) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const poll = await this.posts.findOne({ _id: id(postId), groupId: group._id, kind: 'poll' })
+      .select('pollOptions +pollVotes').lean();
+    if (!poll) throw new NotFoundException();
+    return { counts: this.pollCounts(poll) };
+  }
+
+  async closePoll(user: AuthUser, groupId: string, postId: string) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const poll = await this.posts.updateOne({ _id: id(postId), groupId: group._id, kind: 'poll',
+      archivedAt: { $exists: false }, pollClosedAt: { $exists: false } }, { $set: { pollClosedAt: new Date() } });
+    if (!poll.matchedCount) throw new NotFoundException();
+    return { saved: true };
+  }
+
+  async uploadProgramPdf(user: AuthUser, groupId: string, postId: string, file?: { originalname: string; buffer: Buffer }) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const query = { _id: id(postId), groupId: group._id, kind: 'program', archivedAt: { $exists: false } };
+    if (!await this.posts.exists(query)) throw new NotFoundException();
+    if (!file?.buffer || file.buffer.length > MAX_YOUTH_PDF_BYTES || !/\.pdf$/i.test(file.originalname) ||
+        file.buffer.subarray(0, 5).toString() !== '%PDF-') throw new BadRequestException('Choose a PDF of 2 MB or less.');
+    await scanYouthPdf(file.buffer, this.config.get<string>('YOUTH_CLAMAV_HOST'), Number(this.config.get('YOUTH_CLAMAV_PORT') ?? 3310));
+    const name = file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-100);
+    const result = await this.posts.updateOne(query, { $set: { resourceFileName: name, resourceFile: file.buffer,
+      resourceDigest: createHash('sha256').update(file.buffer).digest('hex'), resourceUploadedBy: id(user.sub) } });
+    if (!result.matchedCount) throw new NotFoundException();
+    return { saved: true };
+  }
+
+  async removeProgramPdf(user: AuthUser, groupId: string, postId: string) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const result = await this.posts.updateOne({ _id: id(postId), groupId: group._id, kind: 'program', archivedAt: { $exists: false } },
+      { $unset: { resourceFileName: 1, resourceFile: 1, resourceDigest: 1, resourceUploadedBy: 1 } });
+    if (!result.matchedCount) throw new NotFoundException();
+    return { saved: true };
+  }
+
+  private pdfSignature(post: string, person: string, expires: string, digest: string) {
+    return createHmac('sha256', this.config.getOrThrow<string>('jwtSecret')).update(
+      JSON.stringify(['youth-program-pdf', getWorkspace(this.config).id, post, person, expires, digest]),
+    ).digest('hex');
+  }
+
+  async programPdfTicket(user: AuthUser, postId: string) {
+    const person = await this.participantEnrollment(user);
+    if (!await this.groups.exists({ _id: person.groupId, youthFeedEnabled: { $ne: false } })) throw new NotFoundException();
+    const post = await this.posts.findOne({ _id: id(postId), groupId: person.groupId, kind: 'program', archivedAt: { $exists: false } })
+      .select('+resourceDigest').lean();
+    if (!post?.resourceDigest) throw new NotFoundException();
+    const personId = String(person._id);
+    const expires = String(Math.floor(Date.now() / 1000) + 60);
+    const signature = this.pdfSignature(postId, personId, expires, post.resourceDigest);
+    return { path: `/youth-registration/program-pdf/${postId}.${personId}.${expires}.${signature}` };
+  }
+
+  async downloadProgramPdf(ticket: string) {
+    const match = /^([a-f0-9]{24})\.([a-f0-9]{24})\.(\d{10})\.([a-f0-9]{64})$/.exec(ticket);
+    if (!match || Number(match[3]) <= Math.floor(Date.now() / 1000)) throw new NotFoundException();
+    const [, postId, personId, expires, signature] = match;
+    const post = await this.posts.findOne({ _id: id(postId), kind: 'program', archivedAt: { $exists: false } })
+      .select('groupId +resourceDigest').lean();
+    if (!post?.resourceDigest || !timingSafeEqual(Buffer.from(signature), Buffer.from(this.pdfSignature(postId, personId, expires, post.resourceDigest)))) {
+      throw new NotFoundException();
+    }
+    const [group, person, account] = await Promise.all([
+      this.groups.exists({ _id: post.groupId, youthFeedEnabled: { $ne: false } }),
+      this.enrollments.exists({ _id: id(personId), groupId: post.groupId, state: 'active' }),
+      this.users.exists({ youthEnrollmentId: id(personId), role: 'youth_participant', isActive: true }),
+    ]);
+    if (!group || !person || !account) throw new NotFoundException();
+    const file = await this.posts.findOne({ _id: post._id, archivedAt: { $exists: false }, resourceDigest: post.resourceDigest })
+      .select('resourceFileName +resourceFile').exec();
+    if (!file?.resourceFile || !file.resourceFileName) throw new NotFoundException();
+    return { name: file.resourceFileName, buffer: file.resourceFile };
+  }
+
+  async voteInPoll(user: AuthUser, postId: string, option: number) {
+    const person = await this.participantEnrollment(user);
+    if (!await this.groups.exists({ _id: person.groupId, youthFeedEnabled: { $ne: false } })) throw new NotFoundException();
+    const filter = { _id: id(postId), groupId: person.groupId, kind: 'poll', archivedAt: { $exists: false } };
+    const result = await this.posts.updateOne({
+      ...filter, pollClosedAt: { $exists: false }, [`pollOptions.${option}`]: { $exists: true },
+      'pollVotes.enrollmentId': { $ne: person._id }, 'pollVotes.4999': { $exists: false },
+    }, { $push: { pollVotes: { enrollmentId: person._id, option } } });
+    if (result.matchedCount) return { option };
+    const existing = await this.posts.findOne({ ...filter, 'pollVotes.enrollmentId': person._id })
+      .select({ 'pollVotes.$': 1 }).lean();
+    if (existing?.pollVotes?.[0]) return { option: existing.pollVotes[0].option };
+    if (!await this.posts.exists(filter)) throw new NotFoundException();
+    throw new ConflictException('The poll is closed, full, or the option is invalid.');
   }
 
   async submitProgramResponse(user: AuthUser, postId: string, answer: string) {
@@ -337,15 +448,108 @@ export class YouthService {
     const account = await this.users.findOne({ _id: id(user.sub), isActive: true, role: 'youth_participant' }).select('+youthEnrollmentId branchId').lean();
     if (!account?.youthEnrollmentId || !account.branchId) throw new ForbiddenException();
     const person = await this.enrollments.findOne({ _id: account.youthEnrollmentId, branchId: account.branchId, state: 'active' })
-      .select('+birthDate +registrationKey').lean();
+      .select('+birthDate +registrationKey +youthChatConsentAt').lean();
     if (!person) throw new ForbiddenException();
     return person;
+  }
+
+  private async chatGroup(user: AuthUser, groupId: string, requireEnabled = true) {
+    const { group, screenedLeader } = await this.developmentScope(user, groupId, true);
+    if (requireEnabled && (!screenedLeader || !group.youthChatEnabled)) throw new ForbiddenException();
+    return group;
+  }
+
+  async chatSetting(user: AuthUser, groupId: string, enabled: boolean) {
+    const { group, screenedLeader } = await this.developmentScope(user, groupId, true);
+    if (enabled && !screenedLeader) throw new ForbiddenException();
+    await this.groups.updateOne({ _id: group._id }, { $set: { youthChatEnabled: enabled } });
+    return { saved: true };
+  }
+
+  async chatConsent(user: AuthUser, groupId: string, enrollmentId: string, enabled: boolean) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const result = await this.enrollments.updateOne({ _id: id(enrollmentId), groupId: group._id, state: 'active' },
+      enabled ? { $set: { youthChatConsentAt: new Date(), youthChatConsentBy: id(user.sub) } } :
+        { $unset: { youthChatConsentAt: 1, youthChatConsentBy: 1 } });
+    if (!result.matchedCount) throw new NotFoundException();
+    return { saved: true };
+  }
+
+  async staffChat(user: AuthUser, groupId: string) {
+    const { group, screenedLeader } = await this.developmentScope(user, groupId, true);
+    const [people, messages] = await Promise.all([
+      this.enrollments.find({ groupId: group._id, state: 'active' }).select('firstName lastName needsGuardian +youthChatConsentAt').sort({ firstName: 1 }).lean(),
+      this.chatMessages.aggregate([
+        { $match: { groupId: group._id } },
+        { $project: { authorName: 1, body: 1, state: 1, createdAt: 1, reportCount: 1, 'reviewHistory.action': 1,
+          'reviewHistory.at': 1, priority: { $switch: { branches: [
+            { case: { $and: [{ $eq: ['$state', 'approved'] }, { $gt: ['$reportCount', 0] }] }, then: 0 },
+            { case: { $eq: ['$state', 'pending'] }, then: 1 },
+          ], default: 2 } } } },
+        { $sort: { priority: 1, _id: -1 } }, { $limit: 80 },
+      ]),
+    ]);
+    return { enabled: group.youthChatEnabled === true, screenedLeader, people, messages };
+  }
+
+  private async participantChatScope(user: AuthUser) {
+    const person = await this.participantEnrollment(user);
+    const group = await this.groups.findOne({ _id: person.groupId, branchId: person.branchId, youthChatEnabled: true }).lean();
+    if (!person.youthChatConsentAt || !group || !await this.cleared(group)) throw new ForbiddenException();
+    return person;
+  }
+
+  async participantChat(user: AuthUser) {
+    const person = await this.participantChatScope(user);
+    return this.chatMessages.find({ groupId: person.groupId,
+      $or: [{ state: 'approved' }, { state: 'pending', authorId: person._id }],
+    }).select('authorName body state createdAt').sort({ _id: -1 }).limit(50).lean();
+  }
+
+  async postChat(user: AuthUser, body: string, groupId?: string) {
+    const person = groupId ? undefined : await this.participantChatScope(user);
+    const group = groupId ? await this.chatGroup(user, groupId) : undefined;
+    const staff = group ? await this.users.findById(id(user.sub)).select('firstName').lean() : undefined;
+    try {
+      const message = await this.chatMessages.create({ groupId: group?._id ?? person?.groupId,
+        authorId: person?._id ?? id(user.sub), authorName: person?.firstName ?? staff?.firstName ?? '',
+        state: group ? 'approved' : 'pending', body: body.trim(),
+        ...(group ? { reviewHistory: [{ by: id(user.sub), at: new Date(), action: 'approve' }] } : {}) });
+      return { id: message.id };
+    } catch (error) {
+      if (duplicate(error)) throw new ConflictException('Wait for your pending message to be reviewed.');
+      throw error;
+    }
+  }
+
+  async reviewChat(user: AuthUser, groupId: string, messageId: string, action: 'approve' | 'hide') {
+    const group = await this.chatGroup(user, groupId, action === 'approve');
+    if (action === 'approve') {
+      const pending = await this.chatMessages.findOne({ _id: id(messageId), groupId: group._id, state: 'pending' }).select('+authorId').lean();
+      if (!pending || !await this.enrollments.exists({ _id: pending.authorId, groupId: group._id, state: 'active',
+        youthChatConsentAt: { $exists: true } })) throw new NotFoundException();
+    }
+    const result = await this.chatMessages.updateOne({ _id: id(messageId), groupId: group._id,
+      state: action === 'approve' ? 'pending' : { $in: ['pending', 'approved'] } },
+    { $set: { state: action === 'approve' ? 'approved' : 'hidden' },
+      $push: { reviewHistory: { by: id(user.sub), at: new Date(), action } } });
+    if (!result.matchedCount) throw new NotFoundException();
+    return { saved: true };
+  }
+
+  async reportChat(user: AuthUser, messageId: string) {
+    const person = await this.participantChatScope(user);
+    const filter = { _id: id(messageId), groupId: person.groupId, state: 'approved' };
+    const result = await this.chatMessages.updateOne({ ...filter, reports: { $ne: person._id } },
+      { $addToSet: { reports: person._id }, $inc: { reportCount: 1 } });
+    if (!result.matchedCount && !await this.chatMessages.exists(filter)) throw new NotFoundException();
+    return { saved: true };
   }
 
   async participantHome(user: AuthUser) {
     const person = await this.participantEnrollment(user);
     const [group, branch, activities, events, delegations, registrations, posts] = await Promise.all([
-      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program branchId leaderId clearanceUntil youthFeedEnabled').lean(),
+      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program branchId leaderId clearanceUntil youthFeedEnabled youthChatEnabled').lean(),
       this.branches.findById(person.branchId).select('name').lean(),
       this.activities.find({ groupId: person.groupId, kind: { $in: ['track', 'project'] } })
         .select('kind title date location milestones').sort({ date: 1 }).lean(),
@@ -358,7 +562,21 @@ export class YouthService {
     const programReplies = group.youthFeedEnabled === false ? [] : await this.programResponses.distinct('postId', {
       enrollmentId: person._id, postId: { $in: posts.filter(post => post.kind === 'program').map(post => post._id) },
     });
-    const assignment = group.leaderId && await this.cleared(group) ? await this.activities.findOne({
+    const pollRows = group.youthFeedEnabled === false ? [] : await this.posts.aggregate<{
+      _id: Types.ObjectId; selected?: number; counts?: number[];
+    }>([
+      { $match: { _id: { $in: posts.filter(post => post.kind === 'poll').map(post => post._id) } } },
+      { $project: {
+        selected: { $arrayElemAt: [{ $map: { input: { $filter: { input: { $ifNull: ['$pollVotes', []] }, as: 'vote',
+          cond: { $eq: ['$$vote.enrollmentId', person._id] } } }, as: 'vote', in: '$$vote.option' } }, 0] },
+        counts: { $cond: [{ $eq: [{ $type: '$pollClosedAt' }, 'date'] },
+          { $map: { input: { $range: [0, { $size: { $ifNull: ['$pollOptions', []] } }] }, as: 'option',
+            in: { $size: { $filter: { input: { $ifNull: ['$pollVotes', []] }, as: 'vote', cond: { $eq: ['$$vote.option', '$$option'] } } } } } },
+          '$$REMOVE'] },
+      } },
+    ]);
+    const screened = group.leaderId && await this.cleared(group);
+    const assignment = screened ? await this.activities.findOne({
       groupId: group._id, enrollmentId: person._id, kind: 'mentoring', active: true, mentorId: group.leaderId,
       permissionConfirmedAt: { $exists: true }, nextCheckIn: { $exists: true },
     }).select('nextCheckIn participantNextStep checkIns').lean() : null;
@@ -386,6 +604,8 @@ export class YouthService {
     return {
       posts: group.youthFeedEnabled === false ? [] : posts,
       programReplies,
+      chatEnabled: Boolean(group.youthChatEnabled && person.youthChatConsentAt && screened),
+      pollStates: Object.fromEntries(pollRows.map(row => [String(row._id), { selected: row.selected, counts: row.counts }])),
       serviceHistory,
       mentoringReminder: reminder,
       branch: branch.name, groups: [{ id: group._id, name: group.name, program: group.program }],

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button, Field } from "@/components/ui/ui";
 import { useYouthAction } from "./use-youth-action";
 import { API_URL } from "@/lib/api";
+import { GroupChat } from "./group-chat";
 import { MentoringEmail } from "./mentoring-email";
 
 type Person = { _id: string; firstName: string; lastName: string; needsGuardian: boolean; mentoringEmailConsentAt?: string };
@@ -25,11 +27,12 @@ type Activity = {
   active?: boolean;
 };
 type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string; serviceMinutes?: number };
-type YouthPost = { _id: string; kind: "update" | "devotional" | "program"; title: string; body: string; createdAt: string;
-  sunday?: string; scripture?: string; question?: string; resourceUrl?: string };
+type YouthPost = { _id: string; kind: "update" | "devotional" | "program" | "poll"; title: string; body: string; createdAt: string;
+  sunday?: string; scripture?: string; question?: string; resourceUrl?: string; resourceFileName?: string; pollOptions?: string[]; pollClosedAt?: string };
 export type YouthDevelopmentOverview = {
   groupName: string; manager: boolean; screenedLeader: boolean; people: Person[]; activities: Activity[]; progress: Progress[];
   posts?: YouthPost[];
+  pdfUploadsEnabled?: boolean;
   rollout?: { mentoringEmailEnabled: boolean; youthFeedEnabled: boolean };
 };
 
@@ -50,7 +53,7 @@ function RolloutControls({ path, rollout }: { path: string; rollout: NonNullable
     </form>
   </details>;
 }
-function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
+function GroupPosts({ path, posts, pdfUploadsEnabled }: { path: string; posts: YouthPost[]; pdfUploadsEnabled?: boolean }) {
   const t = useTranslations("youth.posts");
   const format = useFormatter();
   const { run, busy } = useYouthAction();
@@ -59,8 +62,9 @@ function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
     <form className="app-card space-y-3 p-5" onSubmit={async event => {
       event.preventDefault();
       const form = event.currentTarget;
-      const values = Object.fromEntries(new FormData(form));
+      const values: Record<string, unknown> = Object.fromEntries(new FormData(form));
       if (!values.resourceUrl) delete values.resourceUrl;
+      if (kind === "poll") values.pollOptions = String(values.pollOptions ?? "").split(/\r?\n/).map(option => option.trim()).filter(Boolean);
       if (await run(path, "POST", values)) {
         form.reset();
         setKind("update");
@@ -70,6 +74,7 @@ function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
       <Field label={t("kind")}><select name="kind" className="ui-input" value={kind} onChange={event => setKind(event.target.value as YouthPost["kind"])}>
         <option value="update">{t("update")}</option><option value="devotional">{t("devotional")}</option>
         <option value="program">{t("program")}</option>
+        <option value="poll">{t("poll")}</option>
       </select></Field>
       <Field label={t("title")}><input name="title" className="ui-input" maxLength={100} required /></Field>
       <Field label={t("body")}><textarea name="body" className="ui-input" rows={5} maxLength={3000} required /></Field>
@@ -81,6 +86,9 @@ function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
         <Field label={t("question")}><textarea name="question" className="ui-input" rows={2} maxLength={300} /></Field>
         <Field label={t("resource")}><input name="resourceUrl" type="url" className="ui-input" placeholder="https://" maxLength={500} /></Field>
       </> : null}
+      {kind === "poll" ? <Field label={t("pollOptions")} hint={t("pollHint")}>
+        <textarea name="pollOptions" className="ui-input" rows={4} maxLength={605} required />
+      </Field> : null}
       <Button type="submit" disabled={busy}>{t("publish")}</Button>
     </form>
     {posts.length ? posts.map(post => <article className="app-card space-y-2 p-5" key={post._id}>
@@ -91,12 +99,77 @@ function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
       <p className="whitespace-pre-wrap break-words text-sm">{post.body}</p>
       {post.resourceUrl?.startsWith("https://") ? <a className="inline-flex min-h-11 items-center text-sm underline"
         href={post.resourceUrl} target="_blank" rel="noopener noreferrer">{t("resource")}</a> : null}
+      {post.kind === "program" && pdfUploadsEnabled ? <ProgramPdf path={path + "/" + post._id + "/pdf"} name={post.resourceFileName} /> : null}
       {post.question ? <><p className="text-sm font-medium">{post.question}</p>
         <ProgramResponses path={path + "/" + post._id + "/responses"} /></> : null}
+      {post.kind === "poll" ? <PollResults path={path + "/" + post._id} post={post} /> : null}
       <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => {
         if (window.confirm(t("archiveConfirm"))) void run(path + "/" + post._id, "DELETE");
       }}>{t("archive")}</Button>
     </article>) : <p className="app-card p-5 text-sm text-neutral-600">{t("empty")}</p>}
+  </div>;
+}
+
+function ProgramPdf({ path, name }: { path: string; name?: string }) {
+  const t = useTranslations("youth.posts");
+  const router = useRouter();
+  const { run, busy } = useYouthAction();
+  const [uploading, setUploading] = useState(false);
+  const [failure, setFailure] = useState<"pdfFailed" | "pdfUnavailable">();
+  return <form className="space-y-2" onSubmit={async event => {
+    event.preventDefault();
+    if (uploading) return;
+    const form = event.currentTarget;
+    const body = new FormData(form);
+    setUploading(true);
+    setFailure(undefined);
+    try {
+      const response = await fetch(API_URL + path, { method: "POST", credentials: "include", body });
+      if (response.ok) {
+        form.reset();
+        router.refresh();
+      } else setFailure(response.status === 503 ? "pdfUnavailable" : "pdfFailed");
+    } catch { setFailure("pdfFailed"); }
+    finally { setUploading(false); }
+  }}>
+    {name ? <p className="break-words text-sm">{name}</p> : null}
+    <Field label={t("pdf")}><input className="ui-input" name="file" type="file" accept=".pdf,application/pdf" required /></Field>
+    <div className="flex flex-wrap gap-2">
+      <Button type="submit" size="sm" disabled={uploading || busy}>{t("pdfUpload")}</Button>
+      {name ? <Button type="button" size="sm" variant="secondary" disabled={uploading || busy}
+        onClick={() => void run(path, "DELETE")}>{t("pdfRemove")}</Button> : null}
+    </div>
+    {failure ? <p role="alert" className="text-sm">{t(failure)}</p> : null}
+  </form>;
+}
+
+function PollResults({ path, post }: { path: string; post: YouthPost }) {
+  const t = useTranslations("youth.posts");
+  const format = useFormatter();
+  const { run, busy } = useYouthAction();
+  const [counts, setCounts] = useState<number[]>();
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return <div className="space-y-2">
+    <p className="text-sm font-medium">{t(post.pollClosedAt ? "pollClosed" : "pollOpen")}</p>
+    <ul className="space-y-1 text-sm">{post.pollOptions?.map((option, index) =>
+      <li key={option}>{option}{counts ? " · " + format.number(counts[index] ?? 0) : ""}</li>)}</ul>
+    <div className="flex flex-wrap gap-2">
+      <Button type="button" size="sm" variant="secondary" disabled={loading} onClick={async () => {
+        setLoading(true);
+        setFailed(false);
+        try {
+          const response = await fetch(API_URL + path + "/poll-results", { credentials: "include", cache: "no-store" });
+          if (!response.ok) throw new Error();
+          setCounts((await response.json()).counts);
+        } catch { setFailed(true); }
+        finally { setLoading(false); }
+      }}>{t("pollResults")}</Button>
+      {!post.pollClosedAt ? <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => {
+        if (window.confirm(t("pollCloseConfirm"))) void run(path + "/close-poll", "PATCH");
+      }}>{t("pollClose")}</Button> : null}
+    </div>
+    {failed ? <p role="alert" className="text-sm">{t("responsesFailed")}</p> : null}
   </div>;
 }
 
@@ -239,7 +312,7 @@ const sections = [
 export function YouthDevelopmentWorkspace({ groupId, data }: { groupId: string; data: YouthDevelopmentOverview }) {
   const t = useTranslations("youth");
   const { run, busy } = useYouthAction();
-  const [view, setView] = useState<(typeof sections)[number]["kind"] | "posts">("track");
+  const [view, setView] = useState<(typeof sections)[number]["kind"] | "posts" | "chat">("track");
   const section = sections.find(item => item.kind === view) ?? sections[0];
   const path = "/youth/groups/" + groupId + "/development";
   const activities = data.activities.filter(item => item.kind === view);
@@ -249,9 +322,11 @@ export function YouthDevelopmentWorkspace({ groupId, data }: { groupId: string; 
         aria-pressed={view === item.kind} onClick={() => setView(item.kind)}>{t(item.label)}</Button>)}
       {data.manager ? <Button type="button" size="sm" variant={view === "posts" ? "primary" : "secondary"}
         aria-pressed={view === "posts"} onClick={() => setView("posts")}>{t("posts.heading")}</Button> : null}
+      {data.manager ? <Button type="button" size="sm" variant={view === "chat" ? "primary" : "secondary"}
+        aria-pressed={view === "chat"} onClick={() => setView("chat")}>{t("chat.heading")}</Button> : null}
     </nav>
     {data.manager && data.rollout ? <RolloutControls path={path} rollout={data.rollout} /> : null}
-    {view === "posts" && data.manager ? <GroupPosts path={path + "/posts"} posts={data.posts ?? []} /> : <>
+    {view === "chat" && data.manager ? <GroupChat key={groupId} path={path + "/chat"} /> : view === "posts" && data.manager ? <GroupPosts path={path + "/posts"} posts={data.posts ?? []} pdfUploadsEnabled={data.pdfUploadsEnabled} /> : <>
     {data.manager ? <details key={view} className="app-card p-5">
       <summary className="cursor-pointer font-semibold">{t(section.create)}</summary>
       <form className="mt-4 space-y-4" onSubmit={async event => {

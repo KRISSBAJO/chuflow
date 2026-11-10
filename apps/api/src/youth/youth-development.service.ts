@@ -47,6 +47,7 @@ export class YouthDevelopmentService {
       .select('firstName lastName').lean()]);
     const mentorNames = new Map(mentors.map(mentor => [String(mentor._id), [mentor.firstName, mentor.lastName].filter(Boolean).join(' ')]));
     return { groupName: group.name, manager, screenedLeader, people, progress, posts,
+      pdfUploadsEnabled: manager && this.youth.pdfUploadsEnabled,
       rollout: manager ? { youthFeedEnabled: group.youthFeedEnabled !== false, mentoringEmailEnabled: group.mentoringEmailEnabled === true } : undefined,
       activities: visible.map(({ mentorId, ...item }) => ({
         ...item,

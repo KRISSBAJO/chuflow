@@ -1,12 +1,37 @@
 {
   "youth": {
+    "chat": {
+      "title": "Group chat",
+      "help": "Staff review participant messages before they appear in the group.",
+      "refresh": "Refresh",
+      "loading": "Loading messages…",
+      "unavailable": "Chat is unavailable right now.",
+      "message": "Message",
+      "pending": "Awaiting staff review",
+      "empty": "No messages yet.",
+      "send": "Send for review",
+      "report": "Report",
+      "reportConfirm": "Send report to staff",
+      "cancel": "Cancel",
+      "reported": "Report sent to staff.",
+      "failed": "Could not complete this action. Try again."
+    },
     "hub": {
       "camps": "Camps",
       "previewHint": "See what participants see."
     },
     "participantHome": {
+      "polls": {
+        "title": "Group polls",
+        "open": "Open poll",
+        "closed": "Poll closed",
+        "yourVote": "Your vote",
+        "vote": "Submit vote",
+        "failed": "Could not vote. Refresh to check whether the poll is still open."
+      },
       "community": "Community",
       "programs": {
+        "download": "Download program PDF",
         "title": "Sunday programs",
         "empty": "No Sunday programs have been published yet.",
         "resource": "Open resource",

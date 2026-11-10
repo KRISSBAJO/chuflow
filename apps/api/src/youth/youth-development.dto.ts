@@ -5,13 +5,30 @@ class ActivityTitle {
 }
 
 export class YouthPostDto extends ActivityTitle {
-  @IsIn(['update', 'devotional', 'program']) kind!: 'update' | 'devotional' | 'program';
+  @IsIn(['update', 'devotional', 'program', 'poll']) kind!: 'update' | 'devotional' | 'program' | 'poll';
   @IsString() @Matches(/\S/) @MaxLength(3000) body!: string;
   @ValidateIf(dto => dto.kind === 'program')
   @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) sunday?: string;
   @IsOptional() @IsString() @MaxLength(120) scripture?: string;
   @IsOptional() @IsString() @MaxLength(300) question?: string;
   @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true, disallow_auth: true }) @MaxLength(500) resourceUrl?: string;
+  @ValidateIf(dto => dto.kind === 'poll')
+  @IsArray() @ArrayMinSize(2) @ArrayMaxSize(6) @IsString({ each: true }) @Matches(/\S/, { each: true }) @MaxLength(100, { each: true })
+  pollOptions?: string[];
+}
+
+export class YouthPollVoteDto {
+  @IsInt() @Min(0) @Max(5) option!: number;
+}
+
+export class YouthChatMessageDto {
+  @IsString() @Matches(/\S/) @MaxLength(800) body!: string;
+}
+export class YouthChatSettingDto {
+  @IsBoolean() enabled!: boolean;
+}
+export class YouthChatReviewDto {
+  @IsIn(['approve', 'hide']) action!: 'approve' | 'hide';
 }
 
 export class YouthProgramResponseDto {

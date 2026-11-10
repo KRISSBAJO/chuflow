@@ -3,29 +3,25 @@ import { Image } from 'expo-image';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button, ErrorState, Field, Loading, Screen } from '@/components/ui';
+import { Button, Chip, ErrorState, Field, Loading, Screen } from '@/components/ui';
 import { Icon } from '@/components/icon';
 import { toast } from '@/components/toast';
 import { colors, fonts, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useApi } from '@/lib/use-api';
-import { api } from '@/lib/api';
+import { api, getApiSession } from '@/lib/api';
 import { useSession, userId } from '@/lib/session';
 import { isoDay } from '@/lib/format';
+import { YouthNavigation, type YouthTab } from './youth-navigation';
+import { YouthGroupChat } from './group-chat';
 import { useYouthDesign } from './dashboard-design';
 
-const tabs = [
-  { key: 'home', icon: 'home' },
-  { key: 'events', icon: 'calendar' },
-  { key: 'community', icon: 'message' },
-  { key: 'journey', icon: 'book' },
-  { key: 'serve', icon: 'care' },
-] as const;
 type Event = { id: string; name: string; date: string; endDate?: string; venue?: string; registrationUrl?: string;
   state?: 'active' | 'pending' | 'declined' | 'withdrawn' };
-type YouthPost = { _id: string; groupId: string; kind: 'update' | 'devotional' | 'program'; title: string; body: string; createdAt: string;
-  sunday?: string; scripture?: string; question?: string; resourceUrl?: string };
+type YouthPost = { _id: string; groupId: string; kind: 'update' | 'devotional' | 'program' | 'poll'; title: string; body: string; createdAt: string;
+  sunday?: string; scripture?: string; question?: string; resourceUrl?: string; resourceFileName?: string; pollOptions?: string[]; pollClosedAt?: string };
+type PollState = { selected?: number; counts?: number[] };
 type Preview = {
   branch: string;
   groups: { id: string; name: string; program: string }[];
@@ -34,6 +30,8 @@ type Preview = {
   projects: { id: string; title: string; groupId: string; date?: string; location?: string; signedUp?: boolean }[];
   posts?: YouthPost[];
   programReplies?: string[];
+  chatEnabled?: boolean;
+  pollStates?: Record<string, PollState>;
   serviceHistory?: { id: string; title: string; date?: string; minutes: number }[];
   mentoringReminder?: { date: string; nextStep?: string };
 };
@@ -45,6 +43,7 @@ function SundayProgram({ post, participant, replied, onReply }: {
   const format = useAppFormat();
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState(false);
+  const [opening, setOpening] = useState(false);
   return <View style={styles.track}>
     <Text style={styles.eyebrow}>{format.date(post.sunday)}</Text>
     <Text style={styles.featureTitle}>{post.title}</Text>
@@ -52,6 +51,20 @@ function SundayProgram({ post, participant, replied, onReply }: {
     <Text style={type.body}>{post.body}</Text>
     {post.resourceUrl?.startsWith('https://') ? <Button variant="secondary" size="sm" icon="arrowUpRight" label={t('resource')}
       onPress={() => { if (post.resourceUrl) void openBrowserAsync(post.resourceUrl).catch(() => toast.error(t('failed'))); }} /> : null}
+    {post.resourceFileName ? <>
+      <Text style={type.small}>{post.resourceFileName}</Text>
+      {participant ? <Button variant="secondary" size="sm" icon="download" label={t('download')} loading={opening} disabled={opening} onPress={async () => {
+        setOpening(true);
+        try {
+          const session = getApiSession();
+          const ticket = await api.post<{ path: string }>('/youth-participant/programs/' + post._id + '/pdf-ticket');
+          if (session === getApiSession() && ticket.path.startsWith('/youth-registration/program-pdf/')) {
+            await openBrowserAsync(session.apiUrl + ticket.path);
+          }
+        } catch { toast.error(t('failed')); }
+        finally { setOpening(false); }
+      }} /> : null}
+    </> : null}
     {post.question ? <View style={styles.sections}>
       <Text style={type.title}>{post.question}</Text>
       {participant && (replied ? <Text style={type.small}>{t('received')}</Text> : <>
@@ -70,6 +83,36 @@ function SundayProgram({ post, participant, replied, onReply }: {
   </View>;
 }
 
+function YouthPoll({ post, participant, state, onVote }: {
+  post: YouthPost; participant: boolean; state?: PollState; onVote: (option: number) => void;
+}) {
+  const t = useT('youth.participantHome.polls');
+  const format = useAppFormat();
+  const [choice, setChoice] = useState<number>();
+  const [busy, setBusy] = useState(false);
+  const canVote = participant && !post.pollClosedAt && state?.selected === undefined;
+  return <View style={styles.track}>
+    <Text style={styles.eyebrow}>{t(post.pollClosedAt ? 'closed' : 'open')}</Text>
+    <Text style={styles.featureTitle}>{post.title}</Text>
+    <Text style={type.body}>{post.body}</Text>
+    {post.pollOptions?.map((option, index) => canVote ?
+      <Chip key={option} label={option} selected={choice === index} onPress={() => { if (!busy) setChoice(index); }} /> :
+      <Text key={option} style={type.body}>
+        {option}{state?.selected === index ? ' · ' + t('yourVote') : ''}
+        {state?.counts ? ' · ' + format.number(state.counts[index] ?? 0) : ''}
+      </Text>)}
+    {canVote ? <Button size="sm" label={t('vote')} loading={busy} disabled={busy || choice === undefined} onPress={async () => {
+      if (busy || choice === undefined) return;
+      setBusy(true);
+      try {
+        const result = await api.post<{ option: number }>('/youth-participant/polls/' + post._id + '/vote', { option: choice });
+        onVote(result.option);
+      } catch { toast.error(t('failed')); }
+      finally { setBusy(false); }
+    }} /> : null}
+  </View>;
+}
+
 export function YouthHomePreview({ participant = false }: { participant?: boolean } = {}) {
   const { user } = useSession();
   const designKey = JSON.stringify(['youth-design', user?.workspace?.id, userId(user), participant]);
@@ -79,7 +122,7 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
 function YouthDashboard({ participant, designKey }: { participant: boolean; designKey: string }) {
   const t = useT('youth.participantHome');
   const format = useAppFormat();
-  const [tab, setTab] = useState<(typeof tabs)[number]['key']>('home');
+  const [tab, setTab] = useState<YouthTab>('home');
   const { signOut } = useSession();
   const design = useYouthDesign(designKey);
   const { palette } = design;
@@ -96,7 +139,8 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
     return () => subscription.remove();
   }, [participant, reload]);
   const preview = result.data;
-  const posts = preview?.posts?.filter(post => post.kind !== 'program') ?? [];
+  const posts = preview?.posts?.filter(post => post.kind === 'update' || post.kind === 'devotional') ?? [];
+  const polls = preview?.posts?.filter(post => post.kind === 'poll') ?? [];
   const programs = (preview?.posts ?? []).filter(post => post.kind === 'program')
     .sort((a, b) => (b.sunday ?? '').localeCompare(a.sunday ?? ''));
   const nextProgram = [...programs].reverse().find(post => (post.sunday ?? '') >= isoDay(new Date()));
@@ -123,22 +167,9 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
   const featured = next ? { tab: 'events', icon: 'calendar', title: next.name, detail: eventDetails(next) } as const :
     track ? { tab: 'journey', icon: 'book', title: track.title, detail: t('tracks') } as const :
     project ? { tab: 'serve', icon: 'care', title: project.title, detail: [format.date(project.date), project.location].filter(Boolean).join(' · ') } as const : null;
-  const navigation = preview ? <View style={styles.tabs}>
-    {tabs.map(({ key, icon }) => {
-      const selected = tab === key;
-      const label = t(key);
-      return <Pressable key={key} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected }}
-        onPress={() => setTab(key)} style={({ pressed }) => [styles.tab, pressed && styles.pressed]}>
-        <View style={[styles.tabIcon, selected && { backgroundColor: palette.tint }]}>
-          <Icon name={icon} size={20} color={selected ? palette.accent : colors.muted} />
-        </View>
-        <Text style={[styles.tabLabel, selected && styles.selectedLabel, selected && { color: palette.accent }]}>{label}</Text>
-      </Pressable>;
-    })}
-  </View> : undefined;
-
   return (
-    <Screen safeTop={participant} footer={navigation} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
+    <View style={styles.page}>
+    <Screen safeTop={participant} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
       <Stack.Screen options={{ title: t('title') }} />
       {result.loading ? <Loading /> : result.error ? <ErrorState message={result.error} onRetry={() => void result.refresh()} /> : preview ? <>
         <View style={styles.meta}>
@@ -231,11 +262,16 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
           </Pressable> : null}
         </View> : null}
         {tab === 'community' ? <View style={styles.sections}>
+          {participant && preview.chatEnabled ? <YouthGroupChat /> : null}
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t('programs.title')}</Text>
           {programs.length ? programs.map(post => <SundayProgram key={post._id} post={post} participant={participant}
             replied={preview.programReplies?.includes(post._id) ?? false}
             onReply={() => result.setData(current => current && { ...current, programReplies: [...(current.programReplies ?? []), post._id] })} />) :
             <Text style={styles.empty}>{t('programs.empty')}</Text>}
+          {polls.length ? <Text accessibilityRole="header" style={styles.sectionTitle}>{t('polls.title')}</Text> : null}
+          {polls.map(post => <YouthPoll key={post._id} post={post} participant={participant} state={preview.pollStates?.[post._id]}
+            onVote={option => result.setData(current => current && { ...current,
+              pollStates: { ...current.pollStates, [post._id]: { ...current.pollStates?.[post._id], selected: option } } })} />)}
         </View> : null}
         {tab === 'events' ? <View style={styles.sections}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t('upcoming')}</Text>
@@ -297,10 +333,13 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
       {participant ? <Button variant="secondary" label={t('signOut')} onPress={() => void signOut()} /> : null}
       {design.panel}
     </Screen>
+    {preview && !result.error ? <YouthNavigation tab={tab} onChange={setTab} accent={palette.accent} tint={palette.tint} /> : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.page },
   meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5 },
   branch: { ...type.label, color: '#974020' },
   preview: { ...type.small, backgroundColor: colors.surfaceStrong, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
@@ -308,11 +347,6 @@ const styles = StyleSheet.create({
   hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#fff7ec', marginBottom: 6 },
   art: { width: '100%', aspectRatio: 2 },
   heroCopy: { padding: 16, gap: 4 },
-  tabs: { flexDirection: 'row', gap: 4, width: '100%', maxWidth: 520, alignSelf: 'center' },
-  tab: { flex: 1, minHeight: 52, alignItems: 'center', gap: 3, justifyContent: 'center' },
-  tabIcon: { width: 42, height: 29, alignItems: 'center', justifyContent: 'center', borderRadius: 15 },
-  tabLabel: { ...type.small, textAlign: 'center', fontSize: 12, lineHeight: 16 },
-  selectedLabel: { color: '#974020', fontFamily: fonts.semibold },
   sections: { gap: 10 },
   sectionTitle: { ...type.title, fontSize: 18, lineHeight: 24 },
   feature: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.flameSoft, borderRadius: 20, padding: 17, marginBottom: 6 },

@@ -61,6 +61,8 @@ export const envValidationSchema = Joi.object({
   MAIL_USER: Joi.string().allow('').optional(),
   MAIL_PASS: Joi.string().allow('').optional(),
   MAIL_FROM: Joi.string().allow('').default('no-reply@church.local'),
+  YOUTH_CLAMAV_HOST: Joi.string().hostname().optional(),
+  YOUTH_CLAMAV_PORT: Joi.number().integer().min(1).max(65535).default(3310),
   // Only needed if "Enhanced push security" is turned on for the Expo project.
   EXPO_ACCESS_TOKEN: Joi.string().allow('').optional(),
   VAPID_PUBLIC_KEY: Joi.string().allow('').optional(),

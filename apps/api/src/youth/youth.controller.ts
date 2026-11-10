@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, Header, Headers, Ip, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Headers, Ip, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { MAX_YOUTH_PDF_BYTES } from './youth-pdf-scan';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -6,7 +9,7 @@ import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
-import { YouthMentoringCheckInDto, YouthMentoringConsentDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPostDto, YouthProgramResponseDto, YouthProgressDto, YouthProjectDto, YouthRolloutDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
+import { YouthChatMessageDto, YouthChatReviewDto, YouthChatSettingDto, YouthMentoringCheckInDto, YouthMentoringConsentDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPollVoteDto, YouthPostDto, YouthProgramResponseDto, YouthProgressDto, YouthProjectDto, YouthRolloutDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
 import { YouthParticipantInviteDto } from './youth.dto';
 
@@ -33,6 +36,31 @@ export class YouthController {
     return this.youth.sendMentoringEmail(user, id, activity);
   }
 
+  @Get('groups/:id/development/chat') @Header('Cache-Control', 'no-store')
+  staffChat(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.youth.staffChat(user, id);
+  }
+
+  @Patch('groups/:id/development/chat/settings')
+  chatSettings(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthChatSettingDto) {
+    return this.youth.chatSetting(user, id, dto.enabled);
+  }
+
+  @Patch('groups/:id/development/chat/consent/:person')
+  chatConsent(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string, @Body() dto: YouthChatSettingDto) {
+    return this.youth.chatConsent(user, id, person, dto.enabled);
+  }
+
+  @Post('groups/:id/development/chat/messages')
+  staffChatPost(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthChatMessageDto) {
+    return this.youth.postChat(user, dto.body, id);
+  }
+
+  @Patch('groups/:id/development/chat/messages/:message')
+  reviewChat(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('message') message: string, @Body() dto: YouthChatReviewDto) {
+    return this.youth.reviewChat(user, id, message, dto.action);
+  }
+
   @Post('groups/:id/development/posts')
   publishPost(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthPostDto) {
     return this.youth.publishPost(user, id, dto);
@@ -46,6 +74,28 @@ export class YouthController {
   @Get('groups/:id/development/posts/:post/responses') @Header('Cache-Control', 'no-store')
   programResponses(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
     return this.youth.readProgramResponses(user, id, post);
+  }
+
+  @Get('groups/:id/development/posts/:post/poll-results') @Header('Cache-Control', 'no-store')
+  pollResults(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
+    return this.youth.pollResults(user, id, post);
+  }
+
+  @Patch('groups/:id/development/posts/:post/close-poll')
+  closePoll(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
+    return this.youth.closePoll(user, id, post);
+  }
+
+  @Post('groups/:id/development/posts/:post/pdf')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_YOUTH_PDF_BYTES, files: 1, fields: 0, parts: 2 } }))
+  uploadProgramPdf(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string,
+    @UploadedFile() file?: { originalname: string; buffer: Buffer }) {
+    return this.youth.uploadProgramPdf(user, id, post, file);
+  }
+
+  @Delete('groups/:id/development/posts/:post/pdf')
+  removeProgramPdf(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
+    return this.youth.removeProgramPdf(user, id, post);
   }
 
   @Post('groups/:id/development/tracks')
@@ -226,9 +276,34 @@ export class YouthParticipantController {
   @Get('home') @Header('Cache-Control', 'no-store')
   home(@CurrentUser() user: AuthUser) { return this.youth.participantHome(user); }
 
+  @Get('chat') @Header('Cache-Control', 'no-store')
+  chat(@CurrentUser() user: AuthUser) {
+    return this.youth.participantChat(user);
+  }
+
+  @Post('chat/messages')
+  chatPost(@CurrentUser() user: AuthUser, @Body() dto: YouthChatMessageDto) {
+    return this.youth.postChat(user, dto.body);
+  }
+
+  @Post('chat/messages/:message/report')
+  reportChat(@CurrentUser() user: AuthUser, @Param('message') message: string) {
+    return this.youth.reportChat(user, message);
+  }
+
   @Post('programs/:id/response')
   programResponse(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthProgramResponseDto) {
     return this.youth.submitProgramResponse(user, id, dto.answer);
+  }
+
+  @Post('polls/:id/vote')
+  vote(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthPollVoteDto) {
+    return this.youth.voteInPoll(user, id, dto.option);
+  }
+
+  @Post('programs/:id/pdf-ticket') @Header('Cache-Control', 'no-store')
+  programPdfTicket(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.youth.programPdfTicket(user, id);
   }
 
   @Post('projects/:id/signup')
@@ -238,6 +313,16 @@ export class YouthParticipantController {
 @Controller('youth-registration')
 export class YouthRegistrationController {
   constructor(private readonly youth: YouthService) {}
+
+  @Public() @Get('program-pdf/:ticket')
+  async downloadProgramPdf(@Param('ticket') ticket: string, @Res() res: Response) {
+    const file = await this.youth.downloadProgramPdf(ticket);
+    res.set({
+      'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${file.name}"`,
+      'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+    });
+    res.send(file.buffer);
+  }
 
   @Public() @Post('mentoring-consent') @Header('Cache-Control', 'no-store')
   mentoringConsent(@Headers('x-youth-registration') token: string, @Body() dto: YouthMentoringConsentDto, @Ip() ip: string) {

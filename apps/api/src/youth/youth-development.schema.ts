@@ -43,13 +43,21 @@ YouthDevelopmentProgressSchema.index({ enrollmentId: 1 });
 @Schema({ timestamps: true })
 export class YouthPost {
   @Prop({ type: SchemaTypes.ObjectId, required: true }) groupId!: Types.ObjectId;
-  @Prop({ required: true, enum: ['update', 'devotional', 'program'] }) kind!: 'update' | 'devotional' | 'program';
+  @Prop({ required: true, enum: ['update', 'devotional', 'program', 'poll'] }) kind!: 'update' | 'devotional' | 'program' | 'poll';
   @Prop({ required: true }) title!: string;
   @Prop({ required: true }) body!: string;
   @Prop() sunday?: string;
   @Prop() scripture?: string;
   @Prop() question?: string;
   @Prop() resourceUrl?: string;
+  @Prop() resourceFileName?: string;
+  @Prop({ type: Buffer, select: false }) resourceFile?: Buffer;
+  @Prop({ select: false }) resourceDigest?: string;
+  @Prop({ type: SchemaTypes.ObjectId, select: false }) resourceUploadedBy?: Types.ObjectId;
+  @Prop({ type: [String], default: undefined }) pollOptions?: string[];
+  @Prop({ type: Date }) pollClosedAt?: Date;
+  @Prop({ type: [{ _id: false, enrollmentId: SchemaTypes.ObjectId, option: Number }], select: false, default: undefined })
+  pollVotes?: { enrollmentId: Types.ObjectId; option: number }[];
   @Prop({ type: Date }) archivedAt?: Date;
   @Prop({ type: SchemaTypes.ObjectId, required: true }) createdBy!: Types.ObjectId;
   createdAt!: Date;
@@ -66,3 +74,20 @@ export class YouthProgramResponse {
 export const YouthProgramResponseSchema = SchemaFactory.createForClass(YouthProgramResponse);
 YouthProgramResponseSchema.index({ postId: 1, enrollmentId: 1 }, { unique: true });
 YouthProgramResponseSchema.index({ enrollmentId: 1, postId: 1 });
+
+@Schema({ timestamps: true })
+export class YouthChatMessage {
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) groupId!: Types.ObjectId;
+  @Prop({ type: SchemaTypes.ObjectId, required: true, select: false }) authorId!: Types.ObjectId;
+  @Prop({ required: true }) authorName!: string;
+  @Prop({ required: true }) body!: string;
+  @Prop({ required: true, enum: ['pending', 'approved', 'hidden'] }) state!: 'pending' | 'approved' | 'hidden';
+  @Prop({ type: [SchemaTypes.ObjectId], default: undefined, select: false }) reports?: Types.ObjectId[];
+  @Prop({ default: 0 }) reportCount!: number;
+  @Prop({ type: [{ _id: false, by: SchemaTypes.ObjectId, at: Date, action: String }], default: undefined, select: false })
+  reviewHistory?: { by: Types.ObjectId; at: Date; action: string }[];
+  createdAt!: Date;
+}
+export const YouthChatMessageSchema = SchemaFactory.createForClass(YouthChatMessage);
+YouthChatMessageSchema.index({ groupId: 1, state: 1, _id: -1 });
+YouthChatMessageSchema.index({ groupId: 1, authorId: 1 }, { unique: true, partialFilterExpression: { state: 'pending' } });

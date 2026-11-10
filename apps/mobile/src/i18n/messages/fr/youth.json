@@ -1,12 +1,37 @@
 {
   "youth": {
+    "chat": {
+      "title": "Discussion de groupe",
+      "help": "Les responsables examinent les messages avant leur publication dans le groupe.",
+      "refresh": "Actualiser",
+      "loading": "Chargement des messages…",
+      "unavailable": "La discussion est indisponible pour le moment.",
+      "message": "Message",
+      "pending": "En attente de modération",
+      "empty": "Aucun message pour le moment.",
+      "send": "Soumettre pour examen",
+      "report": "Signaler",
+      "reportConfirm": "Envoyer le signalement aux responsables",
+      "cancel": "Annuler",
+      "reported": "Signalement envoyé aux responsables.",
+      "failed": "Impossible de terminer cette action. Réessayez."
+    },
     "hub": {
       "camps": "Camps",
       "previewHint": "Découvrez la vue des participants."
     },
     "participantHome": {
+      "polls": {
+        "title": "Sondages du groupe",
+        "open": "Sondage ouvert",
+        "closed": "Sondage terminé",
+        "yourVote": "Votre vote",
+        "vote": "Voter",
+        "failed": "Impossible de voter. Actualisez pour vérifier si le sondage est encore ouvert."
+      },
       "community": "Communauté",
       "programs": {
+        "download": "Télécharger le programme PDF",
         "title": "Programmes du dimanche",
         "empty": "Aucun programme du dimanche n’a encore été publié.",
         "resource": "Ouvrir la ressource",
