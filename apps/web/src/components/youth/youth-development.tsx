@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button, Field } from "@/components/ui/ui";
 import { useYouthAction } from "./use-youth-action";
+import { MentoringEmail } from "./mentoring-email";
 
-type Person = { _id: string; firstName: string; lastName: string; needsGuardian: boolean };
+type Person = { _id: string; firstName: string; lastName: string; needsGuardian: boolean; mentoringEmailConsentAt?: string };
 type Activity = {
   _id: string;
   kind: "track" | "project" | "mentoring";
@@ -19,6 +20,7 @@ type Activity = {
   checkIns?: string[];
   nextCheckIn?: string;
   participantNextStep?: string;
+  mentoringEmailDates?: string[];
   active?: boolean;
 };
 type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string; serviceMinutes?: number };
@@ -26,8 +28,26 @@ type YouthPost = { _id: string; kind: "update" | "devotional"; title: string; bo
 export type YouthDevelopmentOverview = {
   groupName: string; manager: boolean; screenedLeader: boolean; people: Person[]; activities: Activity[]; progress: Progress[];
   posts?: YouthPost[];
+  rollout?: { mentoringEmailEnabled: boolean; youthFeedEnabled: boolean };
 };
 
+function RolloutControls({ path, rollout }: { path: string; rollout: NonNullable<YouthDevelopmentOverview["rollout"]> }) {
+  const t = useTranslations("youth.mentoringEmail");
+  const { run, busy } = useYouthAction();
+  return <details className="app-card p-5">
+    <summary className="cursor-pointer font-semibold">{t("rollout")}</summary>
+    <form key={String(rollout.mentoringEmailEnabled) + String(rollout.youthFeedEnabled)} className="mt-4 space-y-3"
+      onSubmit={event => {
+        event.preventDefault();
+        const fields = new FormData(event.currentTarget);
+        void run(path + "/rollout", "PATCH", { mentoringEmailEnabled: fields.has("email"), youthFeedEnabled: fields.has("feed") });
+      }}>
+      <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="feed" defaultChecked={rollout.youthFeedEnabled} />{t("rolloutFeed")}</label>
+      <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="email" defaultChecked={rollout.mentoringEmailEnabled} />{t("rolloutEmail")}</label>
+      <Button type="submit" size="sm" disabled={busy}>{t("rolloutSave")}</Button>
+    </form>
+  </details>;
+}
 function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
   const t = useTranslations("youth.posts");
   const format = useFormatter();
@@ -111,7 +131,9 @@ function ProgressCard({ item, people, records, path, manager }: { item: Activity
   </article>;
 }
 
-function MentoringCard({ item, person, manager, path }: { item: Activity; person?: Person; manager: boolean; path: string }) {
+function MentoringCard({ item, person, manager, path, emailEnabled }: {
+  item: Activity; person?: Person; manager: boolean; path: string; emailEnabled?: boolean;
+}) {
   const t = useTranslations("youth");
   const format = useFormatter();
   const { run, busy } = useYouthAction();
@@ -152,6 +174,10 @@ function MentoringCard({ item, person, manager, path }: { item: Activity; person
         </div>
       </form>
     </details> : null}
+    {manager && item.canCheckIn && emailEnabled && person ? <MentoringEmail key={person._id}
+      path={path} activityId={item._id} personId={person._id} guardian={person.needsGuardian}
+      optedIn={Boolean(person.mentoringEmailConsentAt)} date={item.nextCheckIn}
+      attempted={Boolean(item.nextCheckIn && item.mentoringEmailDates?.includes(item.nextCheckIn))} /> : null}
     {manager && item.active ? <Button type="button" variant="secondary" disabled={busy} onClick={() => {
       if (window.confirm(t("endMentoringConfirm"))) void run(path + "/" + item._id + "/end", "PATCH");
     }}>{t("endMentoring")}</Button> : null}
@@ -178,6 +204,7 @@ export function YouthDevelopmentWorkspace({ groupId, data }: { groupId: string; 
       {data.manager ? <Button type="button" size="sm" variant={view === "posts" ? "primary" : "secondary"}
         aria-pressed={view === "posts"} onClick={() => setView("posts")}>{t("posts.heading")}</Button> : null}
     </nav>
+    {data.manager && data.rollout ? <RolloutControls path={path} rollout={data.rollout} /> : null}
     {view === "posts" && data.manager ? <GroupPosts path={path + "/posts"} posts={data.posts ?? []} /> : <>
     {data.manager ? <details key={view} className="app-card p-5">
       <summary className="cursor-pointer font-semibold">{t(section.create)}</summary>
@@ -207,7 +234,8 @@ export function YouthDevelopmentWorkspace({ groupId, data }: { groupId: string; 
       </form>
     </details> : null}
     {activities.length ? activities.map(item => item.kind === "mentoring" ?
-      <MentoringCard key={item._id} item={item} path={path} manager={data.manager} person={data.people.find(person => person._id === item.enrollmentId)} /> :
+      <MentoringCard key={item._id} item={item} path={path} manager={data.manager} emailEnabled={data.rollout?.mentoringEmailEnabled}
+        person={data.people.find(person => person._id === item.enrollmentId)} /> :
       <ProgressCard key={item._id} item={item} path={path} manager={data.manager} people={data.people} records={data.progress.filter(row => row.activityId === item._id)} />) :
       <p className="app-card p-5 text-sm text-neutral-600">{t("noDevelopment")}</p>}
     </>}

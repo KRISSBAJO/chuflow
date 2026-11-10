@@ -399,6 +399,36 @@ async function run() {
     const reminderHome = await expect(await participantHome(), 200);
     assert.deepEqual(reminderHome.mentoringReminder, reminderInput);
     assert.ok(!JSON.stringify(reminderHome).includes('Private staff focus'));
+    const rolloutPath = development + '/rollout';
+    const consentInvitePath = development + '/mentoring-consent/' + teenId;
+    const emailPath = development + '/' + reminderAssignment.id + '/mentoring-email';
+    const rollout = { youthFeedEnabled: true, mentoringEmailEnabled: true };
+    await expect(await youth(consentInvitePath, 'POST', undefined, youthPastor.token), 403);
+    await expect(await youth(rolloutPath, 'PATCH', rollout, otherPastor), 403);
+    await expect(await youth(rolloutPath, 'PATCH', rollout, youthPastor.token), 200);
+    await expect(await youth(emailPath, 'POST', undefined, youthPastor.token), 409);
+    const consentInvite = await expect(await youth(consentInvitePath, 'POST', undefined, youthPastor.token), 201);
+    assert.equal(consentInvite.guardian, true);
+    const preferenceToken = new URL(consentInvite.link).pathname.split('/').pop();
+    const preference = (enabled, token = preferenceToken) => fetch(base + '/youth-registration/mentoring-consent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-youth-registration': token },
+      body: JSON.stringify({ enabled, locale: 'es' }),
+    });
+    await expect(await preference(true, preferenceToken.slice(0, -1) + (preferenceToken.endsWith('0') ? '1' : '0')), 404);
+    await expect(await preference(true), 201);
+    await expect(await preference(true), 409);
+    const mailAttempts = await Promise.all([youth(emailPath, 'POST', undefined, youthPastor.token), youth(emailPath, 'POST', undefined, youthPastor.token)]);
+    assert.deepEqual(mailAttempts.map(response => response.status).sort(), [201, 409]);
+    const mentoringEmail = messages.map(message => message.replace(/=\r\n/g, '').replace(/=3D/g, '='))
+      .find(message => message.includes('mentoring=off'));
+    assert.ok(mentoringEmail);
+    assert.match(mentoringEmail, /To: local@example\.com/);
+    assert.match(mentoringEmail, /Hay una reuni/);
+    assert.ok(!mentoringEmail.includes('Bring your reflection'));
+    assert.ok(!mentoringEmail.includes('Private staff focus'));
+    const optOutToken = mentoringEmail.match(/youth-register\/([a-f0-9]{88})\?mentoring=off/)[1];
+    await expect(await preference(false, optOutToken), 201);
+    await expect(await preference(true), 409);
     await expect(await youth(development + '/' + reminderAssignment.id + '/check-ins', 'POST', { date }, team), 201);
     assert.equal((await expect(await participantHome(), 200)).mentoringReminder, undefined);
     await expect(await youth(mentoringReminderPath, 'PATCH', reminderInput, team), 409);
@@ -425,6 +455,9 @@ async function run() {
     const postFeed = (await expect(await participantHome(), 200)).posts;
     assert.deepEqual(postFeed.map(post => post.title), ['Weekly reflection']);
     assert.equal(postFeed[0].createdBy, undefined);
+    await expect(await youth(rolloutPath, 'PATCH', { ...rollout, youthFeedEnabled: false }, youthPastor.token), 200);
+    assert.deepEqual((await expect(await participantHome(), 200)).posts, []);
+    await expect(await youth(rolloutPath, 'PATCH', rollout, youthPastor.token), 200);
     await expect(await youth(adults + '/development/posts/' + posted.id, 'DELETE'), 404);
     await expect(await youth(development + '/posts/' + posted.id, 'DELETE', undefined, youthPastor.token), 200);
     assert.deepEqual((await expect(await participantHome(), 200)).posts, []);
@@ -596,6 +629,7 @@ async function run() {
     assert.deepEqual(localReport.map(row => row.branchId), [String(branch)]);
     assert.equal(localReport[0].closed, 2);
     assert.equal(localReport[0].checkIns, 2);
+    assert.equal(localReport[0].serviceSignups, 1);
     const districtReport = await expect(await youth('/reports', 'GET', undefined, district), 200);
     assert.deepEqual(new Set(districtReport.map(row => row.branchId)), new Set([String(branch), String(otherBranch)]));
     await expect(await youth('/reports', 'GET', undefined, youthLeader.token), 403);

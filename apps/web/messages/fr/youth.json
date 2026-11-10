@@ -1,5 +1,28 @@
 {
   "youth": {
+    "mentoringEmail": {
+      "rollout": "Déploiement jeunesse",
+      "rolloutFeed": "Afficher les publications du groupe dans l’accueil jeunesse",
+      "rolloutEmail": "Autoriser les rappels de mentorat par e-mail avec consentement",
+      "rolloutSave": "Enregistrer les réglages de déploiement",
+      "optedIn": "Consentement par e-mail confirmé.",
+      "guardianHint": "Transmettez le lien de consentement en privé au responsable légal inscrit au dossier.",
+      "participantHint": "Transmettez le lien de consentement en privé au participant inscrit au dossier.",
+      "createLink": "Créer le lien de consentement",
+      "link": "Lien de consentement (valable 7 jours)",
+      "linkFailed": "Impossible de créer le lien. Vérifiez que le dossier contient une adresse e-mail.",
+      "attempted": "Un envoi a déjà été tenté pour cette date.",
+      "send": "Envoyer le rappel par e-mail",
+      "confirm": "Envoyer un rappel au destinataire qui a donné son accord ?",
+      "preferences": "Préférences des e-mails de mentorat",
+      "enableHint": "Activez les rappels de mentorat pour cette inscription. Vous pouvez vous désinscrire depuis chaque rappel.",
+      "disableHint": "Désactivez les rappels de mentorat pour cette inscription.",
+      "enable": "Activer les e-mails",
+      "disable": "Désactiver les e-mails",
+      "enabled": "Les e-mails de mentorat sont activés.",
+      "disabled": "Les e-mails de mentorat sont désactivés.",
+      "invalid": "Impossible d’enregistrer votre choix. Le lien a peut-être expiré ou déjà été utilisé."
+    },
     "mentoringReminder": {
       "title": "Point de mentorat",
       "date": "Date du prochain rendez-vous",
@@ -49,6 +72,10 @@
       "unsubscribeError": "Impossible de modifier votre préférence. Réessayez."
     },
     "reports": {
+      "signedIn": "Comptes de participants utilisés",
+      "completedTracks": "Parcours terminés",
+      "serviceSignups": "Inscriptions au service",
+      "serviceMinutes": "Heures de service vérifiées",
       "title": "Rapports",
       "hint": "Toute l’activité jeunesse enregistrée, par assemblée du participant. Un retour correspond à une présence à un deuxième événement ou camp.",
       "empty": "Aucune assemblée disponible dans votre périmètre.",

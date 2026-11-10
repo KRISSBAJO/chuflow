@@ -16,6 +16,7 @@ export class YouthDevelopment {
   @Prop({ type: [String], default: undefined }) checkIns?: string[];
   @Prop() nextCheckIn?: string;
   @Prop() participantNextStep?: string;
+  @Prop({ type: [String], default: undefined, select: false }) mentoringEmailDates?: string[];
   @Prop({ type: Date }) endedAt?: Date;
   @Prop() active?: boolean;
 }

@@ -45,3 +45,13 @@ export class YouthMentoringReminderDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date!: string | null;
   @IsOptional() @IsString() @MaxLength(180) nextStep?: string;
 }
+
+export class YouthRolloutDto {
+  @IsBoolean() mentoringEmailEnabled!: boolean;
+  @IsBoolean() youthFeedEnabled!: boolean;
+}
+
+export class YouthMentoringConsentDto {
+  @IsBoolean() enabled!: boolean;
+  @IsIn(['en', 'es', 'fr', 'pt']) locale!: 'en' | 'es' | 'fr' | 'pt';
+}

@@ -28,12 +28,12 @@ export class YouthDevelopmentService {
   async overview(user: AuthUser, groupId: string) {
     const { group, manager, screenedLeader } = await this.youth.developmentScope(user, groupId);
     const [people, activities, posts] = await Promise.all([
-      this.enrollments.find({ groupId: group._id, state: 'active' }).select('firstName lastName needsGuardian')
+      this.enrollments.find({ groupId: group._id, state: 'active' }).select('firstName lastName needsGuardian' + (manager ? ' +mentoringEmailConsentAt' : ''))
         .sort({ firstName: 1, lastName: 1 }).lean(),
       this.activities.find({
         groupId: group._id,
         ...(manager ? {} : { $or: [{ kind: { $in: ['track', 'project'] } }, { kind: 'mentoring', mentorId: user.sub, active: true }] }),
-      }).select('-createdBy').sort({ _id: -1 }).lean(),
+      }).select('-createdBy' + (manager ? ' +mentoringEmailDates' : '')).sort({ _id: -1 }).lean(),
       manager ? this.youth.groupPosts([group._id]) : [],
     ]);
     const activeIds = new Set(people.map(person => String(person._id)));
@@ -47,6 +47,7 @@ export class YouthDevelopmentService {
       .select('firstName lastName').lean()]);
     const mentorNames = new Map(mentors.map(mentor => [String(mentor._id), [mentor.firstName, mentor.lastName].filter(Boolean).join(' ')]));
     return { groupName: group.name, manager, screenedLeader, people, progress, posts,
+      rollout: manager ? { youthFeedEnabled: group.youthFeedEnabled !== false, mentoringEmailEnabled: group.mentoringEmailEnabled === true } : undefined,
       activities: visible.map(({ mentorId, ...item }) => ({
         ...item,
         ...(mentorId ? {

@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { ConfigService } from '@nestjs/config';
 import { isEmail } from 'class-validator';
 import { InjectModel } from '@nestjs/mongoose';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import * as bcrypt from 'bcryptjs';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
@@ -16,7 +16,7 @@ import { User } from '../users/schemas/user.schema';
 import { getWorkspace, workspaceWebLink } from '../workspaces/workspace-boundary';
 import { MailService } from '../mail/mail.service';
 import { YouthDevelopment, YouthDevelopmentProgress, YouthPost } from './youth-development.schema';
-import { YouthPostDto } from './youth-development.dto';
+import { YouthMentoringConsentDto, YouthPostDto, YouthRolloutDto } from './youth-development.dto';
 import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
 import { YouthParticipantInviteDto } from './youth.dto';
@@ -31,6 +31,12 @@ const reminderCopy = {
   es: ['Recordatorio del evento juvenil', 'Evento', 'Fecha', 'Lugar', 'Dejar de recibir estos recordatorios'],
   fr: ['Rappel de l’événement jeunesse', 'Événement', 'Date', 'Lieu', 'Ne plus recevoir ces rappels'],
   pt: ['Lembrete do evento de jovens', 'Evento', 'Data', 'Local', 'Parar de receber estes lembretes'],
+} as const;
+const mentoringCopy = {
+  en: ['Youth mentoring reminder', 'A mentoring check-in is scheduled for', 'Stop mentoring emails'],
+  es: ['Recordatorio de mentoría juvenil', 'Hay una reunión de mentoría programada para el', 'Dejar de recibir correos de mentoría'],
+  fr: ['Rappel de mentorat jeunesse', 'Un rendez-vous de mentorat est prévu le', 'Ne plus recevoir les e-mails de mentorat'],
+  pt: ['Lembrete de mentoria de jovens', 'Há um encontro de mentoria marcado para', 'Parar de receber e-mails de mentoria'],
 } as const;
 const id = (value: string) => {
   if (!Types.ObjectId.isValid(value)) throw new NotFoundException();
@@ -143,7 +149,7 @@ export class YouthService {
     if (!branch) throw new NotFoundException();
 
     const [groups, events, delegations] = await Promise.all([
-      this.groups.find({ branchId, eventDate: { $exists: false } }).select('name program').sort({ name: 1 }).lean(),
+      this.groups.find({ branchId, eventDate: { $exists: false } }).select('name program youthFeedEnabled').sort({ name: 1 }).lean(),
       this.groups.find({ branchId, eventDate: { $gte: day() }, registrationToken: { $exists: true }, campEndDate: { $exists: false } })
         .select('name program venue eventDate registrationDeadline leaderId clearanceUntil branchId').sort({ eventDate: 1 }).limit(12).lean(),
       this.delegations.find({ branchId, token: { $exists: true } }).select('groupId').lean(),
@@ -154,7 +160,7 @@ export class YouthService {
         .select('groupId kind title date location milestones').sort({ date: 1, _id: -1 }).lean(),
       this.groups.find({ _id: { $in: delegations.map(row => row.groupId) }, campEndDate: { $exists: true }, eventDate: { $gte: day() } })
         .select('name program venue eventDate campEndDate registrationDeadline leaderId clearanceUntil branchId').sort({ eventDate: 1 }).limit(12).lean(),
-      this.groupPosts(groups.map(group => group._id)),
+      this.groupPosts(groups.filter(group => group.youthFeedEnabled !== false).map(group => group._id)),
     ]);
     const upcoming = [...events, ...camps].sort((a, b) => a.eventDate!.localeCompare(b.eventDate!));
     const open = await Promise.all(upcoming.map(async event => this.registrationInTime(event) && await this.cleared(event)));
@@ -172,6 +178,94 @@ export class YouthService {
   groupPosts(groupIds: Types.ObjectId[]) {
     return this.posts.find({ groupId: { $in: groupIds }, archivedAt: { $exists: false } })
       .select('groupId kind title body createdAt').sort({ createdAt: -1, _id: -1 }).limit(30).lean();
+  }
+
+  async saveRollout(user: AuthUser, groupId: string, dto: YouthRolloutDto) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    await this.groups.updateOne({ _id: group._id }, { $set: {
+      mentoringEmailEnabled: dto.mentoringEmailEnabled, youthFeedEnabled: dto.youthFeedEnabled,
+    } });
+    return { saved: true };
+  }
+
+  private mentoringConsentToken(personId: Types.ObjectId, nonce: string) {
+    const secret = this.config.getOrThrow<string>('jwtSecret');
+    const signature = createHmac('sha256', secret).update(
+      JSON.stringify(['youth-mentoring-email', getWorkspace(this.config).id, String(personId), nonce]),
+    ).digest('hex');
+    return String(personId) + signature;
+  }
+
+  private mentoringConsentLink(personId: Types.ObjectId, nonce: string, unsubscribe = false) {
+    return workspaceWebLink(this.config, '/youth-register/' + this.mentoringConsentToken(personId, nonce),
+      { mentoring: unsubscribe ? 'off' : 'on' });
+  }
+
+  async inviteMentoringConsent(user: AuthUser, groupId: string, enrollmentId: string) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    if (!group.mentoringEmailEnabled) throw new ForbiddenException();
+    const nonce = randomBytes(24).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 86400000);
+    const person = await this.enrollments.findOneAndUpdate({
+      _id: id(enrollmentId), groupId: group._id, state: 'active', contact: emailAddress,
+      mentoringEmailConsentAt: { $exists: false },
+    }, { $set: { mentoringConsentNonce: nonce, mentoringConsentExpiresAt: expiresAt } }).select('needsGuardian').lean();
+    if (!person) throw new ConflictException('An active enrollment with an email and no existing consent is required.');
+    return { link: this.mentoringConsentLink(person._id, nonce), guardian: person.needsGuardian };
+  }
+
+  async setMentoringConsent(token: string | undefined, dto: YouthMentoringConsentDto, ip: string) {
+    this.forms.limitPublicSubmission(ip);
+    if (!token || !/^[a-f0-9]{88}$/.test(token)) throw new BadRequestException();
+    const person = await this.enrollments.findById(id(token.slice(0, 24)))
+      .select('groupId state +mentoringConsentNonce').lean();
+    const nonce = person?.mentoringConsentNonce;
+    if (!person || !nonce || !timingSafeEqual(Buffer.from(token), Buffer.from(this.mentoringConsentToken(person._id, nonce)))) {
+      throw new NotFoundException();
+    }
+    const filter = { _id: person._id, mentoringConsentNonce: nonce };
+    if (dto.enabled) {
+      if (!await this.groups.exists({ _id: person.groupId, mentoringEmailEnabled: true })) throw new ForbiddenException();
+      const consent = await this.enrollments.updateOne({ ...filter, state: 'active', mentoringConsentExpiresAt: { $gt: new Date() } },
+        { $set: { mentoringEmailConsentAt: new Date(), mentoringEmailLocale: dto.locale }, $unset: { mentoringConsentExpiresAt: 1 } });
+      if (!consent.matchedCount) throw new ConflictException();
+    } else {
+      await this.enrollments.updateOne(filter, { $unset: { mentoringEmailConsentAt: 1, mentoringConsentExpiresAt: 1, mentoringEmailLocale: 1 } });
+    }
+    return { saved: true };
+  }
+
+  async sendMentoringEmail(user: AuthUser, groupId: string, activityId: string) {
+    const { group, screenedLeader } = await this.developmentScope(user, groupId, true);
+    if (!group.mentoringEmailEnabled || !screenedLeader || !group.leaderId) throw new ForbiddenException();
+    const query = { _id: id(activityId), groupId: group._id, kind: 'mentoring', active: true,
+      mentorId: group.leaderId, permissionConfirmedAt: { $exists: true } };
+    const assignment = await this.activities.findOne(query).select('enrollmentId nextCheckIn').lean();
+    if (!assignment?.enrollmentId || !assignment.nextCheckIn || assignment.nextCheckIn < day()) throw new NotFoundException();
+    const date = assignment.nextCheckIn;
+    const person = await this.enrollments.findOne({ _id: assignment.enrollmentId, groupId: group._id, state: 'active',
+      mentoringEmailConsentAt: { $exists: true }, contact: emailAddress })
+      .select('+contact +mentoringConsentNonce +mentoringEmailLocale').lean();
+    if (!person?.mentoringConsentNonce || !isEmail(person.contact)) throw new ConflictException('Mentoring email consent is required.');
+    const claim = await this.activities.updateOne({ ...query, nextCheckIn: date, checkIns: { $ne: date }, mentoringEmailDates: { $ne: date } },
+      { $addToSet: { mentoringEmailDates: date } });
+    if (!claim.matchedCount) throw new ConflictException();
+    const locale = person.mentoringEmailLocale && Object.hasOwn(mentoringCopy, person.mentoringEmailLocale)
+      ? person.mentoringEmailLocale as keyof typeof mentoringCopy : 'en';
+    const [subject, message, optOut] = mentoringCopy[locale];
+    const formattedDate = new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(date));
+    let result;
+    try {
+      result = await this.mail.sendAppEmail({ to: person.contact, subject,
+        text: [getWorkspace(this.config).name, `${message} ${formattedDate}.`,
+          `${optOut}: ${this.mentoringConsentLink(person._id, person.mentoringConsentNonce, true)}`].join('\n'),
+        idempotencyKey: `youth-mentoring-${assignment._id}-${date}` });
+    } catch { throw new ServiceUnavailableException(); }
+    if (!result.delivered) {
+      await this.activities.updateOne({ _id: assignment._id }, { $pull: { mentoringEmailDates: date } });
+      throw new ServiceUnavailableException();
+    }
+    return { accepted: true };
   }
 
   async publishPost(user: AuthUser, groupId: string, dto: YouthPostDto) {
@@ -220,7 +314,7 @@ export class YouthService {
   async participantHome(user: AuthUser) {
     const person = await this.participantEnrollment(user);
     const [group, branch, activities, events, delegations, registrations, posts] = await Promise.all([
-      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program branchId leaderId clearanceUntil').lean(),
+      this.groups.findOne({ _id: person.groupId, branchId: person.branchId, eventDate: { $exists: false } }).select('name program branchId leaderId clearanceUntil youthFeedEnabled').lean(),
       this.branches.findById(person.branchId).select('name').lean(),
       this.activities.find({ groupId: person.groupId, kind: { $in: ['track', 'project'] } })
         .select('kind title date location milestones').sort({ date: 1 }).lean(),
@@ -256,7 +350,7 @@ export class YouthService {
         registrationUrl: !state && token ? workspaceWebLink(this.config, '/youth-register/' + token) : undefined };
     }));
     return {
-      posts,
+      posts: group.youthFeedEnabled === false ? [] : posts,
       serviceHistory,
       mentoringReminder: reminder,
       branch: branch.name, groups: [{ id: group._id, name: group.name, program: group.program }],
@@ -287,7 +381,7 @@ export class YouthService {
     if (!this.canManageEvents(user)) throw new ForbiddenException();
     const branches = await this.branches.find(await this.access.getBranchDocumentQuery(user)).select('name').sort({ name: 1 }).lean();
     const branchIds = branches.map(branch => branch._id);
-    const [followUps, attendance, tracks] = await Promise.all([
+    const [followUps, attendance, tracks, engagement] = await Promise.all([
       this.enrollments.aggregate<{ _id: Types.ObjectId; open: number; closed: number; overdue: number }>([
         { $match: { branchId: { $in: branchIds }, 'campFollowUp.outcome': { $exists: true } } },
         { $group: { _id: '$branchId',
@@ -315,13 +409,38 @@ export class YouthService {
         { $match: { 'tracks.0': { $exists: true } } },
         { $group: { _id: '$branchId', started: { $sum: 1 } } },
       ]),
+      this.enrollments.aggregate<{ _id: Types.ObjectId; signedIn: number; completedTracks: number; serviceSignups: number; serviceMinutes: number }>([
+        { $match: { branchId: { $in: branchIds } } },
+        { $lookup: { from: this.users.collection.name, localField: '_id', foreignField: 'youthEnrollmentId',
+          pipeline: [{ $match: { role: 'youth_participant', isActive: true, lastLoginAt: { $type: 'date' } } }, { $project: { _id: 1 } }], as: 'accounts' } },
+        { $lookup: { from: this.progress.collection.name, localField: '_id', foreignField: 'enrollmentId',
+          pipeline: [
+            { $lookup: { from: this.activities.collection.name, localField: 'activityId', foreignField: '_id', as: 'activity' } },
+            { $unwind: '$activity' },
+            { $group: { _id: null,
+              completedTracks: { $sum: { $cond: [{ $and: [{ $eq: ['$activity.kind', 'track'] }, { $gt: [{ $size: { $ifNull: ['$activity.milestones', []] } }, 0] },
+                { $setIsSubset: [{ $range: [0, { $size: { $ifNull: ['$activity.milestones', []] } }] }, { $ifNull: ['$completed', []] }] } ] }, 1, 0] } },
+              serviceSignups: { $sum: { $cond: [{ $and: [{ $eq: ['$activity.kind', 'project'] }, { $eq: [{ $type: '$signedUpAt' }, 'date'] }] }, 1, 0] } },
+              serviceMinutes: { $sum: { $cond: [{ $and: [{ $eq: ['$activity.kind', 'project'] }, { $in: [0, { $ifNull: ['$completed', []] }] }] }, { $ifNull: ['$serviceMinutes', 0] }, 0] } },
+            } },
+          ], as: 'engagement' } },
+        { $group: { _id: '$branchId',
+          signedIn: { $sum: { $cond: [{ $eq: ['$state', 'active'] }, { $size: '$accounts' }, 0] } },
+          completedTracks: { $sum: { $sum: '$engagement.completedTracks' } },
+          serviceSignups: { $sum: { $sum: '$engagement.serviceSignups' } },
+          serviceMinutes: { $sum: { $sum: '$engagement.serviceMinutes' } },
+        } },
+      ]),
     ]);
     return branches.map(branch => {
       const tasks = followUps.find(row => row._id.equals(branch._id));
       const visits = attendance.find(row => row._id.equals(branch._id));
+      const activity = engagement.find(row => row._id.equals(branch._id));
       return { branchId: branch._id, name: branch.name, open: tasks?.open ?? 0, overdue: tasks?.overdue ?? 0,
         closed: tasks?.closed ?? 0, checkIns: visits?.checkIns ?? 0, returned: visits?.returned ?? 0,
-        started: tracks.find(row => row._id.equals(branch._id))?.started ?? 0 };
+        started: tracks.find(row => row._id.equals(branch._id))?.started ?? 0,
+        signedIn: activity?.signedIn ?? 0, completedTracks: activity?.completedTracks ?? 0,
+        serviceSignups: activity?.serviceSignups ?? 0, serviceMinutes: activity?.serviceMinutes ?? 0 };
     });
   }
 

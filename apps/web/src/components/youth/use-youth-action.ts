@@ -32,7 +32,7 @@ export function useYouthAction() {
       return true;
     } catch {
       toast.error(t("failed"));
-      if (path.endsWith("/guardian-reminder")) router.refresh();
+      if (path.endsWith("/guardian-reminder") || path.endsWith("/mentoring-email")) router.refresh();
     } finally {
       setBusy(false);
     }

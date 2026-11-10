@@ -1,5 +1,28 @@
 {
   "youth": {
+    "mentoringEmail": {
+      "rollout": "Youth rollout",
+      "rolloutFeed": "Show group posts in Youth Home",
+      "rolloutEmail": "Allow opt-in mentoring reminder emails",
+      "rolloutSave": "Save rollout settings",
+      "optedIn": "Email consent confirmed.",
+      "guardianHint": "Share the consent link privately with the guardian on the youth record.",
+      "participantHint": "Share the consent link privately with the participant on the youth record.",
+      "createLink": "Create consent link",
+      "link": "Consent link (expires in 7 days)",
+      "linkFailed": "Could not create a link. Check that the roster has an email.",
+      "attempted": "A send was already attempted for this date.",
+      "send": "Send reminder email",
+      "confirm": "Send one reminder email to the recipient who opted in?",
+      "preferences": "Mentoring email preferences",
+      "enableHint": "Enable mentoring check-in emails for this youth enrollment. You can unsubscribe from any reminder.",
+      "disableHint": "Stop mentoring reminder emails for this youth enrollment.",
+      "enable": "Enable emails",
+      "disable": "Stop emails",
+      "enabled": "Mentoring emails are enabled.",
+      "disabled": "Mentoring emails are off.",
+      "invalid": "Could not save your preference. The link may be expired or already used."
+    },
     "mentoringReminder": {
       "title": "Mentoring check-in",
       "date": "Next check-in date",
@@ -49,6 +72,10 @@
       "unsubscribeError": "Could not update your preference. Try again."
     },
     "reports": {
+      "signedIn": "Participant accounts used",
+      "completedTracks": "Tracks completed",
+      "serviceSignups": "Service sign-ups",
+      "serviceMinutes": "Verified service hours",
       "title": "Reports",
       "hint": "All recorded youth activity, grouped by the participant’s branch. A return means attendance at a second event or camp.",
       "empty": "No branches are available in your scope.",

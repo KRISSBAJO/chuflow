@@ -1,5 +1,28 @@
 {
   "youth": {
+    "mentoringEmail": {
+      "rollout": "Implementación juvenil",
+      "rolloutFeed": "Mostrar publicaciones del grupo en el inicio juvenil",
+      "rolloutEmail": "Permitir recordatorios de mentoría por correo con consentimiento",
+      "rolloutSave": "Guardar ajustes de implementación",
+      "optedIn": "Consentimiento por correo confirmado.",
+      "guardianHint": "Comparte el enlace de consentimiento en privado con el tutor que figura en el registro.",
+      "participantHint": "Comparte el enlace de consentimiento en privado con el participante que figura en el registro.",
+      "createLink": "Crear enlace de consentimiento",
+      "link": "Enlace de consentimiento (vence en 7 días)",
+      "linkFailed": "No se pudo crear el enlace. Comprueba que el registro tenga un correo.",
+      "attempted": "Ya se intentó enviar un recordatorio para esta fecha.",
+      "send": "Enviar recordatorio por correo",
+      "confirm": "¿Enviar un recordatorio al destinatario que dio su consentimiento?",
+      "preferences": "Preferencias de correo de mentoría",
+      "enableHint": "Activa los recordatorios de mentoría para esta inscripción. Puedes cancelar desde cualquier recordatorio.",
+      "disableHint": "Desactiva los recordatorios de mentoría para esta inscripción.",
+      "enable": "Activar correos",
+      "disable": "Desactivar correos",
+      "enabled": "Los correos de mentoría están activados.",
+      "disabled": "Los correos de mentoría están desactivados.",
+      "invalid": "No se pudo guardar tu preferencia. El enlace puede haber caducado o haberse usado."
+    },
     "mentoringReminder": {
       "title": "Seguimiento de mentoría",
       "date": "Fecha de la próxima reunión",
@@ -49,6 +72,10 @@
       "unsubscribeError": "No se pudo actualizar tu preferencia. Inténtalo de nuevo."
     },
     "reports": {
+      "signedIn": "Cuentas de participantes utilizadas",
+      "completedTracks": "Itinerarios completados",
+      "serviceSignups": "Inscripciones de servicio",
+      "serviceMinutes": "Horas de servicio verificadas",
       "title": "Informes",
       "hint": "Toda la actividad juvenil registrada, agrupada por la sede del participante. Un regreso implica asistir a otro evento o campamento.",
       "empty": "No hay sedes disponibles en tu ámbito.",

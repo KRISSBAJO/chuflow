@@ -20,6 +20,8 @@ export class YouthGroup {
   @Prop() venue?: string;
   @Prop() capacity?: number;
   @Prop({ default: 18 }) guardianUnderAge!: number;
+  @Prop({ default: false }) mentoringEmailEnabled!: boolean;
+  @Prop({ default: true }) youthFeedEnabled!: boolean;
   @Prop({ type: SchemaTypes.ObjectId }) leaderId?: Types.ObjectId;
   @Prop() clearanceUntil?: string;
   @Prop({ type: SchemaTypes.ObjectId, select: false }) clearanceVerifiedBy?: Types.ObjectId;
@@ -39,6 +41,10 @@ export class YouthEnrollment {
   @Prop({ required: true, select: false }) birthDate!: string;
   @Prop({ required: true, select: false }) contact!: string;
   @Prop({ select: false }) guardianName?: string;
+  @Prop({ select: false }) mentoringConsentNonce?: string;
+  @Prop({ type: Date, select: false }) mentoringConsentExpiresAt?: Date;
+  @Prop({ type: Date, select: false }) mentoringEmailConsentAt?: Date;
+  @Prop({ select: false }) mentoringEmailLocale?: string;
   @Prop({ select: false }) guardianEmailOptIn?: boolean;
   @Prop({ select: false }) guardianEmailTokenHash?: string;
   @Prop({ select: false }) guardianReminderStatus?: 'sending' | 'accepted' | 'unconfirmed';

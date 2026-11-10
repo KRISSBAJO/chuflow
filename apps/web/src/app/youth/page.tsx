@@ -7,7 +7,7 @@ import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type { YouthOverview } from "@/lib/youth";
 
-const reportMetrics = ["checkIns", "returned", "started", "open", "overdue", "closed"] as const;
+const reportMetrics = ["checkIns", "returned", "signedIn", "started", "completedTracks", "serviceSignups", "serviceMinutes", "open", "overdue", "closed"] as const;
 type BranchReport = Record<(typeof reportMetrics)[number], number> & { branchId: string; name: string };
 
 export default async function YouthPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
@@ -18,6 +18,8 @@ export default async function YouthPage({ searchParams }: { searchParams: Promis
   const events = view === "events";
   const showReports = view === "reports" && overview.canManageEvents;
   const reports = showReports ? await serverGet<BranchReport[]>("/youth/reports") : [];
+  const formatMetric = (metric: (typeof reportMetrics)[number], value: number) =>
+    format.number(metric === "serviceMinutes" ? value / 60 : value, { maximumFractionDigits: 2 });
   const groups = overview.groups.filter(group => camps ? group.campEndDate : events ? group.eventDate && !group.campEndDate : !group.eventDate);
   return <Shell><main className="mx-auto max-w-5xl space-y-6">
     <PageHeader eyebrow={t("ministry")} title={t("title")} description={t("overview")} />
@@ -37,14 +39,14 @@ export default async function YouthPage({ searchParams }: { searchParams: Promis
           <h3 className="mb-2 font-semibold">{t("reports.total")}</h3>
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">{reportMetrics.map(metric => <div key={metric}>
             <dt className="text-sm text-neutral-600">{t(`reports.${metric}`)}</dt>
-            <dd className="font-semibold">{format.number(reports.reduce((sum, branch) => sum + branch[metric], 0))}</dd>
+            <dd className="font-semibold">{formatMetric(metric, reports.reduce((sum, branch) => sum + (branch[metric] ?? 0), 0))}</dd>
           </div>)}</dl>
         </article> : null}
         {reports.map(branch => <article key={branch.branchId} className="rounded-xl border border-black/10 p-4">
           <h3 className="mb-2 font-semibold">{branch.name}</h3>
           <dl className="grid grid-cols-2 gap-3">{reportMetrics.map(metric => <div key={metric}>
             <dt className="text-sm text-neutral-600">{t(`reports.${metric}`)}</dt>
-            <dd className="font-semibold">{format.number(branch[metric])}</dd>
+            <dd className="font-semibold">{formatMetric(metric, branch[metric] ?? 0)}</dd>
           </div>)}</dl>
         </article>)}
       </div>}

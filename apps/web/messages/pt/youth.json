@@ -1,5 +1,28 @@
 {
   "youth": {
+    "mentoringEmail": {
+      "rollout": "Implantação para jovens",
+      "rolloutFeed": "Mostrar publicações do grupo na página inicial dos jovens",
+      "rolloutEmail": "Permitir lembretes de mentoria por e-mail com consentimento",
+      "rolloutSave": "Salvar configurações de implantação",
+      "optedIn": "Consentimento por e-mail confirmado.",
+      "guardianHint": "Compartilhe o link de consentimento em particular com o responsável cadastrado.",
+      "participantHint": "Compartilhe o link de consentimento em particular com o participante cadastrado.",
+      "createLink": "Criar link de consentimento",
+      "link": "Link de consentimento (expira em 7 dias)",
+      "linkFailed": "Não foi possível criar o link. Verifique se há um e-mail no cadastro.",
+      "attempted": "Já houve uma tentativa de envio para esta data.",
+      "send": "Enviar lembrete por e-mail",
+      "confirm": "Enviar um lembrete ao destinatário que autorizou o envio?",
+      "preferences": "Preferências de e-mail de mentoria",
+      "enableHint": "Ative os lembretes de mentoria para este cadastro. Você pode cancelar em qualquer lembrete.",
+      "disableHint": "Desative os lembretes de mentoria para este cadastro.",
+      "enable": "Ativar e-mails",
+      "disable": "Desativar e-mails",
+      "enabled": "Os e-mails de mentoria estão ativados.",
+      "disabled": "Os e-mails de mentoria estão desativados.",
+      "invalid": "Não foi possível salvar sua preferência. O link pode ter expirado ou já ter sido usado."
+    },
     "mentoringReminder": {
       "title": "Encontro de mentoria",
       "date": "Data do próximo encontro",
@@ -49,6 +72,10 @@
       "unsubscribeError": "Não foi possível atualizar sua preferência. Tente novamente."
     },
     "reports": {
+      "signedIn": "Contas de participantes utilizadas",
+      "completedTracks": "Trilhas concluídas",
+      "serviceSignups": "Inscrições para servir",
+      "serviceMinutes": "Horas de serviço verificadas",
       "title": "Relatórios",
       "hint": "Toda a atividade juvenil registrada, agrupada pela filial do participante. Um retorno significa presença em um segundo evento ou acampamento.",
       "empty": "Não há filiais disponíveis no seu escopo.",

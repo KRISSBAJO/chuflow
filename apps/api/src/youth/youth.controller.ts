@@ -6,7 +6,7 @@ import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
-import { YouthMentoringCheckInDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPostDto, YouthProgressDto, YouthProjectDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
+import { YouthMentoringCheckInDto, YouthMentoringConsentDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPostDto, YouthProgressDto, YouthProjectDto, YouthRolloutDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
 import { YouthParticipantInviteDto } from './youth.dto';
 
@@ -17,6 +17,21 @@ export class YouthController {
 
   @Get('groups/:id/development') @Header('Cache-Control', 'no-store')
   developmentOverview(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.development.overview(user, id); }
+
+  @Patch('groups/:id/development/rollout')
+  rollout(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthRolloutDto) {
+    return this.youth.saveRollout(user, id, dto);
+  }
+
+  @Post('groups/:id/development/mentoring-consent/:person') @Header('Cache-Control', 'no-store')
+  mentoringConsentInvite(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('person') person: string) {
+    return this.youth.inviteMentoringConsent(user, id, person);
+  }
+
+  @Post('groups/:id/development/:activity/mentoring-email')
+  mentoringEmail(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('activity') activity: string) {
+    return this.youth.sendMentoringEmail(user, id, activity);
+  }
 
   @Post('groups/:id/development/posts')
   publishPost(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthPostDto) {
@@ -213,6 +228,11 @@ export class YouthParticipantController {
 @Controller('youth-registration')
 export class YouthRegistrationController {
   constructor(private readonly youth: YouthService) {}
+
+  @Public() @Post('mentoring-consent') @Header('Cache-Control', 'no-store')
+  mentoringConsent(@Headers('x-youth-registration') token: string, @Body() dto: YouthMentoringConsentDto, @Ip() ip: string) {
+    return this.youth.setMentoringConsent(token, dto, ip);
+  }
 
   @Public() @Post('unsubscribe') @Header('Cache-Control', 'no-store')
   unsubscribe(@Headers('x-youth-registration') token: string, @Ip() ip: string) {
