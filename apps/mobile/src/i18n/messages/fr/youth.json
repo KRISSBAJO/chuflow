@@ -1,6 +1,44 @@
 {
   "youth": {
     "participantHome": {
+      "design": {
+        "title": "Personnaliser mon accueil",
+        "device": "Enregistré sur cet appareil.",
+        "theme": "Thème",
+        "character": "Personnage biblique",
+        "widgets": "Cartes de l’accueil",
+        "save": "Enregistrer",
+        "failed": "Impossible d’enregistrer la personnalisation.",
+        "spotlight": "Portrait biblique",
+        "themes": {
+          "sunrise": "Lever du soleil",
+          "lavender": "Lavande",
+          "evergreen": "Forêt"
+        },
+        "characters": {
+          "none": "Aucun",
+          "esther": "Esther",
+          "daniel": "Daniel",
+          "deborah": "Débora"
+        },
+        "stories": {
+          "esther": "Esther a pris la parole pour son peuple malgré le danger.",
+          "daniel": "Daniel a continué de prier malgré un décret royal qui le lui interdisait.",
+          "deborah": "Débora a guidé Israël comme juge et a encouragé Barak à agir."
+        },
+        "references": {
+          "esther": "Esther 4–5",
+          "daniel": "Daniel 6",
+          "deborah": "Juges 4–5"
+        },
+        "cards": {
+          "activity": "Prochaine activité",
+          "updates": "Actualités du groupe",
+          "groups": "Communautés jeunesse",
+          "journey": "Mon parcours",
+          "service": "Service vérifié"
+        }
+      },
       "mentoringReminder": {
         "title": "Point de mentorat"
       },

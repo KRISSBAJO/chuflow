@@ -1,6 +1,44 @@
 {
   "youth": {
     "participantHome": {
+      "design": {
+        "title": "Design my dashboard",
+        "device": "Saved on this device.",
+        "theme": "Theme",
+        "character": "Bible character",
+        "widgets": "Home widgets",
+        "save": "Save design",
+        "failed": "Could not save your design.",
+        "spotlight": "Bible character spotlight",
+        "themes": {
+          "sunrise": "Sunrise",
+          "lavender": "Lavender",
+          "evergreen": "Evergreen"
+        },
+        "characters": {
+          "none": "None",
+          "esther": "Esther",
+          "daniel": "Daniel",
+          "deborah": "Deborah"
+        },
+        "stories": {
+          "esther": "Esther spoke up for her people even when it was risky.",
+          "daniel": "Daniel kept praying even when a royal decree forbade it.",
+          "deborah": "Deborah led Israel as a judge and encouraged Barak to act."
+        },
+        "references": {
+          "esther": "Esther 4–5",
+          "daniel": "Daniel 6",
+          "deborah": "Judges 4–5"
+        },
+        "cards": {
+          "activity": "Next activity",
+          "updates": "Group updates",
+          "groups": "Youth communities",
+          "journey": "My Journey",
+          "service": "Verified service"
+        }
+      },
       "mentoringReminder": {
         "title": "Mentoring check-in"
       },

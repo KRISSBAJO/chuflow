@@ -11,7 +11,8 @@ import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { useApi } from '@/lib/use-api';
 import { api } from '@/lib/api';
-import { useSession } from '@/lib/session';
+import { useSession, userId } from '@/lib/session';
+import { useYouthDesign } from './dashboard-design';
 
 const tabs = [
   { key: 'home', icon: 'home' },
@@ -33,10 +34,18 @@ type Preview = {
 };
 
 export function YouthHomePreview({ participant = false }: { participant?: boolean } = {}) {
+  const { user } = useSession();
+  const designKey = JSON.stringify(['youth-design', user?.workspace?.id, userId(user), participant]);
+  return <YouthDashboard key={designKey} participant={participant} designKey={designKey} />;
+}
+
+function YouthDashboard({ participant, designKey }: { participant: boolean; designKey: string }) {
   const t = useT('youth.participantHome');
   const format = useAppFormat();
   const [tab, setTab] = useState<(typeof tabs)[number]['key']>('home');
   const { signOut } = useSession();
+  const design = useYouthDesign(designKey);
+  const { palette } = design;
   const [busy, setBusy] = useState<string>();
   const [openPost, setOpenPost] = useState<string>();
   const [showAllPosts, setShowAllPosts] = useState(false);
@@ -52,15 +61,16 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
   const preview = result.data;
   const serviceHistory = preview?.serviceHistory ?? [];
   const reminder = participant ? preview?.mentoringReminder : undefined;
-  const mentoringCard = reminder ? <View style={styles.feature}>
+  const mentoringCard = reminder ? <View style={[styles.feature, { backgroundColor: palette.surface }]}>
     <View style={styles.featureCopy}>
-      <Text style={styles.eyebrow}>{t('mentoringReminder.title')}</Text>
+      <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('mentoringReminder.title')}</Text>
       <Text style={styles.featureTitle}>{format.date(reminder.date)}</Text>
       {reminder.nextStep ? <Text style={type.body}>{reminder.nextStep}</Text> : null}
     </View>
-    <View style={styles.featureIcon}><Icon name="calendar" color="#974020" /></View>
+    <View style={styles.featureIcon}><Icon name="calendar" color={palette.accent} /></View>
   </View> : null;
   const serviceHours = (minutes: number) => format.number(minutes / 60, { maximumFractionDigits: 2 });
+  const verifiedMinutes = serviceHistory.reduce((sum, record) => sum + record.minutes, 0);
   const next = preview?.events[0];
   const eventDetails = (event: Event) => {
     const dates = event.endDate && event.endDate !== event.date
@@ -78,10 +88,10 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
       const label = t(key);
       return <Pressable key={key} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected }}
         onPress={() => setTab(key)} style={({ pressed }) => [styles.tab, pressed && styles.pressed]}>
-        <View style={[styles.tabIcon, selected && styles.selectedTab]}>
-          <Icon name={icon} size={20} color={selected ? '#974020' : colors.muted} />
+        <View style={[styles.tabIcon, selected && { backgroundColor: palette.tint }]}>
+          <Icon name={icon} size={20} color={selected ? palette.accent : colors.muted} />
         </View>
-        <Text style={[styles.tabLabel, selected && styles.selectedLabel]}>{label}</Text>
+        <Text style={[styles.tabLabel, selected && styles.selectedLabel, selected && { color: palette.accent }]}>{label}</Text>
       </Pressable>;
     })}
   </View> : undefined;
@@ -91,12 +101,12 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
       <Stack.Screen options={{ title: t('title') }} />
       {result.loading ? <Loading /> : result.error ? <ErrorState message={result.error} onRetry={() => void result.refresh()} /> : preview ? <>
         <View style={styles.meta}>
-          <Icon name="mapPin" size={15} color="#974020" />
-          <Text style={styles.branch}>{preview.branch}</Text>
+          <Icon name="mapPin" size={15} color={palette.accent} />
+          <Text style={[styles.branch, { color: palette.accent }]}>{preview.branch}</Text>
           {!participant ? <Text style={styles.preview} accessibilityLabel={t('previewNote')}>{t('previewBadge')}</Text> : null}
         </View>
         {tab === 'home' ? <View style={styles.sections}>
-          <View style={styles.hero}>
+          <View style={[styles.hero, { backgroundColor: palette.surface }]}>
             <Image source={require('../../../assets/images/youth-belonging.webp')} style={styles.art} contentFit="cover"
               accessible={false} />
             <View style={styles.heroCopy}>
@@ -104,17 +114,35 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
               <Text style={type.body}>{t('welcomeSubtitle')}</Text>
             </View>
           </View>
+          {design.open ? <Button variant="secondary" size="sm" icon="settings" label={t('design.title')} onPress={design.open} /> : null}
           {mentoringCard}
-          {featured ? <Pressable accessibilityRole="button" onPress={() => setTab(featured.tab)}
-            style={({ pressed }) => [styles.feature, pressed && styles.pressed]}>
+          {design.spotlight}
+          {design.widgets.includes('journey') && preview.tracks.length ? <Pressable accessibilityRole="button"
+            onPress={() => setTab('journey')} style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
             <View style={styles.featureCopy}>
-              <Text style={styles.eyebrow}>{t('nextUp')}</Text>
+              <Text style={styles.featureTitle}>{t('journey')}</Text>
+              {track ? <Text style={type.small}>{track.title}</Text> : null}
+            </View>
+            <View style={styles.featureIcon}><Icon name="book" color={palette.accent} /></View>
+          </Pressable> : null}
+          {design.widgets.includes('service') && participant && verifiedMinutes > 0 ? <Pressable accessibilityRole="button"
+            onPress={() => setTab('serve')} style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
+            <View style={styles.featureCopy}>
+              <Text style={styles.featureTitle}>{t('serviceLog.history')}</Text>
+              <Text style={type.small}>{t('serviceLog.hours', { hours: serviceHours(verifiedMinutes) })}</Text>
+            </View>
+            <View style={styles.featureIcon}><Icon name="care" color={palette.accent} /></View>
+          </Pressable> : null}
+          {design.widgets.includes('activity') && featured ? <Pressable accessibilityRole="button" onPress={() => setTab(featured.tab)}
+            style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
+            <View style={styles.featureCopy}>
+              <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('nextUp')}</Text>
               <Text style={styles.featureTitle}>{featured.title}</Text>
               {featured.detail ? <Text style={type.small}>{featured.detail}</Text> : null}
             </View>
-            <View style={styles.featureIcon}><Icon name={featured.icon} color="#974020" /></View>
+            <View style={styles.featureIcon}><Icon name={featured.icon} color={palette.accent} /></View>
           </Pressable> : null}
-          {preview.posts?.length ? <View style={styles.sections}>
+          {design.widgets.includes('updates') && preview.posts?.length ? <View style={styles.sections}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t('posts.heading')}</Text>
             {(showAllPosts ? preview.posts : preview.posts.slice(0, 3)).map(post => {
               const expanded = openPost === post._id;
@@ -135,7 +163,7 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
             {preview.posts.length > 3 ? <Button variant="ghost" label={t(showAllPosts ? 'posts.less' : 'posts.more')}
               onPress={() => setShowAllPosts(!showAllPosts)} /> : null}
           </View> : null}
-          <View style={styles.sections}>
+          {design.widgets.includes('groups') ? <View style={styles.sections}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t('groups')}</Text>
             {preview.groups.length ? preview.groups.map(group => <View key={group.id} style={styles.group}>
               <View style={styles.groupIcon}><Icon name="members" size={19} color="#674b87" /></View>
@@ -144,8 +172,8 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
                 {group.name.trim().toLowerCase() !== group.program.trim().toLowerCase() ? <Text style={type.small}>{group.program}</Text> : null}
               </View>
             </View>) : <Text style={styles.empty}>{t('noGroups')}</Text>}
-          </View>
-          {!featured ? <Pressable accessibilityRole="button" onPress={() => setTab('events')}
+          </View> : null}
+          {design.widgets.includes('activity') && !featured ? <Pressable accessibilityRole="button" onPress={() => setTab('events')}
             style={({ pressed }) => [styles.calendarNote, pressed && styles.pressed]}>
             <Icon name="calendar" size={19} color={colors.muted} />
             <Text style={styles.calendarText}>{t('calendarQuiet')}</Text>
@@ -181,7 +209,7 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
           {participant && serviceHistory.length ? <View style={styles.sections}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t('serviceLog.history')}</Text>
             <View style={styles.track}>
-              <Text style={styles.featureTitle}>{t('serviceLog.hours', { hours: serviceHours(serviceHistory.reduce((sum, record) => sum + record.minutes, 0)) })}</Text>
+              <Text style={styles.featureTitle}>{t('serviceLog.hours', { hours: serviceHours(verifiedMinutes) })}</Text>
               {serviceHistory.map(record => <View key={record.id} style={styles.serviceRecord}>
                 <View style={styles.featureCopy}>
                   <Text style={type.title}>{record.title}</Text>
@@ -210,6 +238,7 @@ export function YouthHomePreview({ participant = false }: { participant?: boolea
         </View> : null}
       </> : null}
       {participant ? <Button variant="secondary" label={t('signOut')} onPress={() => void signOut()} /> : null}
+      {design.panel}
     </Screen>
   );
 }
@@ -225,7 +254,6 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', gap: 4, width: '100%', maxWidth: 520, alignSelf: 'center' },
   tab: { flex: 1, minHeight: 52, alignItems: 'center', gap: 3, justifyContent: 'center' },
   tabIcon: { width: 42, height: 29, alignItems: 'center', justifyContent: 'center', borderRadius: 15 },
-  selectedTab: { backgroundColor: colors.flameSoft },
   tabLabel: { ...type.small, textAlign: 'center', fontSize: 12, lineHeight: 16 },
   selectedLabel: { color: '#974020', fontFamily: fonts.semibold },
   sections: { gap: 10 },

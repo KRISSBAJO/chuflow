@@ -1,6 +1,44 @@
 {
   "youth": {
     "participantHome": {
+      "design": {
+        "title": "Diseñar mi inicio",
+        "device": "Se guarda en este dispositivo.",
+        "theme": "Tema",
+        "character": "Personaje bíblico",
+        "widgets": "Tarjetas de inicio",
+        "save": "Guardar diseño",
+        "failed": "No se pudo guardar el diseño.",
+        "spotlight": "Personaje bíblico destacado",
+        "themes": {
+          "sunrise": "Amanecer",
+          "lavender": "Lavanda",
+          "evergreen": "Bosque"
+        },
+        "characters": {
+          "none": "Ninguno",
+          "esther": "Ester",
+          "daniel": "Daniel",
+          "deborah": "Débora"
+        },
+        "stories": {
+          "esther": "Ester habló en defensa de su pueblo a pesar del riesgo.",
+          "daniel": "Daniel siguió orando aunque un decreto real se lo prohibía.",
+          "deborah": "Débora dirigió a Israel como jueza y animó a Barac a actuar."
+        },
+        "references": {
+          "esther": "Ester 4–5",
+          "daniel": "Daniel 6",
+          "deborah": "Jueces 4–5"
+        },
+        "cards": {
+          "activity": "Próxima actividad",
+          "updates": "Novedades del grupo",
+          "groups": "Comunidades juveniles",
+          "journey": "Mi camino",
+          "service": "Servicio verificado"
+        }
+      },
       "mentoringReminder": {
         "title": "Seguimiento de mentoría"
       },
