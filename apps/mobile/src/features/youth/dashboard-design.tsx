@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Sheet } from '@/components/kit';
+import { Icon } from '@/components/icon';
 import { Button, Chip } from '@/components/ui';
 import { toast } from '@/components/toast';
-import { type } from '@/constants/theme';
+import { colors, type } from '@/constants/theme';
 import { useT } from '@/i18n/provider';
 
 const themes = {
@@ -19,12 +20,18 @@ const characters = {
   daniel: { image: require('../../../assets/images/youth-daniel.webp'), reference: 'daniel' },
   deborah: { image: require('../../../assets/images/youth-deborah.webp'), reference: 'deborah' },
 } as const;
+const illustrations = {
+  belonging: { image: require('../../../assets/images/youth-belonging.webp'), position: 'center' },
+  esther: { image: characters.esther.image, position: 'top' },
+  daniel: { image: characters.daniel.image, position: 'top' },
+} as const;
 const widgets = ['activity', 'updates', 'groups', 'journey', 'service'] as const;
 type Theme = keyof typeof themes;
 type Character = keyof typeof characters;
+type Illustration = keyof typeof illustrations;
 type Widget = (typeof widgets)[number];
-type Design = { theme: Theme; character: Character; widgets: Widget[] };
-const defaultDesign: Design = { theme: 'sunrise', character: 'none', widgets: ['activity', 'updates', 'groups'] };
+type Design = { theme: Theme; illustration: Illustration; character: Character; widgets: Widget[] };
+const defaultDesign: Design = { theme: 'sunrise', illustration: 'belonging', character: 'none', widgets: ['activity', 'updates', 'groups'] };
 
 export function useYouthDesign(storageKey: string) {
   const t = useT('youth.participantHome.design');
@@ -40,6 +47,7 @@ export function useYouthDesign(storageKey: string) {
       const value = raw ? JSON.parse(raw) as Partial<Design> | null : null;
       setSaved({ key: storageKey, value: {
         theme: value?.theme && Object.hasOwn(themes, value.theme) ? value.theme : defaultDesign.theme,
+        illustration: value?.illustration && Object.hasOwn(illustrations, value.illustration) ? value.illustration : defaultDesign.illustration,
         character: value?.character && Object.hasOwn(characters, value.character) ? value.character : defaultDesign.character,
         widgets: Array.isArray(value?.widgets) ? widgets.filter(widget => value.widgets?.includes(widget)) : defaultDesign.widgets,
       } });
@@ -62,6 +70,7 @@ export function useYouthDesign(storageKey: string) {
   const character = characters[design.character];
   return {
     palette,
+    hero: illustrations[design.illustration],
     widgets: design.widgets,
     open: saved?.key === storageKey ? () => setDraft(design) : undefined,
     spotlight: character ? <View style={[styles.spotlight, { backgroundColor: palette.surface }]}>
@@ -77,6 +86,23 @@ export function useYouthDesign(storageKey: string) {
       footer={<Button label={t('save')} loading={saving} onPress={() => void save()} />}>
       {draft ? <ScrollView contentContainerStyle={styles.panel}>
         <Text style={type.small}>{t('device')}</Text>
+        <Text accessibilityRole="header" style={type.title}>{t('heroImage')}</Text>
+        <View style={styles.illustrations}>{(Object.keys(illustrations) as Illustration[]).map(key => {
+          const selected = draft.illustration === key;
+          const option = illustrations[key];
+          const accent = themes[draft.theme].accent;
+          const label = t(key === 'belonging' ? 'belonging' : `characters.${key}`);
+          return <Pressable key={key} accessibilityRole="radio" accessibilityLabel={label}
+            accessibilityState={{ checked: selected }} disabled={saving}
+            onPress={() => setDraft({ ...draft, illustration: key })}
+            style={({ pressed }) => [styles.illustration, { borderColor: selected ? accent : colors.hairlineStrong }, pressed && styles.pressed]}>
+            <Image source={option.image} contentFit="cover" contentPosition={option.position} style={styles.thumbnail} accessible={false} />
+            <Text style={[type.small, styles.illustrationLabel]}>{label}</Text>
+            {selected ? <View style={[styles.check, { backgroundColor: accent }]}>
+              <Icon name="check" size={13} color="#fff" />
+            </View> : null}
+          </Pressable>;
+        })}</View>
         <Text accessibilityRole="header" style={type.title}>{t('theme')}</Text>
         <View style={styles.choices}>{(Object.keys(themes) as Theme[]).map(theme =>
           <Chip key={theme} label={t(`themes.${theme}`)} selected={draft.theme === theme} onPress={() => setDraft({ ...draft, theme })} />)}</View>
@@ -96,6 +122,12 @@ export function useYouthDesign(storageKey: string) {
 const styles = StyleSheet.create({
   panel: { gap: 10, paddingBottom: 12 },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  illustrations: { flexDirection: 'row', gap: 8 },
+  illustration: { flex: 1, borderWidth: 2, borderRadius: 12, overflow: 'hidden' },
+  thumbnail: { width: '100%', aspectRatio: 1.55 },
+  illustrationLabel: { padding: 5, textAlign: 'center' },
+  check: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.75 },
   spotlight: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 13 },
   portrait: { width: 82, height: 94, borderRadius: 13 },
   copy: { flex: 1, gap: 3 },

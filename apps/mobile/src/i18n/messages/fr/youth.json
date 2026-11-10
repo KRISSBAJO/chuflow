@@ -42,6 +42,8 @@
         "failed": "Action impossible. Réessayez."
       },
       "design": {
+        "heroImage": "Illustration d’accueil",
+        "belonging": "Ensemble",
         "title": "Personnaliser mon accueil",
         "device": "Enregistré sur cet appareil.",
         "theme": "Thème",
@@ -97,7 +99,9 @@
       "previewBadge": "Aperçu équipe",
       "welcomeTitle": "Bienvenue à l’espace jeunesse",
       "welcomeSubtitle": "Retrouve ton groupe et découvre ta prochaine étape.",
-      "calendarQuiet": "Aucune inscription ouverte pour le moment",
+      "customize": "Personnaliser",
+      "exploreGroups": "Découvrir ton groupe de jeunes",
+      "yourGroup": "Ton groupe",
       "rsvp": "S’inscrire",
       "progress": "{done, number} étapes terminées sur {total, number}",
       "signUp": "S’inscrire pour servir",

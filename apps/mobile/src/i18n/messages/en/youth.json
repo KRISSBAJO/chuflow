@@ -42,6 +42,8 @@
         "failed": "Could not complete this action. Try again."
       },
       "design": {
+        "heroImage": "Hero illustration",
+        "belonging": "Together",
         "title": "Design my dashboard",
         "device": "Saved on this device.",
         "theme": "Theme",
@@ -97,7 +99,9 @@
       "previewBadge": "Staff preview",
       "welcomeTitle": "Welcome to Youth",
       "welcomeSubtitle": "Find your people and your next step.",
-      "calendarQuiet": "No events open right now",
+      "customize": "Customize",
+      "exploreGroups": "Explore your youth group",
+      "yourGroup": "Your group",
       "rsvp": "RSVP",
       "progress": "{done, number} of {total, number} milestones completed",
       "signUp": "Sign up to serve",

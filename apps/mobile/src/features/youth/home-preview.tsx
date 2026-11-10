@@ -143,7 +143,10 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
   const polls = preview?.posts?.filter(post => post.kind === 'poll') ?? [];
   const programs = (preview?.posts ?? []).filter(post => post.kind === 'program')
     .sort((a, b) => (b.sunday ?? '').localeCompare(a.sunday ?? ''));
-  const nextProgram = [...programs].reverse().find(post => (post.sunday ?? '') >= isoDay(new Date()));
+  const today = isoDay(new Date());
+  const upcomingPrograms = programs.filter(post => (post.sunday ?? '') >= today).reverse();
+  const nextProgram = upcomingPrograms[0] ?? programs[0];
+  const openPoll = polls.find(post => !post.pollClosedAt && preview?.pollStates?.[post._id]?.selected === undefined);
   const serviceHistory = preview?.serviceHistory ?? [];
   const reminder = participant ? preview?.mentoringReminder : undefined;
   const mentoringCard = reminder ? <View style={[styles.feature, { backgroundColor: palette.surface }]}>
@@ -156,17 +159,34 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
   </View> : null;
   const serviceHours = (minutes: number) => format.number(minutes / 60, { maximumFractionDigits: 2 });
   const verifiedMinutes = serviceHistory.reduce((sum, record) => sum + record.minutes, 0);
-  const next = preview?.events[0];
+  const next = preview?.events.find(event => (event.endDate ?? event.date) >= today);
   const eventDetails = (event: Event) => {
     const dates = event.endDate && event.endDate !== event.date
       ? format.date(event.date) + ' – ' + format.date(event.endDate) : format.date(event.date);
     return [dates, event.venue].filter(Boolean).join(' · ');
   };
   const track = preview?.tracks.find(item => (item.completed?.length ?? 0) < (item.milestones?.length ?? 0));
-  const project = preview?.projects.find(item => !item.signedUp);
   const featured = next ? { tab: 'events', icon: 'calendar', title: next.name, detail: eventDetails(next) } as const :
-    track ? { tab: 'journey', icon: 'book', title: track.title, detail: t('tracks') } as const :
-    project ? { tab: 'serve', icon: 'care', title: project.title, detail: [format.date(project.date), project.location].filter(Boolean).join(' · ') } as const : null;
+    openPoll ? { tab: 'community', icon: 'message', title: openPoll.title, detail: t('polls.open') } as const :
+    nextProgram ? { tab: 'community', icon: 'book', title: nextProgram.title,
+      detail: [t('programs.title'), format.date(nextProgram.sunday)].filter(Boolean).join(' · ') } as const :
+    preview?.groups.length ? { tab: 'community', icon: 'members', title: t('exploreGroups'), detail: participant ? preview.groups[0]?.name : undefined } as const : null;
+  const communities = preview && <View style={styles.sections}>
+    <Text accessibilityRole="header" style={styles.sectionTitle}>{t('groups')}</Text>
+    {preview.groups.length ? preview.groups.map(group => {
+      const program = upcomingPrograms.find(post => post.groupId === group.id);
+      const showProgram = group.name.trim().toLowerCase() !== group.program.trim().toLowerCase();
+      return <View key={group.id} style={styles.group}>
+        <View style={[styles.groupIcon, { backgroundColor: palette.tint }]}><Icon name="members" size={19} color={palette.accent} /></View>
+        <View style={styles.featureCopy}>
+          {participant ? <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('yourGroup')}</Text> : null}
+          <Text style={type.title}>{group.name}</Text>
+          {program ? <Text style={type.small}>{[program.title, format.date(program.sunday)].filter(Boolean).join(' · ')}</Text> :
+            showProgram ? <Text style={type.small}>{group.program}</Text> : null}
+        </View>
+      </View>;
+    }) : <Text style={styles.empty}>{t('noGroups')}</Text>}
+  </View>;
   return (
     <View style={styles.page}>
     <Screen safeTop={participant} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
@@ -179,25 +199,32 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
         </View>
         {tab === 'home' ? <View style={styles.sections}>
           <View style={[styles.hero, { backgroundColor: palette.surface }]}>
-            <Image source={require('../../../assets/images/youth-belonging.webp')} style={styles.art} contentFit="cover"
+            <Image source={design.hero.image} style={styles.art} contentFit="cover" contentPosition={design.hero.position}
               accessible={false} />
             <View style={styles.heroCopy}>
               <Text accessibilityRole="header" style={styles.title}>{t('welcomeTitle')}</Text>
-              <Text style={type.body}>{t('welcomeSubtitle')}</Text>
+              <View style={styles.heroDetails}>
+                <Text style={[type.body, styles.heroSubtitle]}>{t('welcomeSubtitle')}</Text>
+                {design.open ? <Pressable accessibilityRole="button" onPress={design.open}
+                  style={({ pressed }) => [styles.customize, pressed && styles.pressed]}>
+                  <Icon name="settings" size={16} color={palette.accent} />
+                  <Text style={[type.label, { color: palette.accent }]}>{t('customize')}</Text>
+                </Pressable> : null}
+              </View>
             </View>
           </View>
-          {design.open ? <Button variant="secondary" size="sm" icon="settings" label={t('design.title')} onPress={design.open} /> : null}
-          {mentoringCard}
-          {design.spotlight}
-          {nextProgram ? <Pressable accessibilityRole="button" onPress={() => setTab('community')}
+          {design.widgets.includes('activity') && featured ? <Pressable accessibilityRole="button" onPress={() => setTab(featured.tab)}
             style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
             <View style={styles.featureCopy}>
-              <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('programs.title')}</Text>
-              <Text style={styles.featureTitle}>{nextProgram.title}</Text>
-              <Text style={type.small}>{format.date(nextProgram.sunday)}</Text>
+              <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('nextUp')}</Text>
+              <Text style={styles.featureTitle}>{featured.title}</Text>
+              {featured.detail ? <Text style={type.small}>{featured.detail}</Text> : null}
             </View>
-            <View style={styles.featureIcon}><Icon name="calendar" color={palette.accent} /></View>
+            <View style={styles.featureIcon}><Icon name={featured.icon} color={palette.accent} /></View>
+            <Icon name="chevronRight" size={16} color={palette.accent} />
           </Pressable> : null}
+          {mentoringCard}
+          {design.spotlight}
           {design.widgets.includes('journey') && preview.tracks.length ? <Pressable accessibilityRole="button"
             onPress={() => setTab('journey')} style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
             <View style={styles.featureCopy}>
@@ -213,15 +240,6 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
               <Text style={type.small}>{t('serviceLog.hours', { hours: serviceHours(verifiedMinutes) })}</Text>
             </View>
             <View style={styles.featureIcon}><Icon name="care" color={palette.accent} /></View>
-          </Pressable> : null}
-          {design.widgets.includes('activity') && featured ? <Pressable accessibilityRole="button" onPress={() => setTab(featured.tab)}
-            style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
-            <View style={styles.featureCopy}>
-              <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('nextUp')}</Text>
-              <Text style={styles.featureTitle}>{featured.title}</Text>
-              {featured.detail ? <Text style={type.small}>{featured.detail}</Text> : null}
-            </View>
-            <View style={styles.featureIcon}><Icon name={featured.icon} color={palette.accent} /></View>
           </Pressable> : null}
           {design.widgets.includes('updates') && posts.length ? <View style={styles.sections}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t('posts.heading')}</Text>
@@ -244,24 +262,10 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
             {posts.length > 3 ? <Button variant="ghost" label={t(showAllPosts ? 'posts.less' : 'posts.more')}
               onPress={() => setShowAllPosts(!showAllPosts)} /> : null}
           </View> : null}
-          {design.widgets.includes('groups') ? <View style={styles.sections}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>{t('groups')}</Text>
-            {preview.groups.length ? preview.groups.map(group => <View key={group.id} style={styles.group}>
-              <View style={styles.groupIcon}><Icon name="members" size={19} color="#674b87" /></View>
-              <View style={styles.featureCopy}>
-                <Text style={type.title}>{group.name}</Text>
-                {group.name.trim().toLowerCase() !== group.program.trim().toLowerCase() ? <Text style={type.small}>{group.program}</Text> : null}
-              </View>
-            </View>) : <Text style={styles.empty}>{t('noGroups')}</Text>}
-          </View> : null}
-          {design.widgets.includes('activity') && !featured && !nextProgram ? <Pressable accessibilityRole="button" onPress={() => setTab('events')}
-            style={({ pressed }) => [styles.calendarNote, pressed && styles.pressed]}>
-            <Icon name="calendar" size={19} color={colors.muted} />
-            <Text style={styles.calendarText}>{t('calendarQuiet')}</Text>
-            <Icon name="chevronRight" size={17} color={colors.muted} />
-          </Pressable> : null}
+          {design.widgets.includes('groups') ? communities : null}
         </View> : null}
         {tab === 'community' ? <View style={styles.sections}>
+          {!nextProgram && !openPoll ? communities : null}
           {participant && preview.chatEnabled ? <YouthGroupChat /> : null}
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t('programs.title')}</Text>
           {programs.length ? programs.map(post => <SundayProgram key={post._id} post={post} participant={participant}
@@ -346,7 +350,10 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontFamily: fonts.bold, fontSize: 30, lineHeight: 35, letterSpacing: -0.8 },
   hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#fff7ec', marginBottom: 6 },
   art: { width: '100%', aspectRatio: 2 },
-  heroCopy: { padding: 16, gap: 4 },
+  heroCopy: { padding: 16, gap: 2 },
+  heroDetails: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 12 },
+  heroSubtitle: { flexGrow: 1, flexShrink: 1 },
+  customize: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 },
   sections: { gap: 10 },
   sectionTitle: { ...type.title, fontSize: 18, lineHeight: 24 },
   feature: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.flameSoft, borderRadius: 20, padding: 17, marginBottom: 6 },
@@ -355,9 +362,7 @@ const styles = StyleSheet.create({
   featureTitle: { ...type.display, fontSize: 20, lineHeight: 25 },
   featureIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.page, alignItems: 'center', justifyContent: 'center' },
   group: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.hairline },
-  groupIcon: { width: 39, height: 39, borderRadius: 12, backgroundColor: '#f4effa', alignItems: 'center', justifyContent: 'center' },
-  calendarNote: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: 14, padding: 12, backgroundColor: colors.surface },
-  calendarText: { ...type.small, flex: 1 },
+  groupIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   empty: { ...type.small, padding: 15, backgroundColor: colors.surface, borderRadius: 14 },
   pressed: { opacity: 0.74 },
   track: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 6 },

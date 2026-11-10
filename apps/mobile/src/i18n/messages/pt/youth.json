@@ -42,6 +42,8 @@
         "failed": "Não foi possível concluir a ação. Tente novamente."
       },
       "design": {
+        "heroImage": "Ilustração de boas-vindas",
+        "belonging": "Juntos",
         "title": "Personalizar meu início",
         "device": "Salvo neste dispositivo.",
         "theme": "Tema",
@@ -97,7 +99,9 @@
       "previewBadge": "Prévia da equipe",
       "welcomeTitle": "Boas-vindas ao espaço jovem",
       "welcomeSubtitle": "Encontre seu grupo e descubra seu próximo passo.",
-      "calendarQuiet": "Nenhuma inscrição aberta agora",
+      "customize": "Personalizar",
+      "exploreGroups": "Explore seu grupo de jovens",
+      "yourGroup": "Seu grupo",
       "rsvp": "Inscrever-me",
       "progress": "{done, number} de {total, number} etapas concluídas",
       "signUp": "Inscrever-me para servir",
