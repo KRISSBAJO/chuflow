@@ -12,16 +12,24 @@ export async function POST(request: NextRequest) {
   }
 
   const destinationOrigin = SHARED_WORKSPACES ? sourceOrigin : request.url;
-  const failure = () => NextResponse.redirect(new URL("/login?reason=workspace-sign-in", destinationOrigin), 303);
+  let returnTo: string | null = null;
+  const failure = () => {
+    const login = new URL("/login?reason=workspace-sign-in", destinationOrigin);
+    if (returnTo) login.searchParams.set("returnTo", returnTo);
+    return NextResponse.redirect(login, 303);
+  };
 
   try {
     const form = await request.formData();
+    const target = form.get("returnTo");
+    returnTo = typeof target === "string" ? safeReturnTo(target, "") || null : null;
     const requested = form.get("workspace");
-    const selected = workspaceId(typeof requested === "string" ? requested : null);
+    const directory = requested === "directory";
+    const selected = directory ? null : workspaceId(typeof requested === "string" ? requested : null);
     const handoff = form.get("handoff");
     const browser = form.get("browser") === "1";
     if (browser && (!selected || typeof handoff !== "string")) return failure();
-    if (SHARED_WORKSPACES && !handoff && (requested === "directory" || selected)) {
+    if (SHARED_WORKSPACES && !handoff && (directory || selected)) {
       const { base, cookieName } = workspaceApiContext(selected);
       const token = request.cookies.get(cookieName)?.value;
       if (!token) return failure();
@@ -34,8 +42,7 @@ export async function POST(request: NextRequest) {
       if (!session.ok) return failure();
       const user = await session.json() as { role?: string; passwordChangeRequired?: boolean; workspace?: { id?: string } };
       if (selected && user.workspace?.id !== selected) return failure();
-      const returnTo = form.get("returnTo");
-      const home = safeReturnTo(typeof returnTo === "string" ? returnTo : null, roleHomeHref(user.role));
+      const home = returnTo ?? roleHomeHref(user.role);
       const destination = user.passwordChangeRequired ? `/change-password?returnTo=${encodeURIComponent(home)}` : home;
       const response = NextResponse.redirect(new URL(destination, destinationOrigin), 303);
       if (selected) {
@@ -67,8 +74,7 @@ export async function POST(request: NextRequest) {
     if (!cookie) return failure();
     const { user } = (await response.json()) as { user?: { role?: string; passwordChangeRequired?: boolean; workspace?: { id: string } } };
     if (selected && user?.workspace?.id !== selected) return failure();
-    const returnTo = form.get("returnTo");
-    const home = safeReturnTo(typeof returnTo === "string" ? returnTo : null, roleHomeHref(user?.role));
+    const home = returnTo ?? roleHomeHref(user?.role);
     const destination = user?.passwordChangeRequired ? `/change-password?returnTo=${encodeURIComponent(home)}` : home;
     const redirect = NextResponse.redirect(new URL(destination, destinationOrigin), 303);
     if (selected) {

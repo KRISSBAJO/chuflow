@@ -113,3 +113,42 @@ test("operator POSTs trust the configured public origin behind the hosting proxy
     assert.equal((await proxy(request(origin), context)).status, 403);
   }
 });
+
+test("returning to the directory uses the primary session and clears the tenant selection", async () => {
+  const source = fs.readFileSync(path.join(__dirname, "../src/app/api/workspace-session/route.ts"), "utf8");
+  const code = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const module = { exports: {} };
+  const config = { ...env, NEXT_PUBLIC_CHUFLOW_WEB_ORIGIN: "https://chuflow.com" };
+  const { NextRequest, NextResponse } = require("next/server");
+  const calls = [];
+  vm.runInNewContext(code, {
+    module, exports: module.exports, URL, Response, AbortSignal,
+    fetch: async (url, options) => {
+      calls.push([url, options.headers.Cookie]);
+      return Response.json({ role: "branch_admin" });
+    },
+    require: name => name === "next/server" ? { NextResponse } :
+      name === "@/lib/permissions" ? { roleHomeHref: () => "/dashboard" } :
+      load(name.replace("@/lib/", ""), config),
+  });
+  const request = (body, cookie = "") => new NextRequest("https://chuflow.com/api/workspace-session", {
+    method: "POST",
+    headers: { origin: "https://chuflow.com", cookie },
+    body: new URLSearchParams(body),
+  });
+  const target = "/youth/123#youth-leader";
+  const response = await module.exports.POST(request({ workspace: "directory", returnTo: target },
+    "cms_access_token=primary-token; cms_active_workspace=test-church; cms_workspace_test-church=tenant-token"));
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), "https://chuflow.com" + target);
+  assert.deepEqual(calls, [["https://api.chuflow.com/api/auth/me", "cms_access_token=primary-token"]]);
+  assert.equal(response.cookies.get("cms_active_workspace").value, "");
+  assert.equal(response.cookies.get("cms_workspace_tab_hint").value, "");
+
+  const missing = await module.exports.POST(request({ workspace: "directory", returnTo: target }));
+  assert.equal(new URL(missing.headers.get("location")).searchParams.get("returnTo"), target);
+  const unsafe = await module.exports.POST(request({ workspace: "directory", returnTo: "//untrusted.example" }));
+  assert.equal(new URL(unsafe.headers.get("location")).searchParams.get("returnTo"), null);
+});
