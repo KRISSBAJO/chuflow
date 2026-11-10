@@ -43,12 +43,26 @@ YouthDevelopmentProgressSchema.index({ enrollmentId: 1 });
 @Schema({ timestamps: true })
 export class YouthPost {
   @Prop({ type: SchemaTypes.ObjectId, required: true }) groupId!: Types.ObjectId;
-  @Prop({ required: true, enum: ['update', 'devotional'] }) kind!: 'update' | 'devotional';
+  @Prop({ required: true, enum: ['update', 'devotional', 'program'] }) kind!: 'update' | 'devotional' | 'program';
   @Prop({ required: true }) title!: string;
   @Prop({ required: true }) body!: string;
+  @Prop() sunday?: string;
+  @Prop() scripture?: string;
+  @Prop() question?: string;
+  @Prop() resourceUrl?: string;
   @Prop({ type: Date }) archivedAt?: Date;
   @Prop({ type: SchemaTypes.ObjectId, required: true }) createdBy!: Types.ObjectId;
   createdAt!: Date;
 }
 export const YouthPostSchema = SchemaFactory.createForClass(YouthPost);
 YouthPostSchema.index({ groupId: 1, archivedAt: 1, createdAt: -1 });
+
+@Schema({ timestamps: true })
+export class YouthProgramResponse {
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) postId!: Types.ObjectId;
+  @Prop({ type: SchemaTypes.ObjectId, required: true }) enrollmentId!: Types.ObjectId;
+  @Prop({ required: true }) answer!: string;
+}
+export const YouthProgramResponseSchema = SchemaFactory.createForClass(YouthProgramResponse);
+YouthProgramResponseSchema.index({ postId: 1, enrollmentId: 1 }, { unique: true });
+YouthProgramResponseSchema.index({ enrollmentId: 1, postId: 1 });

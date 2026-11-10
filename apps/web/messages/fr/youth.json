@@ -37,6 +37,14 @@
       "save": "Enregistrer le temps de service"
     },
     "posts": {
+      "program": "Programme du dimanche",
+      "sunday": "Date du dimanche",
+      "scripture": "Référence biblique",
+      "question": "Question de discussion",
+      "resource": "Lien vers la ressource (HTTPS)",
+      "responses": "Voir les réponses",
+      "responsesFailed": "Impossible de charger les réponses.",
+      "noResponses": "Aucune réponse pour le moment.",
       "heading": "Actualités du groupe",
       "update": "Actualité",
       "devotional": "Méditation",

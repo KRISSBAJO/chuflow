@@ -15,7 +15,7 @@ import { Member } from '../members/schemas/member.schema';
 import { User } from '../users/schemas/user.schema';
 import { getWorkspace, workspaceWebLink } from '../workspaces/workspace-boundary';
 import { MailService } from '../mail/mail.service';
-import { YouthDevelopment, YouthDevelopmentProgress, YouthPost } from './youth-development.schema';
+import { YouthDevelopment, YouthDevelopmentProgress, YouthPost, YouthProgramResponse } from './youth-development.schema';
 import { YouthMentoringConsentDto, YouthPostDto, YouthRolloutDto } from './youth-development.dto';
 import { YouthAttendanceDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthCampDelegation, YouthEnrollment, YouthGroup, YouthSession } from './youth.schema';
@@ -57,6 +57,7 @@ export class YouthService {
     @InjectModel(YouthDevelopment.name) private readonly activities: Model<YouthDevelopment>,
     @InjectModel(YouthDevelopmentProgress.name) private readonly progress: Model<YouthDevelopmentProgress>,
     @InjectModel(YouthPost.name) private readonly posts: Model<YouthPost>,
+    @InjectModel(YouthProgramResponse.name) private readonly programResponses: Model<YouthProgramResponse>,
     private readonly access: AccessScopeService,
     private readonly forms: GuestFieldsService,
     private readonly config: ConfigService,
@@ -177,7 +178,7 @@ export class YouthService {
 
   groupPosts(groupIds: Types.ObjectId[]) {
     return this.posts.find({ groupId: { $in: groupIds }, archivedAt: { $exists: false } })
-      .select('groupId kind title body createdAt').sort({ createdAt: -1, _id: -1 }).limit(30).lean();
+      .select('groupId kind title body sunday scripture question resourceUrl createdAt').sort({ createdAt: -1, _id: -1 }).limit(30).lean();
   }
 
   async saveRollout(user: AuthUser, groupId: string, dto: YouthRolloutDto) {
@@ -270,9 +271,39 @@ export class YouthService {
 
   async publishPost(user: AuthUser, groupId: string, dto: YouthPostDto) {
     const { group } = await this.developmentScope(user, groupId, true);
+    if (dto.kind === 'program' && new Date(dto.sunday!).getUTCDay() !== 0) throw new BadRequestException('Choose a Sunday.');
     const post = await this.posts.create({ groupId: group._id, createdBy: id(user.sub),
-      kind: dto.kind, title: dto.title.trim(), body: dto.body.trim() });
+      kind: dto.kind, title: dto.title.trim(), body: dto.body.trim(),
+      ...(dto.kind === 'program' ? { sunday: dto.sunday, scripture: dto.scripture?.trim(),
+        question: dto.question?.trim(), resourceUrl: dto.resourceUrl } : {}) });
     return { id: post.id };
+  }
+
+  async submitProgramResponse(user: AuthUser, postId: string, answer: string) {
+    const person = await this.participantEnrollment(user);
+    const [group, post] = await Promise.all([
+      this.groups.exists({ _id: person.groupId, youthFeedEnabled: { $ne: false } }),
+      this.posts.exists({ _id: id(postId), groupId: person.groupId, kind: 'program', archivedAt: { $exists: false }, question: { $gt: '' } }),
+    ]);
+    if (!group || !post) throw new NotFoundException();
+    const filter = { postId: post._id, enrollmentId: person._id };
+    try {
+      await this.programResponses.updateOne(filter, { $setOnInsert: { answer: answer.trim() } }, { upsert: true });
+    } catch (error) {
+      if (!duplicate(error)) throw error;
+    }
+    return { saved: true };
+  }
+
+  async readProgramResponses(user: AuthUser, groupId: string, postId: string) {
+    const { group } = await this.developmentScope(user, groupId, true);
+    const post = await this.posts.exists({ _id: id(postId), groupId: group._id, kind: 'program' });
+    if (!post) throw new NotFoundException();
+    const responses = await this.programResponses.find({ postId: post._id }).select('answer enrollmentId').sort({ _id: -1 }).limit(100).lean();
+    const people = await this.enrollments.find({ groupId: group._id, _id: { $in: responses.map(row => row.enrollmentId) } })
+      .select('firstName lastName').lean();
+    const names = new Map(people.map(person => [String(person._id), [person.firstName, person.lastName].join(' ')]));
+    return responses.map(response => ({ id: response._id, name: names.get(String(response.enrollmentId)), answer: response.answer }));
   }
 
   async archivePost(user: AuthUser, groupId: string, postId: string) {
@@ -324,6 +355,9 @@ export class YouthService {
       this.groupPosts([person.groupId]),
     ]);
     if (!group || !branch) throw new ForbiddenException();
+    const programReplies = group.youthFeedEnabled === false ? [] : await this.programResponses.distinct('postId', {
+      enrollmentId: person._id, postId: { $in: posts.filter(post => post.kind === 'program').map(post => post._id) },
+    });
     const assignment = group.leaderId && await this.cleared(group) ? await this.activities.findOne({
       groupId: group._id, enrollmentId: person._id, kind: 'mentoring', active: true, mentorId: group.leaderId,
       permissionConfirmedAt: { $exists: true }, nextCheckIn: { $exists: true },
@@ -351,6 +385,7 @@ export class YouthService {
     }));
     return {
       posts: group.youthFeedEnabled === false ? [] : posts,
+      programReplies,
       serviceHistory,
       mentoringReminder: reminder,
       branch: branch.name, groups: [{ id: group._id, name: group.name, program: group.program }],

@@ -37,6 +37,14 @@
       "save": "Guardar tiempo de servicio"
     },
     "posts": {
+      "program": "Programa del domingo",
+      "sunday": "Fecha del domingo",
+      "scripture": "Referencia bíblica",
+      "question": "Pregunta de debate",
+      "resource": "Enlace al recurso (HTTPS)",
+      "responses": "Ver respuestas",
+      "responsesFailed": "No se pudieron cargar las respuestas.",
+      "noResponses": "Todavía no hay respuestas.",
       "heading": "Novedades del grupo",
       "update": "Novedad",
       "devotional": "Devocional",

@@ -9,7 +9,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { YouthController, YouthParticipantController, YouthRegistrationController } from './youth.controller';
 import { YouthCampDelegation, YouthCampDelegationSchema, YouthEnrollment, YouthEnrollmentSchema, YouthGroup, YouthGroupSchema, YouthSession, YouthSessionSchema } from './youth.schema';
 import { YouthService } from './youth.service';
-import { YouthDevelopment, YouthDevelopmentProgress, YouthDevelopmentProgressSchema, YouthDevelopmentSchema, YouthPost, YouthPostSchema } from './youth-development.schema';
+import { YouthDevelopment, YouthDevelopmentProgress, YouthDevelopmentProgressSchema, YouthDevelopmentSchema, YouthPost, YouthPostSchema, YouthProgramResponse, YouthProgramResponseSchema } from './youth-development.schema';
 import { YouthDevelopmentService } from './youth-development.service';
 import { MailModule } from '../mail/mail.module';
 
@@ -24,6 +24,7 @@ import { MailModule } from '../mail/mail.module';
       { name: YouthDevelopment.name, schema: YouthDevelopmentSchema },
       { name: YouthDevelopmentProgress.name, schema: YouthDevelopmentProgressSchema },
       { name: YouthPost.name, schema: YouthPostSchema },
+      { name: YouthProgramResponse.name, schema: YouthProgramResponseSchema },
       { name: Branch.name, schema: BranchSchema },
       { name: ChildProfile.name, schema: ChildProfileSchema },
       { name: Member.name, schema: MemberSchema },

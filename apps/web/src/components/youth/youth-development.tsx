@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button, Field } from "@/components/ui/ui";
 import { useYouthAction } from "./use-youth-action";
+import { API_URL } from "@/lib/api";
 import { MentoringEmail } from "./mentoring-email";
 
 type Person = { _id: string; firstName: string; lastName: string; needsGuardian: boolean; mentoringEmailConsentAt?: string };
@@ -24,7 +25,8 @@ type Activity = {
   active?: boolean;
 };
 type Progress = { activityId: string; enrollmentId: string; completed: number[]; signedUpAt?: string; serviceMinutes?: number };
-type YouthPost = { _id: string; kind: "update" | "devotional"; title: string; body: string; createdAt: string };
+type YouthPost = { _id: string; kind: "update" | "devotional" | "program"; title: string; body: string; createdAt: string;
+  sunday?: string; scripture?: string; question?: string; resourceUrl?: string };
 export type YouthDevelopmentOverview = {
   groupName: string; manager: boolean; screenedLeader: boolean; people: Person[]; activities: Activity[]; progress: Progress[];
   posts?: YouthPost[];
@@ -52,28 +54,72 @@ function GroupPosts({ path, posts }: { path: string; posts: YouthPost[] }) {
   const t = useTranslations("youth.posts");
   const format = useFormatter();
   const { run, busy } = useYouthAction();
+  const [kind, setKind] = useState<YouthPost["kind"]>("update");
   return <div className="space-y-4">
     <form className="app-card space-y-3 p-5" onSubmit={async event => {
       event.preventDefault();
       const form = event.currentTarget;
-      if (await run(path, "POST", Object.fromEntries(new FormData(form)))) form.reset();
+      const values = Object.fromEntries(new FormData(form));
+      if (!values.resourceUrl) delete values.resourceUrl;
+      if (await run(path, "POST", values)) {
+        form.reset();
+        setKind("update");
+      }
     }}>
       <h2 className="font-semibold">{t("publish")}</h2>
-      <Field label={t("kind")}><select name="kind" className="ui-input">
+      <Field label={t("kind")}><select name="kind" className="ui-input" value={kind} onChange={event => setKind(event.target.value as YouthPost["kind"])}>
         <option value="update">{t("update")}</option><option value="devotional">{t("devotional")}</option>
+        <option value="program">{t("program")}</option>
       </select></Field>
       <Field label={t("title")}><input name="title" className="ui-input" maxLength={100} required /></Field>
       <Field label={t("body")}><textarea name="body" className="ui-input" rows={5} maxLength={3000} required /></Field>
+      {kind === "program" ? <>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label={t("sunday")}><input name="sunday" type="date" className="ui-input" required /></Field>
+          <Field label={t("scripture")}><input name="scripture" className="ui-input" maxLength={120} /></Field>
+        </div>
+        <Field label={t("question")}><textarea name="question" className="ui-input" rows={2} maxLength={300} /></Field>
+        <Field label={t("resource")}><input name="resourceUrl" type="url" className="ui-input" placeholder="https://" maxLength={500} /></Field>
+      </> : null}
       <Button type="submit" disabled={busy}>{t("publish")}</Button>
     </form>
     {posts.length ? posts.map(post => <article className="app-card space-y-2 p-5" key={post._id}>
       <p className="text-sm text-neutral-600">{t(post.kind)} · {format.dateTime(new Date(post.createdAt), { dateStyle: "medium" })}</p>
       <h3 className="font-semibold">{post.title}</h3>
+      {post.sunday ? <p className="text-sm">{format.dateTime(new Date(post.sunday), { dateStyle: "medium", timeZone: "UTC" })}</p> : null}
+      {post.scripture ? <p className="text-sm font-medium">{post.scripture}</p> : null}
       <p className="whitespace-pre-wrap break-words text-sm">{post.body}</p>
+      {post.resourceUrl?.startsWith("https://") ? <a className="inline-flex min-h-11 items-center text-sm underline"
+        href={post.resourceUrl} target="_blank" rel="noopener noreferrer">{t("resource")}</a> : null}
+      {post.question ? <><p className="text-sm font-medium">{post.question}</p>
+        <ProgramResponses path={path + "/" + post._id + "/responses"} /></> : null}
       <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => {
         if (window.confirm(t("archiveConfirm"))) void run(path + "/" + post._id, "DELETE");
       }}>{t("archive")}</Button>
     </article>) : <p className="app-card p-5 text-sm text-neutral-600">{t("empty")}</p>}
+  </div>;
+}
+
+function ProgramResponses({ path }: { path: string }) {
+  const t = useTranslations("youth.posts");
+  const [rows, setRows] = useState<{ id: string; name?: string; answer: string }[]>();
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return <div className="space-y-2">
+    <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={async () => {
+      setLoading(true);
+      setFailed(false);
+      try {
+        const response = await fetch(API_URL + path, { credentials: "include", cache: "no-store" });
+        if (!response.ok) throw new Error();
+        setRows(await response.json());
+      } catch { setFailed(true); }
+      finally { setLoading(false); }
+    }}>{t("responses")}</Button>
+    {failed ? <p role="alert" className="text-sm">{t("responsesFailed")}</p> : null}
+    {rows?.length ? <ul className="space-y-2 text-sm">{rows.map(row => <li className="rounded-lg bg-neutral-50 p-3" key={row.id}>
+      {row.name ? <p className="font-medium">{row.name}</p> : null}<p className="whitespace-pre-wrap break-words">{row.answer}</p>
+    </li>)}</ul> : rows ? <p className="text-sm">{t("noResponses")}</p> : null}
   </div>;
 }
 

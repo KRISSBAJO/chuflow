@@ -448,6 +448,28 @@ async function run() {
     await expect(await youth(servicePath, 'PATCH', service, youthPastor.token), 409);
     assert.deepEqual((await expect(await participantHome(), 200)).serviceHistory, []);
     const postBody = { kind: 'devotional', title: 'Weekly reflection', body: 'Consider how you can welcome someone this week.' };
+    const sundayProgram = { kind: 'program', title: 'Esther and courage', body: 'Read and discuss together.',
+      sunday: '2026-11-15', scripture: 'Esther 4', question: 'When is it hard to speak up?', resourceUrl: 'https://example.com/worksheet.pdf' };
+    await expect(await youth(development + '/posts', 'POST', { ...sundayProgram, sunday: '2026-11-16' }), 400);
+    await expect(await youth(development + '/posts', 'POST', { ...sundayProgram, resourceUrl: 'http://example.com/file.pdf' }), 400);
+    const program = await expect(await youth(development + '/posts', 'POST', sundayProgram, youthPastor.token), 201);
+    const otherProgram = await expect(await youth(adults + '/development/posts', 'POST', sundayProgram), 201);
+    const reply = (post, answer) => request('/youth-participant/programs/' + post + '/response', 'POST', { answer }, participantToken);
+    await expect(await reply(otherProgram.id, 'Outside my group'), 404);
+    await expect(await reply(program.id, ' '), 400);
+    await expect(await reply(program.id, 'I can speak up with a friend.'), 201);
+    await expect(await reply(program.id, 'Duplicate attempt'), 201);
+    const programHome = await expect(await participantHome(), 200);
+    assert.deepEqual(programHome.programReplies, [program.id]);
+    assert.equal(programHome.posts.find(post => post._id === program.id).question, sundayProgram.question);
+    assert.ok(!JSON.stringify(programHome).includes('I can speak up with a friend.'));
+    const responsesPath = development + '/posts/' + program.id + '/responses';
+    await expect(await youth(responsesPath, 'GET', undefined, otherPastor), 403);
+    await expect(await youth(responsesPath, 'GET', undefined, participantToken), 403);
+    const replies = await expect(await youth(responsesPath, 'GET', undefined, youthPastor.token), 200);
+    assert.deepEqual(replies.map(row => row.answer), ['I can speak up with a friend.']);
+    await expect(await youth(development + '/posts/' + program.id, 'DELETE'), 200);
+    await expect(await reply(program.id, 'After archive'), 404);
     await expect(await youth(development + '/posts', 'POST', postBody, otherPastor), 403);
     await expect(await youth(development + '/posts', 'POST', { ...postBody, body: ' ' }, youthPastor.token), 400);
     const posted = await expect(await youth(development + '/posts', 'POST', postBody, youthPastor.token), 201);

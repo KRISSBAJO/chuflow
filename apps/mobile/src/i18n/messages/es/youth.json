@@ -5,6 +5,17 @@
       "previewHint": "Mira lo que ven los participantes."
     },
     "participantHome": {
+      "community": "Comunidad",
+      "programs": {
+        "title": "Programas del domingo",
+        "empty": "Todavía no se han publicado programas del domingo.",
+        "resource": "Abrir recurso",
+        "answer": "Tu respuesta",
+        "private": "Solo los responsables autorizados del grupo pueden leer tu respuesta.",
+        "submit": "Enviar respuesta",
+        "received": "Respuesta enviada a los responsables del grupo.",
+        "failed": "No se pudo completar la acción. Inténtalo de nuevo."
+      },
       "design": {
         "title": "Diseñar mi inicio",
         "device": "Se guarda en este dispositivo.",

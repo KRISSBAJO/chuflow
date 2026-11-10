@@ -6,7 +6,7 @@ import { APP_ROLES } from '../common/constants/roles.constants';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { YouthAttendanceDto, YouthBranchDto, YouthCampDto, YouthCampFinanceDto, YouthCampFollowUpDto, YouthCampLinkDto, YouthCampLogisticsDto, YouthEventDto, YouthGroupDto, YouthGroupSettingsDto, YouthLeaderDto, YouthRegistrationDto, YouthReviewDto, YouthTransitionDto } from './youth.dto';
 import { YouthService } from './youth.service';
-import { YouthMentoringCheckInDto, YouthMentoringConsentDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPostDto, YouthProgressDto, YouthProjectDto, YouthRolloutDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
+import { YouthMentoringCheckInDto, YouthMentoringConsentDto, YouthMentoringDto, YouthMentoringReminderDto, YouthPostDto, YouthProgramResponseDto, YouthProgressDto, YouthProjectDto, YouthRolloutDto, YouthServiceMinutesDto, YouthTrackDto } from './youth-development.dto';
 import { YouthDevelopmentService } from './youth-development.service';
 import { YouthParticipantInviteDto } from './youth.dto';
 
@@ -41,6 +41,11 @@ export class YouthController {
   @Delete('groups/:id/development/posts/:post')
   archivePost(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
     return this.youth.archivePost(user, id, post);
+  }
+
+  @Get('groups/:id/development/posts/:post/responses') @Header('Cache-Control', 'no-store')
+  programResponses(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('post') post: string) {
+    return this.youth.readProgramResponses(user, id, post);
   }
 
   @Post('groups/:id/development/tracks')
@@ -220,6 +225,11 @@ export class YouthParticipantController {
 
   @Get('home') @Header('Cache-Control', 'no-store')
   home(@CurrentUser() user: AuthUser) { return this.youth.participantHome(user); }
+
+  @Post('programs/:id/response')
+  programResponse(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: YouthProgramResponseDto) {
+    return this.youth.submitProgramResponse(user, id, dto.answer);
+  }
 
   @Post('projects/:id/signup')
   signup(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.youth.participantServe(user, id); }

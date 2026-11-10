@@ -1,12 +1,21 @@
-import { ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsMongoId, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsMongoId, IsOptional, IsString, IsUrl, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 class ActivityTitle {
   @IsString() @Matches(/\S/) @MaxLength(100) title!: string;
 }
 
 export class YouthPostDto extends ActivityTitle {
-  @IsIn(['update', 'devotional']) kind!: 'update' | 'devotional';
+  @IsIn(['update', 'devotional', 'program']) kind!: 'update' | 'devotional' | 'program';
   @IsString() @Matches(/\S/) @MaxLength(3000) body!: string;
+  @ValidateIf(dto => dto.kind === 'program')
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) sunday?: string;
+  @IsOptional() @IsString() @MaxLength(120) scripture?: string;
+  @IsOptional() @IsString() @MaxLength(300) question?: string;
+  @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true, disallow_auth: true }) @MaxLength(500) resourceUrl?: string;
+}
+
+export class YouthProgramResponseDto {
+  @IsString() @Matches(/\S/) @MaxLength(800) answer!: string;
 }
 
 export class YouthTrackDto extends ActivityTitle {

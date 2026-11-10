@@ -37,6 +37,14 @@
       "save": "Save service time"
     },
     "posts": {
+      "program": "Sunday program",
+      "sunday": "Sunday date",
+      "scripture": "Scripture reference",
+      "question": "Discussion question",
+      "resource": "Resource link (HTTPS)",
+      "responses": "View responses",
+      "responsesFailed": "Could not load responses.",
+      "noResponses": "No responses yet.",
       "heading": "Group updates",
       "update": "Update",
       "devotional": "Devotional",

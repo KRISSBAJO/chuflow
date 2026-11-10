@@ -5,6 +5,17 @@
       "previewHint": "See what participants see."
     },
     "participantHome": {
+      "community": "Community",
+      "programs": {
+        "title": "Sunday programs",
+        "empty": "No Sunday programs have been published yet.",
+        "resource": "Open resource",
+        "answer": "Your response",
+        "private": "Only authorized group staff can read your response.",
+        "submit": "Send response",
+        "received": "Response sent to your group leaders.",
+        "failed": "Could not complete this action. Try again."
+      },
       "design": {
         "title": "Design my dashboard",
         "device": "Saved on this device.",

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button, ErrorState, Loading, Screen } from '@/components/ui';
+import { Button, ErrorState, Field, Loading, Screen } from '@/components/ui';
 import { Icon } from '@/components/icon';
 import { toast } from '@/components/toast';
 import { colors, fonts, type } from '@/constants/theme';
@@ -12,26 +12,63 @@ import { useT } from '@/i18n/provider';
 import { useApi } from '@/lib/use-api';
 import { api } from '@/lib/api';
 import { useSession, userId } from '@/lib/session';
+import { isoDay } from '@/lib/format';
 import { useYouthDesign } from './dashboard-design';
 
 const tabs = [
   { key: 'home', icon: 'home' },
   { key: 'events', icon: 'calendar' },
+  { key: 'community', icon: 'message' },
   { key: 'journey', icon: 'book' },
   { key: 'serve', icon: 'care' },
 ] as const;
 type Event = { id: string; name: string; date: string; endDate?: string; venue?: string; registrationUrl?: string;
   state?: 'active' | 'pending' | 'declined' | 'withdrawn' };
+type YouthPost = { _id: string; groupId: string; kind: 'update' | 'devotional' | 'program'; title: string; body: string; createdAt: string;
+  sunday?: string; scripture?: string; question?: string; resourceUrl?: string };
 type Preview = {
   branch: string;
   groups: { id: string; name: string; program: string }[];
   events: Event[];
   tracks: { id: string; title: string; groupId: string; milestones?: string[]; completed?: number[] }[];
   projects: { id: string; title: string; groupId: string; date?: string; location?: string; signedUp?: boolean }[];
-  posts?: { _id: string; groupId: string; kind: 'update' | 'devotional'; title: string; body: string; createdAt: string }[];
+  posts?: YouthPost[];
+  programReplies?: string[];
   serviceHistory?: { id: string; title: string; date?: string; minutes: number }[];
   mentoringReminder?: { date: string; nextStep?: string };
 };
+
+function SundayProgram({ post, participant, replied, onReply }: {
+  post: YouthPost; participant: boolean; replied: boolean; onReply: () => void;
+}) {
+  const t = useT('youth.participantHome.programs');
+  const format = useAppFormat();
+  const [answer, setAnswer] = useState('');
+  const [busy, setBusy] = useState(false);
+  return <View style={styles.track}>
+    <Text style={styles.eyebrow}>{format.date(post.sunday)}</Text>
+    <Text style={styles.featureTitle}>{post.title}</Text>
+    {post.scripture ? <Text style={type.label}>{post.scripture}</Text> : null}
+    <Text style={type.body}>{post.body}</Text>
+    {post.resourceUrl?.startsWith('https://') ? <Button variant="secondary" size="sm" icon="arrowUpRight" label={t('resource')}
+      onPress={() => { if (post.resourceUrl) void openBrowserAsync(post.resourceUrl).catch(() => toast.error(t('failed'))); }} /> : null}
+    {post.question ? <View style={styles.sections}>
+      <Text style={type.title}>{post.question}</Text>
+      {participant && (replied ? <Text style={type.small}>{t('received')}</Text> : <>
+        <Field label={t('answer')} hint={t('private')} multiline maxLength={800} value={answer} onChangeText={setAnswer} />
+        <Button variant="primary" size="sm" label={t('submit')} loading={busy} disabled={busy || !answer.trim()} onPress={async () => {
+          setBusy(true);
+          try {
+            await api.post('/youth-participant/programs/' + post._id + '/response', { answer: answer.trim() });
+            onReply();
+            setAnswer('');
+          } catch { toast.error(t('failed')); }
+          finally { setBusy(false); }
+        }} />
+      </>)}
+    </View> : null}
+  </View>;
+}
 
 export function YouthHomePreview({ participant = false }: { participant?: boolean } = {}) {
   const { user } = useSession();
@@ -59,6 +96,10 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
     return () => subscription.remove();
   }, [participant, reload]);
   const preview = result.data;
+  const posts = preview?.posts?.filter(post => post.kind !== 'program') ?? [];
+  const programs = (preview?.posts ?? []).filter(post => post.kind === 'program')
+    .sort((a, b) => (b.sunday ?? '').localeCompare(a.sunday ?? ''));
+  const nextProgram = [...programs].reverse().find(post => (post.sunday ?? '') >= isoDay(new Date()));
   const serviceHistory = preview?.serviceHistory ?? [];
   const reminder = participant ? preview?.mentoringReminder : undefined;
   const mentoringCard = reminder ? <View style={[styles.feature, { backgroundColor: palette.surface }]}>
@@ -117,6 +158,15 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
           {design.open ? <Button variant="secondary" size="sm" icon="settings" label={t('design.title')} onPress={design.open} /> : null}
           {mentoringCard}
           {design.spotlight}
+          {nextProgram ? <Pressable accessibilityRole="button" onPress={() => setTab('community')}
+            style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
+            <View style={styles.featureCopy}>
+              <Text style={[styles.eyebrow, { color: palette.accent }]}>{t('programs.title')}</Text>
+              <Text style={styles.featureTitle}>{nextProgram.title}</Text>
+              <Text style={type.small}>{format.date(nextProgram.sunday)}</Text>
+            </View>
+            <View style={styles.featureIcon}><Icon name="calendar" color={palette.accent} /></View>
+          </Pressable> : null}
           {design.widgets.includes('journey') && preview.tracks.length ? <Pressable accessibilityRole="button"
             onPress={() => setTab('journey')} style={({ pressed }) => [styles.feature, { backgroundColor: palette.surface }, pressed && styles.pressed]}>
             <View style={styles.featureCopy}>
@@ -142,9 +192,9 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
             </View>
             <View style={styles.featureIcon}><Icon name={featured.icon} color={palette.accent} /></View>
           </Pressable> : null}
-          {design.widgets.includes('updates') && preview.posts?.length ? <View style={styles.sections}>
+          {design.widgets.includes('updates') && posts.length ? <View style={styles.sections}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t('posts.heading')}</Text>
-            {(showAllPosts ? preview.posts : preview.posts.slice(0, 3)).map(post => {
+            {(showAllPosts ? posts : posts.slice(0, 3)).map(post => {
               const expanded = openPost === post._id;
               const group = preview.groups.find(item => item.id === post.groupId);
               return <View key={post._id} style={styles.track}>
@@ -160,7 +210,7 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
                 {expanded ? <Text style={type.body}>{post.body}</Text> : null}
               </View>;
             })}
-            {preview.posts.length > 3 ? <Button variant="ghost" label={t(showAllPosts ? 'posts.less' : 'posts.more')}
+            {posts.length > 3 ? <Button variant="ghost" label={t(showAllPosts ? 'posts.less' : 'posts.more')}
               onPress={() => setShowAllPosts(!showAllPosts)} /> : null}
           </View> : null}
           {design.widgets.includes('groups') ? <View style={styles.sections}>
@@ -173,12 +223,19 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
               </View>
             </View>) : <Text style={styles.empty}>{t('noGroups')}</Text>}
           </View> : null}
-          {design.widgets.includes('activity') && !featured ? <Pressable accessibilityRole="button" onPress={() => setTab('events')}
+          {design.widgets.includes('activity') && !featured && !nextProgram ? <Pressable accessibilityRole="button" onPress={() => setTab('events')}
             style={({ pressed }) => [styles.calendarNote, pressed && styles.pressed]}>
             <Icon name="calendar" size={19} color={colors.muted} />
             <Text style={styles.calendarText}>{t('calendarQuiet')}</Text>
             <Icon name="chevronRight" size={17} color={colors.muted} />
           </Pressable> : null}
+        </View> : null}
+        {tab === 'community' ? <View style={styles.sections}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t('programs.title')}</Text>
+          {programs.length ? programs.map(post => <SundayProgram key={post._id} post={post} participant={participant}
+            replied={preview.programReplies?.includes(post._id) ?? false}
+            onReply={() => result.setData(current => current && { ...current, programReplies: [...(current.programReplies ?? []), post._id] })} />) :
+            <Text style={styles.empty}>{t('programs.empty')}</Text>}
         </View> : null}
         {tab === 'events' ? <View style={styles.sections}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t('upcoming')}</Text>
