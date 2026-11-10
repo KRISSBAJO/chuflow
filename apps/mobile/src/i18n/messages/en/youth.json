@@ -144,6 +144,12 @@
     "noGroups": "No youth groups in your scope yet.",
     "failed": "Couldn’t complete this action. Check the details and try again.",
     "attendance": "Attendance",
+    "attendanceSetup": {
+      "title": "Get ready to record attendance",
+      "assign": "Assign a leader",
+      "review": "Review participants",
+      "groupTools": "Group tools"
+    },
     "sessionDate": "Gathering date",
     "presentCount": "{count, plural, one {# present} other {# present}}",
     "needsLeader": "Assign a screened leader with current clearance before recording attendance.",

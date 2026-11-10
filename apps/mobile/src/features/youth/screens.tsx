@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DateStepper } from '@/components/kit';
 import { Icon } from '@/components/icon';
 import { toast } from '@/components/toast';
-import { Button, Caption, EmptyState, ErrorState, ListRow, Loading, Notice, Screen, ScreenHeader, Section } from '@/components/ui';
+import { Button, Caption, ErrorState, ListRow, Loading, Screen, ScreenHeader, Section } from '@/components/ui';
 import { colors, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
@@ -127,6 +127,8 @@ export function YouthAttendance() {
   const result = useApi<Detail>(id ? path + '?view=attendance&date=' + day : null);
   const detail = result.data && (result.data.group.eventDate || result.data.date === day) ? result.data : undefined;
   const present = new Set(detail?.present);
+  const approved = detail?.people.filter(person => person.state === 'active') ?? [];
+  const webGroup = '/youth/' + encodeURIComponent(id ?? '');
 
   async function mark(enrollmentId: string, attended: boolean) {
     if (busy || !detail) return;
@@ -144,23 +146,50 @@ export function YouthAttendance() {
   return (
     <Screen safeTop={false} refreshing={result.refreshing} onRefresh={() => void result.refresh()}>
       <Stack.Screen options={{ title: result.data?.group.name ?? t('attendance') }} />
-      {detail?.group.eventDate ? <Caption>{format.shortDate(new Date(detail.group.eventDate + 'T12:00:00'))}</Caption> :
-        <DateStepper label={t('sessionDate')} value={date} max={new Date()} onChange={setDate} />}
+      <View style={attendanceStyles.section}>
+        <Caption>{t('sessionDate')}</Caption>
+        {detail?.group.eventDate ? <Text style={type.label}>{format.longDate(detail.group.eventDate)}</Text> :
+          <DateStepper label={format.longDate(date)} value={date} max={new Date()} onChange={setDate} />}
+      </View>
       {result.error ? <ErrorState message={result.error} onRetry={() => void result.refresh()} /> : !detail ? <Loading /> : (
-        <View>
+        <View style={attendanceStyles.section}>
           <Section title={t('attendance')} />
-          <Caption>{t('presentCount', { count: detail.present.length })}</Caption>
-          {!detail.canRecord ? <Notice tone="warning">{t('needsLeader')}</Notice> : null}
-          {detail.people.some(person => person.state === 'active') ? detail.people.filter(person => person.state === 'active').map(person => (
+          {!detail.canRecord || !approved.length ? <View style={attendanceStyles.setup}>
+            <View style={attendanceStyles.setupTitle}>
+              <Icon name="check" color={colors.ink} size={20} />
+              <Text accessibilityRole="header" style={[type.title, attendanceStyles.copy]}>{t('attendanceSetup.title')}</Text>
+            </View>
+            {!detail.canRecord ? <>
+              <Text style={type.body}>{t('needsLeader')}</Text>
+              {detail.manager ? <Button size="sm" variant="secondary" icon="arrowUpRight" label={t('attendanceSetup.assign')}
+                onPress={() => void openWorkspaceBrowser(webGroup + '#youth-leader', user?.workspace)} /> : null}
+            </> : null}
+            {!approved.length ? <>
+              <Text style={type.body}>{t('noPeople')}</Text>
+              {detail.manager ? <Button size="sm" variant="secondary" icon="arrowUpRight" label={t('attendanceSetup.review')}
+                onPress={() => void openWorkspaceBrowser(webGroup + '#youth-participants', user?.workspace)} /> : null}
+            </> : null}
+          </View> : null}
+          {approved.length ? <Caption>{t('presentCount', { count: detail.present.length })}</Caption> : null}
+          {approved.map(person => (
             <ListRow key={person._id} title={format.fullName(person)} divider
               right={<Button size="sm" variant={present.has(person._id) ? 'primary' : 'secondary'} label={t(present.has(person._id) ? 'present' : 'markPresent')}
                 disabled={!!busy || !detail.canRecord || Boolean(detail.group.eventDate && detail.date > day)} loading={busy === person._id} onPress={() => void mark(person._id, !present.has(person._id))} />} />
-          )) : <EmptyState title={t('noPeople')} />}
+          ))}
         </View>
       )}
-      {detail?.manager ? <Button variant="secondary" label={t('manageWeb')} onPress={() => void openWorkspaceBrowser('/youth/' + id, user?.workspace)} /> : null}
-      {detail && !detail.group.eventDate ? <Button variant="secondary" label={t('development')}
-        onPress={() => void openWorkspaceBrowser('/youth/' + encodeURIComponent(id) + '/development', user?.workspace)} /> : null}
+      {detail && (detail.manager || !detail.group.eventDate) ? <View style={attendanceStyles.section}>
+        <Section title={t('attendanceSetup.groupTools')} />
+        {!detail.group.eventDate ? <ListRow title={t('development')} onPress={() => void openWorkspaceBrowser(webGroup + '/development', user?.workspace)} /> : null}
+        {detail.manager ? <ListRow title={t('manageWeb')} onPress={() => void openWorkspaceBrowser(webGroup, user?.workspace)} /> : null}
+      </View> : null}
     </Screen>
   );
 }
+
+const attendanceStyles = StyleSheet.create({
+  section: { gap: 8 },
+  setup: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, gap: 10 },
+  setupTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  copy: { flex: 1 },
+});

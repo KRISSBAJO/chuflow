@@ -192,11 +192,11 @@ export function YouthGroupWorkspace({ data, workspace }: { data: YouthDetail; wo
           <Button type="button" variant="secondary" disabled={busy} onClick={() => void run(path + "/link", "DELETE")}>{t("disableLink")}</Button>
         </div> : <Button type="button" disabled={busy || !registrationAvailable} onClick={() => void run(path + "/link", "POST")}>{t("enableLink")}</Button>}
         {href && qrLink && new URL(qrLink).pathname + new URL(qrLink).search === href ? <TemplateQrCard url={qrLink} title={group.name} /> : null}
-        <h3 className="font-semibold">{t("reviewQueue")}</h3>
+        <h3 id="youth-participants" className="scroll-mt-24 font-semibold">{t("reviewQueue")}</h3>
         {pending.length ? pending.map(person => <PendingRegistration key={person._id} path={path + "/people/" + person._id} person={person} />)
           : <p className="text-sm text-neutral-600">{t("noPending")}</p>}
       </section>
-      <section className="app-card p-5">
+      <section id="youth-leader" className="app-card scroll-mt-24 p-5">
         <h2 className="text-lg font-semibold">{t("leader")}</h2>
         <p className="mt-1 text-sm text-neutral-600">{t("leaderHint")}</p>
         <form key={group.leaderId + ":" + group.clearanceUntil} className="mt-4 space-y-4" onSubmit={event => {

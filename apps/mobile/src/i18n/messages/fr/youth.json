@@ -144,6 +144,12 @@
     "noGroups": "Aucun groupe jeunesse dans votre périmètre.",
     "failed": "Impossible de terminer cette action. Vérifiez les informations et réessayez.",
     "attendance": "Présences",
+    "attendanceSetup": {
+      "title": "Préparer le relevé des présences",
+      "assign": "Désigner un responsable",
+      "review": "Examiner les inscriptions",
+      "groupTools": "Outils du groupe"
+    },
     "sessionDate": "Date de la rencontre",
     "presentCount": "{count, plural, one {# présent} other {# présents}}",
     "needsLeader": "Désignez un responsable dont l’habilitation est valide avant de saisir les présences.",

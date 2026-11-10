@@ -144,6 +144,12 @@
     "noGroups": "Aún no hay grupos juveniles en tu ámbito.",
     "failed": "No se pudo completar la acción. Revisa los datos e inténtalo de nuevo.",
     "attendance": "Asistencia",
+    "attendanceSetup": {
+      "title": "Prepara el registro de asistencia",
+      "assign": "Asignar un líder",
+      "review": "Revisar inscripciones",
+      "groupTools": "Herramientas del grupo"
+    },
     "sessionDate": "Fecha de la reunión",
     "presentCount": "{count, plural, one {# presente} other {# presentes}}",
     "needsLeader": "Asigna un líder con acreditación vigente antes de registrar la asistencia.",
