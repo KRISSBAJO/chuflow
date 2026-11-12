@@ -113,6 +113,12 @@ export function OfferingEntriesTable({
         const enteredBy = [entry.createdBy?.firstName, entry.createdBy?.lastName]
           .filter(Boolean)
           .join(" ");
+        const serviceDate = new Date(entry.serviceDate);
+        const isoDate = serviceDate.toISOString();
+        const calendarDate = !entry.serviceTypeId?._id || isoDate.endsWith("T00:00:00.000Z");
+        const displayedDate = calendarDate
+          ? format.dateTime(serviceDate, { dateStyle: "medium", timeZone: "UTC" })
+          : formatDate(serviceDate);
 
         return (
           <details
@@ -130,8 +136,7 @@ export function OfferingEntriesTable({
                     {entry.offeringTypeLabel} · {entry.serviceTypeLabel || formT("dateOnly")}
                   </p>
                   <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
-                    {entry.branchId?.name} · {formatDate(entry.serviceDate)} ·{" "}
-                    {entry.serviceLabel || entry.serviceTypeLabel}
+                    {[entry.branchId?.name, displayedDate, entry.serviceLabel || entry.serviceTypeLabel].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -162,8 +167,8 @@ export function OfferingEntriesTable({
                   <Field label={t("serviceDate")}>
                     <input
                       name={`serviceDate-${entry._id}`}
-                      type="datetime-local"
-                      defaultValue={new Date(entry.serviceDate).toISOString().slice(0, 16)}
+                      type={calendarDate ? "date" : "datetime-local"}
+                      defaultValue={isoDate.slice(0, calendarDate ? 10 : 16)}
                       className="ui-input"
                     />
                   </Field>
