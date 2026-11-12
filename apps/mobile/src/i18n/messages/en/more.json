@@ -1,4 +1,12 @@
 {
+  "accountDeletion": {
+    "title": "Delete account",
+    "body": "Permanently delete your ChuFlow sign-in for this workspace and sign out all devices. Your church may retain ministry and financial records.",
+    "password": "Current password",
+    "submit": "Delete account",
+    "received": "Your account was deleted from this workspace.",
+    "error": "We couldn’t submit your request. Check your password and try again."
+  },
   "more": {
     "menu": {
       "account": "Account",

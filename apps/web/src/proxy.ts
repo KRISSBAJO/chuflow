@@ -32,7 +32,7 @@ export function proxy(request: NextRequest) {
     matchesRoute(pathname, route),
   );
 
-  if (!token && !isAuthPage && !isPublicPage) {
+  if (!token && !isAuthPage && !isPublicPage && pathname !== "/delete-account") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

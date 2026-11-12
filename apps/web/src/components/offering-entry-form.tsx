@@ -1,7 +1,7 @@
 "use client";
 import { savedToastId } from "@/lib/action-feedback";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
@@ -57,6 +57,10 @@ export function OfferingEntryForm({
   const { form, failed } = useMemberFields(undefined, true, "/finance/staff-form/offering");
   const tf = useTranslations("admin.settings.guestFields");
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
+  const [lineIds, setLineIds] = useState<number[]>([]);
+  const [amounts, setAmounts] = useState<Record<number, number>>({});
+  const canBatch = submitPath === "/finance/offerings";
+  const request = useRef<{ payload: string; id: string } | null>(null);
   const defaultBranchName = branches.find(
     (branch) => branch._id === defaultBranchId,
   )?.name;
@@ -96,29 +100,37 @@ export function OfferingEntryForm({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}${submitPath}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
+      const entries = [0, ...lineIds].map((id) => {
+        const suffix = id === 0 ? "" : `-${id}`;
+        return {
           ...memberFieldPayload(form, formData),
           serviceDate: formData.get("serviceDate"),
           serviceScheduleId: selectedScheduleId || undefined,
-          serviceTypeId:
-            getScheduleServiceTypeId(selectedSchedule?.serviceTypeId) ||
-            formData.get("serviceTypeId") ||
-            undefined,
-          offeringTypeId: formData.get("offeringTypeId"),
-          accountId: formData.get("accountId") || undefined,
-          amount: Number(formData.get("amount")),
+          serviceTypeId: getScheduleServiceTypeId(selectedSchedule?.serviceTypeId) ||
+            (formData.get("serviceTypeId") === "date-only" ? undefined : formData.get("serviceTypeId")) || undefined,
+          offeringTypeId: formData.get(`offeringTypeId${suffix}`),
+          accountId: formData.get(`accountId${suffix}`) || undefined,
+          amount: Number(formData.get(`amount${suffix}`)),
+          paymentChannel: formData.get(`paymentChannel${suffix}`) || undefined,
           notes: formData.get("notes") || undefined,
-        }),
+        };
+      });
+      const batch = canBatch;
+      const payloadKey = JSON.stringify(entries);
+      if (batch && request.current?.payload !== payloadKey) request.current = { payload: payloadKey, id: crypto.randomUUID() };
+      const response = await fetch(`${API_URL}${submitPath}${batch ? "/batch" : ""}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(batch ? { entries, requestId: request.current?.id } : entries[0]),
       });
 
-      const result = await response.json();
+      const payload = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || t("recordError"));
+        throw new Error(payload.message || t("recordError"));
       }
+      const result = batch ? payload[0] : payload;
+      request.current = null;
 
       toast.success(t("recordedTitle"), {
         id: savedToastId(result),
@@ -163,7 +175,7 @@ export function OfferingEntryForm({
         <Field label={t("serviceDate")} required>
           <input
             name="serviceDate"
-            type="datetime-local"
+            type="date"
             className="ui-input"
             required
           />
@@ -192,6 +204,7 @@ export function OfferingEntryForm({
           ) : (
             <select name="serviceTypeId" className="ui-input" required>
               <option value="">{t("selectServiceType")}</option>
+              <option value="date-only">{t("dateOnly")}</option>
               {availableServiceTypes.map((serviceType) => (
                 <option key={serviceType._id} value={serviceType._id}>
                   {serviceType.name}
@@ -223,6 +236,7 @@ export function OfferingEntryForm({
               step="0.01"
               placeholder="0.00"
               className="ui-input tabular-nums"
+              onChange={(event) => setAmounts({ ...amounts, 0: Number(event.target.value) })}
               required
             />
           </Field>
@@ -241,6 +255,38 @@ export function OfferingEntryForm({
           </select>
         </Field>
 
+        <Field label={t("paymentChannel")}><input name="paymentChannel" className="ui-input" maxLength={80} /></Field>
+        {lineIds.map((id) => (
+          <fieldset key={id} className="grid gap-3 rounded-xl border border-black/10 p-4 sm:grid-cols-2">
+            <Field label={t("offeringType")} required>
+              <select name={`offeringTypeId-${id}`} className="ui-input" required>
+                <option value="">{t("selectOfferingType")}</option>
+                {offeringTypes.filter((item) => item.isActive).map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+              </select>
+            </Field>
+            <Field label={t("amountUsd")} required>
+              <input name={`amount-${id}`} type="number" min="0.01" step="0.01" className="ui-input" required onChange={(event) => setAmounts({ ...amounts, [id]: Number(event.target.value) })} />
+            </Field>
+            <Field label={t("accountOrFund")}>
+              <select name={`accountId-${id}`} className="ui-input">
+                <option value="">{t("useDefaultFromType")}</option>
+                {accounts.filter((item) => item.isActive).map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+              </select>
+            </Field>
+            <Field label={t("paymentChannel")}><input name={`paymentChannel-${id}`} className="ui-input" maxLength={80} /></Field>
+            <Button type="button" variant="secondary" onClick={() => {
+              setLineIds(lineIds.filter((lineId) => lineId !== id));
+              setAmounts({ ...amounts, [id]: 0 });
+            }}>{t("removeLine")}</Button>
+          </fieldset>
+        ))}
+        {canBatch ? (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button type="button" variant="secondary" disabled={lineIds.length >= 19 || loading} onClick={() => setLineIds([...lineIds, (lineIds.at(-1) ?? 0) + 1])}>{t("addLine")}</Button>
+            <strong>{t("batchTotal", { amount: [0, ...lineIds].reduce((sum, id) => sum + (amounts[id] || 0), 0) })}</strong>
+          </div>
+        ) : null}
+
         {!form?.hiddenStaff.includes("notes") ? <Field label={t("notes")}>
           <textarea
             name="notes"
@@ -254,15 +300,10 @@ export function OfferingEntryForm({
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <Button
             type="submit"
-            disabled={!form || loading || availableServiceTypes.length === 0}
+            disabled={!form || loading}
           >
             {loading ? t("recording") : t("record")}
           </Button>
-          {availableServiceTypes.length === 0 ? (
-            <p className="text-[13px] text-[#8a8780]">
-              {t("addServiceTypeFirst")}
-            </p>
-          ) : null}
         </div>
       </form>
     </Card>

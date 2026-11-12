@@ -77,6 +77,15 @@ export class User {
   @Prop({ default: true })
   isActive!: boolean;
 
+  @Prop({ type: Date, select: false })
+  deletionRequestedAt?: Date;
+
+  @Prop({ type: Date, select: false })
+  deletionCompletedAt?: Date;
+
+  @Prop({ select: false })
+  retiredBootstrapAccount?: boolean;
+
   @Prop({ type: UserPreferencesSchema, default: () => ({}) })
   preferences?: UserPreferences;
 }

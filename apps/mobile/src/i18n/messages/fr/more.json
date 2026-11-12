@@ -1,4 +1,12 @@
 {
+  "accountDeletion": {
+    "title": "Supprimer le compte",
+    "body": "Supprimez définitivement votre accès ChuFlow à cet espace et déconnectez tous vos appareils. Votre église peut conserver des dossiers de ministère et de finances.",
+    "password": "Mot de passe actuel",
+    "submit": "Supprimer le compte",
+    "received": "Votre compte a été supprimé de cet espace.",
+    "error": "Votre demande n’a pas pu être envoyée. Vérifiez votre mot de passe et réessayez."
+  },
   "more": {
     "menu": {
       "account": "Compte",

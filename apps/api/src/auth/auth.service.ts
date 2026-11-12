@@ -139,6 +139,10 @@ export class AuthService {
     };
   }
 
+  requestAccountDeletion(userId: string, password: string) {
+    return this.usersService.requestAccountDeletion(userId, password);
+  }
+
   async changePassword(userId: string, dto: ChangePasswordDto) {
     if (dto.currentPassword === dto.newPassword) {
       throw new BadRequestException(

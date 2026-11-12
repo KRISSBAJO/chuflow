@@ -199,6 +199,8 @@ export default async function FinancePage({
       `/finance/offerings?${offeringQuery.toString()}`,
     ).catch(() => ({
       items: [],
+      approvedBreakdown: [],
+      approvedTotals: [],
       pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
       summary: {
         totalAmount: 0,
@@ -541,9 +543,42 @@ export default async function FinancePage({
               label={t("offerings.label")}
               title={t("offerings.title")}
               description={t("offerings.description")}
-              action={<Badge>{t("entries", { count: offeringList.pagination.total })}</Badge>}
+              action={
+                <div className="flex flex-wrap items-center gap-2">
+                  {canCreateOfferings ? (
+                    <Link href="/finance/new?kind=offering" className={buttonClass("primary", "sm")}>
+                      <Icon name="plus" className="h-4 w-4" />
+                      {t("recordOffering")}
+                    </Link>
+                  ) : null}
+                  {canManageTypes ? (
+                    <Link href="/finance?tab=setup#offering-types" className={buttonClass("secondary", "sm")}>
+                      {t("manageOfferingTypes")}
+                    </Link>
+                  ) : null}
+                  <Badge>{t("entries", { count: offeringList.pagination.total })}</Badge>
+                </div>
+              }
             />
 
+            <details className="mt-5 rounded-xl border border-black/10 p-4">
+              <summary className="cursor-pointer font-semibold">{t("approvedGiving")}</summary>
+              {offeringList.approvedTotals?.map((total) => (
+                <p className="mt-2 text-sm font-semibold" key={total.currency}>
+                  {t("approvedGivingTotal", { amount: /^[A-Z]{3}$/i.test(total.currency) ? format.number(total.amount, { style: "currency", currency: total.currency }) : `${format.number(total.amount)} ${total.currency}` })}
+                </p>
+              ))}
+              {offeringList.approvedBreakdown?.length ? (
+                <div className="mt-3 divide-y divide-black/10">
+                  {offeringList.approvedBreakdown.map((row) => (
+                    <div key={JSON.stringify([row.day, row.offeringTypeId, row.accountId, row.currency, row.paymentChannel])} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
+                      <span>{[format.dateTime(new Date(row.day), { dateStyle: "medium", timeZone: "UTC" }), row.offeringType, row.account, row.paymentChannel].filter(Boolean).join(" · ")}</span>
+                      <strong>{/^[A-Z]{3}$/i.test(row.currency) ? format.number(row.amount, { style: "currency", currency: row.currency }) : `${format.number(row.amount)} ${row.currency}`}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="mt-3 text-sm">{t("noApprovedGiving")}</p>}
+            </details>
             <div className="mt-6">
               <OfferingEntriesTable
                 entries={offeringList.items}
@@ -668,7 +703,9 @@ export default async function FinancePage({
                   categories={expenseCategories}
                   accounts={accounts}
                 />
-                <OfferingTypeManagementCard offeringTypes={offeringTypes} />
+                <div id="offering-types" className="scroll-mt-24">
+                  <OfferingTypeManagementCard offeringTypes={offeringTypes} />
+                </div>
               </>
             ) : (
               <Card className="p-6 sm:p-7">

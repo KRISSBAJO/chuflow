@@ -12,6 +12,7 @@ import { useT } from '@/i18n/provider';
 import { useApi } from '@/lib/use-api';
 import { api, getApiSession } from '@/lib/api';
 import { useSession, userId } from '@/lib/session';
+import { AccountDeletion } from '@/features/more/account-deletion';
 import { isoDay } from '@/lib/format';
 import { YouthNavigation, type YouthTab } from './youth-navigation';
 import { YouthGroupChat } from './group-chat';
@@ -334,6 +335,7 @@ function YouthDashboard({ participant, designKey }: { participant: boolean; desi
             : <Text style={styles.empty}>{t('noProjects')}</Text>}
         </View> : null}
       </> : null}
+      {participant ? <AccountDeletion /> : null}
       {participant ? <Button variant="secondary" label={t('signOut')} onPress={() => void signOut()} /> : null}
       {design.panel}
     </Screen>

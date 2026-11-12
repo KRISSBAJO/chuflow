@@ -37,6 +37,7 @@ export function OfferingEntriesTable({
 }) {
   const statusLabel = useStatusLabel();
   const t = useTranslations("admin.offerings");
+  const formT = useTranslations("admin.offeringForm");
   const tc = useTranslations("common");
   const custody = useTranslations("admin.custody");
   const format = useFormatter();
@@ -63,10 +64,11 @@ export function OfferingEntriesTable({
         credentials: "include",
         body: JSON.stringify({
           serviceDate: formData.get(`serviceDate-${entryId}`),
-          serviceTypeId: formData.get(`serviceTypeId-${entryId}`),
+          serviceTypeId: formData.get(`serviceTypeId-${entryId}`) || null,
           offeringTypeId: formData.get(`offeringTypeId-${entryId}`),
           accountId: formData.get(`accountId-${entryId}`) || undefined,
           amount: Number(formData.get(`amount-${entryId}`)),
+          paymentChannel: formData.get(`paymentChannel-${entryId}`) ?? "",
           notes: formData.get(`notes-${entryId}`) || undefined,
         }),
       });
@@ -125,7 +127,7 @@ export function OfferingEntriesTable({
               <div className="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-medium text-[#111111]">
-                    {entry.offeringTypeLabel} · {entry.serviceTypeLabel}
+                    {entry.offeringTypeLabel} · {entry.serviceTypeLabel || formT("dateOnly")}
                   </p>
                   <p className="mt-0.5 truncate text-[12px] text-[#8a8780]">
                     {entry.branchId?.name} · {formatDate(entry.serviceDate)} ·{" "}
@@ -171,6 +173,7 @@ export function OfferingEntriesTable({
                       defaultValue={entry.serviceTypeId?._id || ""}
                       className="ui-input"
                     >
+                      <option value="">{formT("dateOnly")}</option>
                       {availableServiceTypes.map((serviceType) => (
                         <option key={serviceType._id} value={serviceType._id}>
                           {serviceType.name}
@@ -214,6 +217,9 @@ export function OfferingEntriesTable({
                       defaultValue={entry.amount}
                       className="ui-input tabular-nums"
                     />
+                  </Field>
+                  <Field label={formT("paymentChannel")}>
+                    <input name={`paymentChannel-${entry._id}`} defaultValue={entry.paymentChannel ?? ""} maxLength={80} className="ui-input" />
                   </Field>
                   <Field label={t("notes")} className="md:col-span-2">
                     <textarea

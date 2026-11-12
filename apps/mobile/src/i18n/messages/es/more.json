@@ -1,4 +1,12 @@
 {
+  "accountDeletion": {
+    "title": "Eliminar cuenta",
+    "body": "Elimina de forma permanente tu acceso a ChuFlow en este espacio y cierra sesión en todos los dispositivos. Tu iglesia puede conservar registros ministeriales y financieros.",
+    "password": "Contraseña actual",
+    "submit": "Eliminar cuenta",
+    "received": "Tu cuenta se eliminó de este espacio.",
+    "error": "No pudimos enviar tu solicitud. Comprueba tu contraseña y vuelve a intentarlo."
+  },
   "more": {
     "menu": {
       "account": "Cuenta",

@@ -12,7 +12,7 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  const [user, t, { branchId }] = await Promise.all([requireServerRole("/settings"), getTranslations("admin.settings"), searchParams]);
+  const [user, t, deletion, { branchId }] = await Promise.all([requireServerRole("/settings"), getTranslations("admin.settings"), getTranslations("auth.accountDeletion"), searchParams]);
   if (typeof branchId === "string" && branchId) {
     redirect("/settings/branch-defaults?" + new URLSearchParams({ branchId }));
   }
@@ -49,6 +49,12 @@ export default async function SettingsPage({
             </ul>
           </section>
         ))}
+        <div className="flex flex-wrap gap-4 text-sm">
+          <Link href="/delete-account" className="underline underline-offset-4">{deletion("title")}</Link>
+          {user.role === "super_admin" ? (
+            <Link href="/settings/account-deletion-requests" className="underline underline-offset-4">{deletion("queue")}</Link>
+          ) : null}
+        </div>
         <LogoutButton />
       </div>
     </Shell>

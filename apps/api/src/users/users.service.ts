@@ -71,7 +71,7 @@ export class UsersService implements OnModuleInit {
       this.configService.get<string>('adminEmail')!,
     );
     const existing = await this.userModel.findOne({
-      email: userEmailPattern(adminEmail),
+      $or: [{ email: userEmailPattern(adminEmail) }, { retiredBootstrapAccount: true }],
     });
 
     if (!existing) {
@@ -109,13 +109,60 @@ export class UsersService implements OnModuleInit {
     return this.findEmailIdentity(email, true);
   }
 
+  async requestAccountDeletion(userId: string, password: string) {
+    const user = await this.userModel.findOne({ _id: userId, isActive: true })
+      .select('email password role +deletionRequestedAt').exec();
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new ForbiddenException('Current password could not be verified');
+    }
+
+    const deletedAt = new Date();
+    const retiredBootstrapAccount = normalizeUserEmail(user.email) === normalizeUserEmail(this.configService.get<string>('adminEmail') ?? '');
+    const replacementPassword = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
+    await this.userModel.db.transaction(async (session) => {
+      const result = await this.userModel.findOneAndUpdate(
+      { _id: userId, isActive: true, password: user.password },
+      {
+        $set: {
+          firstName: 'Deleted',
+          lastName: 'account',
+          email: `${userId}@deleted.invalid`,
+          password: replacementPassword,
+          isActive: false,
+          retiredBootstrapAccount,
+          deletionRequestedAt: user.deletionRequestedAt ?? deletedAt,
+          deletionCompletedAt: deletedAt,
+        },
+        $unset: {
+          passwordResetToken: 1, passwordResetExpiresAt: 1, passwordChangeRequired: 1,
+          welcomeEmailAttemptAt: 1, welcomeEmailStatus: 1, welcomeEmailMessageId: 1,
+          lastLoginAt: 1, preferences: 1, youthEnrollmentId: 1,
+        },
+      },
+        { new: true, session },
+      ).select('_id').exec();
+      if (!result) throw new ForbiddenException('Current password could not be verified');
+      await this.userModel.db.collection('pushsubscriptions').deleteMany({ userId: result._id }, { session });
+    });
+    return { deletedAt };
+  }
+
+  async listAccountDeletionRequests() {
+    const users = await this.userModel.find({ deletionRequestedAt: { $type: 'date' }, deletionCompletedAt: { $exists: false } })
+      .select('firstName lastName email +deletionRequestedAt')
+      .sort({ deletionRequestedAt: 1, _id: 1 }).lean().exec();
+    return users.map(({ firstName, lastName, email, deletionRequestedAt }) => ({
+      firstName, lastName, email, requestedAt: deletionRequestedAt,
+    }));
+  }
+
   findByEmail(email: string) {
     return this.findEmailIdentity(email, false);
   }
 
   async findById(id: string) {
     const user = await this.userModel
-      .findById(id)
+      .findOne({ _id: id, deletionCompletedAt: { $exists: false } })
       .select('-password -passwordResetToken')
       .lean();
 
@@ -358,7 +405,7 @@ export class UsersService implements OnModuleInit {
 
   private async ensureManageableTarget(currentUser: AuthUser, userId: string) {
     const target = await this.userModel
-      .findById(userId)
+      .findOne({ _id: userId, deletionCompletedAt: { $exists: false } })
       .select('-password -passwordResetToken')
       .lean();
 

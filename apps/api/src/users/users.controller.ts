@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   Patch,
   Post,
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { APP_ROLES } from '../common/constants/roles.constants';
 import { CreateUserDto, UpdateUserDto } from './dto/manage-user.dto';
+import { SubscriptionExempt } from '../platform/entitlements.guard';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -33,6 +35,14 @@ import { CreateUserDto, UpdateUserDto } from './dto/manage-user.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('account-deletion-requests')
+  @Roles('super_admin')
+  @SubscriptionExempt()
+  @Header('Cache-Control', 'no-store')
+  deletionRequests() {
+    return this.usersService.listAccountDeletionRequests();
+  }
 
   @Get('assignment-options')
   @Roles(...APP_ROLES)

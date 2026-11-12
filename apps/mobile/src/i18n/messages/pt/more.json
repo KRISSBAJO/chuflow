@@ -1,4 +1,12 @@
 {
+  "accountDeletion": {
+    "title": "Excluir conta",
+    "body": "Exclua permanentemente seu acesso ao ChuFlow neste espaço e saia de todos os dispositivos. Sua igreja pode conservar registros ministeriais e financeiros.",
+    "password": "Senha atual",
+    "submit": "Excluir conta",
+    "received": "Sua conta foi excluída deste espaço.",
+    "error": "Não foi possível enviar sua solicitação. Confira sua senha e tente novamente."
+  },
   "more": {
     "menu": {
       "account": "Conta",

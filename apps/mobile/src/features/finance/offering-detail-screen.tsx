@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { KeyValue } from '@/components/kit';
 import { toast } from '@/components/toast';
-import { Badge, Button, Caption, EmptyState, ErrorState, Loading, Screen, Section } from '@/components/ui';
+import { Badge, Button, Caption, EmptyState, ErrorState, Field, Loading, Screen, Section } from '@/components/ui';
 import { useAppFormat } from '@/i18n/format';
 import { useT } from '@/i18n/provider';
 import { api, errorMessage } from '@/lib/api';
@@ -26,6 +26,7 @@ export function OfferingDetailScreen() {
   const definition = useApi<MemberFormDefinition>(entry.data?.permissions?.canEdit ? '/finance/staff-form/offering' : null);
   const [custom, setCustom] = useState<Record<string, string | number>>({});
   const [editing, setEditing] = useState(false);
+  const [paymentChannel, setPaymentChannel] = useState('');
   const [saving, setSaving] = useState(false);
 
   const item = entry.data;
@@ -36,8 +37,8 @@ export function OfferingDetailScreen() {
     if (!definition.data) { toast.error(t('customLoadFailed')); void definition.refresh(); return; }
     setSaving(true);
     try {
-      await api.patch(`/finance/offerings/${item._id}`, { amount: next.amount, notes: next.notes ?? '', reviewRevision: item.reviewRevision, ...memberFormPayload(definition.data, custom) });
-      entry.setData((current) => current && { ...current, amount: next.amount, notes: next.notes });
+      await api.patch(`/finance/offerings/${item._id}`, { amount: next.amount, notes: next.notes ?? '', paymentChannel, reviewRevision: item.reviewRevision, ...memberFormPayload(definition.data, custom) });
+      entry.setData((current) => current && { ...current, amount: next.amount, notes: next.notes, paymentChannel });
       toast.success(t('offering.saved'));
       setEditing(false);
       void entry.reload();
@@ -61,6 +62,7 @@ export function OfferingDetailScreen() {
 
           {editing ? (
             <AmountNotesEditor amount={item.amount} notes={item.notes} saving={saving} saveLabel={t('offering.save')} onSave={(next) => void save(next)} showNotes={!definition.data?.hiddenStaff.includes('notes')} onCancel={() => setEditing(false)}>
+              <Field label={t('offeringForm.paymentChannel')} value={paymentChannel} onChangeText={setPaymentChannel} maxLength={80} />
               <CustomMemberFields form={definition.data ?? undefined} values={custom} onChange={setCustom} title={t('customAnswers')} />
             </AmountNotesEditor>
           ) : (
@@ -69,7 +71,8 @@ export function OfferingDetailScreen() {
               <KeyValue
                 rows={[
                   { label: t('fields.offeringType'), value: item.offeringTypeLabel },
-                  { label: t('fields.service'), value: item.serviceLabel || item.serviceTypeLabel },
+                  { label: t('fields.service'), value: item.serviceLabel || item.serviceTypeLabel || t('offeringForm.dateOnly') },
+                  { label: t('offeringForm.paymentChannel'), value: item.paymentChannel },
                   { label: t('fields.serviceDate'), value: format.date(item.serviceDate) },
                   { label: t('fields.branch'), value: item.branchId?.name },
                   { label: t('fields.account'), value: item.accountId?.name },
@@ -85,7 +88,7 @@ export function OfferingDetailScreen() {
           {!editing && item.customAnswers?.length ? <View><Section title={t('customAnswers')} /><KeyValue rows={item.customAnswers.map(({ label, value }) => ({ label, value: String(value) }))} /></View> : null}
           <Badge label={format.status(item.status||'approved')} />
           {!editing ? <FinanceReviewControls id={item._id} status={item.status} canReview={item.permissions?.canReview} revision={item.reviewRevision} onReviewed={()=>void entry.reload()} /> : null}
-          {!editing && canEdit ? <Button label={t('offering.edit')} variant="secondary" icon="edit" onPress={() => { setCustom(Object.fromEntries((item.customAnswers ?? []).map(({ key, value }) => [key, value]))); setEditing(true); }} /> : null}
+          {!editing && canEdit ? <Button label={t('offering.edit')} variant="secondary" icon="edit" onPress={() => { setCustom(Object.fromEntries((item.customAnswers ?? []).map(({ key, value }) => [key, value]))); setPaymentChannel(item.paymentChannel ?? ''); setEditing(true); }} /> : null}
           {!editing && item.permissions?.reason ? <Caption>{item.permissions.reason}</Caption> : null}
         </>
       ) : null}

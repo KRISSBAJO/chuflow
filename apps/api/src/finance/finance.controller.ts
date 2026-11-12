@@ -31,6 +31,7 @@ import {
 } from './dto/create-finance-account.dto';
 import { CreateFinanceLockDto } from './dto/create-finance-lock.dto';
 import {
+  CreateOfferingBatchDto,
   CreateOfferingEntryDto,
   UpdateOfferingEntryDto,
 } from './dto/create-offering-entry.dto';
@@ -502,6 +503,13 @@ export class FinanceController {
     @Body() dto: CreateOfferingEntryDto,
   ) {
     return this.financeService.createOfferingEntry(dto, user);
+  }
+
+  @Post('offerings/batch')
+  @UseGuards(JsonSubmissionGuard)
+  @Roles('resident_pastor', 'associate_pastor', 'usher')
+  createOfferingBatch(@CurrentUser() user: AuthUser, @Body() dto: CreateOfferingBatchDto) {
+    return this.financeService.createOfferingEntries(dto.entries, user, dto.requestId);
   }
 
   @Patch('offerings/:id')

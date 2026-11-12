@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, type ClientSession } from 'mongoose';
+import { createHash } from 'node:crypto';
 import {
   ensureIndependentReview,
   SETTLED_FINANCE_STATUSES,
@@ -847,9 +848,12 @@ export class FinanceService implements OnModuleInit {
             : undefined,
           ...(params.approvedBy ? {approvedBy:new Types.ObjectId(params.approvedBy),reviewedAt:params.reviewedAt} : {}),
         },
-        ...(!params.approvedBy
-          ? { $unset: { approvedBy: 1, reviewedAt: 1 } }
-          : {}),
+        $unset: {
+          ...(!params.approvedBy ? { approvedBy: 1, reviewedAt: 1 } : {}),
+          ...(params.serviceScheduleId ? {} : { serviceScheduleId: 1 }),
+          ...(params.serviceInstanceId ? {} : { serviceInstanceId: 1 }),
+          ...(params.serviceLabel ? {} : { serviceLabel: 1 }),
+        },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true, session },
     );
@@ -1059,6 +1063,7 @@ export class FinanceService implements OnModuleInit {
       accountId: accountValue,
       amount: Number(entry.amount ?? 0),
       currency: String(entry.currency ?? 'USD'),
+      paymentChannel: typeof entry.paymentChannel === 'string' ? entry.paymentChannel : undefined,
       status: String(entry.status ?? 'approved'),
       reviewRevision: Number(entry.reviewRevision ?? 0),
       reviewedAt: entry.reviewedAt,
@@ -1591,129 +1596,187 @@ export class FinanceService implements OnModuleInit {
     dto: CreateOfferingEntryDto,
     currentUser: AuthUser,
   ) {
+    const [entry] = await this.createOfferingEntries([dto], currentUser);
+    return entry;
+  }
+
+  async createOfferingEntries(dtos: CreateOfferingEntryDto[], currentUser: AuthUser, requestId?: string) {
     this.ensureFinanceViewRole(currentUser);
     this.ensureOfferingEntryCreator(currentUser);
-    const customAnswers = await this.entryForm(FinanceFormKind.Offering, dto);
-
     const branch = await this.resolveScopedCreateBranch(currentUser);
-    const serviceDate = this.validatePastOrTodayDate(
-      dto.serviceDate,
-      'Service date',
-    );
-    await this.ensurePeriodOpen(String(branch._id), serviceDate);
+    const batchKey = requestId ? `${branch._id}:${currentUser.sub}:${requestId}` : undefined;
+    const batchHash = batchKey ? createHash('sha256').update(JSON.stringify(dtos)).digest('hex') : undefined;
+    const replay = async () => {
+      if (!batchKey) return null;
+      const previous = await this.offeringEntryModel.find({ batchKey })
+        .select('_id +batchHash').sort({ batchIndex: 1 }).lean();
+      if (!previous.length) return null;
+      if (previous.length !== dtos.length || previous.some((entry) => entry.batchHash !== batchHash)) {
+        throw new ConflictException('This offering submission was already used with different details.');
+      }
+      return Promise.all(previous.map((entry) => this.findOfferingEntry(String(entry._id), currentUser)));
+    };
+    const previous = await replay();
+    if (previous) return previous;
+    const prepared: {
+      dto: CreateOfferingEntryDto;
+      customAnswers: GuestAnswer[] | undefined;
+      serviceDate: Date;
+      serviceType: Awaited<ReturnType<FinanceService['resolveServiceType']>> | null;
+      offeringType: Awaited<ReturnType<FinanceService['resolveOfferingType']>>;
+      account: Awaited<ReturnType<FinanceService['resolveOfferingAccount']>>;
+      serviceInstance: Awaited<ReturnType<ServiceSchedulesService['resolveServiceInstanceForEntry']>>;
+    }[] = [];
+    for (const dto of dtos) {
+      const customAnswers = await this.entryForm(FinanceFormKind.Offering, dto);
 
-    const offeringType = await this.resolveOfferingType(dto.offeringTypeId);
-    const serviceType = await this.resolveServiceType(
-      String(branch._id),
-      dto.serviceTypeId,
-    );
-    const account = await this.resolveOfferingAccount(
-      dto.accountId,
-      offeringType.key,
-    );
-    const serviceInstance =
-      await this.serviceSchedulesService.resolveServiceInstanceForEntry({
-        currentUser,
-        branchId: String(branch._id),
-        serviceDate,
-        serviceScheduleId: dto.serviceScheduleId,
-        serviceInstanceId: dto.serviceInstanceId,
-      });
-
-    const entry = await this.offeringEntryModel.db.transaction(
-      async (session) => {
-        const [entry] = await this.offeringEntryModel.create(
-          [
-            {
-              status: 'submitted',
-              reviewRevision: 0,
-              ...(customAnswers?.length ? { customAnswers } : {}),
-              branchId: branch._id,
-              oversightRegion: branch.oversightRegion,
-              district: branch.district,
-              serviceDate,
-              serviceScheduleId:
-                serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
-              serviceInstanceId: serviceInstance?._id,
-              serviceLabel:
-                serviceInstance?.serviceScheduleName || serviceType.name,
-              serviceTypeId: serviceType._id,
-              serviceTypeKey: serviceType.key,
-              serviceTypeLabel: serviceType.name,
-              offeringTypeId: offeringType._id,
-              offeringTypeKey: offeringType.key,
-              offeringTypeLabel: offeringType.name,
-              accountId: account._id,
-              accountKey: account.key,
-              accountLabel: account.name,
-              amount: dto.amount,
-              currency: dto.currency?.trim() || 'USD',
-              notes: dto.notes?.trim() || undefined,
-              createdBy: new Types.ObjectId(currentUser.sub),
-              updatedBy: new Types.ObjectId(currentUser.sub),
-            },
-          ],
-          { session },
-        );
-
-        await this.syncLedgerEntry(
-          {
-            branchId: String(branch._id),
-            oversightRegion: branch.oversightRegion,
-            district: branch.district,
-            entryDate: serviceDate,
-            accountId: String(account._id),
-            accountKey: account.key,
-            accountLabel: account.name,
-            direction: 'credit',
-            sourceType: 'offering',
-            sourceId: String(entry._id),
-            serviceScheduleId: serviceInstance?.serviceScheduleId
-              ? String(serviceInstance.serviceScheduleId)
-              : dto.serviceScheduleId,
-            serviceInstanceId: serviceInstance?._id
-              ? String(serviceInstance._id)
-              : undefined,
-            serviceLabel:
-              serviceInstance?.serviceScheduleName || serviceType.name,
-            amount: dto.amount,
-            currency: dto.currency?.trim() || 'USD',
-            description: `${offeringType.name} offering`,
-            status: 'submitted',
-            createdBy: currentUser.sub,
-            updatedBy: currentUser.sub,
-          },
-          session,
-        );
-        return entry;
-      },
-    );
-
-    if (serviceInstance?._id) {
-      await this.serviceSchedulesService.touchServiceInstance(
-        String(serviceInstance._id),
-        'finance',
+      const serviceDate = this.validatePastOrTodayDate(
+        dto.serviceDate,
+        'Service date',
       );
+      await this.ensurePeriodOpen(String(branch._id), serviceDate);
+
+      const offeringType = await this.resolveOfferingType(dto.offeringTypeId);
+      if (!dto.serviceTypeId && (dto.serviceScheduleId || dto.serviceInstanceId)) {
+        throw new BadRequestException('Select a service type for a linked service.');
+      }
+      const serviceType = dto.serviceTypeId
+        ? await this.resolveServiceType(String(branch._id), dto.serviceTypeId)
+        : null;
+      const account = await this.resolveOfferingAccount(
+        dto.accountId,
+        offeringType.key,
+      );
+      const serviceInstance =
+        await this.serviceSchedulesService.resolveServiceInstanceForEntry({
+          currentUser,
+          branchId: String(branch._id),
+          serviceDate,
+          serviceScheduleId: dto.serviceScheduleId,
+          serviceInstanceId: dto.serviceInstanceId,
+        });
+      if (serviceInstance && (
+        String(serviceInstance.branchId) !== String(branch._id) ||
+        String(serviceInstance.serviceTypeId) !== String(serviceType?._id) ||
+        new Date(serviceInstance.serviceDate).toDateString() !== serviceDate.toDateString()
+      )) {
+        throw new BadRequestException('The selected service does not match the church, service type, or date.');
+      }
+      prepared.push({ dto, customAnswers, serviceDate, serviceType, offeringType, account, serviceInstance });
     }
 
-    await this.auditLogsService.record({
-      entityType: 'offering_entry',
-      entityId: String(entry._id),
-      action: 'created',
-      summary: `${offeringType.name} offering recorded for ${branch.name}`,
-      actor: currentUser,
-      branchId: String(branch._id),
-      metadata: {
-        amount: dto.amount,
-        currency: dto.currency?.trim() || 'USD',
-        serviceType: serviceType.name,
-        offeringType: offeringType.name,
-        account: account.name,
-        serviceDate,
-      },
-    });
+    let entries: OfferingEntryDocument[];
+    try {
+      entries = await this.offeringEntryModel.db.transaction(
+      async (session) => {
+        const saved: OfferingEntryDocument[] = [];
+        for (const { dto, customAnswers, serviceDate, serviceType, offeringType, account, serviceInstance } of prepared) {
+          const [entry] = await this.offeringEntryModel.create(
+            [
+              {
+                status: 'submitted',
+                reviewRevision: 0,
+                ...(batchKey ? { batchKey, batchIndex: saved.length, batchHash } : {}),
+                ...(customAnswers?.length ? { customAnswers } : {}),
+                branchId: branch._id,
+                oversightRegion: branch.oversightRegion,
+                district: branch.district,
+                serviceDate,
+                serviceScheduleId:
+                  serviceInstance?.serviceScheduleId ?? dto.serviceScheduleId,
+                serviceInstanceId: serviceInstance?._id,
+                serviceLabel:
+                  serviceInstance?.serviceScheduleName || serviceType?.name,
+                serviceTypeId: serviceType?._id,
+                serviceTypeKey: serviceType?.key,
+                serviceTypeLabel: serviceType?.name,
+                offeringTypeId: offeringType._id,
+                offeringTypeKey: offeringType.key,
+                offeringTypeLabel: offeringType.name,
+                accountId: account._id,
+                accountKey: account.key,
+                accountLabel: account.name,
+                amount: dto.amount,
+                currency: dto.currency?.trim() || 'USD',
+                paymentChannel: dto.paymentChannel?.trim() || undefined,
+                notes: dto.notes?.trim() || undefined,
+                createdBy: new Types.ObjectId(currentUser.sub),
+                updatedBy: new Types.ObjectId(currentUser.sub),
+              },
+            ],
+            { session },
+          );
 
-    return this.findOfferingEntry(String(entry._id), currentUser);
+          await this.syncLedgerEntry(
+            {
+              branchId: String(branch._id),
+              oversightRegion: branch.oversightRegion,
+              district: branch.district,
+              entryDate: serviceDate,
+              accountId: String(account._id),
+              accountKey: account.key,
+              accountLabel: account.name,
+              direction: 'credit',
+              sourceType: 'offering',
+              sourceId: String(entry._id),
+              serviceScheduleId: serviceInstance?.serviceScheduleId
+                ? String(serviceInstance.serviceScheduleId)
+                : dto.serviceScheduleId,
+              serviceInstanceId: serviceInstance?._id
+                ? String(serviceInstance._id)
+                : undefined,
+              serviceLabel:
+                serviceInstance?.serviceScheduleName || serviceType?.name,
+              amount: dto.amount,
+              currency: dto.currency?.trim() || 'USD',
+              description: `${offeringType.name} offering`,
+              status: 'submitted',
+              createdBy: currentUser.sub,
+              updatedBy: currentUser.sub,
+            },
+            session,
+          );
+          saved.push(entry);
+        }
+        return saved;
+      },
+      );
+    } catch (error) {
+      if (batchKey && typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
+        const duplicate = await replay();
+        if (duplicate) return duplicate;
+      }
+      throw error;
+    }
+
+    for (const [index, entry] of entries.entries()) {
+      const { dto, serviceDate, serviceType, offeringType, account, serviceInstance } = prepared[index];
+      if (serviceInstance?._id) {
+        await this.serviceSchedulesService.touchServiceInstance(
+          String(serviceInstance._id),
+          'finance',
+        );
+      }
+
+      await this.auditLogsService.record({
+        entityType: 'offering_entry',
+        entityId: String(entry._id),
+        action: 'created',
+        summary: `${offeringType.name} offering recorded for ${branch.name}`,
+        actor: currentUser,
+        branchId: String(branch._id),
+        metadata: {
+          amount: dto.amount,
+          currency: dto.currency?.trim() || 'USD',
+          serviceType: serviceType?.name,
+          offeringType: offeringType.name,
+          account: account.name,
+          serviceDate,
+        },
+      });
+    }
+
+    return Promise.all(entries.map((entry) => this.findOfferingEntry(String(entry._id), currentUser)));
   }
 
   async listOfferingEntries(
@@ -1751,6 +1814,8 @@ export class FinanceService implements OnModuleInit {
         },
         byType: [],
         byBranch: [],
+        approvedBreakdown: [],
+        approvedTotals: [],
       };
     }
 
@@ -1828,6 +1893,7 @@ export class FinanceService implements OnModuleInit {
       currentMonthAggregate,
       byTypeRaw,
       byBranchRaw,
+      approvedBreakdown,
     ] = await Promise.all([
       this.offeringEntryModel.countDocuments(query),
       this.offeringEntryModel.aggregate<{ totalAmount: number }>([
@@ -1876,6 +1942,32 @@ export class FinanceService implements OnModuleInit {
         },
         { $sort: { totalAmount: -1 } },
       ]),
+      this.offeringEntryModel.aggregate<{
+        day: string; offeringTypeId: string; offeringType: string;
+        accountId: string; account: string; currency: string; paymentChannel: string; amount: number; count: number;
+      }>([
+        { $match: { $and: [query, { status: { $in: SETTLED_FINANCE_STATUSES } }] } },
+        { $group: {
+          _id: {
+            day: { $dateToString: { date: '$serviceDate', format: '%Y-%m-%d' } },
+            offeringTypeId: '$offeringTypeId',
+            accountId: '$accountId',
+            currency: { $ifNull: ['$currency', 'USD'] },
+            paymentChannel: { $ifNull: ['$paymentChannel', ''] },
+          },
+          offeringType: { $first: '$offeringTypeLabel' },
+          account: { $first: '$accountLabel' },
+          amount: { $sum: { $round: [{ $multiply: ['$amount', 100] }, 0] } },
+          count: { $sum: 1 },
+        } },
+        { $sort: { '_id.day': -1, offeringType: 1, account: 1, '_id.currency': 1 } },
+        { $project: {
+          _id: 0, day: '$_id.day', offeringTypeId: { $toString: '$_id.offeringTypeId' },
+          accountId: { $toString: '$_id.accountId' }, currency: '$_id.currency',
+          paymentChannel: '$_id.paymentChannel', offeringType: 1, account: 1,
+          amount: { $divide: ['$amount', 100] }, count: 1,
+        } },
+      ]),
     ]);
 
     const totalPages = Math.max(Math.ceil(total / safeLimit), 1);
@@ -1900,6 +1992,10 @@ export class FinanceService implements OnModuleInit {
     const branchMap = new Map(
       branches.map((branch) => [String(branch._id), branch]),
     );
+    const totalCentsByCurrency = new Map<string, number>();
+    for (const row of approvedBreakdown) {
+      totalCentsByCurrency.set(row.currency, (totalCentsByCurrency.get(row.currency) ?? 0) + Math.round(row.amount * 100));
+    }
 
     return {
       items: items.map((item) =>
@@ -1909,6 +2005,8 @@ export class FinanceService implements OnModuleInit {
         ),
       ),
       pagination: { page: safePage, pageSize: safeLimit, total, totalPages },
+      approvedBreakdown,
+      approvedTotals: Array.from(totalCentsByCurrency, ([currency, cents]) => ({ currency, amount: cents / 100 })),
       summary: {
         totalAmount: amountAggregate[0]?.totalAmount ?? 0,
         currentMonthTotal: currentMonthAggregate[0]?.totalAmount ?? 0,
@@ -2017,15 +2115,17 @@ export class FinanceService implements OnModuleInit {
         : existing.serviceDate;
     if (serviceDate !== existing.serviceDate) await this.ensurePeriodOpen(String(existing.branchId), serviceDate);
 
-    const serviceType = dto.serviceTypeId
-      ? await this.resolveServiceType(
-          String(existing.branchId),
-          dto.serviceTypeId,
-        )
-      : await this.resolveServiceType(
-          String(existing.branchId),
-          String(existing.serviceTypeId),
-        );
+    const serviceTypeId = dto.serviceTypeId === undefined ? existing.serviceTypeId : dto.serviceTypeId;
+    if (!serviceTypeId && (dto.serviceScheduleId || dto.serviceInstanceId)) {
+      throw new BadRequestException('Select a service type for a linked service.');
+    }
+    const serviceType = serviceTypeId
+      ? await this.resolveServiceType(String(existing.branchId), String(serviceTypeId))
+      : null;
+    const preserveServiceLink = !!serviceType &&
+      String(serviceType._id) === String(existing.serviceTypeId) &&
+      serviceDate.getTime() === existing.serviceDate.getTime() &&
+      !dto.serviceScheduleId && !dto.serviceInstanceId;
     const offeringType = dto.offeringTypeId
       ? await this.resolveOfferingType(dto.offeringTypeId)
       : await this.resolveOfferingType(String(existing.offeringTypeId));
@@ -2058,19 +2158,16 @@ export class FinanceService implements OnModuleInit {
             reviewedAt: null,
             reviewNotes: null,
             serviceDate,
-            serviceScheduleId:
-              serviceInstance?.serviceScheduleId ??
-              dto.serviceScheduleId ??
-              existing.serviceScheduleId,
-            serviceInstanceId:
-              serviceInstance?._id ?? existing.serviceInstanceId,
-            serviceLabel:
-              serviceInstance?.serviceScheduleName ||
-              existing.serviceLabel ||
-              serviceType.name,
-            serviceTypeId: serviceType._id,
-            serviceTypeKey: serviceType.key,
-            serviceTypeLabel: serviceType.name,
+            ...(serviceType ? {
+              serviceLabel: serviceInstance?.serviceScheduleName || (preserveServiceLink && existing.serviceLabel) || serviceType.name,
+              serviceTypeId: serviceType._id,
+              serviceTypeKey: serviceType.key,
+              serviceTypeLabel: serviceType.name,
+            } : {}),
+            ...(serviceInstance ? {
+              serviceScheduleId: serviceInstance.serviceScheduleId,
+              serviceInstanceId: serviceInstance._id,
+            } : {}),
             offeringTypeId: offeringType._id,
             offeringTypeKey: offeringType.key,
             offeringTypeLabel: offeringType.name,
@@ -2078,6 +2175,7 @@ export class FinanceService implements OnModuleInit {
             accountKey: account.key,
             accountLabel: account.name,
             ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
+            ...(dto.paymentChannel !== undefined ? { paymentChannel: dto.paymentChannel?.trim() || '' } : {}),
             ...(dto.currency !== undefined
               ? { currency: dto.currency.trim() || 'USD' }
               : {}),
@@ -2085,6 +2183,10 @@ export class FinanceService implements OnModuleInit {
               ? { notes: dto.notes?.trim() || undefined }
               : {}),
             updatedBy: new Types.ObjectId(currentUser.sub),
+          },
+          $unset: {
+            ...(!serviceType ? { serviceLabel: 1, serviceTypeId: 1, serviceTypeKey: 1, serviceTypeLabel: 1 } : {}),
+            ...(!serviceInstance && !preserveServiceLink ? { serviceScheduleId: 1, serviceInstanceId: 1 } : {}),
           },
           $inc: { reviewRevision: 1 },
         },
@@ -2109,14 +2211,14 @@ export class FinanceService implements OnModuleInit {
           sourceId: id,
           serviceScheduleId: serviceInstance?.serviceScheduleId
             ? String(serviceInstance.serviceScheduleId)
-            : dto.serviceScheduleId ?? (existing.serviceScheduleId ? String(existing.serviceScheduleId) : undefined),
+            : preserveServiceLink && existing.serviceScheduleId ? String(existing.serviceScheduleId) : undefined,
           serviceInstanceId: serviceInstance?._id
             ? String(serviceInstance._id)
-            : dto.serviceInstanceId ?? (existing.serviceInstanceId ? String(existing.serviceInstanceId) : undefined),
+            : preserveServiceLink && existing.serviceInstanceId ? String(existing.serviceInstanceId) : undefined,
           serviceLabel:
             serviceInstance?.serviceScheduleName ||
-            existing.serviceLabel ||
-            serviceType.name,
+            (preserveServiceLink && existing.serviceLabel) ||
+            serviceType?.name,
           amount: dto.amount ?? existing.amount,
           currency: dto.currency?.trim() || existing.currency || 'USD',
           description: `${offeringType.name} offering`,

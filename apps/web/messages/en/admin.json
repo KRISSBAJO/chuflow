@@ -80,6 +80,11 @@
       }
     },
     "finance": {
+      "approvedGivingTotal": "Approved total {amount}",
+      "approvedGiving": "Approved giving report",
+      "noApprovedGiving": "No approved giving matches these filters.",
+      "recordOffering": "Record offering",
+      "manageOfferingTypes": "Manage offering types",
       "eyebrow": "Finance",
       "title": "Ledger, offerings and expenses",
       "description": "Record offerings and expenses, route them to the right account, approve spending and lock closed months, all in one scoped ledger.",
@@ -383,6 +388,11 @@
       "update": "Update offering"
     },
     "offeringForm": {
+      "paymentChannel": "Payment method",
+      "addLine": "Add offering line",
+      "removeLine": "Remove line",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Date only (no service)",
       "recordError": "Unable to record offering",
       "recordedTitle": "Offering recorded",
       "recordedDescription": "This entry is now visible in branch, district, national, and overall finance oversight.",

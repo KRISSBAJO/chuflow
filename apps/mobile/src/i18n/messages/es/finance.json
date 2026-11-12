@@ -1,5 +1,9 @@
 {
   "finance": {
+    "approvedGivingTotal": "Total aprobado {amount}",
+    "approvedGiving": "Informe de ofrendas aprobadas",
+    "hideApprovedGiving": "Ocultar informe de ofrendas aprobadas",
+    "noApprovedGiving": "Ninguna ofrenda aprobada coincide con estos filtros.",
     "title": "Finanzas",
     "noAccess": "Tu rol no puede ver finanzas.",
     "tabs": {
@@ -81,6 +85,13 @@
       "reviewNotes": "Nota de revisión"
     },
     "offeringForm": {
+      "paymentChannel": "Método de pago",
+      "addLine": "Añadir línea",
+      "removeLine": "Quitar línea",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Solo fecha (sin servicio)",
+      "scheduledService": "Servicio programado",
+      "noSchedule": "Sin servicio programado",
       "title": "Registrar ofrenda",
       "intro": "Los ujieres y pastores de sede registran las ofrendas de su sede. Los registros se pueden corregir durante 24 horas.",
       "selectService": "Elige un servicio",

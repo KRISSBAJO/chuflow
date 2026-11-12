@@ -1,5 +1,9 @@
 {
   "finance": {
+    "approvedGivingTotal": "Approved total {amount}",
+    "approvedGiving": "Approved giving report",
+    "hideApprovedGiving": "Hide approved giving report",
+    "noApprovedGiving": "No approved giving matches these filters.",
     "title": "Finance",
     "noAccess": "Your role can’t see finance.",
     "tabs": {
@@ -81,6 +85,13 @@
       "reviewNotes": "Review note"
     },
     "offeringForm": {
+      "paymentChannel": "Payment method",
+      "addLine": "Add offering line",
+      "removeLine": "Remove line",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Date only (no service)",
+      "scheduledService": "Scheduled service",
+      "noSchedule": "No scheduled service",
       "title": "Record offering",
       "intro": "Ushers and branch pastors record offerings for their branch. Entries can be corrected for 24 hours.",
       "selectService": "Choose a service",

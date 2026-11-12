@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/icon';
 import { StatGrid, StatTile } from '@/components/kit';
-import { Badge, Caption, EmptyState, ErrorState, ListRow, Loading, Screen, Section, Segmented, tap } from '@/components/ui';
+import { Badge, Button, Caption, EmptyState, ErrorState, ListRow, Loading, Screen, Section, Segmented, tap } from '@/components/ui';
 import { Reveal } from '@/components/motion';
 import { colors, space, type } from '@/constants/theme';
 import { useAppFormat } from '@/i18n/format';
@@ -55,6 +55,7 @@ export function FinanceScreen() {
   const [tab, setTab] = useState<Tab>('offerings');
   const [range, setRange] = useState<Range>('month');
   const [branchId, setBranchId] = useState('');
+  const [showApproved, setShowApproved] = useState(false);
   const [today] = useState(() => new Date());
 
   const branches = useApi<BranchSummary[]>(allowed && pickBranch ? '/branches' : null);
@@ -97,14 +98,31 @@ export function FinanceScreen() {
   const header = (
     <View style={styles.header}>
       <Segmented options={TABS.map((value) => ({ value, label: t(`tabs.${value}`) }))} value={tab} onChange={setTab} />
+      {tab === 'offerings' && canAddOffering ? (
+        <Button label={t('add.offering')} onPress={() => router.push('/finance/offerings/new' as Href)} />
+      ) : null}
       <RangeChips options={RANGES.map((value) => ({ value, label: t(`range.${value}`) }))} value={range} onChange={setRange} />
       {pickBranch ? <BranchFilter label={t('branch.label')} allLabel={t('branch.all')} branches={branches.data ?? []} value={branchId} onChange={setBranchId} /> : null}
 
       {tab === 'offerings' && offerings.data ? (
-        <StatGrid>
-          <StatTile label={t('tiles.offerings')} value={money(offerings.data.summary.totalAmount, currencyOf(offerings.items))} hint={t('tiles.entries', { count: offerings.data.pagination.total })} />
-          <StatTile label={t('tiles.thisMonth')} value={money(offerings.data.summary.currentMonthTotal, currencyOf(offerings.items))} />
-        </StatGrid>
+        <>
+          <StatGrid>
+            <StatTile label={t('tiles.offerings')} value={money(offerings.data.summary.totalAmount, currencyOf(offerings.items))} hint={t('tiles.entries', { count: offerings.data.pagination.total })} />
+            <StatTile label={t('tiles.thisMonth')} value={money(offerings.data.summary.currentMonthTotal, currencyOf(offerings.items))} />
+          </StatGrid>
+          <Button variant="secondary" label={t(showApproved ? 'hideApprovedGiving' : 'approvedGiving')} onPress={() => setShowApproved(!showApproved)} />
+          {showApproved ? offerings.data.approvedTotals?.map((total) => (
+            <Caption key={total.currency}>{t('approvedGivingTotal', { amount: money(total.amount, total.currency) })}</Caption>
+          )) : null}
+          {showApproved ? (
+            offerings.data.approvedBreakdown?.length ? offerings.data.approvedBreakdown.map((row) => (
+              <ListRow key={JSON.stringify([row.day, row.offeringTypeId, row.accountId, row.currency, row.paymentChannel])}
+                title={row.offeringType} subtitle={[row.day, row.account, row.paymentChannel].filter(Boolean).join(' · ')}
+                right={<Amount>{money(row.amount, row.currency)}</Amount>} chevron={false}
+              />
+            )) : <Caption>{t('noApprovedGiving')}</Caption>
+          ) : null}
+        </>
       ) : null}
       {tab === 'expenses' && expenses.data ? (
         <StatGrid>

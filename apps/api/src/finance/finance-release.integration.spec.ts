@@ -1,4 +1,4 @@
-import { createConnection, Connection, Types } from 'mongoose';
+import { createConnection, Connection, Schema, Types } from 'mongoose';
 import { FinanceService } from './finance.service';
 import {
   OfferingEntry,
@@ -39,6 +39,9 @@ run('finance atomic release checks', () => {
     db.model(OfferingEntry.name, OfferingEntrySchema);
     db.model(ExpenseEntry.name, ExpenseEntrySchema);
     db.model(FinanceLedgerEntry.name, FinanceLedgerEntrySchema);
+    for (const name of ['Branch', 'ServiceType', 'ServiceSchedule', 'ServiceInstance', 'OfferingType', 'FinanceAccount', 'User']) {
+      db.model(name, new Schema({ name: String }));
+    }
     await Promise.all(Object.values(db.models).map((model) => model.init()));
   });
   beforeEach(async () => {
@@ -114,6 +117,39 @@ run('finance atomic release checks', () => {
     expect(ledger?.status).toBe('approved');
     expect(String(source?.createdBy)).toBe(String(creator));
     expect(String(source?.approvedBy)).toBe(String(reviewer));
+  });
+  it('records date-only lines together and reports only independently approved giving', async () => {
+    const typeId = new Types.ObjectId();
+    const selectedBranch = { _id: branch, name: 'QA', oversightRegion: 'USA', district: 'QA' };
+    Object.assign(service, {
+      resolveScopedCreateBranch: async () => selectedBranch,
+      resolveVisibleBranches: async () => [selectedBranch],
+      resolveOfferingType: async (id: string) => {
+        if (id !== String(typeId)) throw new Error('Invalid offering type');
+        return { _id: typeId, name: 'Tithe', key: 'tithe' };
+      },
+      resolveOfferingAccount: async () => ({ _id: account, name: 'Main', key: 'main' }),
+      serviceSchedulesService: { resolveServiceInstanceForEntry: async () => null },
+      entryForm: async () => undefined,
+      findOfferingEntry: async (id: string) => ({ _id: id }),
+    });
+    const actor: AuthUser = { ...user, sub: String(creator), role: 'resident_pastor' };
+    const line = { serviceDate: '2026-11-01', offeringTypeId: String(typeId), amount: 12.34, paymentChannel: 'Direct deposit' };
+    await expect(service.createOfferingEntries([line, { ...line, offeringTypeId: String(new Types.ObjectId()) }], actor)).rejects.toThrow('Invalid offering type');
+    expect(await db.model(OfferingEntry.name).countDocuments()).toBe(0);
+    const lines = [line, { ...line, amount: 25 }];
+    const requestId = 'c79cf769-bb85-4e3e-a28a-6cf3f280c03b';
+    const entries = await service.createOfferingEntries(lines, actor, requestId);
+    expect(entries).toHaveLength(2);
+    expect(await service.createOfferingEntries(lines, actor, requestId)).toEqual(entries);
+    await expect(service.createOfferingEntries([line], actor, requestId)).rejects.toThrow('different details');
+    expect(await db.model(OfferingEntry.name).countDocuments({ serviceTypeId: { $exists: false } })).toBe(2);
+    expect((await service.listOfferingEntries(user)).approvedBreakdown).toEqual([]);
+    await review(String(entries[0]._id));
+    expect((await service.listOfferingEntries(user)).approvedBreakdown).toEqual([
+      { day: '2026-11-01', offeringTypeId: String(typeId), offeringType: 'Tithe',
+        accountId: String(account), account: 'Main', currency: 'USD', paymentChannel: 'Direct deposit', amount: 12.34, count: 1 },
+    ]);
   });
   it('rolls back the approval when writing the ledger fails', async () => {
     const entry = await fixture();

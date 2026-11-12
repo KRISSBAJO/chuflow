@@ -40,6 +40,7 @@ export const PERMISSION_ENDPOINTS: Record<string, Record<string, string>> = {
     listLedger: 'finance.view',
     listLocks: 'finance.view',
     createOffering: 'finance.offerings',
+    createOfferingBatch: 'finance.offerings',
     createExpense: 'finance.expenses',
     approveExpense: 'finance.approve',
     approveOffering: 'finance.approve',

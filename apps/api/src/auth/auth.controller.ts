@@ -33,6 +33,12 @@ class WorkspaceHandoffDto {
   handoff!: string;
 }
 
+class AccountDeletionDto {
+  @IsString()
+  @Length(1, 128)
+  password!: string;
+}
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -58,6 +64,21 @@ export class AuthController {
     }
 
     return options;
+  }
+
+  @Post('account-deletion')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @UseGuards(JwtAuthGuard, JsonSubmissionGuard)
+  @AllowTemporaryPassword()
+  async requestAccountDeletion(
+    @CurrentUser() user: { sub: string },
+    @Body() dto: AccountDeletionDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.requestAccountDeletion(user.sub, dto.password);
+    response.clearCookie(this.configService.get<string>('cookieName') ?? 'cms_access_token', this.getAuthCookieOptions(false));
+    return result;
   }
 
   @Public()

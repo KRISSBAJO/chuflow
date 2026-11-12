@@ -1,5 +1,9 @@
 {
   "finance": {
+    "approvedGivingTotal": "Total approuvé {amount}",
+    "approvedGiving": "Rapport des dons approuvés",
+    "hideApprovedGiving": "Masquer le rapport des dons approuvés",
+    "noApprovedGiving": "Aucun don approuvé ne correspond aux filtres.",
     "title": "Finances",
     "noAccess": "Votre rôle ne permet pas de voir les finances.",
     "tabs": {
@@ -81,6 +85,13 @@
       "reviewNotes": "Note d’examen"
     },
     "offeringForm": {
+      "paymentChannel": "Mode de paiement",
+      "addLine": "Ajouter une ligne",
+      "removeLine": "Retirer la ligne",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Date uniquement (sans culte)",
+      "scheduledService": "Culte programmé",
+      "noSchedule": "Aucun culte programmé",
       "title": "Enregistrer une offrande",
       "intro": "Les placeurs et les pasteurs d’église locale enregistrent les offrandes de leur église. Les écritures peuvent être corrigées pendant 24 heures.",
       "selectService": "Choisir un culte",

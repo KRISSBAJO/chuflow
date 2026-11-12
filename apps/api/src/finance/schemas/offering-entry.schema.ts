@@ -58,14 +58,14 @@ export class OfferingEntry {
   @Prop()
   serviceLabel?: string;
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceType', required: true })
-  serviceTypeId!: Types.ObjectId;
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ServiceType' })
+  serviceTypeId?: Types.ObjectId;
 
-  @Prop({ required: true })
-  serviceTypeKey!: string;
+  @Prop()
+  serviceTypeKey?: string;
 
-  @Prop({ required: true })
-  serviceTypeLabel!: string;
+  @Prop()
+  serviceTypeLabel?: string;
 
   @Prop({
     type: SchemaTypes.ObjectId,
@@ -97,6 +97,18 @@ export class OfferingEntry {
   currency!: string;
 
   @Prop()
+  paymentChannel?: string;
+
+  @Prop({ select: false })
+  batchKey?: string;
+
+  @Prop({ select: false })
+  batchIndex?: number;
+
+  @Prop({ select: false })
+  batchHash?: string;
+
+  @Prop()
   notes?: string;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
@@ -107,6 +119,10 @@ export class OfferingEntry {
 }
 
 export const OfferingEntrySchema = SchemaFactory.createForClass(OfferingEntry);
+OfferingEntrySchema.index({ batchKey: 1, batchIndex: 1 }, {
+  unique: true,
+  partialFilterExpression: { batchKey: { $type: 'string' } },
+});
 OfferingEntrySchema.index(
   { branchId: 1, 'custody.bags.seal': 1 },
   { unique: true, partialFilterExpression: { 'custody.bags.seal': { $type: 'string' } } },

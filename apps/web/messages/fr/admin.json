@@ -80,6 +80,11 @@
       }
     },
     "finance": {
+      "approvedGivingTotal": "Total approuvé {amount}",
+      "approvedGiving": "Rapport des dons approuvés",
+      "noApprovedGiving": "Aucun don approuvé ne correspond aux filtres.",
+      "recordOffering": "Enregistrer une offrande",
+      "manageOfferingTypes": "Gérer les types d’offrandes",
       "eyebrow": "Finances",
       "title": "Grand livre, offrandes et dépenses",
       "description": "Enregistrez les offrandes et les dépenses, dirigez-les vers le bon compte, approuvez les dépenses et verrouillez les mois clôturés, le tout dans un seul grand livre par périmètre.",
@@ -383,6 +388,11 @@
       "update": "Mettre à jour l'offrande"
     },
     "offeringForm": {
+      "paymentChannel": "Mode de paiement",
+      "addLine": "Ajouter une ligne",
+      "removeLine": "Retirer la ligne",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Date uniquement (sans culte)",
       "recordError": "Impossible d'enregistrer l'offrande",
       "recordedTitle": "Offrande enregistrée",
       "recordedDescription": "Cette écriture est désormais visible dans la supervision financière de la branche, du district, du niveau national et du niveau global.",

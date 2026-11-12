@@ -1,5 +1,9 @@
 {
   "finance": {
+    "approvedGivingTotal": "Total aprovado {amount}",
+    "approvedGiving": "Relatório de ofertas aprovadas",
+    "hideApprovedGiving": "Ocultar relatório de ofertas aprovadas",
+    "noApprovedGiving": "Nenhuma oferta aprovada corresponde a estes filtros.",
     "title": "Finanças",
     "noAccess": "O seu perfil não pode ver as finanças.",
     "tabs": {
@@ -81,6 +85,13 @@
       "reviewNotes": "Nota de revisão"
     },
     "offeringForm": {
+      "paymentChannel": "Forma de pagamento",
+      "addLine": "Adicionar linha",
+      "removeLine": "Remover linha",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Apenas data (sem culto)",
+      "scheduledService": "Culto programado",
+      "noSchedule": "Sem culto programado",
       "title": "Registar oferta",
       "intro": "Os obreiros e pastores locais registam as ofertas da sua igreja. Os lançamentos podem ser corrigidos durante 24 horas.",
       "selectService": "Escolha um culto",

@@ -80,6 +80,11 @@
       }
     },
     "finance": {
+      "approvedGivingTotal": "Total aprobado {amount}",
+      "approvedGiving": "Informe de ofrendas aprobadas",
+      "noApprovedGiving": "Ninguna ofrenda aprobada coincide con estos filtros.",
+      "recordOffering": "Registrar ofrenda",
+      "manageOfferingTypes": "Administrar tipos de ofrenda",
       "eyebrow": "Finanzas",
       "title": "Libro mayor, ofrendas y gastos",
       "description": "Registra ofrendas y gastos, dirígelos a la cuenta correcta, aprueba gastos y bloquea meses cerrados, todo en un solo libro mayor por alcance.",
@@ -383,6 +388,11 @@
       "update": "Actualizar ofrenda"
     },
     "offeringForm": {
+      "paymentChannel": "Método de pago",
+      "addLine": "Añadir línea",
+      "removeLine": "Quitar línea",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Solo fecha (sin servicio)",
       "recordError": "No se pudo registrar la ofrenda",
       "recordedTitle": "Ofrenda registrada",
       "recordedDescription": "Este registro ya es visible en la supervisión financiera de la sede, el distrito, el nivel nacional y el nivel general.",

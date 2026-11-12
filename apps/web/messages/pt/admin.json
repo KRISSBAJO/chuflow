@@ -80,6 +80,11 @@
       }
     },
     "finance": {
+      "approvedGivingTotal": "Total aprovado {amount}",
+      "approvedGiving": "Relatório de ofertas aprovadas",
+      "noApprovedGiving": "Nenhuma oferta aprovada corresponde a estes filtros.",
+      "recordOffering": "Registrar oferta",
+      "manageOfferingTypes": "Gerenciar tipos de oferta",
       "eyebrow": "Finanças",
       "title": "Razão, ofertas e despesas",
       "description": "Registe ofertas e despesas, encaminhe-as para a conta certa, aprove gastos e bloqueie meses encerrados, tudo num único razão por âmbito.",
@@ -383,6 +388,11 @@
       "update": "Atualizar oferta"
     },
     "offeringForm": {
+      "paymentChannel": "Forma de pagamento",
+      "addLine": "Adicionar linha",
+      "removeLine": "Remover linha",
+      "batchTotal": "Total {amount}",
+      "dateOnly": "Apenas data (sem culto)",
       "recordError": "Não foi possível registar a oferta",
       "recordedTitle": "Oferta registada",
       "recordedDescription": "Este lançamento está agora visível na supervisão financeira da filial, do distrito, do nível nacional e do nível geral.",

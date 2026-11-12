@@ -21,6 +21,7 @@ export type ExpenseCategorySummary = {
 export type EntryPermissions = { canReview?: boolean; canEdit: boolean; reason: string };
 
 export type OfferingEntrySummary = {
+  paymentChannel?: string;
   customAnswers?: { key: string; label: string; value: string | number }[];
   _id: string;
   branchId?: FinanceBranchRef;
@@ -89,6 +90,8 @@ export type FinanceLedgerEntrySummary = {
 };
 
 export type OfferingListResponse = Paginated<OfferingEntrySummary> & {
+  approvedBreakdown?: { day: string; offeringTypeId: string; offeringType: string; accountId: string; account: string; currency: string; paymentChannel: string; amount: number; count: number }[];
+  approvedTotals?: { currency: string; amount: number }[];
   summary: { totalAmount: number; currentMonthTotal: number; totalEntries: number; visibleBranchCount: number };
   byType: { offeringTypeId: string; label: string; totalAmount: number; entryCount: number }[];
 };

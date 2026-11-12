@@ -235,6 +235,7 @@ export type OfferingTypeSummary = {
 };
 
 export type OfferingEntrySummary = {
+  paymentChannel?: string;
   _id: string;
   branchId?: {
     _id?: string;
@@ -465,6 +466,8 @@ export type FinanceLockSummary = {
 };
 
 export type OfferingListResponse = {
+  approvedBreakdown?: { day: string; offeringTypeId: string; offeringType: string; accountId: string; account: string; currency: string; paymentChannel: string; amount: number; count: number }[];
+  approvedTotals?: { currency: string; amount: number }[];
   items: OfferingEntrySummary[];
   pagination: {
     page: number;

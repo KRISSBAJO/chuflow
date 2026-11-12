@@ -15,6 +15,7 @@ import { useSession, userBranchId } from '@/lib/session';
 import type { BranchSummary, FeatureKey } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 import { AppPreferences } from './app-preferences';
+import { AccountDeletion } from './account-deletion';
 
 type AreaKey = 'members' | 'kids' | 'youth' | 'finance' | 'meetings' | 'careCases' | 'attendanceHistory' | 'reports';
 type MoreSection = 'account' | 'tools' | 'admin' | 'preferences';
@@ -193,6 +194,7 @@ function AccountPage() {
   return (
     <>
       <AccountCard details />
+      <AccountDeletion />
       <ListRow title={t('signOut')} left={<Icon name="logout" size={18} color={colors.danger} />} chevron={false} onPress={confirm} />
     </>
   );
