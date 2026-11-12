@@ -154,7 +154,7 @@ export function HomeScreen() {
       { key: 'members', icon: 'members', label: t('shortcuts.members'), onPress: () => router.push('/members' as Href), show: can.members(role) && allows('members') },
       { key: 'kids', icon: 'smile', label: t('shortcuts.kids'), onPress: () => router.push('/kids' as Href), show: can.kids(role) && !can.kidsOnly(role) && allows('kids') },
       { key: 'meetings', icon: 'calendar', label: t('shortcuts.meetings'), onPress: () => router.push('/meetings' as Href), show: can.meetings(role) && allows('meetings') },
-      { key: 'finance', icon: 'finance', label: t('shortcuts.finance'), onPress: () => router.push('/finance' as Href), show: can.finance(role) && allows('finance') },
+      { key: 'finance', icon: 'finance', label: t('shortcuts.finance'), onPress: () => router.push('/finance' as Href), show: can.finance(role, user) && allows('finance') },
       { key: 'reports', icon: 'reports', label: t('shortcuts.reports'), onPress: () => router.push('/reports' as Href), show: can.reports(role) && allows('reporting') },
       { key: 'guests', icon: 'guests', label: t('metrics.guests'), onPress: () => router.push('/guests'), show: can.guests(role) && allows('guests') },
     ] as (QuickAction & { show: boolean })[]

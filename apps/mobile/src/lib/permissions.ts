@@ -1,4 +1,5 @@
 /* Role rules, kept in step with apps/web/src/lib/permissions.ts. */
+import type { SessionUser } from './types';
 
 export type AppRole =
   | 'super_admin'
@@ -29,6 +30,12 @@ const FINANCE = [...LEADERSHIP, 'usher'];
 
 const has = (roles: string[], role?: string) => !!role && roles.includes(role);
 
+function hasFinanceGrant(user: SessionUser | null | undefined, key: 'finance.view' | 'finance.offerings' | 'finance.expenses') {
+  if (!user?.additionalPermissions?.includes(key)) return false;
+  const expiry = user.additionalPermissionExpiries?.[key];
+  return !expiry || Date.parse(expiry) > Date.now();
+}
+
 export const can = {
   /** Leaders at any level: pastors and admins. */
   lead: (role?: string) => has(LEADERSHIP, role),
@@ -50,9 +57,10 @@ export const can = {
   kidsSupervise: (role?: string) => has([...LEADERSHIP, 'children_supervisor'], role),
   meetings: (role?: string) => has([...LEADERSHIP, ...SUPPORT], role),
   manageMeetingGroups: (role?: string) => has(LEADERSHIP, role),
-  finance: (role?: string) => has(FINANCE, role),
-  recordOfferings: (role?: string) => has(['resident_pastor', 'associate_pastor', 'usher'], role),
-  recordExpenses: (role?: string) => has(BRANCH_LEADERSHIP, role),
+  finance: (role?: string, user?: SessionUser | null) => has(FINANCE, role) ||
+    hasFinanceGrant(user, 'finance.view') || hasFinanceGrant(user, 'finance.offerings') || hasFinanceGrant(user, 'finance.expenses'),
+  recordOfferings: (role?: string, user?: SessionUser | null) => has(['resident_pastor', 'associate_pastor', 'usher'], role) || hasFinanceGrant(user, 'finance.offerings'),
+  recordExpenses: (role?: string, user?: SessionUser | null) => has(BRANCH_LEADERSHIP, role) || hasFinanceGrant(user, 'finance.expenses'),
   reports: (role?: string) => has(LEADERSHIP, role),
   search: (role?: string) => has([...LEADERSHIP, ...SUPPORT], role),
   dashboard: (role?: string) => has([...LEADERSHIP, ...SUPPORT], role),

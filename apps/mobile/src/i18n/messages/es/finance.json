@@ -1,5 +1,6 @@
 {
   "finance": {
+    "offeringReadOnly": "Puedes consultar las ofrendas aquí. Pide a un administrador del espacio permiso para registrarlas.",
     "approvedGivingTotal": "Total aprobado {amount}",
     "approvedGiving": "Informe de ofrendas aprobadas",
     "hideApprovedGiving": "Ocultar informe de ofrendas aprobadas",

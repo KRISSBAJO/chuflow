@@ -1,5 +1,6 @@
 {
   "finance": {
+    "offeringReadOnly": "Você pode consultar as ofertas aqui. Peça a um administrador do espaço permissão para registrá-las.",
     "approvedGivingTotal": "Total aprovado {amount}",
     "approvedGiving": "Relatório de ofertas aprovadas",
     "hideApprovedGiving": "Ocultar relatório de ofertas aprovadas",

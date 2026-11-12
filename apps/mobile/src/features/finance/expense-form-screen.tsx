@@ -22,7 +22,7 @@ export function NewExpenseScreen() {
   const t = useT('finance');
   const format = useAppFormat();
   const { user } = useSession();
-  const allowed = can.recordExpenses(user?.role);
+  const allowed = can.recordExpenses(user?.role, user);
   const definition = useApi<MemberFormDefinition>(allowed ? '/finance/staff-form/expense' : null);
   const [custom, setCustom] = useState<Record<string, string | number>>({});
   const pickBranch = can.pickBranch(user?.role);

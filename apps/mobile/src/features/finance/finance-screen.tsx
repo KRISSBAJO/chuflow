@@ -47,10 +47,10 @@ export function FinanceScreen() {
   const money = moneyOf(format);
   const { user } = useSession();
   const role = user?.role;
-  const allowed = can.finance(role);
+  const allowed = can.finance(role, user);
   const pickBranch = can.pickBranch(role);
-  const canAddOffering = can.recordOfferings(role);
-  const canAddExpense = can.recordExpenses(role);
+  const canAddOffering = can.recordOfferings(role, user);
+  const canAddExpense = can.recordExpenses(role, user);
 
   const [tab, setTab] = useState<Tab>('offerings');
   const [range, setRange] = useState<Range>('month');
@@ -83,7 +83,7 @@ export function FinanceScreen() {
     return map;
   }, [ledger.data, ledger.items]);
 
-  const addTarget = tab === 'expenses' ? (canAddExpense ? 'expense' : canAddOffering ? 'offering' : null) : canAddOffering ? 'offering' : canAddExpense ? 'expense' : null;
+  const addTarget = tab === 'offerings' && canAddOffering ? 'offering' : tab === 'expenses' && canAddExpense ? 'expense' : null;
   const currencyOf = (items: { currency?: string }[]) => items[0]?.currency || 'USD';
 
   if (!allowed) {
@@ -98,8 +98,10 @@ export function FinanceScreen() {
   const header = (
     <View style={styles.header}>
       <Segmented options={TABS.map((value) => ({ value, label: t(`tabs.${value}`) }))} value={tab} onChange={setTab} />
-      {tab === 'offerings' && canAddOffering ? (
-        <Button label={t('add.offering')} onPress={() => router.push('/finance/offerings/new' as Href)} />
+      {tab === 'offerings' ? (
+        canAddOffering ? (
+          <Button label={t('add.offering')} onPress={() => router.push('/finance/offerings/new' as Href)} />
+        ) : <Caption>{t('offeringReadOnly')}</Caption>
       ) : null}
       <RangeChips options={RANGES.map((value) => ({ value, label: t(`range.${value}`) }))} value={range} onChange={setRange} />
       {pickBranch ? <BranchFilter label={t('branch.label')} allLabel={t('branch.all')} branches={branches.data ?? []} value={branchId} onChange={setBranchId} /> : null}

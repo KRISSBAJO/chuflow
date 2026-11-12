@@ -1,5 +1,6 @@
 {
   "finance": {
+    "offeringReadOnly": "You can view offerings here. Ask your workspace admin for permission to record them.",
     "approvedGivingTotal": "Approved total {amount}",
     "approvedGiving": "Approved giving report",
     "hideApprovedGiving": "Hide approved giving report",

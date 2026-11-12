@@ -36,8 +36,8 @@ export function BottomNavigation({ state, descriptors, emitter, navigateToTab }:
     { key: 'newMember', icon: 'members', href: '/members/new', show: can.members(role) && allows('members') },
     { key: 'attendance', icon: 'attendance', href: '/attendance/new', show: can.recordAttendance(role) && allows('attendance') },
     { key: 'meeting', icon: 'calendar', href: '/meetings/new', show: can.lead(role) && allows('meetings') },
-    { key: 'offering', icon: 'finance', href: '/finance/offerings/new', show: can.recordOfferings(role) && allows('finance') },
-    { key: 'expense', icon: 'cash', href: '/finance/expenses/new', show: can.recordExpenses(role) && allows('finance') },
+    { key: 'offering', icon: 'finance', href: '/finance/offerings/new', show: can.recordOfferings(role, user) && allows('finance') },
+    { key: 'expense', icon: 'cash', href: '/finance/expenses/new', show: can.recordExpenses(role, user) && allows('finance') },
     { key: 'kids', icon: 'smile', href: '/kids', show: can.kids(role) && allows('kids') },
     { key: 'report', icon: 'reports', href: '/weekly-reports/new', show: can.reports(role) && allows('reporting') },
   ].filter((action) => action.show);

@@ -22,7 +22,7 @@ export function OfferingDetailScreen() {
   const format = useAppFormat();
   const money = moneyOf(format);
   const { user } = useSession();
-  const entry = useApi<OfferingEntrySummary>(can.finance(user?.role) && id ? `/finance/offerings/${id}` : null);
+  const entry = useApi<OfferingEntrySummary>(can.finance(user?.role, user) && id ? `/finance/offerings/${id}` : null);
   const definition = useApi<MemberFormDefinition>(entry.data?.permissions?.canEdit ? '/finance/staff-form/offering' : null);
   const [custom, setCustom] = useState<Record<string, string | number>>({});
   const [editing, setEditing] = useState(false);
@@ -52,7 +52,7 @@ export function OfferingDetailScreen() {
   return (
     <Screen safeTop={false} refreshing={entry.refreshing} onRefresh={() => void entry.refresh()}>
       <Stack.Screen options={{ title: item?.offeringTypeLabel || t('offering.title') }} />
-      {!can.finance(user?.role) ? <EmptyState icon="lock" title={t('noAccess')} /> : null}
+      {!can.finance(user?.role, user) ? <EmptyState icon="lock" title={t('noAccess')} /> : null}
       {entry.loading ? <Loading /> : null}
       {entry.error && !item ? <ErrorState message={entry.error} onRetry={() => void entry.refresh()} /> : null}
 

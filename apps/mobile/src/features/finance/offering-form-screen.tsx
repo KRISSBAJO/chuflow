@@ -29,7 +29,7 @@ export function NewOfferingScreen() {
   const format = useAppFormat();
   const money = moneyOf(format);
   const { user } = useSession();
-  const allowed = can.recordOfferings(user?.role);
+  const allowed = can.recordOfferings(user?.role, user);
   const branchId = userBranchId(user);
   const definition = useApi<MemberFormDefinition>(allowed ? '/finance/staff-form/offering' : null);
   const [custom, setCustom] = useState<Record<string, string | number>>({});

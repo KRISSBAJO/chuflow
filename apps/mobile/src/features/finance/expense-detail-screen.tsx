@@ -28,7 +28,7 @@ export function ExpenseDetailScreen() {
   const { user } = useSession();
   const { refresh: refreshAlerts } = useAlerts();
   const role = user?.role;
-  const entry = useApi<ExpenseEntrySummary>(can.finance(role) && id ? `/finance/expenses/${id}` : null);
+  const entry = useApi<ExpenseEntrySummary>(can.finance(role, user) && id ? `/finance/expenses/${id}` : null);
   const definition = useApi<MemberFormDefinition>(entry.data?.permissions?.canEdit ? '/finance/staff-form/expense' : null);
   const [custom, setCustom] = useState<Record<string, string | number>>({});
   const [editing, setEditing] = useState(false);
@@ -91,7 +91,7 @@ export function ExpenseDetailScreen() {
       }
     >
       <Stack.Screen options={{ title: item?.expenseCategoryLabel || t('expense.title') }} />
-      {!can.finance(role) ? <EmptyState icon="lock" title={t('noAccess')} /> : null}
+      {!can.finance(role, user) ? <EmptyState icon="lock" title={t('noAccess')} /> : null}
       {entry.loading ? <Loading /> : null}
       {entry.error && !item ? <ErrorState message={entry.error} onRetry={() => void entry.refresh()} /> : null}
 
