@@ -170,6 +170,93 @@ async function run() {
     }
     const branchAdmin = await signInAs('branch_admin', branch);
     const otherPastor = await signInAs('resident_pastor', otherBranch);
+    const custodyOffering = new ObjectId();
+    await mongo.db(database).collection('offeringentries').insertOne({
+      _id: custodyOffering, branchId: branch, status: 'approved', reviewRevision: 1,
+      offeringTypeLabel: 'General offering', serviceTypeLabel: 'Sunday service', serviceDate: new Date(),
+      amount: 125, currency: 'USD',
+    });
+    const custodyPath = '/finance/offerings/' + custodyOffering + '/custody';
+    const custodyAction = (operation, body, actor = branchAdmin) => request(custodyPath + '/' + operation, 'POST', body, actor);
+    const bagInput = { revision: 0, label: 'Bag 1', seal: 'SEAL-001', collector: 'Collection team' };
+    await expect(await request(custodyPath, 'GET', undefined, otherPastor), 404);
+    await expect(await custodyAction('issue', bagInput), 201);
+    await expect(await custodyAction('receive', { ...bagInput, revision: 1, collector: undefined }), 409);
+    const receiptView = await expect(await request(custodyPath, 'GET', undefined, token), 200);
+    assert.equal(receiptView.bags[0].seal, undefined);
+    const receiveInput = { revision: 1, label: bagInput.label, seal: bagInput.seal };
+    await expect(await custodyAction('receive', { ...receiveInput, seal: 'WRONG' }, token), 400);
+    await expect(await custodyAction('receive', receiveInput, token), 201);
+    await expect(await custodyAction('count', { revision: 2, minor: 12500 }), 201);
+    await expect(await custodyAction('count', { revision: 3, minor: 12500 }), 409);
+    const blindView = await expect(await request(custodyPath, 'GET', undefined, token), 200);
+    assert.equal(blindView.canVerify, true);
+    assert.equal(blindView.verifiedMinor, undefined);
+    assert.equal(blindView.first, undefined);
+    assert.equal((await expect(await custodyAction('count', { revision: 3, minor: 12400 }, token), 201)).mismatch, true);
+    await expect(await custodyAction('count', { revision: 4, minor: 12500 }), 201);
+    await expect(await custodyAction('count', { revision: 5, minor: 12500 }, token), 201);
+    const depositInput = { revision: 6, reference: 'QA-DEPOSIT-01', date: new Date().toISOString().slice(0, 10), minor: 12500 };
+    await expect(await custodyAction('deposit', { ...depositInput, minor: 12000 }, token), 409);
+    await expect(await custodyAction('deposit', depositInput, token), 201);
+    const reconciledCustody = await expect(await request(custodyPath, 'GET', undefined, token), 200);
+    assert.equal(reconciledCustody.verifiedMinor, 12500);
+    assert.equal(reconciledCustody.mismatchCount, 1);
+    assert.equal(reconciledCustody.deposit.reference, depositInput.reference);
+    await expect(await custodyAction('deposit', { ...depositInput, revision: 7 }, token), 409);
+    await expect(await request('/finance/offerings/' + custodyOffering, 'PATCH', { amount: 124 }, token), 409);
+    const assetInput = { branchId: String(branch), tag: ' qa-ipad-01 ', name: 'Check-in iPad', category: 'Device' };
+    await expect(await request('/assets', 'POST', assetInput, otherPastor), 403);
+    const asset = await expect(await request('/assets', 'POST', assetInput, branchAdmin), 201);
+    assert.equal(asset.tag, 'QA-IPAD-01');
+    await expect(await request('/assets', 'POST', { ...assetInput, tag: 'qa-ipad-01' }, branchAdmin), 409);
+    assert.deepEqual((await expect(await request('/assets', 'GET', undefined, otherPastor), 200)).items, []);
+    const assetPath = '/assets/' + asset._id;
+    await expect(await request(assetPath, 'GET', undefined, otherPastor), 404);
+    const issue = {
+      state: 'checked_out', revision: 0, holder: 'Check-in team lead',
+      activity: 'Sunday check-in', dueAt: new Date(Date.now() + 3600000).toISOString(),
+    };
+    const concurrent = await Promise.all([
+      request(assetPath + '/movement', 'PATCH', issue, branchAdmin),
+      request(assetPath + '/movement', 'PATCH', { ...issue, holder: 'Second lead' }, branchAdmin),
+    ]);
+    assert.deepEqual(concurrent.map(result => result.status).sort(), [200, 409]);
+    const issued = await expect(concurrent.find(result => result.status === 200), 200);
+    assert.equal(issued.history.length, 2);
+    const returned = await expect(await request(assetPath + '/movement', 'PATCH', {
+      state: 'available', revision: issued.revision,
+    }, branchAdmin), 200);
+    assert.equal(returned.holder, undefined);
+    assert.deepEqual(returned.history.map(entry => entry.state), ['available', 'checked_out', 'available']);
+    const imported = await expect(await request('/assets/import', 'POST', {
+      branchId: String(branch),
+      rows: [
+        { tag: 'qa-ipad-01', name: 'Existing iPad', category: 'Device' },
+        { tag: 'qa-radio-01', name: 'Radio', category: 'Device' },
+      ],
+    }, branchAdmin), 201);
+    assert.deepEqual(imported.results.map(entry => entry.status), ['duplicate', 'created']);
+    const reservation = {
+      revision: returned.revision, holder: 'Welcome team', activity: 'Sunday',
+      startsAt: new Date(Date.now() + 3600000).toISOString(),
+      endsAt: new Date(Date.now() + 7200000).toISOString(),
+    };
+    const reserved = await expect(await request(assetPath + '/reservations', 'POST', reservation, branchAdmin), 201);
+    await expect(await request(assetPath + '/reservations', 'POST', { ...reservation, revision: reserved.revision }, branchAdmin), 409);
+    await expect(await request(assetPath + '/movement', 'PATCH', {
+      ...issue, revision: reserved.revision, dueAt: reservation.endsAt,
+    }, branchAdmin), 409);
+    const assetTransfer = { branchId: String(otherBranch), location: 'Equipment room', revision: reserved.revision };
+    await expect(await request(assetPath + '/transfer', 'PATCH', assetTransfer, branchAdmin), 403);
+    await expect(await request(assetPath + '/transfer', 'PATCH', assetTransfer, token), 409);
+    await expect(await request(assetPath + '/reservations/cancel', 'PATCH', {
+      revision: reserved.revision, startsAt: reservation.startsAt,
+    }, branchAdmin), 200);
+    await expect(await request(assetPath + '/transfer', 'PATCH', { ...assetTransfer, revision: reserved.revision + 1 }, token), 200);
+    await expect(await request(assetPath, 'GET', undefined, branchAdmin), 404);
+    const transferred = await expect(await request('/assets?assetId=' + asset._id, 'GET', undefined, otherPastor), 200);
+    assert.deepEqual(transferred.items.map(item => item.branchId), [String(otherBranch)]);
     const branchSettings = '/guests/branch-form-settings';
     await expect(await request(settings, 'GET', undefined, branchAdmin), 403);
     const local = await expect(await request(branchSettings, 'GET', undefined, branchAdmin), 200);

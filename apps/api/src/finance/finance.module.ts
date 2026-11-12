@@ -10,6 +10,7 @@ import {
 } from '../service-types/schemas/service-type.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { FinanceController } from './finance.controller';
+import { OfferingCustodyController } from './offering-custody.controller';
 import { FinanceService } from './finance.service';
 import { GuestsModule } from '../guests/guests.module';
 import {
@@ -67,7 +68,7 @@ import {
       { name: User.name, schema: UserSchema },
     ]),
   ],
-  controllers: [FinanceController],
+  controllers: [FinanceController, OfferingCustodyController],
   providers: [FinanceService],
   exports: [FinanceService, MongooseModule],
 })

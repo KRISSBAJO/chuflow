@@ -1074,7 +1074,7 @@ export class FinanceService implements OnModuleInit {
         : undefined,
       permissions: {
         canReview: this.canReviewEntry(currentUser, entry),
-        ...this.getOfferingEditPermission(currentUser, {
+        ...(entry.custodyReconciledAt ? { canEdit: false } : this.getOfferingEditPermission(currentUser, {
           branchId: branchValue?._id,
           serviceDate: entry.serviceDate
             ? new Date(String(entry.serviceDate))
@@ -1082,7 +1082,7 @@ export class FinanceService implements OnModuleInit {
           createdAt: entry.createdAt
             ? new Date(String(entry.createdAt))
             : undefined,
-        }),
+        })),
       },
     };
   }
@@ -1977,12 +1977,18 @@ export class FinanceService implements OnModuleInit {
   ) {
     this.ensureFinanceViewRole(currentUser);
 
-    const existing = (await this.offeringEntryModel.findById(id).select('+customAnswers').lean()) as
+    const existing = (await this.offeringEntryModel.findById(id).select('+customAnswers +custody').lean()) as
       | (OfferingEntry & { _id?: unknown; createdAt?: Date; updatedAt?: Date })
       | null;
 
     if (!existing) {
       throw new NotFoundException('Offering entry not found');
+    }
+
+    const changesCurrency = dto.currency !== undefined &&
+      (dto.currency.trim() || 'USD').toUpperCase() !== (existing.currency || 'USD').toUpperCase();
+    if (existing.custody?.deposit || (existing.custody && changesCurrency)) {
+      throw new ConflictException('The custody record prevents this edit.');
     }
 
     await this.accessScopeService.ensureBranchAccess(
@@ -2041,6 +2047,8 @@ export class FinanceService implements OnModuleInit {
         {
           _id: id,
           reviewRevision: existing.reviewRevision ?? { $exists: false },
+          'custody.deposit': { $exists: false },
+          ...(changesCurrency ? { custody: { $exists: false } } : {}),
         },
         {
           $set: {

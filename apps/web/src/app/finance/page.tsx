@@ -33,6 +33,8 @@ import {
   canManageFinanceSettings,
   isGlobalRole,
   isNationalRole,
+  LEADERSHIP_ROLES,
+  type AppRole,
 } from "@/lib/permissions";
 import type {
   BranchSummary,
@@ -380,6 +382,7 @@ export default async function FinancePage({
           />
           <OfferingEntriesTable
             entries={[savedOffering]}
+            showCustody={LEADERSHIP_ROLES.includes(user.role as AppRole)}
             offeringTypes={offeringTypes}
             serviceTypes={serviceTypes}
             accounts={accounts}
@@ -544,6 +547,7 @@ export default async function FinancePage({
             <div className="mt-6">
               <OfferingEntriesTable
                 entries={offeringList.items}
+                showCustody={LEADERSHIP_ROLES.includes(user.role as AppRole)}
                 offeringTypes={offeringTypes}
                 serviceTypes={serviceTypes}
                 accounts={accounts}

@@ -1,10 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
+import { OfferingCustody, OfferingCustodySchema } from './offering-custody.schema';
 
 export type OfferingEntryDocument = HydratedDocument<OfferingEntry>;
 
 @Schema({ timestamps: true })
 export class OfferingEntry {
+  @Prop({ type: OfferingCustodySchema, select: false })
+  custody?: OfferingCustody;
+
+  @Prop()
+  custodyReconciledAt?: Date;
   @Prop({ type: [Object], select: false, default: undefined })
   customAnswers?: import('../../guests/guest-fields.service').GuestAnswer[];
 
@@ -101,3 +107,11 @@ export class OfferingEntry {
 }
 
 export const OfferingEntrySchema = SchemaFactory.createForClass(OfferingEntry);
+OfferingEntrySchema.index(
+  { branchId: 1, 'custody.bags.seal': 1 },
+  { unique: true, partialFilterExpression: { 'custody.bags.seal': { $type: 'string' } } },
+);
+OfferingEntrySchema.index(
+  { branchId: 1, 'custody.deposit.reference': 1 },
+  { unique: true, partialFilterExpression: { 'custody.deposit.reference': { $type: 'string' } } },
+);

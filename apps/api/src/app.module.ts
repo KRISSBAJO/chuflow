@@ -37,6 +37,7 @@ import { ReportsModule } from './reports/reports.module';
 import { MailModule } from './mail/mail.module';
 import { IntakeTemplatesModule } from './intake-templates/intake-templates.module';
 import { ServiceUnitsModule } from './service-units/service-units.module';
+import { AssetsModule } from './assets/assets.module';
 import { ServiceTypesModule } from './service-types/service-types.module';
 import { SettingsModule } from './settings/settings.module';
 import { AccessScopeModule } from './access-scope/access-scope.module';
@@ -112,6 +113,7 @@ import { ChurchReportingModule } from './church-reporting/church-reporting.modul
     MailModule,
     IntakeTemplatesModule,
     ServiceUnitsModule,
+    AssetsModule,
     ServiceTypesModule,
     SettingsModule,
     AccessScopeModule,

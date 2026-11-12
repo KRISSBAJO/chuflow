@@ -45,6 +45,7 @@ const NAV_GROUPS: { label: GroupKey; items: NavItem[] }[] = [
       { href: "/children", label: "children", icon: "members" },
       { href: "/youth", label: "youth", icon: "members" },
       { href: "/service-units", label: "serviceUnits", icon: "units" },
+      { href: "/assets", label: "assets", icon: "units" },
     ],
   },
   {

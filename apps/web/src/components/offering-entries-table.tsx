@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FinanceReviewControls } from "@/components/finance-review-controls";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -26,15 +27,18 @@ export function OfferingEntriesTable({
   offeringTypes,
   serviceTypes,
   accounts,
+  showCustody = false,
 }: {
   entries: OfferingEntrySummary[];
   offeringTypes: OfferingTypeSummary[];
   serviceTypes: ServiceTypeSummary[];
   accounts: FinanceAccountSummary[];
+  showCustody?: boolean;
 }) {
   const statusLabel = useStatusLabel();
   const t = useTranslations("admin.offerings");
   const tc = useTranslations("common");
+  const custody = useTranslations("admin.custody");
   const format = useFormatter();
   const { dateTime: formatDate } = useAppFormat();
   const formatMoney = (amount: number, currency = "USD") =>
@@ -144,6 +148,8 @@ export function OfferingEntriesTable({
             </summary>
 
             <div className="border-t border-black/[0.06] px-4 py-5">
+              {showCustody ? <Link className="mb-3 inline-flex min-h-11 items-center text-sm font-medium underline"
+                href={`/finance/offerings/${entry._id}/custody`}>{custody("title")}</Link> : null}
               <FinanceReviewControls id={entry._id} status={entry.status} canReview={entry.permissions.canReview} reviewRevision={entry.reviewRevision} />
               {opened[entry._id] ? <FinanceEntryAnswers kind="offering" id={entry._id} editable={entry.permissions.canEdit} /> : null}
               {entry.permissions.canEdit ? (
