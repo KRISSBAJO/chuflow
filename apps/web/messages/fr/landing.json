@@ -1,4 +1,27 @@
 {
+  "ministry": {
+    "kidsTitle": "Ministère des enfants",
+    "kidsIntro": "Préparez votre premier dimanche en famille.",
+    "youthTitle": "Ministère des jeunes",
+    "youthIntro": "Rencontrez les jeunes de Nashville et découvrez les prochaines rencontres.",
+    "registerFamily": "Inscrire votre famille",
+    "exploreYouth": "Découvrir les groupes",
+    "serviceTimes": "Horaires des cultes",
+    "askServiceTimes": "Demandez les horaires de la semaine à l’équipe d’accueil de Nashville.",
+    "checkIn": "Accueil",
+    "checkInBody": "Rendez-vous à l’accueil des enfants pour inscrire votre famille et trouver la bonne salle.",
+    "pickup": "Départ",
+    "pickupBody": "Demandez à l’équipe comment récupérer votre enfant et gardez le code à portée de main si on vous en remet un.",
+    "askRegistration": "Demandez à l’équipe d’accueil comment inscrire votre famille.",
+    "groups": "Groupes de jeunes",
+    "teensBody": "Un espace pour nouer des amitiés et grandir dans la foi à l’adolescence.",
+    "youthAliveBody": "Une communauté où les jeunes peuvent tisser des liens, grandir et servir ensemble.",
+    "registerFor": "S’inscrire à {name}",
+    "events": "Prochains événements",
+    "register": "S’inscrire",
+    "noEvents": "Aucun événement à venir n’est ouvert aux inscriptions.",
+    "askEvents": "Renseignez-vous auprès de l’équipe jeunesse de Nashville."
+  },
   "nav": {
     "howItFlows": "Comment ça marche",
     "features": "Fonctionnalités",

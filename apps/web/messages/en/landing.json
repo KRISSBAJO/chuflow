@@ -1,4 +1,27 @@
 {
+  "ministry": {
+    "kidsTitle": "Children’s Ministry",
+    "kidsIntro": "Plan your first Sunday as a family.",
+    "youthTitle": "Youth Ministry",
+    "youthIntro": "Meet Nashville’s youth community and find your next gathering.",
+    "registerFamily": "Register your family",
+    "exploreYouth": "Explore youth groups",
+    "serviceTimes": "Service times",
+    "askServiceTimes": "Ask the Nashville welcome team for this week’s times.",
+    "checkIn": "Check-in",
+    "checkInBody": "Visit the children’s welcome desk for help registering and finding the right classroom.",
+    "pickup": "Pickup",
+    "pickupBody": "Ask the welcome team about pickup and keep your pickup code handy if one is issued.",
+    "askRegistration": "Ask the welcome team about registering your family.",
+    "groups": "Youth groups",
+    "teensBody": "A space for teens to make friends and grow in their faith.",
+    "youthAliveBody": "A community for young people to connect, grow, and serve together.",
+    "registerFor": "Register for {name}",
+    "events": "Upcoming events",
+    "register": "Register",
+    "noEvents": "There are no upcoming events open for registration.",
+    "askEvents": "Ask the Nashville youth team about upcoming events."
+  },
   "nav": {
     "howItFlows": "How it flows",
     "features": "Features",

@@ -1,4 +1,6 @@
 import { Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { FIRST_WORKSPACE_ID, getWorkspace } from '../workspaces/workspace-boundary';
 import { GuestFieldsService, MinistryFormKind } from '../guests/guest-fields.service';
 import {
   BadRequestException,
@@ -71,6 +73,7 @@ export class ChildrenRegistrationService {
     @InjectModel(Branch.name) private readonly branches: Model<Branch>,
     private readonly ministry: ChildrenService,
     @Optional() private readonly forms?: GuestFieldsService,
+    @Optional() private readonly config?: ConfigService,
   ) {}
   private id(v: string) {
     if (!Types.ObjectId.isValid(v))
@@ -158,6 +161,17 @@ export class ChildrenRegistrationService {
       .select('name')
       .lean();
     return { churchName: branch?.name || 'Children’s ministry', familyForm: await this.forms?.publicForm(MinistryFormKind.Family), childForm: await this.forms?.publicForm(MinistryFormKind.Child) };
+  }
+  async nashvillePage() {
+    if (!this.config || getWorkspace(this.config).id !== FIRST_WORKSPACE_ID)
+      throw new NotFoundException();
+    await this.forms?.assertPublicEnabled();
+    const branch = await this.branches.findOne({ name: 'Nashville', status: 'active' })
+      .select('serviceTimes').lean();
+    if (!branch) throw new NotFoundException();
+    const link = await this.links.findOne({ branchId: branch._id, isActive: true })
+      .select('+publicToken').lean();
+    return { serviceTimes: branch.serviceTimes, registrationToken: link?.publicToken ?? null };
   }
   async submit(token: string, d: ParentRegistrationDto) {
     const link = await this.link(token, true);

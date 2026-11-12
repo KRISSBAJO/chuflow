@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Headers,
   Param,
   Post,
@@ -63,6 +64,8 @@ export class ChildrenRegistrationController {
 @Controller('children-registration')
 export class ParentRegistrationController {
   constructor(private readonly service: ChildrenRegistrationService) {}
+  @Public() @Get('nashville') @Header('Cache-Control', 'no-store')
+  nashville() { return this.service.nashvillePage(); }
   @Public() @Get() info(@Headers('x-children-registration') token: string) {
     return this.service.publicInfo(token);
   }

@@ -314,6 +314,9 @@ export class YouthParticipantController {
 export class YouthRegistrationController {
   constructor(private readonly youth: YouthService) {}
 
+  @Public() @Get('nashville') @Header('Cache-Control', 'no-store')
+  nashville() { return this.youth.nashvillePage(); }
+
   @Public() @Get('program-pdf/:ticket')
   async downloadProgramPdf(@Param('ticket') ticket: string, @Res() res: Response) {
     const file = await this.youth.downloadProgramPdf(ticket);

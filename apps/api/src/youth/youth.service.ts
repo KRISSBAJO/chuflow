@@ -843,6 +843,23 @@ export class YouthService {
       depositMinor, branchName: branch?.name, consentVersion: 1, form: await this.forms.publicForm(MinistryFormKind.Youth) };
   }
 
+  async nashvillePage() {
+    if (!this.pilotAvailable) throw new NotFoundException();
+    await this.forms.assertPublicEnabled();
+    const branch = await this.branches.findOne({ name: 'Nashville', status: 'active' }).select('_id').lean();
+    if (!branch) throw new NotFoundException();
+    const groups = await this.groups.find({
+      branchId: branch._id, registrationToken: { $exists: true }, campEndDate: { $exists: false },
+      $or: [{ eventDate: { $exists: false } }, { eventDate: { $gte: day() } }],
+    }).select('+registrationToken').sort({ eventDate: 1, name: 1 }).limit(40).lean();
+    const eligible = await Promise.all(groups.map(async (group) =>
+      this.registrationInTime(group) && await this.cleared(group) ? {
+        name: group.name, eventDate: group.eventDate, venue: group.venue, registrationToken: group.registrationToken,
+      } : null,
+    ));
+    return { entries: eligible.filter((group) => group !== null) };
+  }
+
   async register(token: string, dto: YouthRegistrationDto, ip: string) {
     this.forms.limitPublicSubmission(ip);
     const { group, branchId } = await this.publicGroup(token);

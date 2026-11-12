@@ -3,6 +3,7 @@ import { safeReturnTo } from "./lib/return-to";
 
 import { ACTIVE_WORKSPACE_COOKIE, workspaceApiContext, workspaceId } from "./lib/workspace-routing";
 const authPages = ["/login", "/forgot-password", "/reset-password"];
+const ministryPages = new Set(["/winners-chapel/nashville/kids", "/winners-chapel/nashville/youth"]);
 // `/ops` is the operator console: it keeps its own session and guards itself.
 const publicPages = ["/", "/service-unavailable", "/request-workspace", "/workspaces", "/open-in-browser", "/connect", "/intake", "/outreach", "/care-check-in", "/offline", "/children-kiosk", "/children-register", "/youth-register", "/ops"];
 
@@ -32,7 +33,7 @@ export function proxy(request: NextRequest) {
     matchesRoute(pathname, route),
   );
 
-  if (!token && !isAuthPage && !isPublicPage && pathname !== "/delete-account") {
+  if (!token && !isAuthPage && !isPublicPage && !ministryPages.has(pathname) && pathname !== "/delete-account") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
