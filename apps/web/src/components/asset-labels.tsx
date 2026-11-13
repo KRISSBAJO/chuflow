@@ -4,16 +4,33 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/ui";
+import { apiGet } from "@/lib/api";
 
-export function AssetLabels({ items, selectable = false }: { items: { _id: string; name: string; tag: string }[]; selectable?: boolean }) {
+type LabelAsset = { _id: string; name: string; tag: string };
+
+async function loadAllLabels(filters: string) {
+  const query = new URLSearchParams(filters);
+  const items: LabelAsset[] = [];
+  const cursors = new Set<string>();
+  for (;;) {
+    const page = await apiGet<{ items: LabelAsset[]; next: string | null }>("/assets?" + query);
+    items.push(...page.items);
+    if (!page.next) return items;
+    if (cursors.has(page.next)) throw new Error("Repeated inventory cursor");
+    cursors.add(page.next);
+    query.set("before", page.next);
+  }
+}
+
+export function AssetLabels({ items, selectable = false, allFilters }: { items: LabelAsset[]; selectable?: boolean; allFilters?: string }) {
   const t = useTranslations("common.assetIntake");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [excluded, setExcluded] = useState<string[]>([]);
-  if (!items.length) return null;
+  if (!items.length && allFilters === undefined) return null;
   const selected = items.filter((item) => !excluded.includes(item._id));
 
-  async function print() {
+  async function print(all = false) {
     setError(false);
     const sheet = window.open("", "_blank");
     if (!sheet) { setError(true); return; }
@@ -21,13 +38,15 @@ export function AssetLabels({ items, selectable = false }: { items: { _id: strin
     setBusy(true);
     try {
       const doc = sheet.document;
-      doc.title = t("print", { count: selected.length });
+      const labels = all && allFilters !== undefined ? await loadAllLabels(allFilters) : selected;
+      if (!labels.length) { sheet.close(); return; }
+      doc.title = t("print", { count: labels.length });
       const style = doc.createElement("style");
       style.textContent = "body{font:14px system-ui;margin:16px}main{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}article{break-inside:avoid;border:1px solid #bbb;padding:8px;display:flex;align-items:center;gap:8px;overflow-wrap:anywhere}small,strong{display:block}@media print{body{margin:0}}";
       doc.head.append(style);
       const grid = doc.createElement("main");
       doc.body.append(grid);
-      await Promise.all(selected.map(async (item) => {
+      for (const item of labels) {
         const article = doc.createElement("article");
         grid.append(article);
         const image = doc.createElement("img");
@@ -44,7 +63,7 @@ export function AssetLabels({ items, selectable = false }: { items: { _id: strin
         url.searchParams.set("assetId", item._id);
         image.src = await QRCode.toDataURL(url.href, { margin: 2, width: 252 });
         await image.decode();
-      }));
+      }
       sheet.focus();
       sheet.print();
     } catch {
@@ -55,7 +74,10 @@ export function AssetLabels({ items, selectable = false }: { items: { _id: strin
     }
   }
   return <div className="space-y-2">
-    <Button variant="secondary" disabled={busy || !selected.length} onClick={() => void print()}>{t("print", { count: selected.length })}</Button>
+    <div className="flex flex-wrap gap-2">
+      <Button variant="secondary" disabled={busy || !selected.length} onClick={() => void print()}>{t("print", { count: selected.length })}</Button>
+      {allFilters !== undefined ? <Button variant="secondary" disabled={busy} onClick={() => void print(true)}>{t("printAll")}</Button> : null}
+    </div>
     {selectable ? <details className="text-sm">
       <summary className="cursor-pointer">{t("select")}</summary>
       <div className="mt-2 grid max-h-40 gap-2 overflow-auto sm:grid-cols-2">

@@ -35,7 +35,8 @@ export default async function AssetsPage({ searchParams }: {
       <Link href="/assets/register" className={buttonClass("primary", "md")}>{t("register")}</Link>
       <Link href="/assets/import" className={buttonClass("secondary", "md")}>{t("bulkImport")}</Link>
     </div>} />
-    <AssetLabels key={first.toString() + (before ?? "")} items={inventory.items} selectable />
+    <AssetLabels key={first.toString() + (before ?? "")} items={inventory.items} selectable
+      allFilters={inventory.next || before ? first.toString() : undefined} />
     <AssetsWorkspace items={inventory.items} branches={branches}
       tag={first.get("tag") ?? ""} branchId={first.get("branchId") ?? ""} asOf={inventory.asOf} />
     <nav className="flex flex-wrap gap-2">

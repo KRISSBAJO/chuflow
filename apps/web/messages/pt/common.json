@@ -8,6 +8,7 @@
   },
   "common": {
     "assetIntake": {
+      "printAll": "Imprimir todas as etiquetas correspondentes",
       "select": "Escolher etiquetas desta página",
       "results": "Baixar resultados da importação",
       "print": "Imprimir etiquetas ({count})",

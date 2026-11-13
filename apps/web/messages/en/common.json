@@ -8,6 +8,7 @@
   },
   "common": {
     "assetIntake": {
+      "printAll": "Print all matching labels",
       "select": "Choose labels from this page",
       "results": "Download import results",
       "print": "Print labels ({count})",
