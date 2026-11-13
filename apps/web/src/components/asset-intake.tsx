@@ -118,6 +118,10 @@ export function AssetIntake({ mode, branches, defaultBranchId }: {
       return;
     }
     const values = Object.fromEntries(columns.map((key) => [key, String(data.get(key) ?? "").trim()])) as AssetInput;
+    if (!values.category) {
+      setError(t("chooseCategory"));
+      return;
+    }
     void save(Array.from({ length: quantity }, (_, index) => ({
       sourceRow: index + 1,
       values: { ...values, serial: quantity === 1 ? values.serial : serials[index] ?? "" },

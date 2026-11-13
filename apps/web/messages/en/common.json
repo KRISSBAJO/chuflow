@@ -8,6 +8,8 @@
   },
   "common": {
     "assetCategories": {
+      "refine": "Type to narrow the results.",
+      "noMatches": "No matching categories.",
       "search": "Search or type a category",
       "add": "Create category",
       "manage": "Manage categories",
@@ -39,6 +41,7 @@
       "finish": "Finish stocktake"
     },
     "assetIntake": {
+      "chooseCategory": "Choose a category.",
       "printAll": "Print all matching labels",
       "select": "Choose labels from this page",
       "results": "Download import results",

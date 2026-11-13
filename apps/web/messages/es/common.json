@@ -8,6 +8,8 @@
   },
   "common": {
     "assetCategories": {
+      "refine": "Escribe para acotar los resultados.",
+      "noMatches": "No hay categorías que coincidan.",
       "search": "Busca o escribe una categoría",
       "add": "Crear categoría",
       "manage": "Administrar categorías",
@@ -39,6 +41,7 @@
       "finish": "Finalizar inventario"
     },
     "assetIntake": {
+      "chooseCategory": "Elige una categoría.",
       "printAll": "Imprimir todas las etiquetas que coinciden",
       "select": "Elegir etiquetas de esta página",
       "results": "Descargar resultados de importación",
