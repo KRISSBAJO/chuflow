@@ -19,10 +19,11 @@ describe('Spreadsheet migration rules', () => {
         checkValues('members', Object.fromEntries([[key, 'x']])),
       ).toThrow();
   });
-  it('requires valid names and guest phone, without requiring member contact details', () => {
-    expect(() => normalizeImport('guests', names, 'iso', groups)).toThrow(
-      'phone',
-    );
+  it('allows guests and members without contact details', () => {
+    const guest = normalizeImport('guests', names, 'iso', groups);
+    expect(guest).toMatchObject({ firstName: 'Test', lastName: 'Person' });
+    expect(guest).not.toHaveProperty('phone');
+    expect(identityKeys(guest, 'guests')).toEqual(['name:test person']);
     expect(normalizeImport('members', names, 'iso', groups)).toMatchObject({
       firstName: 'Test',
       lastName: 'Person',

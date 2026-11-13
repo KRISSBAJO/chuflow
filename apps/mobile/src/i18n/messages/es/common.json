@@ -1,5 +1,12 @@
 {
   "common": {
+    "guestMatch": {
+      "possible": "Es posible que ya haya un invitado con este nombre o contacto.",
+      "existing": "Este invitado ya está registrado.",
+      "open": "Abrir ficha existente",
+      "confirm": "Guardar como otra persona",
+      "invalidPhone": "Introduce un número de teléfono de 7 a 15 dígitos."
+    },
     "appName": "ChuFlow",
     "tagline": "De la membresía al ministerio",
     "actions": {

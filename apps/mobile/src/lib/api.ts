@@ -11,6 +11,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: unknown,
+    readonly guestId?: string,
   ) {
     super(message);
   }
@@ -94,7 +96,7 @@ export async function request<T>(
 
   if (!response.ok) {
     if (response.status === 401 && session.token && session === activeSession) onUnauthorized?.();
-    const refusal = data as { code?: unknown; feature?: string; quota?: string; limit?: number; current?: number } | null;
+    const refusal = data as { code?: unknown; guestId?: string; feature?: string; quota?: string; limit?: number; current?: number } | null;
     if (response.status === 402 && isPlanErrorCode(refusal?.code)) {
       throw new PlanError(refusal.code, { feature: refusal.feature, quota: refusal.quota, limit: refusal.limit, current: refusal.current });
     }
@@ -102,6 +104,8 @@ export async function request<T>(
     throw new ApiError(
       Array.isArray(message) ? message.join(', ') : message || `Request failed (${response.status})`,
       response.status,
+      refusal?.code,
+      refusal?.guestId,
     );
   }
 

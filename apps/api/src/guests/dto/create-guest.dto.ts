@@ -1,4 +1,5 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -9,6 +10,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  Matches,
 } from 'class-validator';
 
 export class CreateGuestDto {
@@ -42,12 +44,18 @@ export class CreateGuestDto {
   @IsString()
   gender?: string;
 
-  @ApiProperty()
-  @IsString()
-  phone!: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Matches(/^(?:\s*$|(?=(?:\D*\d){7,15}\D*$)[+\d() .-]{7,50})$/)
+  phone?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  confirmDistinctGuest?: boolean;
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() || undefined : value)
   @IsEmail()
   email?: string;
 
@@ -138,4 +146,4 @@ export class CreateGuestDto {
   assignedFollowUpUserId?: string;
 }
 
-export class UpdateGuestDto extends PartialType(OmitType(CreateGuestDto, ['customFields', 'formRevision', 'prayerRequest', 'wantsPastoralCall'] as const)) {}
+export class UpdateGuestDto extends PartialType(OmitType(CreateGuestDto, ['customFields', 'formRevision', 'prayerRequest', 'wantsPastoralCall', 'confirmDistinctGuest'] as const)) {}

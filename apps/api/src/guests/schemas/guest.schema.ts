@@ -32,7 +32,7 @@ export class Guest {
   @Prop()
   gender?: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ index: true, default: '' })
   phone!: string;
 
   @Prop({ index: true, sparse: true })

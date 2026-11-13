@@ -7,6 +7,13 @@
     "pt": "Português"
   },
   "common": {
+    "guestMatch": {
+      "possible": "A guest with this name or contact may already be registered.",
+      "existing": "This guest is already registered.",
+      "open": "Open existing guest",
+      "confirm": "Save as a different person",
+      "invalidPhone": "Enter a phone number with 7–15 digits."
+    },
     "signIn": "Sign in",
     "signOut": "Sign out",
     "signingOut": "Signing out...",

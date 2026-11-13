@@ -7,7 +7,7 @@ import { colors, space, type } from '@/constants/theme';
 import { useI18n, useT } from '@/i18n/provider';
 import type { StaffGuestForm } from '@/features/guests/staff-guest-form';
 import { useAlerts } from '@/lib/alerts';
-import { api, errorMessage, NetworkError, query } from '@/lib/api';
+import { api, ApiError, errorMessage, NetworkError, query } from '@/lib/api';
 import { can } from '@/lib/permissions';
 import { useSession, userBranchId } from '@/lib/session';
 import type { BranchSummary, GuestDetail } from '@/lib/types';
@@ -38,6 +38,7 @@ export default function NewGuestScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [match, setMatch] = useState<{ guestId?: string; possible: boolean; identity: string }>();
 
   const lastRef = useRef<ComponentRef<typeof TextInput>>(null);
   const phoneRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -49,7 +50,11 @@ export default function NewGuestScreen() {
   const form = !effectiveBranchId || definition.data?.branchId === effectiveBranchId.toLowerCase() ? definition.data : undefined;
   const visible = (key: string) => !form?.hiddenStaff.includes(key);
 
-  async function save() {
+  const identity = JSON.stringify([effectiveBranchId, firstName, lastName, phone, email]);
+  const currentMatch = match?.identity === identity ? match : undefined;
+
+  async function save(confirmDistinctGuest = false) {
+    if (saving) return;
     if (!form) {
       setFormError(fieldsText('loadFailed'));
       void definition.refresh();
@@ -58,7 +63,7 @@ export default function NewGuestScreen() {
     const nextErrors: Record<string, string> = {};
     if (!firstName.trim()) nextErrors.firstName = t('firstNameRequired');
     if (!lastName.trim()) nextErrors.lastName = t('lastNameRequired');
-    if (phone.replace(/\D/g, '').length < 7) nextErrors.phone = t('phoneRequired');
+    if (phone.trim() && !/^\d{7,15}$/.test(phone.replace(/\D/g, ''))) nextErrors.phone = common('guestMatch.invalidPhone');
     if (visible('email') && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = t('emailInvalid');
     for (const field of form.fields) {
       if (field.required && !custom[field.key]?.trim()) nextErrors[field.key] = fieldsText('required');
@@ -68,12 +73,14 @@ export default function NewGuestScreen() {
     if (Object.keys(nextErrors).length) return;
 
     setSaving(true);
+    setMatch(undefined);
     setFormError(null);
     try {
       const guest = await api.post<GuestDetail>('/guests', {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phone: phone.trim(),
+        confirmDistinctGuest: confirmDistinctGuest && Boolean(currentMatch?.possible),
         ...(visible('email') && email.trim() ? { email: email.trim().toLowerCase() } : {}),
         ...(visible('invitedBy') && invitedBy.trim() ? { invitedBy: invitedBy.trim() } : {}),
         ...(visible('prayerRequest') && prayerRequest.trim() ? { prayerRequest: prayerRequest.trim() } : {}),
@@ -90,7 +97,11 @@ export default function NewGuestScreen() {
       toast.success(t('registered', { name: guest.firstName }));
       router.replace(`/guest/${guest._id}`);
     } catch (error) {
-      setFormError(error instanceof NetworkError ? t('offline') : errorMessage(error));
+      if (error instanceof ApiError && (error.code === 'guest_possible_match' || error.code === 'guest_already_exists')) {
+        setMatch({ guestId: error.guestId, possible: error.code === 'guest_possible_match', identity });
+      } else {
+        setFormError(error instanceof NetworkError ? t('offline') : errorMessage(error));
+      }
       setSaving(false);
     }
   }
@@ -102,6 +113,13 @@ export default function NewGuestScreen() {
         <Caption>{t('intro')}</Caption>
 
         {formError ? <Notice tone="danger">{formError}</Notice> : null}
+        {currentMatch ? (
+          <View style={{ gap: space.sm }}>
+            <Notice tone="warning">{common(currentMatch.possible ? 'guestMatch.possible' : 'guestMatch.existing')}</Notice>
+            {currentMatch.guestId ? <Button variant="secondary" label={common('guestMatch.open')} onPress={() => router.push(`/guest/${currentMatch.guestId}`)} /> : null}
+            {currentMatch.possible ? <Button variant="secondary" label={common('guestMatch.confirm')} loading={saving} onPress={() => void save(true)} /> : null}
+          </View>
+        ) : null}
 
         <View style={styles.chips}>
           <Chip label={t('firstTime')} selected={visitStatus === 'first_time'} onPress={() => setVisitStatus('first_time')} />
@@ -141,7 +159,6 @@ export default function NewGuestScreen() {
         <Field
           ref={phoneRef}
           label={common('fields.phone')}
-          required
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"

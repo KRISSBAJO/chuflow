@@ -436,7 +436,7 @@ export class ImportService {
         phone: { $regex: tail.split('').join('\\D*') + '\\D*$' },
       });
     }
-    if (!choices.length)
+    if (kind === 'guests' || !choices.length)
       choices.push({
         firstName: {
           $regex: '^' + escape(data.firstName) + '$',
@@ -528,19 +528,28 @@ export class ImportService {
           );
           continue;
         }
-        if (!existing)
-          await target.updateOne(
-            { _id: targetId, importBatchId: job._id },
-            {
-              $setOnInsert: {
-                ...data,
-                branchId: job.branchId,
-                importBatchId: job._id,
-                importedAt: new Date(),
+        try {
+          if (!existing) {
+            await target.updateOne(
+              { _id: targetId, importBatchId: job._id },
+              {
+                $setOnInsert: {
+                  ...data,
+                  branchId: job.branchId,
+                  importBatchId: job._id,
+                  importedAt: new Date(),
+                },
               },
-            },
-            { upsert: true, runValidators: true },
-          );
+              { upsert: true, runValidators: true },
+            );
+          }
+        } catch (error) {
+          if (!(error instanceof Error) || (error.name !== 'ValidationError' && (error as { code?: number }).code !== 11000)) throw error;
+          await this.rows.updateOne({ _id: row._id, status: 'ready' }, {
+            $set: { status: 'failed', reason: 'This row conflicts with an existing record or failed validation.' },
+          });
+          continue;
+        }
         await this.rows.updateOne(
           { _id: row._id },
           { $set: { status: 'imported', reason: '' } },

@@ -1,5 +1,12 @@
 {
   "common": {
+    "guestMatch": {
+      "possible": "Pode já haver um visitante com este nome ou contato.",
+      "existing": "Este visitante já está cadastrado.",
+      "open": "Abrir cadastro existente",
+      "confirm": "Salvar como outra pessoa",
+      "invalidPhone": "Digite um número de telefone com 7 a 15 dígitos."
+    },
     "appName": "ChuFlow",
     "tagline": "Da membresia ao ministério",
     "actions": {

@@ -59,7 +59,7 @@ export const intakeTemplateDefaults: CreateIntakeTemplateDto[] = [
         key: 'phone',
         label: 'Phone',
         type: 'tel',
-        required: true,
+        required: false,
         width: 'full',
       },
       {

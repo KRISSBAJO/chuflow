@@ -102,9 +102,9 @@ export function ConnectForm() {
         />
         <input
           name="phone"
+          type="tel"
           placeholder="Phone number"
           className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none"
-          required
         />
         <input
           name="email"

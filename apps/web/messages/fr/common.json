@@ -7,6 +7,13 @@
     "pt": "Português"
   },
   "common": {
+    "guestMatch": {
+      "possible": "Un visiteur portant ce nom ou utilisant ces coordonnées est peut-être déjà inscrit.",
+      "existing": "Ce visiteur est déjà inscrit.",
+      "open": "Ouvrir la fiche existante",
+      "confirm": "Enregistrer une autre personne",
+      "invalidPhone": "Saisissez un numéro de téléphone de 7 à 15 chiffres."
+    },
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
     "signingOut": "Déconnexion...",

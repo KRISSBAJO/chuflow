@@ -1,7 +1,8 @@
 "use client";
 import { savedToastId } from "@/lib/action-feedback";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { createdHref } from "@/lib/directory";
@@ -61,6 +62,7 @@ export function GuestCreateForm({
   }, [selectedBranchId]);
   const visible = (key: string) => !definition?.hiddenStaff.includes(key);
   const [loading, setLoading] = useState(false);
+  const [match, setMatch] = useState<{ guestId?: string; possible: boolean; identity: string }>();
   const branchMap = new Map(
     branches.map((branch) => [branch._id, branch.name]),
   );
@@ -94,8 +96,13 @@ export function GuestCreateForm({
     [selectedBranchId, serviceTypes],
   );
 
-  async function handleSubmit(formData: FormData) {
-    if (!definition) return;
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!definition || loading) return;
+    const formData = new FormData(event.currentTarget);
+    const identity = JSON.stringify([formData.get("branchId") || defaultBranchId, ...["firstName", "lastName", "phone", "email"].map((key) => formData.get(key))]);
+    const confirmDistinctGuest = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "distinct" && match?.identity === identity;
+    setMatch(undefined);
     setLoading(true);
 
     try {
@@ -108,6 +115,7 @@ export function GuestCreateForm({
           firstName: formData.get("firstName"),
           lastName: formData.get("lastName"),
           phone: formData.get("phone"),
+          confirmDistinctGuest,
           email: formData.get("email") || undefined,
           invitedBy: formData.get("invitedBy"),
           heardAboutChurch: formData.get("heardAboutChurch"),
@@ -129,6 +137,10 @@ export function GuestCreateForm({
 
       const result = await response.json();
       if (!response.ok) {
+        if (result.code === "guest_possible_match" || result.code === "guest_already_exists") {
+          setMatch({ possible: result.code === "guest_possible_match", guestId: result.guestId, identity });
+          return;
+        }
         throw new Error(result.message || t("errorCreate"));
       }
 
@@ -151,7 +163,7 @@ export function GuestCreateForm({
   }
 
   return (
-    <form action={handleSubmit}>
+    <form onSubmit={handleSubmit} onChange={() => setMatch(undefined)}>
       {definitionError ? <p role="alert" className="mb-4 text-sm text-red-700">{tf("loadFailed")}</p> : null}
       <div className="grid gap-4 md:grid-cols-2">
         {branches.length > 1 ? (
@@ -237,12 +249,12 @@ export function GuestCreateForm({
             required
           />
         </Field>
-        <Field label={t("phoneNumber")} required>
+        <Field label={t("phoneNumber")}>
           <input
             name="phone"
             placeholder={t("phoneNumber")}
             className="ui-input"
-            required
+            type="tel"
           />
         </Field>
         {visible("email") ? <Field label={tc("email")}>
@@ -309,6 +321,11 @@ export function GuestCreateForm({
         ))}
       </div>
       <div className="mt-6 flex justify-end">
+        {match ? <div role="status" className="space-y-2 rounded-xl bg-amber-50 p-3">
+          <p>{tc(match.possible ? "guestMatch.possible" : "guestMatch.existing")}</p>
+          {match.guestId ? <Link className="underline" href={`/guests/${match.guestId}`}>{tc("guestMatch.open")}</Link> : null}
+          {match.possible ? <Button type="submit" value="distinct" disabled={loading}>{tc("guestMatch.confirm")}</Button> : null}
+        </div> : null}
         <Button type="submit" disabled={loading || !definition}>
           {loading ? tc("saving") : t("saveGuest")}
         </Button>

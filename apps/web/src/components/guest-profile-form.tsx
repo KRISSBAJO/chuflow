@@ -120,11 +120,10 @@ export function GuestProfileForm({
       </FormGroup>
 
       <FormGroup title={t("contactInfo")}>
-        <Field label={t("phoneNumber")} required>
+        <Field label={t("phoneNumber")}>
           <input
             name="phone"
             defaultValue={guest.phone}
-            required
             placeholder={t("phoneNumber")}
             className="ui-input"
           />

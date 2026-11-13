@@ -101,7 +101,7 @@ export class GuestsController {
     await this.guestFields.assertPublicEnabled();
     const definition = await this.guestFields.get('guest', dto.branchId);
     this.guestFields.checkRevision(definition, dto.formRevision);
-    if (!dto.firstName.trim() || !dto.lastName.trim() || !/^\d{7,15}$/.test(dto.phone.replace(/\D/g, '')) ||
+    if (!dto.firstName.trim() || !dto.lastName.trim() || (dto.phone?.trim() && !/^\d{7,15}$/.test(dto.phone.replace(/\D/g, ''))) ||
         Object.entries(dto).some(([key, value]) => typeof value === 'string' && value.length > (key === 'prayerRequest' ? 2000 : 250))) {
       throw new BadRequestException('Please check your guest registration details.');
     }

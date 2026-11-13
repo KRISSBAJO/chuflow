@@ -94,6 +94,8 @@ export function identityKeys(row: Record<string, unknown>, kind: string) {
   if (kind === 'service_units') return ['group:' + clean(row.name)];
   const email = clean(row.email);
   const phone = clean(row.phone).replace(/\D/g, '');
+  const firstName = clean(row.firstName);
+  const lastName = clean(row.lastName);
   return [
     ...(email ? ['email:' + email] : []),
     ...(phone
@@ -102,8 +104,8 @@ export function identityKeys(row: Record<string, unknown>, kind: string) {
           ...(phone.length > 10 ? ['phone:' + phone.slice(-10)] : []),
         ]
       : []),
-    ...(!email && !phone
-      ? ['name:' + clean(row.firstName) + ' ' + clean(row.lastName)]
+    ...(firstName && lastName && (kind === 'guests' || (!email && !phone))
+      ? ['name:' + firstName + ' ' + lastName]
       : []),
   ];
 }
@@ -185,8 +187,6 @@ export function normalizeImport(
     throw new Error(
       'Use a phone number with 7–15 digits. Store phone columns as text.',
     );
-  if (kind === 'guests' && !row.phone)
-    throw new Error('A phone number is required for guests.');
   if (row.email) {
     row.email = String(row.email).toLowerCase();
     if (

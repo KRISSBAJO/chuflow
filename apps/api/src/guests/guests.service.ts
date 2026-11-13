@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { isEmail } from 'class-validator';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import {
   Attendance,
@@ -29,6 +31,7 @@ import { Visit, VisitDocument } from '../visits/schemas/visit.schema';
 import { CreateGuestDto, UpdateGuestDto } from './dto/create-guest.dto';
 import { Guest, GuestDocument } from './schemas/guest.schema';
 import { GuestFieldsService, type GuestAnswer } from './guest-fields.service';
+import { identityKeys } from '../imports/import.logic';
 
 export class DuplicateGuestError extends BadRequestException {
   constructor() {
@@ -169,7 +172,7 @@ export class GuestsService {
   }
 
   async create(input: CreateGuestDto, currentUser?: AuthUser, publicAnswers?: GuestAnswer[]) {
-    const { customFields, formRevision, ...dto } = input;
+    const { customFields, formRevision, confirmDistinctGuest, ...dto } = input;
     const branchId = await this.accessScopeService.resolveScopedBranchId(currentUser, dto.branchId);
     let customAnswers = publicAnswers;
     if (currentUser) {
@@ -179,12 +182,44 @@ export class GuestsService {
       for (const key of definition.hiddenStaff) delete data[key];
       customAnswers = this.guestFields.collect(definition, 'staff', customFields);
     }
-    const duplicate = await this.guestModel.findOne({
-      $or: [{ phone: dto.phone }, ...(dto.email ? [{ email: dto.email }] : [])],
-    });
-
-    if (duplicate) {
-      throw new DuplicateGuestError();
+    dto.firstName = dto.firstName.trim().replace(/\s+/g, ' ');
+    dto.lastName = dto.lastName.trim().replace(/\s+/g, ' ');
+    dto.phone = dto.phone?.trim() ?? '';
+    dto.email = dto.email?.trim().toLowerCase() || undefined;
+    if (!dto.firstName || !dto.lastName) throw new BadRequestException('First and last names are required.');
+    if (dto.email && !isEmail(dto.email)) throw new BadRequestException('Enter a valid email address.');
+    if (dto.phone && (!/^[+\d() .-]{7,50}$/.test(dto.phone) || !/^\d{7,15}$/.test(dto.phone.replace(/\D/g, '')))) {
+      throw new BadRequestException('Enter a phone number with 7–15 digits.');
+    }
+    const keys = identityKeys(dto, 'guests');
+    const literal = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const namePattern = (value: string) => new RegExp('^\\s*' + value.split(' ').map(literal).join('\\s+') + '\\s*$', 'i');
+    const candidates = await this.guestModel.find({ branchId, $or: [
+      { firstName: namePattern(dto.firstName), lastName: namePattern(dto.lastName) },
+      ...(dto.email ? [{ email: new RegExp('^\\s*' + literal(dto.email) + '\\s*$', 'i') }] : []),
+      ...keys.filter((key) => key.startsWith('phone:')).map((key) => ({
+        phone: new RegExp(key.slice(6).split('').join('\\D*') + '\\D*$'),
+      })),
+    ] }).select('firstName lastName phone email').lean();
+    const matches = candidates.map((guest) => ({ guest, keys: identityKeys(guest, 'guests') }))
+      .filter((candidate) => candidate.keys.some((key) => keys.includes(key)));
+    const phoneIdentity = (phone?: string) => {
+      const digits = phone?.replace(/\D/g, '') ?? '';
+      return /^1\d{10}$/.test(digits) ? digits.slice(1) : digits;
+    };
+    const exact = matches.filter((candidate) =>
+      keys.some((key) => key.startsWith('name:') && candidate.keys.includes(key)) &&
+      (!dto.phone || !candidate.guest.phone || phoneIdentity(dto.phone) === phoneIdentity(candidate.guest.phone)) &&
+      (!dto.email || !candidate.guest.email || dto.email === candidate.guest.email.trim().toLowerCase()) &&
+      (Boolean(dto.phone && candidate.guest.phone) || Boolean(dto.email && candidate.guest.email)));
+    const existing = matches.length === 1 && exact.length === 1 ? exact[0].guest : undefined;
+    if (!currentUser && existing) throw new DuplicateGuestError();
+    if (currentUser && matches.length && (existing || !confirmDistinctGuest)) {
+      throw new ConflictException({
+        code: existing ? 'guest_already_exists' : 'guest_possible_match',
+        message: existing ? 'This guest is already registered.' : 'A guest with a similar name or shared contact already exists.',
+        ...(existing ? { guestId: String(existing._id) } : {}),
+      });
     }
 
     const guest = await this.guestModel.create({

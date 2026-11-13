@@ -1140,9 +1140,11 @@ export class IntakeTemplatesService implements OnModuleInit {
     template: T,
     definition?: Awaited<ReturnType<GuestFieldsService['get']>>,
   ): T {
-    if (!definition) return template;
-    const fields = template.fields.filter(({ key }) => !definition.hiddenPublic.some((hidden) =>
-      this.normalizeLookupValue(hidden) === this.normalizeLookupValue(key)) && !key.startsWith('custom_'));
+    if (!definition && template.kind !== 'guest') return template;
+    const fields = template.fields.filter(({ key }) => !definition?.hiddenPublic.some((hidden) =>
+      this.normalizeLookupValue(hidden) === this.normalizeLookupValue(key)) && !key.startsWith('custom_'))
+      .map((field) => template.kind === 'guest' && ['phone', 'phonenumber', 'mobile', 'email'].includes(this.normalizeLookupValue(field.key))
+        ? { ...field, required: false } : field);
     const prayerFields = template.kind === 'guest' ? fields.flatMap((field) => {
       if (this.normalizeLookupValue(field.key) === 'wantspastoralcall') return [];
       if (this.normalizeLookupValue(field.key) !== 'prayerrequest') return [field];
@@ -1160,7 +1162,7 @@ export class IntakeTemplatesService implements OnModuleInit {
       ...template,
       fields: [
         ...prayerFields,
-        ...definition.fields.filter((field) => field.public).map(({ key, label, labelEs, type, required, options }) =>
+        ...(definition?.fields ?? []).filter((field) => field.public).map(({ key, label, labelEs, type, required, options }) =>
           ({ key, label, labelEs, type, required, options, width: type === 'textarea' ? 'full' : 'half' })),
       ],
     };
@@ -1943,8 +1945,8 @@ export class IntakeTemplatesService implements OnModuleInit {
       const { firstName, lastName } = this.extractPersonName(template, answers);
 
       const phone = this.getAnswerString(template, answers, ['phone', 'phoneNumber', 'mobile']);
-      if (!firstName || !lastName || !phone) {
-        throw new BadRequestException('First name, last name and phone are required.');
+      if (!firstName || !lastName) {
+        throw new BadRequestException('First and last names are required.');
       }
       const guest = await this.guestsService.create({
         branchId,
