@@ -1,5 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { createHash } from 'node:crypto';
 import { Model, Types } from 'mongoose';
 import { AccessScopeService } from '../access-scope/access-scope.service';
 import { LEADERSHIP_ROLES } from '../common/constants/roles.constants';
@@ -57,12 +58,15 @@ export class AssetsController {
   @Post('import')
   async importAssets(@CurrentUser() user: AuthUser, @Body() dto: ImportAssetsDto) {
     await this.requireBranch(user, dto.branchId);
-    const results: { row: number; tag: string; status: 'created' | 'duplicate' }[] = [];
+    const results: { row: number; tag: string; assetId?: string; status: 'created' | 'duplicate' }[] = [];
     for (const [index, row] of dto.rows.entries()) {
-      const tag = row.tag.trim().toUpperCase();
+      const tag = row.tag?.trim().toUpperCase() ?? '';
       try {
-        await this.createAsset(user, dto.branchId, row);
-        results.push({ row: index + 1, tag, status: 'created' });
+        const id = dto.requestId ? new Types.ObjectId(createHash('sha256')
+          .update(JSON.stringify([user.sub, dto.branchId, dto.requestId, (dto.offset ?? 0) + index, row]))
+          .digest('hex').slice(0, 24)) : undefined;
+        const asset = await this.createAsset(user, dto.branchId, row, id);
+        results.push({ row: index + 1, tag: asset.tag, assetId: String(asset._id), status: 'created' });
       } catch (error) {
         if (!(error instanceof ConflictException)) throw error;
         results.push({ row: index + 1, tag, status: 'duplicate' });
@@ -76,15 +80,19 @@ export class AssetsController {
     if (!await this.branches.exists({ _id: branchId })) throw new NotFoundException('Branch not found.');
   }
 
-  private async createAsset(user: AuthUser, branchId: string, dto: AssetImportRow) {
+  private async createAsset(user: AuthUser, branchId: string, dto: AssetImportRow, _id = new Types.ObjectId()) {
     try {
       return await this.assets.create({
-        branchId, tag: dto.tag.trim().toUpperCase(), name: dto.name.trim(),
+        _id, branchId, tag: dto.tag?.trim().toUpperCase() || `CF-${_id.toHexString().toUpperCase()}`, name: dto.name.trim(),
         category: dto.category.trim(), location: dto.location?.trim(), serial: dto.serial?.trim(),
         history: [{ state: 'available', at: new Date(), actorId: user.sub, actorEmail: user.email }],
       });
     } catch (error) {
-      if ((error as { code?: number }).code === 11000) throw new ConflictException('That asset tag is already registered.');
+      if ((error as { code?: number }).code === 11000) {
+        const existing = await this.assets.findById(_id).lean();
+        if (existing) return existing;
+        throw new ConflictException('That asset tag is already registered.');
+      }
       throw error;
     }
   }

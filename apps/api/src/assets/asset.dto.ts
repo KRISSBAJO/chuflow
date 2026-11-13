@@ -3,7 +3,7 @@ import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsISO8601, IsInt, IsMongoId,
 import { assetStates, type AssetState } from './asset.schema';
 
 export class AssetImportRow {
-  @IsString() @Matches(/\S/) @MaxLength(64) tag!: string;
+  @IsOptional() @IsString() @MaxLength(64) tag?: string;
   @IsString() @Matches(/\S/) @MaxLength(120) name!: string;
   @IsString() @Matches(/\S/) @MaxLength(80) category!: string;
   @IsOptional() @IsString() @MaxLength(120) location?: string;
@@ -16,6 +16,8 @@ export class RegisterAssetDto extends AssetImportRow {
 
 export class ImportAssetsDto {
   @IsMongoId() branchId!: string;
+  @IsOptional() @IsString() @Matches(/^[a-f0-9-]{36}$/i) requestId?: string;
+  @IsOptional() @IsInt() @Min(0) offset?: number;
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100)
   @ValidateNested({ each: true }) @Type(() => AssetImportRow)
   rows!: AssetImportRow[];

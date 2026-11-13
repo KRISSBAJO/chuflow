@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge, Button, Card, Field } from "@/components/ui/ui";
-import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import { apiGet, apiPatch } from "@/lib/api";
 import type { BranchSummary } from "@/lib/types";
-import { AssetImport, AssetOperations } from "./asset-operations";
+import { AssetOperations } from "./asset-operations";
 
 const transitions = {
   available: ["checked_out", "maintenance", "missing", "retired"],
@@ -124,51 +124,12 @@ function AssetRow({ item, branches, overdue }: { item: InventoryAsset; branches:
   </Card>;
 }
 
-export function AssetsWorkspace({ items, branches, defaultBranchId, tag, branchId, asOf }: {
-  items: InventoryAsset[]; branches: BranchSummary[]; defaultBranchId?: string; tag: string; branchId: string; asOf: number;
+export function AssetsWorkspace({ items, branches, tag, branchId, asOf }: {
+  items: InventoryAsset[]; branches: BranchSummary[]; tag: string; branchId: string; asOf: number;
 }) {
   const t = useTranslations("admin.assets");
   const tc = useTranslations("common");
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  async function register(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    const form = event.currentTarget;
-    setBusy(true);
-    try {
-      const asset = await apiPost<InventoryAsset>("/assets", Object.fromEntries(new FormData(form)));
-      form.reset();
-      toast.success(t("saved"));
-      router.push("/assets?" + new URLSearchParams({ tag: asset.tag }));
-      router.refresh();
-    } catch (error) {
-      toast.error(t("failed"), { description: error instanceof Error ? error.message : undefined });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return <div className="space-y-4">
-    <AssetImport branches={branches} defaultBranchId={defaultBranchId} />
-    <details className="app-card p-5">
-      <summary className="cursor-pointer font-semibold">{t("register")}</summary>
-      <form onSubmit={register} className="mt-4 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label={tc("branch")}><select className="ui-input" name="branchId" required defaultValue={defaultBranchId ?? ""}>
-            <option value="" disabled>{t("chooseBranch")}</option>
-            {branches.map(branch => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
-          </select></Field>
-          <Field label={t("tag")}><input className="ui-input" name="tag" maxLength={64} required /></Field>
-          <Field label={t("name")}><input className="ui-input" name="name" maxLength={120} required /></Field>
-          <Field label={t("category")}><input className="ui-input" name="category" maxLength={80} required /></Field>
-          <Field label={t("location")}><input className="ui-input" name="location" maxLength={120} /></Field>
-          <Field label={t("serial")}><input className="ui-input" name="serial" maxLength={100} /></Field>
-        </div>
-        <Button type="submit" disabled={busy}>{t("register")}</Button>
-      </form>
-    </details>
     <form key={tag + ":" + branchId} action="/assets" className="app-card grid items-end gap-3 p-5 sm:grid-cols-[1fr_1fr_auto]">
       <Field label={t("tag")}><input className="ui-input" name="tag" defaultValue={tag} maxLength={64} /></Field>
       <Field label={tc("branch")}><select className="ui-input" name="branchId" defaultValue={branchId}>

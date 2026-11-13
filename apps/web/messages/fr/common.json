@@ -7,6 +7,24 @@
     "pt": "Português"
   },
   "common": {
+    "assetIntake": {
+      "select": "Choisir les étiquettes de cette page",
+      "results": "Télécharger les résultats de l’import",
+      "print": "Imprimer les étiquettes ({count})",
+      "printError": "Impossible d’ouvrir la feuille d’impression.",
+      "fileError": "Choisissez un fichier Excel ou CSV valide avec des en-têtes.",
+      "serialError": "Saisissez au plus un numéro de série par article, de 100 caractères maximum.",
+      "another": "Commencer un autre lot",
+      "quantity": "Quantité",
+      "automatic": "Généré automatiquement si vide",
+      "serials": "Numéros de série, un par ligne",
+      "file": "Fichier tableur",
+      "preview": "Aperçu du fichier",
+      "template": "Télécharger le modèle CSV",
+      "sheet": "Feuille",
+      "summary": "{ready} prêts · {invalid} invalides",
+      "invalid": "Vérifiez le nom, la catégorie et la longueur des champs"
+    },
     "guestMatch": {
       "possible": "Un visiteur portant ce nom ou utilisant ces coordonnées est peut-être déjà inscrit.",
       "existing": "Ce visiteur est déjà inscrit.",

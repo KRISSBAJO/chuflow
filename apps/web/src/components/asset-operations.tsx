@@ -18,53 +18,6 @@ function BranchPicker({ branches, defaultValue }: { branches: BranchSummary[]; d
   </select></Field>;
 }
 
-export function AssetImport({ branches, defaultBranchId }: { branches: BranchSummary[]; defaultBranchId?: string }) {
-  const t = useTranslations("admin.assets");
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
-  const [results, setResults] = useState<{ row: number; tag: string; status: "created" | "duplicate" }[]>();
-
-  async function importRows(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setError(false);
-    setResults(undefined);
-    try {
-      const data = new FormData(event.currentTarget);
-      const lines = String(data.get("rows")).split(/\r?\n/).filter(line => line.trim());
-      const rows = lines.map(line => {
-        const [tag, name, category, location, serial, ...extra] = line.split("\t");
-        if (extra.length || !tag?.trim() || !name?.trim() || !category?.trim()) throw new Error();
-        return { tag, name, category, location, serial };
-      });
-      const result = await apiPost<{ results: NonNullable<typeof results> }>("/assets/import", { branchId: data.get("branchId"), rows });
-      setResults(result.results);
-      router.refresh();
-    } catch {
-      setError(true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return <details className="app-card p-5">
-    <summary className="cursor-pointer font-semibold">{t("bulkImport")}</summary>
-    <form onSubmit={importRows} className="mt-4 space-y-3">
-      <BranchPicker branches={branches} defaultValue={defaultBranchId} />
-      <Field label={t("bulkRows")} hint={t("bulkHint")}>
-        <textarea name="rows" className="ui-input" rows={5} maxLength={51000} required />
-      </Field>
-      {error ? <p role="alert">{t("bulkError")}</p> : null}
-      {results ? <ul aria-live="polite" className="max-h-48 overflow-auto text-sm">
-        {results.map(result => <li key={result.row}>{result.row}. {result.tag} · {t(result.status === "duplicate" ? "duplicate" : "saved")}</li>)}
-      </ul> : null}
-      <Button type="submit" disabled={busy}>{t("bulkImport")}</Button>
-    </form>
-  </details>;
-}
-
 export function AssetOperations({ item, branches }: { item: InventoryAsset; branches: BranchSummary[] }) {
   const t = useTranslations("admin.assets");
   const format = useFormatter();

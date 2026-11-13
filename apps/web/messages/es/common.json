@@ -7,6 +7,24 @@
     "pt": "Português"
   },
   "common": {
+    "assetIntake": {
+      "select": "Elegir etiquetas de esta página",
+      "results": "Descargar resultados de importación",
+      "print": "Imprimir etiquetas ({count})",
+      "printError": "No se pudo abrir la hoja de impresión.",
+      "fileError": "Elige un archivo Excel o CSV válido con encabezados.",
+      "serialError": "Introduce un número de serie por artículo como máximo, de hasta 100 caracteres.",
+      "another": "Iniciar otro lote",
+      "quantity": "Cantidad",
+      "automatic": "Se genera automáticamente si está vacío",
+      "serials": "Números de serie, uno por línea",
+      "file": "Archivo de hoja de cálculo",
+      "preview": "Vista previa",
+      "template": "Descargar plantilla CSV",
+      "sheet": "Hoja",
+      "summary": "{ready} listos · {invalid} inválidos",
+      "invalid": "Revisa el nombre, la categoría y la longitud de los campos"
+    },
     "guestMatch": {
       "possible": "Es posible que ya haya un invitado con este nombre o contacto.",
       "existing": "Este invitado ya está registrado.",

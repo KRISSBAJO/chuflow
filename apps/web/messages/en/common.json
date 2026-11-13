@@ -7,6 +7,24 @@
     "pt": "Português"
   },
   "common": {
+    "assetIntake": {
+      "select": "Choose labels from this page",
+      "results": "Download import results",
+      "print": "Print labels ({count})",
+      "printError": "Could not open the print sheet.",
+      "fileError": "Choose a valid Excel or CSV file with a header row.",
+      "serialError": "Enter up to one serial number per item, 100 characters each.",
+      "another": "Start another batch",
+      "quantity": "Quantity",
+      "automatic": "Generated automatically when blank",
+      "serials": "Serial numbers, one per line",
+      "file": "Spreadsheet file",
+      "preview": "Preview spreadsheet",
+      "template": "Download CSV template",
+      "sheet": "Worksheet",
+      "summary": "{ready} ready · {invalid} invalid",
+      "invalid": "Check item name, category, and field lengths"
+    },
     "guestMatch": {
       "possible": "A guest with this name or contact may already be registered.",
       "existing": "This guest is already registered.",

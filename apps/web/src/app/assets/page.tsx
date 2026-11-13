@@ -7,11 +7,12 @@ import { buttonClass } from "@/components/ui/ui";
 import { requireServerRole } from "@/lib/auth";
 import { serverGet } from "@/lib/server-api";
 import type { BranchSummary } from "@/lib/types";
+import { AssetLabels } from "@/components/asset-labels";
 
 export default async function AssetsPage({ searchParams }: {
   searchParams: Promise<{ tag?: string; before?: string; branchId?: string; assetId?: string }>;
 }) {
-  const user = await requireServerRole("/assets");
+  await requireServerRole("/assets");
   const { tag, before, branchId, assetId } = await searchParams;
   const query = new URLSearchParams();
   if (typeof tag === "string" && tag.trim()) query.set("tag", tag.trim().slice(0, 64));
@@ -30,8 +31,12 @@ export default async function AssetsPage({ searchParams }: {
   if (inventory.next) query.set("before", inventory.next);
 
   return <Shell>
-    <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
-    <AssetsWorkspace items={inventory.items} branches={branches} defaultBranchId={user.branchId}
+    <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} action={<div className="flex flex-wrap gap-2">
+      <Link href="/assets/register" className={buttonClass("primary", "md")}>{t("register")}</Link>
+      <Link href="/assets/import" className={buttonClass("secondary", "md")}>{t("bulkImport")}</Link>
+    </div>} />
+    <AssetLabels key={first.toString() + (before ?? "")} items={inventory.items} selectable />
+    <AssetsWorkspace items={inventory.items} branches={branches}
       tag={first.get("tag") ?? ""} branchId={first.get("branchId") ?? ""} asOf={inventory.asOf} />
     <nav className="flex flex-wrap gap-2">
       {before ? <Link className={buttonClass("secondary", "sm")} href={"/assets?" + first}>{t("firstPage")}</Link> : null}
