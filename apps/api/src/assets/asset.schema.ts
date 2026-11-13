@@ -13,6 +13,7 @@ export class AssetMovement {
   @Prop() holder?: string;
   @Prop() activity?: string;
   @Prop() note?: string;
+  @Prop({ type: SchemaTypes.ObjectId }) kitCheckoutId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId }) fromBranchId?: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId }) toBranchId?: Types.ObjectId;
 }
@@ -40,6 +41,9 @@ export class Asset {
   @Prop() holder?: string;
   @Prop() activity?: string;
   @Prop() dueAt?: Date;
+  @Prop({ type: SchemaTypes.ObjectId }) kitId?: Types.ObjectId;
+  @Prop() kitName?: string;
+  @Prop({ type: SchemaTypes.ObjectId }) kitCheckoutId?: Types.ObjectId;
   @Prop({ default: 0 }) revision!: number;
   @Prop({ type: [SchemaFactory.createForClass(AssetReservation)], default: [] }) reservations!: AssetReservation[];
   @Prop({ type: [SchemaFactory.createForClass(AssetMovement)], default: [] }) history!: AssetMovement[];
@@ -48,3 +52,4 @@ export class Asset {
 export const AssetSchema = SchemaFactory.createForClass(Asset);
 AssetSchema.index({ tag: 1 }, { unique: true });
 AssetSchema.index({ branchId: 1, _id: -1 });
+AssetSchema.index({ branchId: 1, kitId: 1 });

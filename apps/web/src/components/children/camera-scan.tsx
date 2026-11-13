@@ -11,10 +11,12 @@ type Detector = {
 export function CameraScan({
   onCode,
   label,
+  allowSoftwareDecoder = false,
   className = "children-button secondary",
 }: {
   onCode: (code: string) => void;
   label?: string;
+  allowSoftwareDecoder?: boolean;
   className?: string;
 }) {
   const t = useTranslations("childrenDesk.camera");
@@ -45,15 +47,27 @@ export function CameraScan({
       }
     ).BarcodeDetector;
     const detector = ctor ? new ctor({ formats: ["qr_code"] }) : null;
+    const canvas = !detector && allowSoftwareDecoder ? document.createElement("canvas") : null;
+    const context = canvas?.getContext("2d", { willReadFrequently: true });
+    const decoder = context ? import("jsqr").then((module) => module.default, () => null) : null;
+    async function read() {
+      if (detector) return (await detector.detect(current))[0]?.rawValue;
+      const decode = await decoder;
+      if (!decode || !canvas || !context || !active || !current.videoWidth) return;
+      const scale = Math.min(1, 640 / current.videoWidth);
+      canvas.width = Math.round(current.videoWidth * scale);
+      canvas.height = Math.round(current.videoHeight * scale);
+      context.drawImage(current, 0, 0, canvas.width, canvas.height);
+      return decode(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height)?.data;
+    }
     const timer = setInterval(() => {
-      if (!detector || working || current.readyState < 2) return;
+      if ((!detector && !decoder) || working || current.readyState < 2) return;
       working = true;
-      void detector
-        .detect(current)
-        .then((rows) => {
-          if (active && rows[0]?.rawValue) {
+      void read()
+        .then((code) => {
+          if (active && code) {
             active = false;
-            callback.current(rows[0].rawValue);
+            callback.current(code);
             setStream(null);
           }
         })
@@ -68,10 +82,10 @@ export function CameraScan({
       stream.getTracks().forEach((track) => track.stop());
       current.srcObject = null;
     };
-  }, [stream, t]);
+  }, [allowSoftwareDecoder, stream, t]);
   async function start() {
     setError("");
-    if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
+    if ((!allowSoftwareDecoder && !("BarcodeDetector" in window)) || !navigator.mediaDevices) {
       setError(t("unavailable"));
       return;
     }

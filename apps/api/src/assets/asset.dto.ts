@@ -48,3 +48,26 @@ export class MoveAssetDto {
   @IsOptional() @IsISO8601({ strict: true }) dueAt?: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
+
+export class CreateAssetKitDto {
+  @IsMongoId() branchId!: string;
+  @IsString() @Matches(/\S/) @MaxLength(120) name!: string;
+  @IsArray() @ArrayMinSize(2) @ArrayMaxSize(50) @IsMongoId({ each: true }) assetIds!: string[];
+}
+
+export class MoveAssetKitDto {
+  @IsMongoId() branchId!: string;
+  @IsIn(['available', 'checked_out']) state!: 'available' | 'checked_out';
+  @IsOptional() @IsString() @MaxLength(120) holder?: string;
+  @IsOptional() @IsString() @MaxLength(160) activity?: string;
+  @IsOptional() @IsISO8601({ strict: true }) dueAt?: string;
+}
+
+export class StartAssetStocktakeDto {
+  @IsMongoId() branchId!: string;
+  @IsString() @Matches(/\S/) @MaxLength(120) room!: string;
+}
+
+export class ScanAssetStocktakeDto {
+  @IsString() @Matches(/\S/) @MaxLength(512) label!: string;
+}

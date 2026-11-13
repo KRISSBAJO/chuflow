@@ -9,8 +9,9 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { Branch } from '../branches/schemas/branch.schema';
-import { AssetImportRow, AssetReservationKeyDto, ImportAssetsDto, MoveAssetDto, RegisterAssetDto, ReserveAssetDto, TransferAssetDto } from './asset.dto';
+import { AssetImportRow, AssetReservationKeyDto, CreateAssetKitDto, ImportAssetsDto, MoveAssetDto, MoveAssetKitDto, RegisterAssetDto, ReserveAssetDto, ScanAssetStocktakeDto, StartAssetStocktakeDto, TransferAssetDto } from './asset.dto';
 import { Asset, type AssetState } from './asset.schema';
+import { AssetStocktake } from './stocktake.schema';
 
 const priorStates: Record<AssetState, AssetState[]> = {
   available: ['checked_out', 'maintenance', 'missing'],
@@ -28,6 +29,7 @@ export class AssetsController {
     @InjectModel(Asset.name) private readonly assets: Model<Asset>,
     @InjectModel(Branch.name) private readonly branches: Model<Branch>,
     private readonly access: AccessScopeService,
+    @InjectModel(AssetStocktake.name) private readonly stocktakes: Model<AssetStocktake>,
   ) {}
 
   @Get()
@@ -105,6 +107,129 @@ export class AssetsController {
     return row;
   }
 
+  @Post('kits')
+  async createKit(@CurrentUser() user: AuthUser, @Body() dto: CreateAssetKitDto) {
+    await this.requireBranch(user, dto.branchId);
+    const assetIds = [...new Set(dto.assetIds.map(id => id.toLowerCase()))];
+    if (assetIds.length !== dto.assetIds.length) throw new BadRequestException('Select each asset only once.');
+    const kitId = new Types.ObjectId();
+    await this.assets.db.transaction(async (session) => {
+      const result = await this.assets.updateMany({
+        _id: { $in: assetIds }, branchId: dto.branchId, kitId: { $exists: false }, state: 'available',
+      }, { $set: { kitId, kitName: dto.name.trim() }, $inc: { revision: 1 } }, { session });
+      if (result.modifiedCount !== assetIds.length)
+        throw new ConflictException('All kit items must be available, unassigned and in this branch.');
+    });
+    return { kitId };
+  }
+
+  @Get('stocktakes/:branchId')
+  async stocktakeHistory(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string) {
+    if (!Types.ObjectId.isValid(branchId)) throw new BadRequestException('Choose a branch.');
+    await this.requireBranch(user, branchId);
+    return this.stocktakes.find({ branchId }).select('room completedAt').sort({ _id: -1 }).limit(20).lean();
+  }
+
+  @Get('stocktakes/record/:id')
+  async stocktakeDetail(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const result = await this.stocktakes.findOne(await this.assetScope(user, id)).lean();
+    if (!result) throw new NotFoundException('Stocktake not found.');
+    return result;
+  }
+
+  @Post('stocktakes')
+  async startStocktake(@CurrentUser() user: AuthUser, @Body() dto: StartAssetStocktakeDto) {
+    await this.requireBranch(user, dto.branchId);
+    const room = dto.room.trim();
+    const escaped = room.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const expected = await this.assets.find({
+      branchId: dto.branchId, location: new RegExp('^' + escaped + '$', 'i'),
+      state: { $nin: ['checked_out', 'retired'] },
+    }).select('tag name location').limit(2001).lean();
+    if (expected.length > 2000) throw new BadRequestException('This room has too many assets for one stocktake.');
+    return this.stocktakes.create({ branchId: dto.branchId, actorId: user.sub, room, expected });
+  }
+
+  @Post('stocktakes/:id/scans')
+  async scanStocktake(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: ScanAssetStocktakeDto) {
+    const scope = await this.assetScope(user, id);
+    const stocktake = await this.stocktakes.findOne(scope).lean();
+    if (!stocktake) throw new NotFoundException('Stocktake not found.');
+    const label = dto.label.trim();
+    let assetId: string | null = null;
+    if (/^https?:\/\//i.test(label)) {
+      try {
+        const url = new URL(label);
+        if (url.pathname === '/assets') assetId = url.searchParams.get('assetId');
+      } catch { throw new BadRequestException('Scan an asset label or enter its tag.'); }
+      if (!assetId || !Types.ObjectId.isValid(assetId)) throw new BadRequestException('Scan an asset label or enter its tag.');
+    }
+    const asset = await this.assets.findOne({
+      branchId: stocktake.branchId, state: { $ne: 'retired' },
+      ...(assetId ? { _id: assetId } : { tag: label.toUpperCase() }),
+    }).select('name tag location').lean();
+    if (!asset) throw new NotFoundException('Asset not found in this branch.');
+    const scan = {
+      asset: { ...asset, _id: String(asset._id) },
+      result: stocktake.expected.some(item => String(item._id) === String(asset._id)) ? 'present' : 'misplaced',
+    };
+    const updated = await this.stocktakes.findOneAndUpdate({
+      ...scope, completedAt: { $exists: false }, 'scans.asset._id': { $ne: scan.asset._id },
+      'scans.2999': { $exists: false },
+    }, { $push: { scans: scan } }, { new: true }).lean();
+    if (updated) return updated;
+    const latest = await this.stocktakes.findOne(scope).lean();
+    if (latest?.scans.some(entry => entry.asset._id === scan.asset._id)) return latest;
+    throw new ConflictException('This stocktake is closed or has reached its scan limit.');
+  }
+
+  @Patch('stocktakes/:id/complete')
+  async finishStocktake(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const scope = await this.assetScope(user, id);
+    const result = await this.stocktakes.findOneAndUpdate({
+      ...scope, completedAt: { $exists: false },
+    }, { $set: { completedAt: new Date() } }, { new: true }).lean()
+      ?? await this.stocktakes.findOne(scope).lean();
+    if (!result) throw new NotFoundException('Stocktake not found.');
+    return result;
+  }
+
+  @Patch('kits/:id/movement')
+  async moveKit(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: MoveAssetKitDto) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Kit not found.');
+    await this.requireBranch(user, dto.branchId);
+    const checkout = dto.state === 'checked_out';
+    const holder = dto.holder?.trim();
+    const activity = dto.activity?.trim();
+    const dueAt = dto.dueAt ? new Date(dto.dueAt) : undefined;
+    if (checkout && (!holder || !activity || !dueAt || dueAt.getTime() <= Date.now()))
+      throw new BadRequestException('Checkout needs a recipient, activity and future return time.');
+    const scope = { kitId: id, branchId: dto.branchId };
+    const now = new Date();
+    const kitCheckoutId = new Types.ObjectId();
+    return this.assets.db.transaction(async (session) => {
+      const count = await this.assets.countDocuments(scope).session(session);
+      if (!count) throw new NotFoundException('Kit not found.');
+      const result = await this.assets.updateMany({
+        ...scope,
+        ...(checkout ? { state: 'available', reservations: { $not: { $elemMatch: {
+          cancelledAt: { $exists: false }, endsAt: { $gt: now }, startsAt: { $lt: dueAt },
+          $or: [{ holder: { $ne: holder } }, { activity: { $ne: activity } },
+            { startsAt: { $gt: now } }, { endsAt: { $lt: dueAt } }],
+        } } } } : { state: 'checked_out', kitCheckoutId: { $exists: true } }),
+      }, {
+        $set: { state: dto.state, ...(checkout ? { holder, activity, dueAt, kitCheckoutId } : {}) },
+        ...(!checkout ? { $unset: { holder: 1, activity: 1, dueAt: 1, kitCheckoutId: 1 } } : {}),
+        $inc: { revision: 1 },
+        $push: { history: { state: dto.state, at: now, actorId: user.sub, actorEmail: user.email,
+          ...(checkout ? { holder, activity, kitCheckoutId } : {}) } },
+      }, { session });
+      if (checkout && result.modifiedCount !== count)
+        throw new ConflictException('A kit item is unavailable or reserved. No items were checked out.');
+      return { moved: result.modifiedCount };
+    });
+  }
+
   @Patch(':id/movement')
   async move(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: MoveAssetDto) {
     const scope = await this.assetScope(user, id);
@@ -131,7 +256,7 @@ export class AssetsController {
       },
       {
         $set: { state: dto.state, ...(checkout ? { holder, activity, dueAt } : {}) },
-        ...(!checkout ? { $unset: { holder: 1, activity: 1, dueAt: 1 } } : {}),
+        ...(!checkout ? { $unset: { holder: 1, activity: 1, dueAt: 1, kitCheckoutId: 1 } } : {}),
         $inc: { revision: 1 },
         $push: { history: { state: dto.state, at: new Date(), actorId: user.sub, actorEmail: user.email, ...(checkout ? { holder, activity } : {}), note } },
       },
@@ -173,7 +298,7 @@ export class AssetsController {
     if (current.branchId.equals(destination)) throw new BadRequestException('Select a different branch.');
     const now = new Date();
     const result = await this.assets.updateOne({
-      ...scope, revision: dto.revision, state: 'available',
+      ...scope, revision: dto.revision, state: 'available', kitId: { $exists: false },
       reservations: { $not: { $elemMatch: { cancelledAt: { $exists: false }, endsAt: { $gt: now } } } },
     }, {
       $set: { branchId: destination, location: dto.location.trim() },

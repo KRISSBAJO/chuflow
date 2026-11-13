@@ -7,6 +7,28 @@
     "pt": "Português"
   },
   "common": {
+    "assetOperations": {
+      "kits": "Equipment kits",
+      "stocktakes": "Room stocktakes",
+      "chooseBranch": "Choose a branch to continue.",
+      "createKit": "Create kit",
+      "kitName": "Kit name",
+      "selected": "{count} items selected",
+      "checkoutKit": "Check out kit",
+      "returnKit": "Return kit",
+      "room": "Storage room",
+      "start": "Start stocktake",
+      "history": "Recent stocktakes",
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "label": "Asset tag or QR link",
+      "addScan": "Add scan",
+      "present": "Present",
+      "misplaced": "Misplaced",
+      "missing": "Missing",
+      "remaining": "Still to scan",
+      "finish": "Finish stocktake"
+    },
     "assetIntake": {
       "printAll": "Print all matching labels",
       "select": "Choose labels from this page",

@@ -7,6 +7,28 @@
     "pt": "Português"
   },
   "common": {
+    "assetOperations": {
+      "kits": "Kits de matériel",
+      "stocktakes": "Inventaires par salle",
+      "chooseBranch": "Choisissez un site.",
+      "createKit": "Créer un kit",
+      "kitName": "Nom du kit",
+      "selected": "{count} articles sélectionnés",
+      "checkoutKit": "Sortir le kit",
+      "returnKit": "Rendre le kit",
+      "room": "Salle de stockage",
+      "start": "Démarrer l’inventaire",
+      "history": "Inventaires récents",
+      "completed": "Terminé",
+      "inProgress": "En cours",
+      "label": "Étiquette ou lien QR",
+      "addScan": "Ajouter le scan",
+      "present": "Présents",
+      "misplaced": "Mal rangés",
+      "missing": "Manquants",
+      "remaining": "À scanner",
+      "finish": "Terminer l’inventaire"
+    },
     "assetIntake": {
       "printAll": "Imprimer toutes les étiquettes correspondantes",
       "select": "Choisir les étiquettes de cette page",

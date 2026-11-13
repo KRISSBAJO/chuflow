@@ -34,6 +34,8 @@ export default async function AssetsPage({ searchParams }: {
     <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} action={<div className="flex flex-wrap gap-2">
       <Link href="/assets/register" className={buttonClass("primary", "md")}>{t("register")}</Link>
       <Link href="/assets/import" className={buttonClass("secondary", "md")}>{t("bulkImport")}</Link>
+      <Link href="/assets/kits" className={buttonClass("secondary", "md")}>{tc("assetOperations.kits")}</Link>
+      <Link href="/assets/stocktakes" className={buttonClass("secondary", "md")}>{tc("assetOperations.stocktakes")}</Link>
     </div>} />
     <AssetLabels key={first.toString() + (before ?? "")} items={inventory.items} selectable
       allFilters={inventory.next || before ? first.toString() : undefined} />
