@@ -7,6 +7,15 @@
     "pt": "Português"
   },
   "common": {
+    "assetCategories": {
+      "search": "Search or type a category",
+      "add": "Create category",
+      "manage": "Manage categories",
+      "rename": "Rename",
+      "remove": "Remove",
+      "empty": "No custom categories yet",
+      "defaults": "Phones & tablets|Computers & laptops|Audio equipment|Microphones|Speakers|Musical instruments|Video equipment|Cameras|Lighting|Projection & displays|Networking|Printers & scanners|Check-in equipment|Office equipment|Furniture|Children’s ministry|Youth ministry|Sports & recreation|Hospitality|Kitchen equipment|Cleaning equipment|Tools & maintenance|Safety equipment|Security equipment|Transport equipment|Cables & accessories|Storage equipment|Other"
+    },
     "assetOperations": {
       "kits": "Equipment kits",
       "stocktakes": "Room stocktakes",

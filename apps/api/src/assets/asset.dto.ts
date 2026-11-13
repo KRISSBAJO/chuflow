@@ -14,6 +14,11 @@ export class RegisterAssetDto extends AssetImportRow {
   @IsMongoId() branchId!: string;
 }
 
+export class CreateAssetCategoryDto {
+  @IsMongoId() branchId!: string;
+  @IsString() @Matches(/\S/) @MaxLength(80) name!: string;
+}
+
 export class ImportAssetsDto {
   @IsMongoId() branchId!: string;
   @IsOptional() @IsString() @Matches(/^[a-f0-9-]{36}$/i) requestId?: string;

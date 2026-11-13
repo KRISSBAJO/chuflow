@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { createHash } from 'node:crypto';
 import { Model, Types } from 'mongoose';
@@ -12,6 +12,8 @@ import { Branch } from '../branches/schemas/branch.schema';
 import { AssetImportRow, AssetReservationKeyDto, CreateAssetKitDto, ImportAssetsDto, MoveAssetDto, MoveAssetKitDto, RegisterAssetDto, ReserveAssetDto, ScanAssetStocktakeDto, StartAssetStocktakeDto, TransferAssetDto } from './asset.dto';
 import { Asset, type AssetState } from './asset.schema';
 import { AssetStocktake } from './stocktake.schema';
+import { AssetCategory } from './asset-category.schema';
+import { CreateAssetCategoryDto } from './asset.dto';
 
 const priorStates: Record<AssetState, AssetState[]> = {
   available: ['checked_out', 'maintenance', 'missing'],
@@ -30,6 +32,7 @@ export class AssetsController {
     @InjectModel(Branch.name) private readonly branches: Model<Branch>,
     private readonly access: AccessScopeService,
     @InjectModel(AssetStocktake.name) private readonly stocktakes: Model<AssetStocktake>,
+    @InjectModel(AssetCategory.name) private readonly categories: Model<AssetCategory>,
   ) {}
 
   @Get()
@@ -97,6 +100,68 @@ export class AssetsController {
       }
       throw error;
     }
+  }
+
+  @Get('categories/:branchId')
+  async categoryOptions(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string) {
+    if (!Types.ObjectId.isValid(branchId)) throw new BadRequestException('Choose a branch.');
+    await this.requireBranch(user, branchId);
+    const [saved, existing] = await Promise.all([
+      this.categories.find({ branchId }).select('name').sort({ name: 1 }).lean(),
+      this.assets.distinct('category', { branchId }),
+    ]);
+    return { custom: saved, names: [...saved.map(category => category.name), ...existing] };
+  }
+
+  @Post('categories')
+  async createCategory(@CurrentUser() user: AuthUser, @Body() dto: CreateAssetCategoryDto) {
+    await this.requireBranch(user, dto.branchId);
+    const name = dto.name.trim().replace(/\s+/g, ' ');
+    const filter = { branchId: dto.branchId, key: name.normalize('NFKC').toLowerCase() };
+    try {
+      const category = await this.categories.findOneAndUpdate(filter, { $setOnInsert: { name } },
+        { upsert: true, new: true }).lean();
+      return { name: category.name };
+    } catch (error) {
+      if ((error as { code?: number }).code !== 11000) throw error;
+      const category = await this.categories.findOne(filter).lean();
+      if (!category) throw error;
+      return { name: category.name };
+    }
+  }
+
+  @Patch('categories/:id')
+  async renameCategory(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: CreateAssetCategoryDto) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Category not found.');
+    await this.requireBranch(user, dto.branchId);
+    const name = dto.name.trim().replace(/\s+/g, ' ');
+    const filter = { _id: id, branchId: dto.branchId };
+    try {
+      return await this.assets.db.transaction(async (session) => {
+        const previous = await this.categories.findOneAndUpdate(filter, {
+          $set: { name, key: name.normalize('NFKC').toLowerCase() },
+        }, { session }).lean();
+        if (!previous) throw new NotFoundException('Category not found.');
+        await this.assets.updateMany({ branchId: dto.branchId, category: previous.name },
+          { $set: { category: name }, $inc: { revision: 1 } }, { session });
+        return { name };
+      });
+    } catch (error) {
+      if ((error as { code?: number }).code === 11000) throw new ConflictException('That category already exists.');
+      throw error;
+    }
+  }
+
+  @Delete('categories/:branchId/:id')
+  async removeCategory(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string, @Param('id') id: string) {
+    if (![branchId, id].every(value => Types.ObjectId.isValid(value))) throw new NotFoundException('Category not found.');
+    await this.requireBranch(user, branchId);
+    const filter = { _id: id, branchId };
+    const category = await this.categories.findOne(filter).lean();
+    if (!category) throw new NotFoundException('Category not found.');
+    if (await this.assets.exists({ branchId, category: category.name })) throw new ConflictException('This category is used by existing assets.');
+    await this.categories.deleteOne({ ...filter, name: category.name });
+    return { removed: true };
   }
 
   @Get(':id')

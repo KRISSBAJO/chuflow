@@ -7,6 +7,15 @@
     "pt": "Português"
   },
   "common": {
+    "assetCategories": {
+      "search": "Rechercher ou saisir une catégorie",
+      "add": "Créer une catégorie",
+      "manage": "Gérer les catégories",
+      "rename": "Renommer",
+      "remove": "Supprimer",
+      "empty": "Aucune catégorie personnalisée",
+      "defaults": "Téléphones et tablettes|Ordinateurs et portables|Matériel audio|Microphones|Haut-parleurs|Instruments de musique|Matériel vidéo|Caméras|Éclairage|Projection et écrans|Réseaux|Imprimantes et scanners|Matériel d’accueil|Matériel de bureau|Mobilier|Ministère des enfants|Ministère des jeunes|Sports et loisirs|Hospitalité|Matériel de cuisine|Matériel de nettoyage|Outillage et entretien|Matériel de protection|Matériel de surveillance|Matériel de transport|Câbles et accessoires|Matériel de rangement|Autres"
+    },
     "assetOperations": {
       "kits": "Kits de matériel",
       "stocktakes": "Inventaires par salle",
