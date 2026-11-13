@@ -7,6 +7,14 @@
     "pt": "Português"
   },
   "common": {
+    "assetRooms": {
+      "search": "Search storage rooms",
+      "add": "Create room",
+      "manage": "Manage rooms",
+      "empty": "No saved rooms yet",
+      "noMatches": "No matching rooms",
+      "clear": "Clear selection"
+    },
     "assetCategories": {
       "refine": "Type to narrow the results.",
       "noMatches": "No matching categories.",

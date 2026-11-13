@@ -7,6 +7,14 @@
     "pt": "Português"
   },
   "common": {
+    "assetRooms": {
+      "search": "Buscar salas",
+      "add": "Crear sala",
+      "manage": "Administrar salas",
+      "empty": "Todavía no hay salas guardadas",
+      "noMatches": "No hay salas que coincidan",
+      "clear": "Borrar selección"
+    },
     "assetCategories": {
       "refine": "Escribe para acotar los resultados.",
       "noMatches": "No hay categorías que coincidan.",

@@ -9,9 +9,13 @@ import english from "../../messages/en/common.json";
 type CustomCategory = { _id: string; name: string };
 const normalize = (value: string) => value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
 
-export function AssetCategoryPicker({ branchId }: { branchId: string }) {
+export function AssetCategoryPicker({ branchId, field = "category", inputName = field }: {
+  branchId: string; field?: "category" | "location"; inputName?: string;
+}) {
   const t = useTranslations("common.assetCategories");
+  const room = useTranslations("common.assetRooms");
   const a = useTranslations("admin.assets");
+  const copy = (key: "search" | "add" | "manage" | "empty" | "noMatches") => field === "location" ? room(key) : t(key);
   const [value, setValue] = useState("");
   const [data, setData] = useState<{ names: string[]; custom: CustomCategory[] }>({ names: [], custom: [] });
   const [busy, setBusy] = useState(false);
@@ -22,7 +26,8 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
   const search = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const listId = useId();
-  const path = "/assets/categories";
+  const path = field === "category" ? "/assets/categories" : "/assets/rooms";
+  const maxLength = field === "category" ? 80 : 120;
   useEffect(() => {
     if (!branchId) return;
     let active = true;
@@ -30,14 +35,16 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
       if (active) setData(result);
     }).catch(() => { if (active) setMessage(a("failed")); });
     return () => { active = false; };
-  }, [a, branchId]);
+  }, [a, branchId, path]);
   const translated = t("defaults").split("|");
-  const starter = new Map(english.common.assetCategories.defaults.split("|").map((name, index) => [translated[index], name]));
+  const starter = new Map(field === "category" ? english.common.assetCategories.defaults.split("|").map((name, index) => [translated[index], name]) : []);
   const options = [...new Map([...starter.keys(), ...data.names.filter(name => !Array.from(starter.values()).includes(name))].map((name) => [normalize(name), name])).values()];
   const matches = (name: string) => normalize(query).split(" ").every((word) => normalize(name).includes(word));
   const visible = options.filter(matches);
   const custom = data.custom.filter((category) => matches(category.name));
   const existing = options.some((name) => normalize(name) === normalize(query));
+  const legacyRoom = manage && field === "location" && existing &&
+    !data.custom.some((entry) => normalize(entry.name) === normalize(query));
   const common = useTranslations("common");
 
   async function change(operation: () => Promise<void>) {
@@ -56,8 +63,8 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
   }
 
   return <div className="space-y-2">
-    <p id={listId} className="text-sm font-medium">{a("category")}</p>
-    <input type="hidden" name="category" value={starter.get(value) ?? value} />
+    <p id={listId} className="text-sm font-medium">{a(field)}</p>
+    <input type="hidden" name={inputName} value={starter.get(value) ?? value} />
     <button ref={trigger} type="button" aria-haspopup="dialog" aria-labelledby={`${listId} ${listId}-value`}
       className="ui-input flex w-full items-center justify-between gap-2 text-left"
       onClick={() => {
@@ -67,7 +74,7 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
         dialog.current?.showModal();
         search.current?.focus();
       }}>
-      <span id={`${listId}-value`} className="min-w-0 truncate">{value || t("search")}</span>
+      <span id={`${listId}-value`} className="min-w-0 truncate">{value || copy("search")}</span>
       <span aria-hidden="true">⌄</span>
     </button>
     <dialog ref={dialog} aria-labelledby={`${listId}-title`} onClose={() => trigger.current?.focus()}
@@ -76,11 +83,11 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
         if (event.key === "Enter" && event.target instanceof HTMLInputElement) event.preventDefault();
       }}>
     <div className="mb-4 flex items-center justify-between gap-2">
-      <h2 id={`${listId}-title`} className="text-lg font-semibold">{manage ? t("manage") : a("category")}</h2>
+      <h2 id={`${listId}-title`} className="text-lg font-semibold">{manage ? copy("manage") : a(field)}</h2>
       <Button variant="secondary" size="sm" onClick={() => dialog.current?.close()}>{common("close")}</Button>
     </div>
-    <input ref={search} className="ui-input w-full" type="search" value={query} maxLength={80}
-      aria-label={t("search")} placeholder={t("search")} onChange={(event) => setQuery(event.target.value)} />
+    <input ref={search} className="ui-input w-full" type="search" value={query} maxLength={maxLength}
+      aria-label={copy("search")} placeholder={copy("search")} onChange={(event) => setQuery(event.target.value)} />
     {!manage ? <div className="my-3 max-h-[40vh] space-y-1 overflow-auto">
       {visible.slice(0, 20).map((name) => (
         <button key={name} type="button" aria-pressed={value === name}
@@ -88,15 +95,18 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
           onClick={() => { setValue(name); dialog.current?.close(); }}>{name}</button>
       ))}
       {visible.length > 20 ? <p className="px-3 py-2 text-sm text-neutral-600">{t("refine")}</p> : null}
-      {!visible.length ? <p className="px-3 py-2 text-sm text-neutral-600">{t("noMatches")}</p> : null}
+      {!visible.length ? <p className="px-3 py-2 text-sm text-neutral-600">{copy("noMatches")}</p> : null}
     </div> : null}
-    {!manage && query.trim() && !existing ? <Button variant="secondary" size="sm" disabled={!branchId || busy} onClick={() => void change(async () => {
+    {query.trim() && ((!manage && !existing) || legacyRoom) ? <Button variant="secondary" size="sm" disabled={!branchId || busy} onClick={() => void change(async () => {
       const result = await apiPost<{ name: string }>(path, { branchId, name: query });
-      setValue(result.name);
-      dialog.current?.close();
-    })}>{t("add")}</Button> : null}
+      if (!manage) {
+        setValue(result.name);
+        dialog.current?.close();
+      }
+    })}>{copy("add")}</Button> : null}
+    {!manage && value ? <Button variant="secondary" size="sm" onClick={() => { setValue(""); dialog.current?.close(); }}>{room("clear")}</Button> : null}
     {manage ? <div className="my-3 max-h-[40vh] space-y-2 overflow-auto">
-        {custom.slice(0, 20).map((category) => <CategoryRow key={category._id + category.name} category={category} busy={busy}
+        {custom.slice(0, 20).map((category) => <CategoryRow key={category._id + category.name} category={category} busy={busy} maxLength={maxLength}
           rename={(name) => void change(async () => {
             const result = await apiPatch<{ name: string }>(`${path}/${category._id}`, { branchId, name });
             if (normalize(value) === normalize(category.name)) setValue(result.name);
@@ -107,11 +117,11 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
             if (normalize(value) === normalize(category.name)) setValue("");
           })} />)}
       {custom.length > 20 ? <p className="text-sm">{t("refine")}</p> : null}
-      {!custom.length ? <p className="text-sm">{t(query.trim() ? "noMatches" : "empty")}</p> : null}
+      {!custom.length ? <p className="text-sm">{copy(query.trim() ? "noMatches" : "empty")}</p> : null}
     </div> : null}
     <div className="mt-3">
       <Button variant="secondary" size="sm" disabled={busy} onClick={() => { setManage(!manage); setQuery(""); search.current?.focus(); }}>
-        {manage ? common("back") : t("manage")}
+        {manage ? common("back") : copy("manage")}
       </Button>
     </div>
     {message ? <p role="status" className="text-sm">{message}</p> : null}
@@ -119,13 +129,13 @@ export function AssetCategoryPicker({ branchId }: { branchId: string }) {
   </div>;
 }
 
-function CategoryRow({ category, busy, rename, remove }: {
-  category: CustomCategory; busy: boolean; rename: (name: string) => void; remove: () => void;
+function CategoryRow({ category, busy, maxLength, rename, remove }: {
+  category: CustomCategory; busy: boolean; maxLength: number; rename: (name: string) => void; remove: () => void;
 }) {
   const t = useTranslations("common.assetCategories");
   const [name, setName] = useState(category.name);
   return <div className="flex flex-wrap gap-2">
-    <input className="ui-input min-w-32 flex-1" aria-label={t("rename")} value={name} maxLength={80}
+    <input className="ui-input min-w-32 flex-1" aria-label={t("rename")} value={name} maxLength={maxLength}
       onChange={(event) => setName(event.target.value)} />
     <Button variant="secondary" size="sm" disabled={busy || !name.trim() || name.trim() === category.name} onClick={() => rename(name)}>{t("rename")}</Button>
     <Button variant="secondary" size="sm" disabled={busy} onClick={remove}>{t("remove")}</Button>

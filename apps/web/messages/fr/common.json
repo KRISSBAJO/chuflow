@@ -7,6 +7,14 @@
     "pt": "Português"
   },
   "common": {
+    "assetRooms": {
+      "search": "Rechercher une salle",
+      "add": "Créer une salle",
+      "manage": "Gérer les salles",
+      "empty": "Aucune salle enregistrée",
+      "noMatches": "Aucune salle correspondante",
+      "clear": "Effacer la sélection"
+    },
     "assetCategories": {
       "refine": "Saisissez du texte pour affiner les résultats.",
       "noMatches": "Aucune catégorie correspondante.",

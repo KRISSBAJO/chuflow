@@ -6,6 +6,7 @@ import { CameraScan } from "@/components/children/camera-scan";
 import { Button, Card, Field, buttonClass } from "@/components/ui/ui";
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
 import type { BranchSummary } from "@/lib/types";
+import { AssetCategoryPicker } from "./asset-category-picker";
 
 type Item = { _id: string; name: string; tag: string; location?: string; state: "available" | "checked_out" | "maintenance" | "missing" | "retired"; kitId?: string; kitName?: string; kitCheckoutId?: string };
 type Stocktake = {
@@ -171,9 +172,10 @@ function Stocktakes({ branch }: { branch: string }) {
       <form className="grid items-end gap-3 sm:grid-cols-[1fr_auto]" onSubmit={(event) => {
         event.preventDefault();
         const room = new FormData(event.currentTarget).get("room");
+        if (!room) { setMessage(t("room")); return; }
         void run(() => apiPost<Stocktake>("/assets/stocktakes", { branchId: branch, room }));
       }}>
-        <Field label={t("room")}><input className="ui-input" name="room" maxLength={120} required /></Field>
+        <AssetCategoryPicker branchId={branch} field="location" inputName="room" />
         <Button type="submit" disabled={busy}>{t("start")}</Button>
       </form>
       {records.length ? <Field label={t("history")}><select className="ui-input" value={selected?._id ?? ""} disabled={busy}

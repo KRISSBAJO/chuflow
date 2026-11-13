@@ -13,7 +13,7 @@ import { AssetImportRow, AssetReservationKeyDto, CreateAssetKitDto, ImportAssets
 import { Asset, type AssetState } from './asset.schema';
 import { AssetStocktake } from './stocktake.schema';
 import { AssetCategory } from './asset-category.schema';
-import { CreateAssetCategoryDto } from './asset.dto';
+import { CreateAssetCategoryDto, CreateAssetRoomDto } from './asset.dto';
 
 const priorStates: Record<AssetState, AssetState[]> = {
   available: ['checked_out', 'maintenance', 'missing'],
@@ -33,6 +33,7 @@ export class AssetsController {
     private readonly access: AccessScopeService,
     @InjectModel(AssetStocktake.name) private readonly stocktakes: Model<AssetStocktake>,
     @InjectModel(AssetCategory.name) private readonly categories: Model<AssetCategory>,
+    @InjectModel("AssetRoom") private readonly rooms: Model<AssetCategory>,
   ) {}
 
   @Get()
@@ -102,48 +103,88 @@ export class AssetsController {
     }
   }
 
+  @Get('rooms/:branchId')
+  roomOptions(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string) {
+    return this.categoryOptionsFor(user, branchId, 'location');
+  }
+
+  @Post('rooms')
+  createRoom(@CurrentUser() user: AuthUser, @Body() dto: CreateAssetRoomDto) {
+    return this.createCategoryFor(user, dto, 'location');
+  }
+
+  @Patch('rooms/:id')
+  renameRoom(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: CreateAssetRoomDto) {
+    return this.renameCategoryFor(user, id, dto, 'location');
+  }
+
+  @Delete('rooms/:branchId/:id')
+  removeRoom(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string, @Param('id') id: string) {
+    return this.removeCategoryFor(user, branchId, id, 'location');
+  }
+
   @Get('categories/:branchId')
-  async categoryOptions(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string) {
+  categoryOptions(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string) {
+    return this.categoryOptionsFor(user, branchId, 'category');
+  }
+
+  private async categoryOptionsFor(user: AuthUser, branchId: string, field: 'category' | 'location') {
+    const catalog = field === 'category' ? this.categories : this.rooms;
     if (!Types.ObjectId.isValid(branchId)) throw new BadRequestException('Choose a branch.');
     await this.requireBranch(user, branchId);
     const [saved, existing] = await Promise.all([
-      this.categories.find({ branchId }).select('name').sort({ name: 1 }).lean(),
-      this.assets.distinct('category', { branchId }),
+      catalog.find({ branchId }).select('name').sort({ name: 1 }).lean(),
+      this.assets.distinct(field, { branchId }),
     ]);
-    return { custom: saved, names: [...saved.map(category => category.name), ...existing] };
+    return { custom: saved, names: [...saved.map(category => category.name), ...existing.filter(Boolean)] };
+  }
+
+  private roomPattern(name: string) {
+    const escape = (part: string) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('^\\s*' + name.trim().split(/\s+/).map(escape).join('\\s+') + '\\s*$', 'i');
   }
 
   @Post('categories')
-  async createCategory(@CurrentUser() user: AuthUser, @Body() dto: CreateAssetCategoryDto) {
+  createCategory(@CurrentUser() user: AuthUser, @Body() dto: CreateAssetCategoryDto) {
+    return this.createCategoryFor(user, dto, 'category');
+  }
+
+  private async createCategoryFor(user: AuthUser, dto: CreateAssetRoomDto, field: 'category' | 'location') {
+    const catalog = field === 'category' ? this.categories : this.rooms;
     await this.requireBranch(user, dto.branchId);
     const name = dto.name.trim().replace(/\s+/g, ' ');
     const filter = { branchId: dto.branchId, key: name.normalize('NFKC').toLowerCase() };
     try {
-      const category = await this.categories.findOneAndUpdate(filter, { $setOnInsert: { name } },
+      const category = await catalog.findOneAndUpdate(filter, { $setOnInsert: { name } },
         { upsert: true, new: true }).lean();
       return { name: category.name };
     } catch (error) {
       if ((error as { code?: number }).code !== 11000) throw error;
-      const category = await this.categories.findOne(filter).lean();
+      const category = await catalog.findOne(filter).lean();
       if (!category) throw error;
       return { name: category.name };
     }
   }
 
   @Patch('categories/:id')
-  async renameCategory(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: CreateAssetCategoryDto) {
+  renameCategory(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: CreateAssetCategoryDto) {
+    return this.renameCategoryFor(user, id, dto, 'category');
+  }
+
+  private async renameCategoryFor(user: AuthUser, id: string, dto: CreateAssetRoomDto, field: 'category' | 'location') {
+    const catalog = field === 'category' ? this.categories : this.rooms;
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Category not found.');
     await this.requireBranch(user, dto.branchId);
     const name = dto.name.trim().replace(/\s+/g, ' ');
     const filter = { _id: id, branchId: dto.branchId };
     try {
       return await this.assets.db.transaction(async (session) => {
-        const previous = await this.categories.findOneAndUpdate(filter, {
+        const previous = await catalog.findOneAndUpdate(filter, {
           $set: { name, key: name.normalize('NFKC').toLowerCase() },
         }, { session }).lean();
         if (!previous) throw new NotFoundException('Category not found.');
-        await this.assets.updateMany({ branchId: dto.branchId, category: previous.name },
-          { $set: { category: name }, $inc: { revision: 1 } }, { session });
+        await this.assets.updateMany({ branchId: dto.branchId, [field]: field === 'location' ? this.roomPattern(previous.name) : previous.name },
+          { $set: { [field]: name }, $inc: { revision: 1 } }, { session });
         return { name };
       });
     } catch (error) {
@@ -153,14 +194,20 @@ export class AssetsController {
   }
 
   @Delete('categories/:branchId/:id')
-  async removeCategory(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string, @Param('id') id: string) {
+  removeCategory(@CurrentUser() user: AuthUser, @Param('branchId') branchId: string, @Param('id') id: string) {
+    return this.removeCategoryFor(user, branchId, id, 'category');
+  }
+
+  private async removeCategoryFor(user: AuthUser, branchId: string, id: string, field: 'category' | 'location') {
+    const catalog = field === 'category' ? this.categories : this.rooms;
     if (![branchId, id].every(value => Types.ObjectId.isValid(value))) throw new NotFoundException('Category not found.');
     await this.requireBranch(user, branchId);
     const filter = { _id: id, branchId };
-    const category = await this.categories.findOne(filter).lean();
+    const category = await catalog.findOne(filter).lean();
     if (!category) throw new NotFoundException('Category not found.');
-    if (await this.assets.exists({ branchId, category: category.name })) throw new ConflictException('This category is used by existing assets.');
-    await this.categories.deleteOne({ ...filter, name: category.name });
+    if (await this.assets.exists({ branchId, [field]: field === 'location' ? this.roomPattern(category.name) : category.name }))
+      throw new ConflictException(field === 'location' ? 'This room is used by existing assets.' : 'This category is used by existing assets.');
+    await catalog.deleteOne({ ...filter, name: category.name });
     return { removed: true };
   }
 
@@ -206,9 +253,8 @@ export class AssetsController {
   async startStocktake(@CurrentUser() user: AuthUser, @Body() dto: StartAssetStocktakeDto) {
     await this.requireBranch(user, dto.branchId);
     const room = dto.room.trim();
-    const escaped = room.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const expected = await this.assets.find({
-      branchId: dto.branchId, location: new RegExp('^' + escaped + '$', 'i'),
+      branchId: dto.branchId, location: this.roomPattern(room),
       state: { $nin: ['checked_out', 'retired'] },
     }).select('tag name location').limit(2001).lean();
     if (expected.length > 2000) throw new BadRequestException('This room has too many assets for one stocktake.');

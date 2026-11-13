@@ -15,6 +15,7 @@ import { AssetCategory, AssetCategorySchema } from './asset-category.schema';
       { name: Branch.name, schema: BranchSchema },
       { name: AssetStocktake.name, schema: AssetStocktakeSchema },
       { name: AssetCategory.name, schema: AssetCategorySchema },
+      { name: 'AssetRoom', schema: AssetCategorySchema },
     ]),
   ],
   controllers: [AssetsController],

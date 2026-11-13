@@ -161,7 +161,7 @@ export function AssetIntake({ mode, branches, defaultBranchId }: {
       <form onSubmit={register} className="grid gap-4 sm:grid-cols-2">
         <Field label={t("quantity")}><input className="ui-input" type="number" min={1} max={100} required value={quantity} onChange={(event) => setQuantity(event.target.valueAsNumber || 1)} /></Field>
         {columns.filter((key) => quantity === 1 || (key !== "tag" && key !== "serial")).map((key) => (
-          key === "category" ? <AssetCategoryPicker key={branchId} branchId={branchId} /> : <Field key={key} label={a(key)} hint={key === "tag" ? t("automatic") : undefined}>
+          key === "category" || key === "location" ? <AssetCategoryPicker key={key + branchId} branchId={branchId} field={key} /> : <Field key={key} label={a(key)} hint={key === "tag" ? t("automatic") : undefined}>
             <input className="ui-input" name={key} maxLength={limits[key]} required={key === "name"} />
           </Field>
         ))}
